@@ -18,8 +18,12 @@ matrix:
     - os: osx
       osx_image: xcode10.2
       rust: nightly
+    - os: windows
+      rust: nightly
+      env: VS15=true
+      script: sh dist/travis.sh
   allow_failures:
-    - os: osx
+    - os: windows
 
 # Don't CI branches besides master. Pull requests still get CI'd -- but
 # when a PR comes in on a branch in the same repo, this prevents it from
