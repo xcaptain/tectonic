@@ -36,6 +36,15 @@ authorization from the copyright holders.
 #include "xetex-core.h"
 #include "xetex-XeTeXFontMgr.h"
 
+struct XeTeXFontMgr_FC {
+	XeTeXFontMgr super_;
+	
+    FcFontSet*  allFonts;
+    bool        cachedAll;
+}
+
+
+/*
 class XeTeXFontMgr_FC
     : public XeTeXFontMgr
 {
@@ -55,12 +64,13 @@ protected:
 
     virtual NameCollection*         readNames(FcPattern* pat);
 
-    std::string                     getPlatformFontDesc(PlatformFontRef font) const;
+    char*                           getPlatformFontDesc(PlatformFontRef font) const;
 
     void                            cacheFamilyMembers(const std::list<std::string>& familyNames);
 
     FcFontSet*  allFonts;
     bool        cachedAll;
 };
+*/
 
 #endif  /* __XETEX_FONT_MGR_FC_H */

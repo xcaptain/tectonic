@@ -36,6 +36,129 @@ authorization from the copyright holders.
 
 #include "xetex-core.h"
 
+struct XeTeXFontMgrOpSizeRec {
+	unsigned int    designSize;
+	unsigned int    subFamilyID;
+	unsigned int    nameCode;
+	unsigned int    minSize;
+	unsigned int    maxSize;
+};
+typedef struct XeTeXFontMgrOpSizeRec XeTeXFontMgrOpSizeRec;
+
+struct CppStdString;
+typedef struct CppStdString CppStdString;
+
+CppStdString* CppStdString_create();
+void CppStdString_delete(CppStdString* self);
+
+struct CppStdMapStr2Font;
+typedef struct CppStdMapStr2Font CppStdMapStr2Font;
+
+CppStdMapStr2Font* CppStdMapStr2Font_create();
+void CppStdMapStr2Font_delete(CppStdMapStr2Font* self);
+
+struct XeTeXFontMgrFamily {
+	CppStdMapStr2Font*    styles;
+	uint16_t              minWeight;
+	uint16_t              maxWeight;
+	uint16_t              minWidth;
+	uint16_t              maxWidth;
+	int16_t               minSlant;
+	int16_t               maxSlant;
+}
+typedef struct XeTeXFontMgrFamily XeTeXFontMgrFamily;
+
+XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
+{
+	XeTeXFontMgrFamily* self = malloc(sizeof(XeTeXFontMgrFamily));
+	self->minWeight = (0);
+	self->maxWeight = (0);
+	self->minWidth = (0);
+	self->maxWidth = (0);
+	self->minSlant = (0);
+	self->maxSlant = (0);
+    self->styles = CppStdMapStr2Font_create();
+}
+void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
+{
+	if(!self)
+		return;
+	CppStdMapStr2Font_delete(self->styles);
+	delete self;
+}
+
+struct XeTeXFontMgrFont {
+	CppStdString*    m_fullName;
+	CppStdString*    m_psName;
+	CppStdString*    m_familyName; // default family and style names that should locate this font
+	CppStdString*    m_styleName;
+	XeTeXFontMgrFamily*         parent;
+	PlatformFontRef fontRef;
+	XeTeXFontMgrOpSizeRec       opSizeInfo;
+	uint16_t        weight;
+	uint16_t        width;
+	int16_t         slant;
+	bool            isReg;
+	bool            isBold;
+	bool            isItalic;
+};
+typedef struct XeTeXFontMgrFont XeTeXFontMgrFont;
+
+inline XeTeXFontMgrFont* XeTeXFontMgrFont_create(PlatformFontRef ref) {
+	XeTeXFontMgrFont* self = malloc(sizeof(XeTeXFontMgrFont));
+	self->m_fullName = (NULL);
+	self->m_psName = (NULL);
+	self->m_familyName = (NULL);
+	self->m_styleName = (NULL);
+	self->parent = (NULL);
+	self->fontRef = (ref);
+	self->weight = (0);
+	self->width = (0);
+	self->slant = (0);
+	self->isReg = (false);
+	self->isBold = (false);
+	self->isItalic = (false);
+	self->opSizeInfo.subFamilyID = 0;
+	self->opSizeInfo.designSize = 100; /* default to 10bp */
+	return self;
+}
+
+inline void XeTeXFontMgrFont_delete(XeTeXFontMgrFont* self) {
+	if(!self)
+		return;
+	CppStdString_delete(self->m_fullName);
+	CppStdString_delete(self->m_psName);
+	free(self);
+}
+
+struct CppStdListOfString;
+typedef struct CppStdListOfString CppStdListOfString;
+
+CppStdListOfString* CppStdListOfString_create();
+void CppStdListOfString_delete(CppStdListOfString* self);
+
+struct XeTeXFontMgrNameCollection {
+	CppStdListOfString*  m_familyNames;
+	CppStdListOfString*  m_styleNames;
+	CppStdListOfString*  m_fullNames;
+	CppStdString*        m_psName;
+	CppStdString*        m_subFamily;
+};
+typedef struct XeTeXFontMgrNameCollection XeTeXFontMgrNameCollection;
+
+struct XeTeXFontMgr {
+	void              (*m_subdtor)(struct XeTeXFontMgr* self);
+    void              (*m_memfnInitialize)(struct XeTeXFontMgr* self); /*abstract*/
+    void              (*m_memfnTerminate)(struct XeTeXFontMgr* self);
+    char*             (*m_memfnGetPlatformFontDesc)(const struct XeTeXFontMgr* self, PlatformFontRef font); /*abstract*/
+    void    		  (*m_memfnGetOpSizeRecAndStyleFlags)(struct XeTeXFontMgr* self, XeTeXFontMgrFont* theFont);
+    void 			  (*m_memfnSearchForHostPlatformFonts)(struct XeTeXFontMgr* self, const char* name); /* abstract */
+    XeTeXFontMgrNameCollection*   (*m_memfnReadNames)(struct XeTeXFontMgr* self, PlatformFontRef fontRef); /* abstract */
+};
+
+typedef struct XeTeXFontMgr XeTeXFontMgr;
+
+/*
 #include <string>
 #include <map>
 #include <list>
@@ -80,9 +203,6 @@ public:
     void                            setReqEngine(char reqEngine) const { sReqEngine = reqEngine; }
 
 protected:
-    static XeTeXFontMgr*            sFontManager;
-    static char                     sReqEngine;
-
                                     XeTeXFontMgr()
                                         { }
     virtual                         ~XeTeXFontMgr()
@@ -91,77 +211,12 @@ protected:
     virtual void                    initialize() = 0;
     virtual void                    terminate();
 
-    virtual std::string             getPlatformFontDesc(PlatformFontRef font) const = 0;
+    virtual char*             		getPlatformFontDesc(PlatformFontRef font) const = 0;
 
-    class Font;
-    class Family;
 
-    struct OpSizeRec {
-        unsigned int    designSize;
-        unsigned int    subFamilyID;
-        unsigned int    nameCode;
-        unsigned int    minSize;
-        unsigned int    maxSize;
-    };
+    
 
-    class Font {
-        public:
-                            Font(PlatformFontRef ref)
-                                : m_fullName(NULL), m_psName(NULL), m_familyName(NULL), m_styleName(NULL)
-                                , parent(NULL)
-                                , fontRef(ref), weight(0), width(0), slant(0)
-                                , isReg(false), isBold(false), isItalic(false)
-                                { opSizeInfo.subFamilyID = 0;
-                                  opSizeInfo.designSize = 100; } /* default to 10bp */
-                            ~Font()
-                                { delete m_fullName; delete m_psName; }
 
-            std::string*    m_fullName;
-            std::string*    m_psName;
-            std::string*    m_familyName; // default family and style names that should locate this font
-            std::string*    m_styleName;
-            Family*         parent;
-            PlatformFontRef fontRef;
-            OpSizeRec       opSizeInfo;
-            uint16_t        weight;
-            uint16_t        width;
-            int16_t         slant;
-            bool            isReg;
-            bool            isBold;
-            bool            isItalic;
-    };
-
-    class Family {
-        public:
-                                            Family()
-                                                : minWeight(0), maxWeight(0)
-                                                , minWidth(0), maxWidth(0)
-                                                , minSlant(0), maxSlant(0)
-                                                {
-                                                    styles = new std::map<std::string,Font*>;
-                                                }
-                                            ~Family()
-                                                {
-                                                    delete styles;
-                                                }
-
-            std::map<std::string,Font*>*    styles;
-            uint16_t                        minWeight;
-            uint16_t                        maxWeight;
-            uint16_t                        minWidth;
-            uint16_t                        maxWidth;
-            int16_t                         minSlant;
-            int16_t                         maxSlant;
-    };
-
-    class NameCollection {
-    public:
-        std::list<std::string>  m_familyNames;
-        std::list<std::string>  m_styleNames;
-        std::list<std::string>  m_fullNames;
-        std::string             m_psName;
-        std::string             m_subFamily;
-    };
 
     std::map<std::string,Font*>                 m_nameToFont;                     // maps full name (as used in TeX source) to font record
     std::map<std::string,Family*>               m_nameToFamily;
@@ -182,5 +237,6 @@ protected:
 
     virtual NameCollection*     readNames(PlatformFontRef fontRef) = 0;
 };
+*/
 
 #endif  /* __XETEX_FONT_MANAGER_H */

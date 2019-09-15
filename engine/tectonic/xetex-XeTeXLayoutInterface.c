@@ -69,6 +69,8 @@ struct XeTeXLayoutEngine_rec
     hb_buffer_t*    hbBuffer;
 };
 
+#if 0 //CPP_TO_C_DELAY
+
 /*******************************************************************/
 /* Glyph bounding box cache to speed up \XeTeXuseglyphmetrics mode */
 /*******************************************************************/
@@ -147,7 +149,7 @@ get_cp_code(int fontNum, unsigned int code, int side)
 
     return it->second;
 }
-
+#endif //CPP_TO_C_DELAY
 
 
 /*******************************************************************/
@@ -155,13 +157,13 @@ get_cp_code(int fontNum, unsigned int code, int side)
 void
 terminate_font_manager()
 {
-    XeTeXFontMgr::Terminate();
+    XeTeXFontMgr_Terminate();
 }
 
 void
 destroy_font_manager()
 {
-    XeTeXFontMgr::Destroy();
+    XeTeXFontMgr_Destroy();
 }
 
 XeTeXFont
@@ -169,16 +171,16 @@ createFont(PlatformFontRef fontRef, Fixed pointSize)
 {
     int status = 0;
 #ifdef XETEX_MAC
-    XeTeXFontInst* font = new XeTeXFontInst_Mac(fontRef, Fix2D(pointSize), status);
+    XeTeXFontInst* font = XeTeXFontInst_Mac_create(fontRef, Fix2D(pointSize), status);
 #else
     FcChar8* pathname = 0;
     FcPatternGetString(fontRef, FC_FILE, 0, &pathname);
     int index;
     FcPatternGetInteger(fontRef, FC_INDEX, 0, &index);
-    XeTeXFontInst* font = new XeTeXFontInst((const char*)pathname, index, Fix2D(pointSize), status);
+    XeTeXFontInst* font = XeTeXFontInst_create((const char*)pathname, index, Fix2D(pointSize), &status);
 #endif
     if (status != 0) {
-        delete font;
+        XeTeXFontInst_delete(font);
         return NULL;
     }
     return (XeTeXFont)font;
@@ -188,9 +190,9 @@ XeTeXFont
 createFontFromFile(const char* filename, int index, Fixed pointSize)
 {
     int status = 0;
-    XeTeXFontInst* font = new XeTeXFontInst(filename, index, Fix2D(pointSize), status);
+    XeTeXFontInst* font = XeTeXFontInst_create(filename, index, Fix2D(pointSize), &status);
     if (status != 0) {
-        delete font;
+        XeTeXFontInst_delete(font);
         return NULL;
     }
     return (XeTeXFont)font;
@@ -199,43 +201,43 @@ createFontFromFile(const char* filename, int index, Fixed pointSize)
 void
 setFontLayoutDir(XeTeXFont font, int vertical)
 {
-    ((XeTeXFontInst*)font)->setLayoutDirVertical(vertical != 0);
+    XeTeXFontInst_setLayoutDirVertical((XeTeXFontInst*)font, vertical != 0);
 }
 
 PlatformFontRef
 findFontByName(const char* name, char* var, double size)
 {
-    return XeTeXFontMgr::GetFontManager()->findFont(name, var, size);
+    return XeTeXFontMgr_findFont(XeTeXFontMgr_GetFontManager(), name, var, size);
 }
 
 char
 getReqEngine()
 {
-    return XeTeXFontMgr::GetFontManager()->getReqEngine();
+    return XeTeXFontMgr_getReqEngine(XeTeXFontMgr_GetFontManager());
 }
 
 void
 setReqEngine(char reqEngine)
 {
-    XeTeXFontMgr::GetFontManager()->setReqEngine(reqEngine);
+    XeTeXFontMgr_setReqEngine(XeTeXFontMgr_GetFontManager(), reqEngine);
 }
 
 const char*
 getFullName(PlatformFontRef fontRef)
 {
-    return XeTeXFontMgr::GetFontManager()->getFullName(fontRef);
+    return XeTeXFontMgr_getFullName(XeTeXFontMgr_GetFontManager(), fontRef);
 }
 
 double
 getDesignSize(XeTeXFont font)
 {
-    return XeTeXFontMgr::GetFontManager()->getDesignSize(font);
+    return XeTeXFontMgr_getDesignSize(XeTeXFontMgr_GetFontManager(), font);
 }
 
 char*
 getFontFilename(XeTeXLayoutEngine engine, uint32_t* index)
 {
-    return xstrdup(engine->font->getFilename(index));
+    return xstrdup(XeTeXFontInst_getFilename(engine->font, index));
 }
 
 PlatformFontRef
@@ -247,19 +249,19 @@ getFontRef(XeTeXLayoutEngine engine)
 void
 deleteFont(XeTeXFont font)
 {
-    delete (XeTeXFontInst*)font;
+    XeTeXFontInst_delete((XeTeXFontInst*)font);
 }
 
 void*
 getFontTablePtr(XeTeXFont font, uint32_t tableTag)
 {
-    return const_cast<void*>(((XeTeXFontInst*)font)->getFontTable(tableTag));
+    return (void*)XeTeXFontInst_getFontTable(((XeTeXFontInst*)font),tableTag);
 }
 
 Fixed
 getSlant(XeTeXFont font)
 {
-    float italAngle = ((XeTeXFontInst*)font)->getItalicAngle();
+    float italAngle = XeTeXFontInst_getItalicAngle((XeTeXFontInst*)font);
     return D2Fix(tan(-italAngle * M_PI / 180.0));
 }
 
@@ -268,7 +270,7 @@ getLargerScriptListTable(XeTeXFont font, hb_tag_t** scriptList)
 {
     unsigned int rval = 0;
 
-    hb_face_t* face = hb_font_get_face(((XeTeXFontInst*)font)->getHbFont());
+    hb_face_t* face = hb_font_get_face(XeTeXFontInst_getHbFont((XeTeXFontInst*)font));
 
     hb_tag_t* scriptListSub = NULL;
     hb_tag_t* scriptListPos = NULL;
@@ -321,7 +323,7 @@ countLanguages(XeTeXFont font, hb_tag_t script)
 {
     unsigned int rval = 0;
 
-    hb_face_t* face = hb_font_get_face(((XeTeXFontInst*)font)->getHbFont());
+    hb_face_t* face = hb_font_get_face(XeTeXFontInst_getHbFont((XeTeXFontInst*)font));
     hb_tag_t* scriptList;
 
     unsigned int scriptCount = getLargerScriptListTable(font, &scriptList);
@@ -343,7 +345,7 @@ getIndLanguage(XeTeXFont font, hb_tag_t script, unsigned int index)
 {
     hb_tag_t rval = 0;
 
-    hb_face_t* face = hb_font_get_face(((XeTeXFontInst*)font)->getHbFont());
+    hb_face_t* face = hb_font_get_face(XeTeXFontInst_getHbFont((XeTeXFontInst*)font));
     hb_tag_t* scriptList;
 
     unsigned int scriptCount = getLargerScriptListTable(font, &scriptList);
@@ -386,7 +388,7 @@ countFeatures(XeTeXFont font, hb_tag_t script, hb_tag_t language)
 {
     unsigned int rval = 0;
 
-    hb_face_t* face = hb_font_get_face(((XeTeXFontInst*)font)->getHbFont());
+    hb_face_t* face = hb_font_get_face(XeTeXFontInst_getHbFont((XeTeXFontInst*)font));
 
     for (int i = 0; i < 2; ++i) {
         unsigned int scriptIndex, langIndex = 0;
@@ -406,7 +408,7 @@ getIndFeature(XeTeXFont font, hb_tag_t script, hb_tag_t language, unsigned int i
 {
     hb_tag_t rval = 0;
 
-    hb_face_t* face = hb_font_get_face(((XeTeXFontInst*)font)->getHbFont());
+    hb_face_t* face = hb_font_get_face(XeTeXFontInst_getHbFont((XeTeXFontInst*)font));
 
     for (int i = 0; i < 2; ++i) {
         unsigned int scriptIndex, langIndex = 0;
@@ -435,7 +437,7 @@ countGraphiteFeatures(XeTeXLayoutEngine engine)
 {
     uint32_t rval = 0;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL)
@@ -449,7 +451,7 @@ getGraphiteFeatureCode(XeTeXLayoutEngine engine, uint32_t index)
 {
     uint32_t rval = 0;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -465,7 +467,7 @@ countGraphiteFeatureSettings(XeTeXLayoutEngine engine, uint32_t featureID)
 {
     uint32_t rval = 0;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -481,7 +483,7 @@ getGraphiteFeatureSettingCode(XeTeXLayoutEngine engine, uint32_t featureID, uint
 {
     uint32_t rval = 0;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -499,7 +501,7 @@ getGraphiteFeatureDefaultSetting(XeTeXLayoutEngine engine, uint32_t featureID)
 {
     uint32_t rval = 0;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -515,7 +517,7 @@ getGraphiteFeatureDefaultSetting(XeTeXLayoutEngine engine, uint32_t featureID)
 char *
 getGraphiteFeatureLabel(XeTeXLayoutEngine engine, uint32_t featureID)
 {
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -532,7 +534,7 @@ getGraphiteFeatureLabel(XeTeXLayoutEngine engine, uint32_t featureID)
 char *
 getGraphiteFeatureSettingLabel(XeTeXLayoutEngine engine, uint32_t featureID, uint32_t settingID)
 {
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -589,7 +591,7 @@ findGraphiteFeatureNamed(XeTeXLayoutEngine engine, const char* name, int namelen
 {
     long rval = -1;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -621,7 +623,7 @@ findGraphiteFeatureSettingNamed(XeTeXLayoutEngine engine, uint32_t id, const cha
 {
     long rval = -1;
 
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
 
     if (grFace != NULL) {
@@ -651,13 +653,13 @@ findGraphiteFeatureSettingNamed(XeTeXLayoutEngine engine, uint32_t id, const cha
 float
 getGlyphWidth(XeTeXFont font, uint32_t gid)
 {
-    return ((XeTeXFontInst*)font)->getGlyphWidth(gid);
+    return XeTeXFontInst_getGlyphWidth((XeTeXFontInst*)font, gid);
 }
 
 unsigned int
 countGlyphs(XeTeXFont font)
 {
-    return ((XeTeXFontInst*)font)->getNumGlyphs();
+    return XeTeXFontInst_getNumGlyphs((XeTeXFontInst*)font);
 }
 
 XeTeXFont
@@ -689,7 +691,7 @@ createLayoutEngine(PlatformFontRef fontRef, XeTeXFont font, hb_tag_t script, cha
                     hb_feature_t* features, int nFeatures, char **shapers, uint32_t rgbValue,
                     float extend, float slant, float embolden)
 {
-    XeTeXLayoutEngine result = new XeTeXLayoutEngine_rec;
+    XeTeXLayoutEngine result = XeTeXLayoutEngine_create();
     result->fontRef = fontRef;
     result->font = (XeTeXFontInst*)font;
     result->script = script;
@@ -720,9 +722,9 @@ void
 deleteLayoutEngine(XeTeXLayoutEngine engine)
 {
     hb_buffer_destroy(engine->hbBuffer);
-    delete engine->font;
+    XeTeXFontInst_delete(engine->font);
     free(engine->shaper);
-    delete engine;
+    XeTeXLayoutEngine_delete(engine);
 }
 
 static unsigned int
@@ -737,7 +739,9 @@ _decompose_compat(hb_unicode_funcs_t* ufuncs,
 static hb_unicode_funcs_t*
 _get_unicode_funcs(void)
 {
-    static hb_unicode_funcs_t* ufuncs = hb_unicode_funcs_create(hb_icu_get_unicode_funcs());
+    static hb_unicode_funcs_t* ufuncs = NULL;
+	if (!ufuncs)
+		ufuncs = hb_unicode_funcs_create(hb_icu_get_unicode_funcs());
     hb_unicode_funcs_set_decompose_compatibility_func(ufuncs, _decompose_compat, NULL, NULL);
     return ufuncs;
 }
@@ -753,10 +757,10 @@ layoutChars(XeTeXLayoutEngine engine, uint16_t chars[], int32_t offset, int32_t 
     hb_direction_t direction = HB_DIRECTION_LTR;
     hb_segment_properties_t segment_props;
     hb_shape_plan_t *shape_plan;
-    hb_font_t* hbFont = engine->font->getHbFont();
+    hb_font_t* hbFont = XeTeXFontInst_getHbFont(engine->font);
     hb_face_t* hbFace = hb_font_get_face(hbFont);
 
-    if (engine->font->getLayoutDirVertical())
+    if (XeTeXFontInst_getLayoutDirVertical(engine->font))
         direction = HB_DIRECTION_TTB;
     else if (rightToLeft)
         direction = HB_DIRECTION_RTL;
@@ -851,10 +855,10 @@ getGlyphAdvances(XeTeXLayoutEngine engine, float advances[])
     hb_glyph_position_t *hbPositions = hb_buffer_get_glyph_positions(engine->hbBuffer, NULL);
 
     for (int i = 0; i < glyphCount; i++) {
-        if (engine->font->getLayoutDirVertical())
-            advances[i] = engine->font->unitsToPoints(hbPositions[i].y_advance);
+        if (XeTeXFontInst_getLayoutDirVertical(engine->font))
+            advances[i] = XeTeXFontInst_unitsToPoints(engine->font, hbPositions[i].y_advance);
         else
-            advances[i] = engine->font->unitsToPoints(hbPositions[i].x_advance);
+            advances[i] = XeTeXFontInst_unitsToPoints(engine->font, hbPositions[i].x_advance);
     }
 }
 
@@ -866,24 +870,24 @@ getGlyphPositions(XeTeXLayoutEngine engine, FloatPoint positions[])
 
     float x = 0, y = 0;
 
-    if (engine->font->getLayoutDirVertical()) {
+    if (XeTeXFontInst_getLayoutDirVertical(engine->font)) {
         for (int i = 0; i < glyphCount; i++) {
-            positions[i].x = -engine->font->unitsToPoints(x + hbPositions[i].y_offset); /* negative is forwards */
-            positions[i].y =  engine->font->unitsToPoints(y - hbPositions[i].x_offset);
+            positions[i].x = -XeTeXFontInst_unitsToPoints(engine->font, x + hbPositions[i].y_offset); /* negative is forwards */
+            positions[i].y =  XeTeXFontInst_unitsToPoints(engine->font, y - hbPositions[i].x_offset);
             x += hbPositions[i].y_advance;
             y += hbPositions[i].x_advance;
         }
-        positions[glyphCount].x = -engine->font->unitsToPoints(x);
-        positions[glyphCount].y =  engine->font->unitsToPoints(y);
+        positions[glyphCount].x = -XeTeXFontInst_unitsToPoints(engine->font, x);
+        positions[glyphCount].y =  XeTeXFontInst_unitsToPoints(engine->font, y);
     } else {
         for (int i = 0; i < glyphCount; i++) {
-            positions[i].x =  engine->font->unitsToPoints(x + hbPositions[i].x_offset);
-            positions[i].y = -engine->font->unitsToPoints(y + hbPositions[i].y_offset); /* negative is upwards */
+            positions[i].x =  XeTeXFontInst_unitsToPoints(engine->font, x + hbPositions[i].x_offset);
+            positions[i].y = -XeTeXFontInst_unitsToPoints(engine->font, y + hbPositions[i].y_offset); /* negative is upwards */
             x += hbPositions[i].x_advance;
             y += hbPositions[i].y_advance;
         }
-        positions[glyphCount].x =  engine->font->unitsToPoints(x);
-        positions[glyphCount].y = -engine->font->unitsToPoints(y);
+        positions[glyphCount].x =  XeTeXFontInst_unitsToPoints(engine->font, x);
+        positions[glyphCount].y = -XeTeXFontInst_unitsToPoints(engine->font, y);
     }
 
     if (engine->extend != 1.0 || engine->slant != 0.0)
@@ -894,21 +898,21 @@ getGlyphPositions(XeTeXLayoutEngine engine, FloatPoint positions[])
 float
 getPointSize(XeTeXLayoutEngine engine)
 {
-    return engine->font->getPointSize();
+    return XeTeXFontInst_getPointSize(engine->font);
 }
 
 void
 getAscentAndDescent(XeTeXLayoutEngine engine, float* ascent, float* descent)
 {
-    *ascent = engine->font->getAscent();
-    *descent = engine->font->getDescent();
+    *ascent = XeTeXFontInst_getAscent(engine->font);
+    *descent = XeTeXFontInst_getDescent(engine->font);
 }
 
 void
 getCapAndXHeight(XeTeXLayoutEngine engine, float* capheight, float* xheight)
 {
-    *capheight = engine->font->getCapHeight();
-    *xheight = engine->font->getXHeight();
+    *capheight = XeTeXFontInst_getCapHeight(engine->font);
+    *xheight = XeTeXFontInst_getXHeight(engine->font);
 }
 
 int
@@ -930,7 +934,7 @@ getRgbValue(XeTeXLayoutEngine engine)
 void
 getGlyphBounds(XeTeXLayoutEngine engine, uint32_t glyphID, GlyphBBox* bbox)
 {
-    engine->font->getGlyphBounds(glyphID, bbox);
+    XeTeXFontInst_getGlyphBounds(engine->font, glyphID, bbox);
     if (engine->extend != 0.0) {
         bbox->xMin *= engine->extend;
         bbox->xMax *= engine->extend;
@@ -940,19 +944,19 @@ getGlyphBounds(XeTeXLayoutEngine engine, uint32_t glyphID, GlyphBBox* bbox)
 float
 getGlyphWidthFromEngine(XeTeXLayoutEngine engine, uint32_t glyphID)
 {
-    return engine->extend * engine->font->getGlyphWidth(glyphID);
+    return engine->extend * XeTeXFontInst_getGlyphWidth(engine->font, glyphID);
 }
 
 void
 getGlyphHeightDepth(XeTeXLayoutEngine engine, uint32_t glyphID, float* height, float* depth)
 {
-    engine->font->getGlyphHeightDepth(glyphID, height, depth);
+    XeTeXFontInst_getGlyphHeightDepth(engine->font, glyphID, height, depth);
 }
 
 void
 getGlyphSidebearings(XeTeXLayoutEngine engine, uint32_t glyphID, float* lsb, float* rsb)
 {
-    engine->font->getGlyphSidebearings(glyphID, lsb, rsb);
+    XeTeXFontInst_getGlyphSidebearings(engine->font, glyphID, lsb, rsb);
     if (engine->extend != 0.0) {
         *lsb *= engine->extend;
         *rsb *= engine->extend;
@@ -962,34 +966,34 @@ getGlyphSidebearings(XeTeXLayoutEngine engine, uint32_t glyphID, float* lsb, flo
 float
 getGlyphItalCorr(XeTeXLayoutEngine engine, uint32_t glyphID)
 {
-    return engine->extend * engine->font->getGlyphItalCorr(glyphID);
+    return engine->extend * XeTeXFontInst_getGlyphItalCorr(engine->font, glyphID);
 }
 
 uint32_t
 mapCharToGlyph(XeTeXLayoutEngine engine, uint32_t charCode)
 {
-    return engine->font->mapCharToGlyph(charCode);
+    return XeTeXFontInst_mapCharToGlyph(engine->font, charCode);
 }
 
 int
 getFontCharRange(XeTeXLayoutEngine engine, int reqFirst)
 {
     if (reqFirst)
-        return engine->font->getFirstCharCode();
+        return XeTeXFontInst_getFirstCharCode(engine->font);
     else
-        return engine->font->getLastCharCode();
+        return XeTeXFontInst_getLastCharCode(engine->font);
 }
 
 const char*
 getGlyphName(XeTeXFont font, uint16_t gid, int* len)
 {
-    return ((XeTeXFontInst*)font)->getGlyphName(gid, *len);
+    return XeTeXFontInst_getGlyphName((XeTeXFontInst*)font, gid, len);
 }
 
 int
 mapGlyphToIndex(XeTeXLayoutEngine engine, const char* glyphName)
 {
-    return engine->font->mapGlyphToIndex(glyphName);
+    return XeTeXFontInst_mapGlyphToIndex(engine->font, glyphName);
 }
 
 static gr_segment* grSegment = NULL;
@@ -999,9 +1003,9 @@ static int grTextLen;
 bool
 initGraphiteBreaking(XeTeXLayoutEngine engine, const uint16_t* txtPtr, int txtLen)
 {
-    hb_face_t* hbFace = hb_font_get_face(engine->font->getHbFont());
+    hb_face_t* hbFace = hb_font_get_face(XeTeXFontInst_getHbFont(engine->font));
     gr_face* grFace = hb_graphite2_face_get_gr_face(hbFace);
-    gr_font* grFont = hb_graphite2_font_get_gr_font(engine->font->getHbFont());
+    gr_font* grFont = hb_graphite2_font_get_gr_font(XeTeXFontInst_getHbFont(engine->font));
     if (grFace != NULL && grFont != NULL) {
         if (grSegment != NULL) {
             gr_seg_destroy(grSegment);
@@ -1086,5 +1090,5 @@ usingOpenType(XeTeXLayoutEngine engine)
 bool
 isOpenTypeMathFont(XeTeXLayoutEngine engine)
 {
-    return hb_ot_math_has_data(hb_font_get_face(engine->font->getHbFont()));
+    return hb_ot_math_has_data(hb_font_get_face(XeTeXFontInst_getHbFont(engine->font)));
 }

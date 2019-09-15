@@ -44,12 +44,10 @@ authorization from the copyright holders.
 
 #include "xetex-core.h"
 #include "xetex-XeTeXFontMgr.h"
+#include <stdbool.h>
 
 // create specific subclasses for each supported platform
-
-class XeTeXFontInst
-{
-protected:
+struct XeTeXFontInst {
     unsigned short m_unitsPerEM;
     float m_pointSize;
     float m_ascent;
@@ -66,6 +64,14 @@ protected:
     FT_Face m_ftFace;
     FT_Byte *m_backingData, *m_backingData2;
     hb_font_t* m_hbFont;
+	void (*m_subdtor)(struct XeTeXFontInst* self);
+};
+
+typedef struct XeTeXFontInst XeTeXFontInst;
+/*
+class XeTeXFontInst
+{
+protected:
 
 public:
     XeTeXFontInst(float pointSize, int &status);
@@ -121,5 +127,26 @@ public:
         return (points * (float) m_unitsPerEM) / m_pointSize;
     }
 };
+*/
+XeTeXFontInst* XeTeXFontInst_create(const char* pathname, int index, float pointSize, int *status);
+void XeTeXFontInst_delete(XeTeXFontInst* self);
+void XeTeXFontInst_initialize(XeTeXFontInst* self, const char* pathname, int index, int *status);
+void XeTeXFontInst_setLayoutDirVertical(XeTeXFontInst* self, bool vertical);
+hb_font_t *XeTeXFontInst_getHbFont(const XeTeXFontInst* self);
+void * XeTeXFontInst_getFontTable(const XeTeXFontInst* self, OTTag tag);
+void * XeTeXFontInst_getFontTableFT(const XeTeXFontInst* self, FT_Sfnt_Tag tag);
+void XeTeXFontInst_getGlyphBounds(XeTeXFontInst* self, GlyphID gid, GlyphBBox* bbox);
+GlyphID XeTeXFontInst_mapCharToGlyph(const XeTeXFontInst* self, UChar32 ch);
+uint16_t XeTeXFontInst_getNumGlyphs(const XeTeXFontInst* self);
+float XeTeXFontInst_getGlyphWidth(XeTeXFontInst* self, GlyphID gid);
+void XeTeXFontInst_getGlyphHeightDepth(XeTeXFontInst* self, GlyphID gid, float* ht, float* dp);
+void XeTeXFontInst_getGlyphSidebearings(XeTeXFontInst* self, GlyphID gid, float* lsb, float* rsb);
+float XeTeXFontInst_getGlyphItalCorr(XeTeXFontInst* self, GlyphID gid);
+GlyphID XeTeXFontInst_mapGlyphToIndex(const XeTeXFontInst* self, const char* glyphName);
+const char* XeTeXFontInst_getGlyphName(XeTeXFontInst* self, GlyphID gid, int* nameLen);
+UChar32 XeTeXFontInst_getFirstCharCode(XeTeXFontInst* self);
+UChar32 XeTeXFontInst_getLastCharCode(XeTeXFontInst* self);
+float XeTeXFontInst_unitsToPoints(const XeTeXFontInst* self, float units);
+float XeTeXFontInst_pointsToUnits(const XeTeXFontInst* self, float points);
 
 #endif

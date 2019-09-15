@@ -73,42 +73,55 @@ FT_Library gFreeTypeLibrary = 0;
 
 static hb_font_funcs_t* hbFontFuncs = NULL;
 
-XeTeXFontInst::XeTeXFontInst(const char* pathname, int index, float pointSize, int &status)
-    : m_unitsPerEM(0)
-    , m_pointSize(pointSize)
-    , m_ascent(0)
-    , m_descent(0)
-    , m_capHeight(0)
-    , m_xHeight(0)
-    , m_italicAngle(0)
-    , m_vertical(false)
-    , m_filename(NULL)
-    , m_index(0)
-    , m_ftFace(0)
-    , m_backingData(NULL)
-    , m_backingData2(NULL)
-    , m_hbFont(NULL)
-{
+void XeTeXFontInst_ctor(XeTeXFontInst* self, const char* pathname, int index, float pointSize, int *status) {
+    self->m_unitsPerEM = 0;
+    self->m_pointSize = pointSize;
+    self->m_ascent = 0;
+    self->m_descent = 0;
+    self->m_capHeight = 0;
+    self->m_xHeight = 0;
+    self->m_italicAngle = 0;
+    self->m_vertical = false;
+    self->m_filename = (NULL);
+    self->m_index = (0);
+    self->m_ftFace =(0);
+    self->m_backingData = (NULL);
+    self->m_backingData2 = (NULL);
+    self->m_hbFont = (NULL);
+	self->m_subdtor = (NULL);
     if (pathname != NULL)
-        initialize(pathname, index, status);
+        XeTeXFontInst_initialize(self, pathname, index, status);	
 }
 
-XeTeXFontInst::~XeTeXFontInst()
+XeTeXFontInst* XeTeXFontInst_create(const char* pathname, int index, float pointSize, int *status)
 {
-    if (m_ftFace != 0) {
-        FT_Done_Face(m_ftFace);
-        m_ftFace = 0;
+	XeTeXFontInst* self = malloc(sizeof(XeTeXFontInst));
+	XeTeXFontInst_ctor(self, pathname, index, pointSize, status);
+	return self;
+}
+
+void XeTeXFontInst_delete(XeTeXFontInst* self)
+{
+	if (!self)
+		return;
+	if (self->m_subdtor)
+		(self->m_subdtor)(self);
+    if (self->m_ftFace != 0) {
+        FT_Done_Face(self->m_ftFace);
+        self->m_ftFace = 0;
     }
-    hb_font_destroy(m_hbFont);
-    free(m_backingData);
-    free(m_backingData2);
-    free(m_filename);
+    hb_font_destroy(self->m_hbFont);
+    free(self->m_backingData);
+    free(self->m_backingData2);
+    free(self->m_filename);
+	
+	free(self);
 }
 
 /* HarfBuzz font functions */
 
 static hb_bool_t
-_get_glyph(hb_font_t*, void *font_data, hb_codepoint_t ch, hb_codepoint_t vs, hb_codepoint_t *gid, void*)
+_get_glyph(hb_font_t* _hbf, void *font_data, hb_codepoint_t ch, hb_codepoint_t vs, hb_codepoint_t *gid, void* _p)
 {
     FT_Face face = (FT_Face) font_data;
     *gid = 0;
@@ -144,26 +157,26 @@ _get_glyph_advance(FT_Face face, FT_UInt gid, bool vertical)
 }
 
 static hb_position_t
-_get_glyph_h_advance(hb_font_t*, void *font_data, hb_codepoint_t gid, void*)
+_get_glyph_h_advance(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, void* _p)
 {
     return _get_glyph_advance((FT_Face) font_data, gid, false);
 }
 
 static hb_position_t
-_get_glyph_v_advance(hb_font_t*, void *font_data, hb_codepoint_t gid, void*)
+_get_glyph_v_advance(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, void* _p)
 {
     return _get_glyph_advance((FT_Face) font_data, gid, true);
 }
 
 static hb_bool_t
-_get_glyph_h_origin(hb_font_t*, void *font_data, hb_codepoint_t gid, hb_position_t *x, hb_position_t *y, void*)
+_get_glyph_h_origin(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, hb_position_t *x, hb_position_t *y, void* _p)
 {
     // horizontal origin is (0, 0)
     return true;
 }
 
 static hb_bool_t
-_get_glyph_v_origin(hb_font_t*, void *font_data, hb_codepoint_t gid, hb_position_t *x, hb_position_t *y, void*)
+_get_glyph_v_origin(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, hb_position_t *x, hb_position_t *y, void* _p)
 {
     // vertical origin is (0, 0) for now
     return true;
@@ -187,7 +200,7 @@ _get_glyph_v_origin(hb_font_t*, void *font_data, hb_codepoint_t gid, hb_position
 }
 
 static hb_position_t
-_get_glyph_h_kerning(hb_font_t*, void *font_data, hb_codepoint_t gid1, hb_codepoint_t gid2, void*)
+_get_glyph_h_kerning(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid1, hb_codepoint_t gid2, void* _p)
 {
     FT_Face face = (FT_Face) font_data;
     FT_Error error;
@@ -203,14 +216,14 @@ _get_glyph_h_kerning(hb_font_t*, void *font_data, hb_codepoint_t gid1, hb_codepo
 }
 
 static hb_position_t
-_get_glyph_v_kerning(hb_font_t*, void *font_data, hb_codepoint_t gid1, hb_codepoint_t gid2, void*)
+_get_glyph_v_kerning(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid1, hb_codepoint_t gid2, void* _p)
 {
     /* FreeType does not support vertical kerning */
     return 0;
 }
 
 static hb_bool_t
-_get_glyph_extents(hb_font_t*, void *font_data, hb_codepoint_t gid, hb_glyph_extents_t *extents, void*)
+_get_glyph_extents(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, hb_glyph_extents_t *extents, void* _p)
 {
     FT_Face face = (FT_Face) font_data;
     FT_Error error;
@@ -227,7 +240,7 @@ _get_glyph_extents(hb_font_t*, void *font_data, hb_codepoint_t gid, hb_glyph_ext
 }
 
 static hb_bool_t
-_get_glyph_contour_point(hb_font_t*, void *font_data, hb_codepoint_t gid, unsigned int point_index, hb_position_t *x, hb_position_t *y, void*)
+_get_glyph_contour_point(hb_font_t* _hbf, void *font_data, hb_codepoint_t gid, unsigned int point_index, hb_position_t *x, hb_position_t *y, void* _p)
 {
     FT_Face face = (FT_Face) font_data;
     FT_Error error;
@@ -248,7 +261,7 @@ _get_glyph_contour_point(hb_font_t*, void *font_data, hb_codepoint_t gid, unsign
 }
 
 static hb_bool_t
-_get_glyph_name(hb_font_t *, void *font_data, hb_codepoint_t gid, char *name, unsigned int size, void *)
+_get_glyph_name(hb_font_t * _hbf, void *font_data, hb_codepoint_t gid, char *name, unsigned int size, void * _p)
 {
     FT_Face face = (FT_Face) font_data;
     bool ret = false;
@@ -263,7 +276,9 @@ _get_glyph_name(hb_font_t *, void *font_data, hb_codepoint_t gid, char *name, un
 static hb_font_funcs_t *
 _get_font_funcs(void)
 {
-    static hb_font_funcs_t* funcs = hb_font_funcs_create();
+    static hb_font_funcs_t* funcs = NULL;
+	if (!funcs)
+		funcs = hb_font_funcs_create();
 
     hb_font_funcs_set_glyph_func                (funcs, _get_glyph, NULL, NULL);
     hb_font_funcs_set_glyph_h_advance_func      (funcs, _get_glyph_h_advance, NULL, NULL);
@@ -280,7 +295,7 @@ _get_font_funcs(void)
 }
 
 static hb_blob_t *
-_get_table(hb_face_t *, hb_tag_t tag, void *user_data)
+_get_table(hb_face_t * _hfc, hb_tag_t tag, void *user_data)
 {
     FT_Face face = (FT_Face) user_data;
     FT_ULong length = 0;
@@ -305,7 +320,7 @@ _get_table(hb_face_t *, hb_tag_t tag, void *user_data)
 }
 
 void
-XeTeXFontInst::initialize(const char* pathname, int index, int &status)
+XeTeXFontInst_initialize(XeTeXFontInst* self, const char* pathname, int index, int *status)
 {
     TT_Postscript *postTable;
     TT_OS2* os2Table;
@@ -325,26 +340,26 @@ XeTeXFontInst::initialize(const char* pathname, int index, int &status)
     if (handle == NULL)
         handle = ttstub_input_open (pathname, TTIF_TYPE1, 0);
     if (handle == NULL) {
-        status = 1;
+        *status = 1;
         return;
     }
 
     size_t sz = ttstub_input_get_size (handle);
-    m_backingData = (FT_Byte *) xmalloc (sz);
-    ssize_t r = ttstub_input_read (handle, (char *) m_backingData, sz);
+    self->m_backingData = (FT_Byte *) xmalloc (sz);
+    ssize_t r = ttstub_input_read (handle, (char *) self->m_backingData, sz);
     if (r < 0 || (size_t) r != sz)
         _tt_abort("failed to read font file");
     ttstub_input_close(handle);
 
-    error = FT_New_Memory_Face(gFreeTypeLibrary, m_backingData, sz, index, &m_ftFace);
+    error = FT_New_Memory_Face(gFreeTypeLibrary, self->m_backingData, sz, index, &self->m_ftFace);
 
-    if (!FT_IS_SCALABLE(m_ftFace)) {
-        status = 1;
+    if (!FT_IS_SCALABLE(self->m_ftFace)) {
+        *status = 1;
         return;
     }
 
     /* for non-sfnt-packaged fonts (presumably Type 1), see if there is an AFM file we can attach */
-    if (index == 0 && !FT_IS_SFNT(m_ftFace)) {
+    if (index == 0 && !FT_IS_SFNT(self->m_ftFace)) {
         // Tectonic: this code used to use kpse_find_file and FT_Attach_File
         // to try to find metrics for this font. Thanks to the existence of
         // FT_Attach_Stream we can emulate this behavior while going through
@@ -360,73 +375,73 @@ XeTeXFontInst::initialize(const char* pathname, int index, int &status)
 
         if (afm_handle != NULL) {
             sz = ttstub_input_get_size (afm_handle);
-            m_backingData2 = (FT_Byte *) xmalloc (sz);
-            r = ttstub_input_read (afm_handle, (char *) m_backingData2, sz);
+            self->m_backingData2 = (FT_Byte *) xmalloc (sz);
+            r = ttstub_input_read (afm_handle, (char *) self->m_backingData2, sz);
             if (r < 0 || (size_t) r != sz)
                 _tt_abort("failed to read AFM file");
             ttstub_input_close(afm_handle);
 
             FT_Open_Args open_args;
             open_args.flags = FT_OPEN_MEMORY;
-            open_args.memory_base = m_backingData2;
+            open_args.memory_base = self->m_backingData2;
             open_args.memory_size = sz;
 
-            FT_Attach_Stream(m_ftFace, &open_args);
+            FT_Attach_Stream(self->m_ftFace, &open_args);
         }
     }
 
-    m_filename = xstrdup(pathname);
-    m_index = index;
-    m_unitsPerEM = m_ftFace->units_per_EM;
-    m_ascent = unitsToPoints(m_ftFace->ascender);
-    m_descent = unitsToPoints(m_ftFace->descender);
+    self->m_filename = xstrdup(pathname);
+    self->m_index = index;
+    self->m_unitsPerEM = self->m_ftFace->units_per_EM;
+    self->m_ascent = XeTeXFontInst_unitsToPoints(self, self->m_ftFace->ascender);
+    self->m_descent = XeTeXFontInst_unitsToPoints(self, self->m_ftFace->descender);
 
-    postTable = (TT_Postscript *) getFontTable(ft_sfnt_post);
+    postTable = (TT_Postscript *) XeTeXFontInst_getFontTableFT(self, ft_sfnt_post);
     if (postTable != NULL) {
-        m_italicAngle = Fix2D(postTable->italicAngle);
+        self->m_italicAngle = Fix2D(postTable->italicAngle);
     }
 
-    os2Table = (TT_OS2*) getFontTable(ft_sfnt_os2);
+    os2Table = (TT_OS2*) XeTeXFontInst_getFontTableFT(self, ft_sfnt_os2);
     if (os2Table) {
-        m_capHeight = unitsToPoints(os2Table->sCapHeight);
-        m_xHeight = unitsToPoints(os2Table->sxHeight);
+        self->m_capHeight = XeTeXFontInst_unitsToPoints(self, os2Table->sCapHeight);
+        self->m_xHeight = XeTeXFontInst_unitsToPoints(self, os2Table->sxHeight);
     }
 
     // Set up HarfBuzz font
-    hbFace = hb_face_create_for_tables(_get_table, m_ftFace, NULL);
+    hbFace = hb_face_create_for_tables(_get_table, self->m_ftFace, NULL);
     hb_face_set_index(hbFace, index);
-    hb_face_set_upem(hbFace, m_unitsPerEM);
-    m_hbFont = hb_font_create(hbFace);
+    hb_face_set_upem(hbFace, self->m_unitsPerEM);
+    self->m_hbFont = hb_font_create(hbFace);
     hb_face_destroy(hbFace);
 
     if (hbFontFuncs == NULL)
         hbFontFuncs = _get_font_funcs();
 
-    hb_font_set_funcs(m_hbFont, hbFontFuncs, m_ftFace, NULL);
-    hb_font_set_scale(m_hbFont, m_unitsPerEM, m_unitsPerEM);
+    hb_font_set_funcs(self->m_hbFont, hbFontFuncs, self->m_ftFace, NULL);
+    hb_font_set_scale(self->m_hbFont, self->m_unitsPerEM, self->m_unitsPerEM);
     // We don’t want device tables adjustments
-    hb_font_set_ppem(m_hbFont, 0, 0);
+    hb_font_set_ppem(self->m_hbFont, 0, 0);
 
     return;
 }
 
 void
-XeTeXFontInst::setLayoutDirVertical(bool vertical)
+XeTeXFontInst_setLayoutDirVertical(XeTeXFontInst* self, bool vertical)
 {
-    m_vertical = vertical;
+    self->m_vertical = vertical;
 }
 
 void *
-XeTeXFontInst::getFontTable(OTTag tag) const
+XeTeXFontInst_getFontTable(const XeTeXFontInst* self, OTTag tag)
 {
     FT_ULong tmpLength = 0;
-    FT_Error error = FT_Load_Sfnt_Table(m_ftFace, tag, 0, NULL, &tmpLength);
+    FT_Error error = FT_Load_Sfnt_Table(self->m_ftFace, tag, 0, NULL, &tmpLength);
     if (error)
         return NULL;
 
     void* table = xmalloc(tmpLength * sizeof(char));
     if (table != NULL) {
-        error = FT_Load_Sfnt_Table(m_ftFace, tag, 0, (FT_Byte*)table, &tmpLength);
+        error = FT_Load_Sfnt_Table(self->m_ftFace, tag, 0, (FT_Byte*)table, &tmpLength);
         if (error) {
             free((void *) table);
             return NULL;
@@ -437,56 +452,56 @@ XeTeXFontInst::getFontTable(OTTag tag) const
 }
 
 void *
-XeTeXFontInst::getFontTable(FT_Sfnt_Tag tag) const
+XeTeXFontInst_getFontTableFT(const XeTeXFontInst* self, FT_Sfnt_Tag tag) 
 {
-    return FT_Get_Sfnt_Table(m_ftFace, tag);
+    return FT_Get_Sfnt_Table(self->m_ftFace, tag);
 }
 
 void
-XeTeXFontInst::getGlyphBounds(GlyphID gid, GlyphBBox* bbox)
+XeTeXFontInst_getGlyphBounds(XeTeXFontInst* self, GlyphID gid, GlyphBBox* bbox)
 {
     bbox->xMin = bbox->yMin = bbox->xMax = bbox->yMax = 0.0;
 
-    FT_Error error = FT_Load_Glyph(m_ftFace, gid, FT_LOAD_NO_SCALE);
+    FT_Error error = FT_Load_Glyph(self->m_ftFace, gid, FT_LOAD_NO_SCALE);
     if (error)
         return;
 
     FT_Glyph glyph;
-    error = FT_Get_Glyph(m_ftFace->glyph, &glyph);
+    error = FT_Get_Glyph(self->m_ftFace->glyph, &glyph);
     if (error == 0) {
         FT_BBox ft_bbox;
         FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_UNSCALED, &ft_bbox);
-        bbox->xMin = unitsToPoints(ft_bbox.xMin);
-        bbox->yMin = unitsToPoints(ft_bbox.yMin);
-        bbox->xMax = unitsToPoints(ft_bbox.xMax);
-        bbox->yMax = unitsToPoints(ft_bbox.yMax);
+        bbox->xMin = XeTeXFontInst_unitsToPoints(self, ft_bbox.xMin);
+        bbox->yMin = XeTeXFontInst_unitsToPoints(self, ft_bbox.yMin);
+        bbox->xMax = XeTeXFontInst_unitsToPoints(self, ft_bbox.xMax);
+        bbox->yMax = XeTeXFontInst_unitsToPoints(self, ft_bbox.yMax);
         FT_Done_Glyph(glyph);
     }
 }
 
 GlyphID
-XeTeXFontInst::mapCharToGlyph(UChar32 ch) const
+XeTeXFontInst_mapCharToGlyph(const XeTeXFontInst* self, UChar32 ch) 
 {
-    return FT_Get_Char_Index(m_ftFace, ch);
+    return FT_Get_Char_Index(self->m_ftFace, ch);
 }
 
 uint16_t
-XeTeXFontInst::getNumGlyphs() const
+XeTeXFontInst_getNumGlyphs(const XeTeXFontInst* self) 
 {
-    return m_ftFace->num_glyphs;
+    return self->m_ftFace->num_glyphs;
 }
 
 float
-XeTeXFontInst::getGlyphWidth(GlyphID gid)
+XeTeXFontInst_getGlyphWidth(XeTeXFontInst* self, GlyphID gid)
 {
-    return unitsToPoints(_get_glyph_advance(m_ftFace, gid, false));
+    return XeTeXFontInst_unitsToPoints(self, _get_glyph_advance(self->m_ftFace, gid, false));
 }
 
 void
-XeTeXFontInst::getGlyphHeightDepth(GlyphID gid, float* ht, float* dp)
+XeTeXFontInst_getGlyphHeightDepth(XeTeXFontInst* self, GlyphID gid, float* ht, float* dp)
 {
     GlyphBBox bbox;
-    getGlyphBounds(gid, &bbox);
+    XeTeXFontInst_getGlyphBounds(self, gid, &bbox);
 
     if (ht)
         *ht = bbox.yMax;
@@ -495,12 +510,12 @@ XeTeXFontInst::getGlyphHeightDepth(GlyphID gid, float* ht, float* dp)
 }
 
 void
-XeTeXFontInst::getGlyphSidebearings(GlyphID gid, float* lsb, float* rsb)
+XeTeXFontInst_getGlyphSidebearings(XeTeXFontInst* self, GlyphID gid, float* lsb, float* rsb)
 {
-    float width = getGlyphWidth(gid);
+    float width = XeTeXFontInst_getGlyphWidth(self, gid);
 
     GlyphBBox bbox;
-    getGlyphBounds(gid, &bbox);
+    XeTeXFontInst_getGlyphBounds(self, gid, &bbox);
 
     if (lsb)
         *lsb = bbox.xMin;
@@ -509,14 +524,14 @@ XeTeXFontInst::getGlyphSidebearings(GlyphID gid, float* lsb, float* rsb)
 }
 
 float
-XeTeXFontInst::getGlyphItalCorr(GlyphID gid)
+XeTeXFontInst_getGlyphItalCorr(XeTeXFontInst* self, GlyphID gid)
 {
     float rval = 0.0;
 
-    float width = getGlyphWidth(gid);
+    float width = XeTeXFontInst_getGlyphWidth(self, gid);
 
     GlyphBBox bbox;
-    getGlyphBounds(gid, &bbox);
+    XeTeXFontInst_getGlyphBounds(self, gid, &bbox);
 
     if (bbox.xMax > width)
         rval = bbox.xMax - width;
@@ -525,42 +540,42 @@ XeTeXFontInst::getGlyphItalCorr(GlyphID gid)
 }
 
 GlyphID
-XeTeXFontInst::mapGlyphToIndex(const char* glyphName) const
+XeTeXFontInst_mapGlyphToIndex(const XeTeXFontInst* self, const char* glyphName)
 {
-    return FT_Get_Name_Index(m_ftFace, const_cast<char*>(glyphName));
+    return FT_Get_Name_Index(self->m_ftFace, (char*)(glyphName));
 }
 
 const char*
-XeTeXFontInst::getGlyphName(GlyphID gid, int& nameLen)
+XeTeXFontInst_getGlyphName(XeTeXFontInst* self, GlyphID gid, int* nameLen)
 {
-    if (FT_HAS_GLYPH_NAMES(m_ftFace)) {
+    if (FT_HAS_GLYPH_NAMES(self->m_ftFace)) {
         static char buffer[256];
-        FT_Get_Glyph_Name(m_ftFace, gid, buffer, 256);
-        nameLen = strlen(buffer);
+        FT_Get_Glyph_Name(self->m_ftFace, gid, buffer, 256);
+        *nameLen = strlen(buffer);
         return &buffer[0];
     }
     else {
-        nameLen = 0;
+        *nameLen = 0;
         return NULL;
     }
 }
 
 UChar32
-XeTeXFontInst::getFirstCharCode()
+XeTeXFontInst_getFirstCharCode(XeTeXFontInst* self)
 {
     FT_UInt gindex;
-    return FT_Get_First_Char(m_ftFace, &gindex);
+    return FT_Get_First_Char(self->m_ftFace, &gindex);
 }
 
 UChar32
-XeTeXFontInst::getLastCharCode()
+XeTeXFontInst_getLastCharCode(XeTeXFontInst* self)
 {
     FT_UInt gindex;
-    UChar32 ch = FT_Get_First_Char(m_ftFace, &gindex);
+    UChar32 ch = FT_Get_First_Char(self->m_ftFace, &gindex);
     UChar32 prev = ch;
     while (gindex != 0) {
         prev = ch;
-        ch = FT_Get_Next_Char(m_ftFace, ch, &gindex);
+        ch = FT_Get_Next_Char(self->m_ftFace, ch, &gindex);
     }
     return prev;
 }

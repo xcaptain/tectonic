@@ -50,8 +50,8 @@ authorization from the copyright holders.
       print_char(*(ch_ptr++));    \
   } while (0)
 
-XeTeXFontMgr* XeTeXFontMgr::sFontManager = NULL;
-char XeTeXFontMgr::sReqEngine = 0;
+XeTeXFontMgr* XeTeXFontMgr_sFontManager = NULL;
+char XeTeXFontMgr_sReqEngine = 0;
 
 /* use our own fmax function because it seems to be missing on certain platforms
    (solaris2.9, at least) */
@@ -66,9 +66,9 @@ XeTeXFontMgr::GetFontManager()
 {
     if (sFontManager == NULL) {
 #ifdef XETEX_MAC
-        sFontManager = new XeTeXFontMgr_Mac;
+        sFontManager = XeTeXFontMgr_Mac_create();
 #else
-        sFontManager = new XeTeXFontMgr_FC;
+        sFontManager = XeTeXFontMgr_FC_create();
 #endif
         sFontManager->initialize();
     }
@@ -400,7 +400,9 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
         begin_diagnostic();
         print_nl(' ');
         printcstring("-> ");
-        printcstring(getPlatformFontDesc(font->fontRef).c_str());
+		char* font_desc = getPlatformFontDesc(font->fontRef);
+        printcstring(font_desc);
+		free(font_desc);
         end_diagnostic(0);
     }
 

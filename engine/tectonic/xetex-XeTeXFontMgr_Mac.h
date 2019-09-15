@@ -40,6 +40,12 @@ authorization from the copyright holders.
 
 #include <CoreFoundation/CoreFoundation.h>
 
+struct XeTeXFontMgr_Mac {
+	XeTeXFontMgr super_;
+	
+};
+
+/*
 class XeTeXFontMgr_Mac
     : public XeTeXFontMgr
 {
@@ -58,7 +64,7 @@ protected:
 
     virtual NameCollection*         readNames(CTFontDescriptorRef fontRef);
 
-    virtual std::string             getPlatformFontDesc(PlatformFontRef font) const;
+    virtual char*                   getPlatformFontDesc(PlatformFontRef font) const;
 
 private:
     void        addFontsToCaches(CFArrayRef fonts);
@@ -71,5 +77,6 @@ private:
                                  std::list<std::string>* nameList,
                                  CFStringRef nameKey);
 };
+*/
 
 #endif  /* __XETEX_FONT_MGR_MAC_H */

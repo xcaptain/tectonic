@@ -33,8 +33,6 @@ authorization from the copyright holders.
 
 #include "xetex-core.h"
 
-#include <algorithm>
-
 #include "xetex-XeTeXOTMath.h"
 #include "xetex-web.h"
 #include "xetex-XeTeXLayoutInterface.h"
@@ -48,7 +46,7 @@ get_ot_math_constant(int f, int n)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst *font = (XeTeXFontInst *) getFont((XeTeXLayoutEngine) font_layout_engine[f]);
-        hb_font_t *hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         rval = hb_ot_math_get_constant(hbFont, constant);
 
         /* scale according to font size, except the ones that are percentages */
@@ -58,7 +56,7 @@ get_ot_math_constant(int f, int n)
             case HB_OT_MATH_CONSTANT_RADICAL_DEGREE_BOTTOM_RAISE_PERCENT:
                 break;
             default:
-                rval = D2Fix(font->unitsToPoints(rval));
+                rval = D2Fix(XeTeXFontInst_unitsToPoints(font, rval));
                 break;
         }
     }
@@ -112,7 +110,9 @@ const hb_ot_math_constant_t TeX_sym_to_OT_map[] = {
     unknown, // using quad instead for now
     HB_OT_MATH_CONSTANT_AXIS_HEIGHT
 };
-
+static int min_int(int a, int b) {
+	return a < b ? a : b;
+}
 int
 get_native_mathsy_param(int f, int n)
 {
@@ -123,7 +123,7 @@ get_native_mathsy_param(int f, int n)
     }
     else if (n == delim2) { // XXX not sure what OT parameter we should use here;
                             // for now we use 1.5em, clamped to delim1 height
-        rval = std::min<int>(1.5 * font_size[f], get_native_mathsy_param(f, delim1));
+        rval = min_int(1.5 * font_size[f], get_native_mathsy_param(f, delim1));
     }
     else {
         if (n < (int) (sizeof(TeX_sym_to_OT_map) / sizeof(hb_ot_math_constant_t))) {
@@ -189,14 +189,14 @@ get_ot_math_variant(int f, int g, int v, int32_t* adv, int horiz)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst *font = (XeTeXFontInst *) getFont((XeTeXLayoutEngine) font_layout_engine[f]);
-        hb_font_t *hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         hb_ot_math_glyph_variant_t variant[1];
         unsigned int count = 1;
         hb_ot_math_get_glyph_variants(hbFont, g, horiz ? HB_DIRECTION_RTL : HB_DIRECTION_TTB, v, &count, variant);
 
         if (count > 0) {
             rval = variant->glyph;
-            *adv = D2Fix(font->unitsToPoints(variant->advance));
+            *adv = D2Fix(XeTeXFontInst_unitsToPoints(font, variant->advance));
         }
     }
 
@@ -211,7 +211,7 @@ get_ot_assembly_ptr(int f, int g, int horiz)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst *font = (XeTeXFontInst *) getFont((XeTeXLayoutEngine) font_layout_engine[f]);
-        hb_font_t* hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
 
         unsigned int count = hb_ot_math_get_glyph_assembly(hbFont, g,
                                                            horiz ? HB_DIRECTION_RTL : HB_DIRECTION_TTB,
@@ -249,9 +249,9 @@ get_ot_math_ital_corr(int f, int g)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        hb_font_t* hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         rval = hb_ot_math_get_glyph_italics_correction(hbFont, g);
-        rval = D2Fix(font->unitsToPoints(rval));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, rval));
     }
 
     return rval;
@@ -264,9 +264,9 @@ get_ot_math_accent_pos(int f, int g)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        hb_font_t* hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         rval = hb_ot_math_get_glyph_top_accent_attachment(hbFont, g);
-        rval = D2Fix(font->unitsToPoints(rval));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, rval));
     }
 
     return rval;
@@ -279,9 +279,9 @@ ot_min_connector_overlap(int f)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        hb_font_t* hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         rval = hb_ot_math_get_min_connector_overlap(hbFont, HB_DIRECTION_RTL);
-        rval = D2Fix(font->unitsToPoints(rval));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, rval));
     }
 
     return rval;
@@ -294,7 +294,7 @@ getMathKernAt(int f, int g, hb_ot_math_kern_t side, int height)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst* font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        hb_font_t* hbFont = font->getHbFont();
+        hb_font_t* hbFont = XeTeXFontInst_getHbFont(font);;
         rval = hb_ot_math_get_glyph_kerning(hbFont, g, side, height);
     }
 
@@ -342,8 +342,8 @@ get_ot_math_kern(int f, int g, int sf, int sg, int cmd, int shift)
         float corr_height_top = 0.0, corr_height_bot = 0.0;
 
         if (cmd == sup_cmd) { // superscript
-            corr_height_top =  font->pointsToUnits(glyph_height(f, g));
-            corr_height_bot = -font->pointsToUnits(glyph_depth(sf, sg) + Fix2D(shift));
+            corr_height_top =  XeTeXFontInst_pointsToUnits(font, glyph_height(f, g));
+            corr_height_bot = -XeTeXFontInst_pointsToUnits(font, glyph_depth(sf, sg) + Fix2D(shift));
 
             kern = getMathKernAt(f, g, HB_OT_MATH_KERN_TOP_RIGHT, corr_height_top);
             skern = getMathKernAt(sf, sg, HB_OT_MATH_KERN_BOTTOM_LEFT, corr_height_top);
@@ -355,8 +355,8 @@ get_ot_math_kern(int f, int g, int sf, int sg, int cmd, int shift)
                 rval = kern + skern;
 
         } else if (cmd == sub_cmd) { // subscript
-            corr_height_top =  font->pointsToUnits(glyph_height(sf, sg) - Fix2D(shift));
-            corr_height_bot = -font->pointsToUnits(glyph_depth(f, g));
+            corr_height_top =  XeTeXFontInst_pointsToUnits(font, glyph_height(sf, sg) - Fix2D(shift));
+            corr_height_bot = -XeTeXFontInst_pointsToUnits(font, glyph_depth(f, g));
 
             kern = getMathKernAt(f, g, HB_OT_MATH_KERN_BOTTOM_RIGHT, corr_height_top);
             skern = getMathKernAt(sf, sg, HB_OT_MATH_KERN_TOP_LEFT, corr_height_top);
@@ -371,7 +371,7 @@ get_ot_math_kern(int f, int g, int sf, int sg, int cmd, int shift)
             assert(0); // we should not reach here
         }
 
-        return D2Fix(font->unitsToPoints(rval));
+        return D2Fix(XeTeXFontInst_unitsToPoints(font, rval));
     }
 
     return 0;
@@ -402,7 +402,7 @@ ot_part_start_connector(int f, const GlyphAssembly* a, int i)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        rval = D2Fix(font->unitsToPoints(a->parts[i].start_connector_length));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, a->parts[i].start_connector_length));
     }
 
     return rval;
@@ -415,7 +415,7 @@ ot_part_end_connector(int f, const GlyphAssembly* a, int i)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        rval = D2Fix(font->unitsToPoints(a->parts[i].end_connector_length));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, a->parts[i].end_connector_length));
     }
 
     return rval;
@@ -428,7 +428,7 @@ ot_part_full_advance(int f, const GlyphAssembly* a, int i)
 
     if (font_area[f] == OTGR_FONT_FLAG) {
         XeTeXFontInst*  font = (XeTeXFontInst*)getFont((XeTeXLayoutEngine)font_layout_engine[f]);
-        rval = D2Fix(font->unitsToPoints(a->parts[i].full_advance));
+        rval = D2Fix(XeTeXFontInst_unitsToPoints(font, a->parts[i].full_advance));
     }
 
     return rval;

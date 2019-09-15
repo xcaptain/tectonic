@@ -218,7 +218,7 @@ XeTeXFontMgr_Mac::terminate()
     }
 }
 
-std::string
+char*
 XeTeXFontMgr_Mac::getPlatformFontDesc(PlatformFontRef descriptor) const
 {
     std::string path;
@@ -246,5 +246,5 @@ XeTeXFontMgr_Mac::getPlatformFontDesc(PlatformFontRef descriptor) const
     }
     if (path.length() == 0)
         path = "[unknown]";
-    return path;
+    return strdup(path.c_str());
 }

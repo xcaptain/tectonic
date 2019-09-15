@@ -48,11 +48,15 @@ authorization from the copyright holders.
 
 #include <ApplicationServices/ApplicationServices.h>
 
+struct XeTeXFontInst_Mac {
+	XeTeXFontInst super_;
+    CTFontDescriptorRef m_descriptor;
+    CTFontRef           m_fontRef;	
+};
+
 class XeTeXFontInst_Mac : public XeTeXFontInst
 {
 protected:
-    CTFontDescriptorRef m_descriptor;
-    CTFontRef           m_fontRef;
 
 public:
                  XeTeXFontInst_Mac(CTFontDescriptorRef descriptor, float pointSize, int &status);

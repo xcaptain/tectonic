@@ -352,14 +352,13 @@ XeTeXFontMgr_FC::terminate()
     }
 }
 
-std::string
+char*
 XeTeXFontMgr_FC::getPlatformFontDesc(PlatformFontRef font) const
 {
-    std::string path;
     FcChar8* s;
     if (FcPatternGetString(font, FC_FILE, 0, (FcChar8**)&s) == FcResultMatch)
-        path = (char*)s;
+        path = strdup(s);
     else
-        path = "[unknown]";
+        path = strdup("[unknown]");
     return path;
 }
