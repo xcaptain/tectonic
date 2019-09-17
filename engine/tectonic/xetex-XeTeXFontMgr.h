@@ -65,10 +65,11 @@ struct XeTeXFontMgrFamily {
 	uint16_t              maxWidth;
 	int16_t               minSlant;
 	int16_t               maxSlant;
-}
+};
+
 typedef struct XeTeXFontMgrFamily XeTeXFontMgrFamily;
 
-XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
+inline XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
 {
 	XeTeXFontMgrFamily* self = malloc(sizeof(XeTeXFontMgrFamily));
 	self->minWeight = (0);
@@ -79,12 +80,12 @@ XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
 	self->maxSlant = (0);
     self->styles = CppStdMapStr2Font_create();
 }
-void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
+inline void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
 {
 	if(!self)
 		return;
 	CppStdMapStr2Font_delete(self->styles);
-	delete self;
+	free(self);
 }
 
 struct XeTeXFontMgrFont {
@@ -145,6 +146,27 @@ struct XeTeXFontMgrNameCollection {
 	CppStdString*        m_subFamily;
 };
 typedef struct XeTeXFontMgrNameCollection XeTeXFontMgrNameCollection;
+
+inline XeTeXFontMgrNameCollection* XeTeXFontMgrNameCollection_create() {
+	XeTeXFontMgrNameCollection* self = malloc(sizeof(XeTeXFontMgrNameCollection));
+	self->m_familyNames = CppStdListOfString_create();
+	self->m_styleNames = CppStdListOfString_create();
+	self->m_fullNames = CppStdListOfString_create();
+	self->m_psName = CppStdString_create();
+	self->m_subFamily = CppStdString_create();
+	return self;
+}
+
+inline void XeTeXFontMgrNameCollection_delete(XeTeXFontMgrNameCollection* self) {
+	if(!self)
+		return;
+	CppStdListOfString_delete(self->m_familyNames);
+	CppStdListOfString_delete(self->m_styleNames);
+	CppStdListOfString_delete(self->m_fullNames);
+	CppStdString_delete(self->m_psName);
+	CppStdString_delete(self->m_subFamily);
+	free(self);
+}
 
 struct XeTeXFontMgr {
 	void              (*m_subdtor)(struct XeTeXFontMgr* self);

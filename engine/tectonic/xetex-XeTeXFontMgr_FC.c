@@ -63,12 +63,12 @@ convertToUtf8(UConverter* conv, const unsigned char* name, int len)
 
     if (2 * (len + 1) > bufSize) {
         if (buffer1 != NULL) {
-            delete[] buffer1;
-            delete[] buffer2;
+            free(buffer1);
+            free(buffer2);
         }
         bufSize = 2 * len + 100;
-        buffer1 = new char[bufSize];
-        buffer2 = new char[bufSize];
+        buffer1 = malloc(sizeof(char) * bufSize);
+        buffer2 = malloc(sizeof(char) * bufSize);
     }
 
     UErrorCode status = U_ZERO_ERROR;
@@ -76,14 +76,14 @@ convertToUtf8(UConverter* conv, const unsigned char* name, int len)
     len = ucnv_fromUChars(utf8Conv, buffer2, bufSize, (UChar*)buffer1, len, &status);
     buffer2[len] = 0;
 
-    delete[] buffer1;
+    free(buffer1);
     return buffer2;
 }
 
-XeTeXFontMgr::NameCollection*
-XeTeXFontMgr_FC::readNames(FcPattern* pat)
+XeTeXFontMgrNameCollection*
+XeTeXFontMgr_FC_readNames(XeTeXFontMgr* self, FcPattern* pat)
 {
-    NameCollection* names = new NameCollection;
+    XeTeXFontMgrNameCollection* names = XeTeXFontMgrNameCollection_create();
 
     char* pathname;
     if (FcPatternGetString(pat, FC_FILE, 0, (FcChar8**)&pathname) != FcResultMatch)
@@ -99,13 +99,13 @@ XeTeXFontMgr_FC::readNames(FcPattern* pat)
     const char* name = FT_Get_Postscript_Name(face);
     if (name == NULL)
         return names;
-    names->m_psName = name;
+    CppStdString_assign_from_const_char_ptr(names->m_psName, name);
 
     // for sfnt containers, we'll read the name table ourselves, not rely on Fontconfig
     if (FT_IS_SFNT(face)) {
         unsigned int i;
-        std::list<std::string>  familyNames;
-        std::list<std::string>  subFamilyNames;
+        CppStdListOfString* familyNames = CppStdListOfString_create();
+        CppStdListOfString* subFamilyNames = CppStdListOfString_create();
         FT_SfntName nameRec;
         for (i = 0; i < FT_Get_Sfnt_Name_Count(face); ++i) {
             char* utf8name = NULL;
@@ -129,38 +129,40 @@ XeTeXFontMgr_FC::readNames(FcPattern* pat)
                             utf8name = convertToUtf8(utf16beConv, nameRec.string, nameRec.string_len);
 
                         if (utf8name != NULL) {
-                            std::list<std::string>* nameList = NULL;
+                            CppStdListOfString* nameList = NULL;
                             switch (nameRec.name_id) {
                                 case kFontFullName:
-                                    nameList = &names->m_fullNames;
+                                    nameList = names->m_fullNames;
                                     break;
                                 case kFontFamilyName:
-                                    nameList = &names->m_familyNames;
+                                    nameList = names->m_familyNames;
                                     break;
                                 case kFontStyleName:
-                                    nameList = &names->m_styleNames;
+                                    nameList = names->m_styleNames;
                                     break;
                                 case kPreferredFamilyName:
-                                    nameList = &familyNames;
+                                    nameList = familyNames;
                                     break;
                                 case kPreferredSubfamilyName:
-                                    nameList = &subFamilyNames;
+                                    nameList = subFamilyNames;
                                     break;
                             }
                             if (preferredName)
                                 prependToList(nameList, utf8name);
                             else
                                 appendToList(nameList, utf8name);
-                            delete[] utf8name;
+                            free(utf8name);
                         }
                     }
                     break;
             }
         }
-        if (familyNames.size() > 0)
-            names->m_familyNames = familyNames;
-        if (subFamilyNames.size() > 0)
-            names->m_styleNames = subFamilyNames;
+        if (CppStdListOfString_size(familyNames) > 0)
+            CppStdListOfString_assign(names->m_familyNames, familyNames);
+        if (CppStdListOfString_size(subFamilyNames) > 0)
+            CppStdListOfString_assign(names->m_styleNames,subFamilyNames);
+		CppStdListOfString_delete(subFamilyNames);
+		CppStdListOfString_delete(familyNames);
     } else {
         index = 0;
         while (FcPatternGetString(pat, FC_FULLNAME, index++, (FcChar8**)&name) == FcResultMatch)
@@ -172,13 +174,15 @@ XeTeXFontMgr_FC::readNames(FcPattern* pat)
         while (FcPatternGetString(pat, FC_STYLE, index++, (FcChar8**)&name) == FcResultMatch)
             appendToList(&names->m_styleNames, name);
 
-        if (names->m_fullNames.size() == 0) {
-            std::string fullName(names->m_familyNames.front());
-            if (names->m_styleNames.size() > 0) {
-                fullName += " ";
-                fullName += names->m_styleNames.front();
+        if (CppStdListOfString_size(names->m_fullNames) == 0) {
+			CppStdString* fullName = CppStdString_create();
+			CppStdString_append_const_char_ptr(fullName, CppStdListOfString_front_const_char_ptr(names->m_familyNames));
+            if (CppStdListOfString_size(names->m_styleNames) > 0) {
+				CppStdString_append_const_char_ptr(fullName, " ");
+				CppStdString_append_const_char_ptr(fullName, CppStdListOfString_front_const_char_ptr(names->m_styleNames));
             }
-            names->m_fullNames.push_back(fullName);
+			CppStdListOfString_append_copy_CppStdString(names->m_fullNames, fullName);
+			CppStdString_delete(fullName);
         }
     }
 
@@ -188,9 +192,9 @@ XeTeXFontMgr_FC::readNames(FcPattern* pat)
 }
 
 void
-XeTeXFontMgr_FC::getOpSizeRecAndStyleFlags(Font* theFont)
+XeTeXFontMgr_FC_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont)
 {
-    XeTeXFontMgr::getOpSizeRecAndStyleFlags(theFont);
+    XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(self, theFont);
 
     if (theFont->weight == 0 && theFont->width == 0) {
         // try to get values from FontConfig, as it apparently wasn't an sfnt
@@ -206,9 +210,9 @@ XeTeXFontMgr_FC::getOpSizeRecAndStyleFlags(Font* theFont)
 }
 
 void
-XeTeXFontMgr_FC::cacheFamilyMembers(const std::list<std::string>& familyNames)
+XeTeXFontMgr_FC_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString* familyNames)
 {
-    if (familyNames.size() == 0)
+    if (CppStdListOfString_size(self->familyNames) == 0)
         return;
     for (int f = 0; f < allFonts->nfont; ++f) {
         FcPattern* pat = allFonts->fonts[f];
@@ -231,7 +235,7 @@ XeTeXFontMgr_FC::cacheFamilyMembers(const std::list<std::string>& familyNames)
 }
 
 void
-XeTeXFontMgr_FC::searchForHostPlatformFonts(const std::string& name)
+XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const std::string& name)
 {
     if (cachedAll) // we've already loaded everything on an earlier search
         return;
@@ -307,8 +311,9 @@ XeTeXFontMgr_FC::searchForHostPlatformFonts(const std::string& name)
 }
 
 void
-XeTeXFontMgr_FC::initialize()
+XeTeXFontMgr_FC_initialize(XeTeXFontMgr* self)
 {
+	XeTeXFontMgr_FC* real_self = (XeTeXFontMgr_FC*)self;
     if (FcInit() == FcFalse)
         _tt_abort("fontconfig initialization failed");
 
@@ -325,18 +330,19 @@ XeTeXFontMgr_FC::initialize()
     FcPattern* pat = FcNameParse((const FcChar8*)":outline=true");
     FcObjectSet* os = FcObjectSetBuild(FC_FAMILY, FC_STYLE, FC_FILE, FC_INDEX,
                                        FC_FULLNAME, FC_WEIGHT, FC_WIDTH, FC_SLANT, FC_FONTFORMAT, NULL);
-    allFonts = FcFontList(FcConfigGetCurrent(), pat, os);
+    real_self->allFonts = FcFontList(FcConfigGetCurrent(), pat, os);
     FcObjectSetDestroy(os);
     FcPatternDestroy(pat);
 
-    cachedAll = false;
+    real_self->cachedAll = false;
 }
 
 void
-XeTeXFontMgr_FC::terminate()
+XeTeXFontMgr_FC_terminate(XeTeXFontMgr* self)
 {
-    FcFontSetDestroy(allFonts);
-    allFonts = NULL;
+	XeTeXFontMgr_FC* real_self = (XeTeXFontMgr_FC*)self;
+    FcFontSetDestroy(real_self->allFonts);
+    real_self->allFonts = NULL;
 
     if (macRomanConv != NULL) {
         ucnv_close(macRomanConv);
@@ -353,9 +359,10 @@ XeTeXFontMgr_FC::terminate()
 }
 
 char*
-XeTeXFontMgr_FC::getPlatformFontDesc(PlatformFontRef font) const
+XeTeXFontMgr_FC_getPlatformFontDesc(const XeTeXFontMgr* self, PlatformFontRef font)
 {
     FcChar8* s;
+	const char* path;
     if (FcPatternGetString(font, FC_FILE, 0, (FcChar8**)&s) == FcResultMatch)
         path = strdup(s);
     else

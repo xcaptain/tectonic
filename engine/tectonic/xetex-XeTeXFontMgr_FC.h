@@ -41,8 +41,9 @@ struct XeTeXFontMgr_FC {
 	
     FcFontSet*  allFonts;
     bool        cachedAll;
-}
+};
 
+typedef struct XeTeXFontMgr_FC XeTeXFontMgr_FC;
 
 /*
 class XeTeXFontMgr_FC

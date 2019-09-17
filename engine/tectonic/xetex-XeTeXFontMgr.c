@@ -62,25 +62,25 @@ my_fmax(double x, double y)
 }
 
 XeTeXFontMgr*
-XeTeXFontMgr::GetFontManager()
+XeTeXFontMgr_GetFontManager()
 {
-    if (sFontManager == NULL) {
+    if (XeTeXFontMgr_sFontManager == NULL) {
 #ifdef XETEX_MAC
-        sFontManager = XeTeXFontMgr_Mac_create();
+        XeTeXFontMgr_sFontManager = XeTeXFontMgr_Mac_create();
 #else
-        sFontManager = XeTeXFontMgr_FC_create();
+        XeTeXFontMgr_sFontManager = XeTeXFontMgr_FC_create();
 #endif
-        sFontManager->initialize();
+        XeTeXFontMgr_sFontManager->initialize();
     }
 
-    return sFontManager;
+    return XeTeXFontMgr_sFontManager;
 }
 
 void
-XeTeXFontMgr::Terminate()
+XeTeXFontMgr_Terminate()
 {
-    if (sFontManager != NULL) {
-        sFontManager->terminate();
+    if (XeTeXFontMgr_sFontManager != NULL) {
+        XeTeXFontMgr_sFontManager->terminate();
         // we don't actually deallocate the manager, just ask it to clean up
         // any auxiliary data such as the cocoa pool or freetype/fontconfig stuff
         // as we still need to access font names after this is called
@@ -88,29 +88,29 @@ XeTeXFontMgr::Terminate()
 }
 
 void
-XeTeXFontMgr::Destroy()
+XeTeXFontMgr_Destroy()
 {
     // Here we actually fully destroy the font manager.
 
-    if (sFontManager != NULL) {
-        delete sFontManager;
-        sFontManager = NULL;
+    if (XeTeXFontMgr_sFontManager != NULL) {
+        delete XeTeXFontMgr_sFontManager;
+        XeTeXFontMgr_sFontManager = NULL;
     }
 }
 
 PlatformFontRef
-XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
+XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, double ptSize)
     // ptSize is in TeX points, or negative for 'scaled' factor
     // "variant" string will be shortened (in-place) by removal of /B and /I if present
 {
     std::string nameStr(name);
-    Font* font = NULL;
+    XeTeXFontMgrFont* font = NULL;
     int dsize = 100;
     loaded_font_design_size = 655360L;
 
     for (int pass = 0; pass < 2; ++pass) {
         // try full name as given
-        std::map<std::string,Font*>::iterator i = m_nameToFont.find(nameStr);
+        std::map<std::string,XeTeXFontMgrFont*>::iterator i = m_nameToFont.find(nameStr);
         if (i != m_nameToFont.end()) {
             font = i->second;
             if (font->opSizeInfo.designSize != 0)
@@ -122,7 +122,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
         int hyph = nameStr.find('-');
         if (hyph > 0 && hyph < (int) (nameStr.length() - 1)) {
             std::string family(nameStr.begin(), nameStr.begin() + hyph);
-            std::map<std::string,Family*>::iterator f = m_nameToFamily.find(family);
+            std::map<std::string,XeTeXFontMgrFamily*>::iterator f = m_nameToFamily.find(family);
             if (f != m_nameToFamily.end()) {
                 std::string style(nameStr.begin() + hyph + 1, nameStr.end());
                 i = f->second->styles->find(style);
@@ -145,7 +145,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
         }
 
         // try for the name as a family name
-        std::map<std::string,Family*>::iterator f = m_nameToFamily.find(nameStr);
+        std::map<std::string,XeTeXFontMgrFamily*>::iterator f = m_nameToFamily.find(nameStr);
 
         if (f != m_nameToFamily.end()) {
             // look for a family member with the "regular" bit set in OS/2
@@ -201,7 +201,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
     if (font == NULL)
         return 0;
 
-    Family* parent = font->parent;
+    XeTeXFontMgrFamily* parent = font->parent;
 
     // if there are variant requests, try to apply them
     // and delete B, I, and S=... codes from the string, just retain /engine option
@@ -288,9 +288,9 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
         }
         strcpy(variant, varString.c_str());
 
-        std::map<std::string,Font*>::iterator i;
+        std::map<std::string,XeTeXFontMgrFont*>::iterator i;
         if (reqItal) {
-            Font* bestMatch = font;
+            XeTeXFontMgrFont* bestMatch = font;
             if (font->slant < parent->maxSlant)
                 // try for a face with more slant
                 bestMatch = bestMatchFromFamily(parent, font->weight, font->width, parent->maxSlant);
@@ -301,7 +301,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
 
             if (parent->minWeight == parent->maxWeight && bestMatch->isBold != font->isBold) {
                 // try again using the bold flag, as we can't trust weight values
-                Font* newBest = NULL;
+                XeTeXFontMgrFont* newBest = NULL;
                 for (i = parent->styles->begin(); i != parent->styles->end(); ++i) {
                     if (i->second->isBold == font->isBold) {
                         if (newBest == NULL && i->second->isItalic != font->isItalic) {
@@ -339,7 +339,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
 
         if (reqBold) {
             // try for more boldness, with the same width and slant
-            Font* bestMatch = font;
+            XeTeXFontMgrFont* bestMatch = font;
             if (font->weight < parent->maxWeight) {
                 // try to increase weight by 1/2 x (max - min), rounding up
                 bestMatch = bestMatchFromFamily(parent,
@@ -347,7 +347,7 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
                     font->width, font->slant);
                 if (parent->minSlant == parent->maxSlant) {
                     // double-check the italic flag, as we can't trust slant values
-                    Font* newBest = NULL;
+                    XeTeXFontMgrFont* newBest = NULL;
                     for (i = parent->styles->begin(); i != parent->styles->end(); ++i) {
                         if (i->second->isItalic == font->isItalic) {
                             if (newBest == NULL || weightAndWidthDiff(i->second, bestMatch) < weightAndWidthDiff(newBest, bestMatch))
@@ -377,8 +377,8 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
         ptSize = ptSize * 10.0; // convert to decipoints for comparison with the opSize values
         double bestMismatch = my_fmax(font->opSizeInfo.minSize - ptSize, ptSize - font->opSizeInfo.maxSize);
         if (bestMismatch > 0.0) {
-            Font* bestMatch = font;
-            for (std::map<std::string,Font*>::iterator i = parent->styles->begin(); i != parent->styles->end(); ++i) {
+            XeTeXFontMgrFont* bestMatch = font;
+            for (std::map<std::string,XeTeXFontMgrFont*>::iterator i = parent->styles->begin(); i != parent->styles->end(); ++i) {
                 if (i->second->opSizeInfo.subFamilyID != font->opSizeInfo.subFamilyID)
                     continue;
                 double mismatch = my_fmax(i->second->opSizeInfo.minSize - ptSize, ptSize - i->second->opSizeInfo.maxSize);
@@ -410,9 +410,9 @@ XeTeXFontMgr::findFont(const char* name, char* variant, double ptSize)
 }
 
 const char*
-XeTeXFontMgr::getFullName(PlatformFontRef font) const
+XeTeXFontMgr_getFullName(const XeTeXFontMgr* self, PlatformFontRef font)
 {
-    std::map<PlatformFontRef,Font*>::const_iterator i = m_platformRefToFont.find(font);
+    std::map<PlatformFontRef,XeTeXFontMgrFont*>::const_iterator i = m_platformRefToFont.find(font);
     if (i == m_platformRefToFont.end())
         _tt_abort("internal error %d in XeTeXFontMgr", 2);
     if (i->second->m_fullName != NULL)
@@ -422,7 +422,7 @@ XeTeXFontMgr::getFullName(PlatformFontRef font) const
 }
 
 int
-XeTeXFontMgr::weightAndWidthDiff(const Font* a, const Font* b) const
+XeTeXFontMgr_weightAndWidthDiff(const XeTeXFontMgr* self, const XeTeXFontMgrFont* a, const XeTeXFontMgrFont* b)
 {
     if (a->weight == 0 && a->width == 0) {
         // assume there was no OS/2 info
@@ -440,7 +440,7 @@ XeTeXFontMgr::weightAndWidthDiff(const Font* a, const Font* b) const
 }
 
 int
-XeTeXFontMgr::styleDiff(const Font* a, int wt, int wd, int slant) const
+XeTeXFontMgr_styleDiff(const XeTeXFontMgr* self, const XeTeXFontMgrFont* a, int wt, int wd, int slant) 
 {
     int widDiff = labs(a->width - wd);
     if (widDiff < 10)
@@ -449,19 +449,19 @@ XeTeXFontMgr::styleDiff(const Font* a, int wt, int wd, int slant) const
     return labs(labs(a->slant) - labs(slant)) * 2 + labs(a->weight - wt) + widDiff;
 }
 
-XeTeXFontMgr::Font*
-XeTeXFontMgr::bestMatchFromFamily(const Family* fam, int wt, int wd, int slant) const
+XeTeXFontMgrFont*
+XeTeXFontMgr_bestMatchFromFamily(const XeTeXFontMgr* self, const XeTeXFontMgrFamily* fam, int wt, int wd, int slant) 
 {
-    Font* bestMatch = NULL;
-    for (std::map<std::string,Font*>::iterator s = fam->styles->begin(); s != fam->styles->end(); ++s)
+    XeTeXFontMgrFont* bestMatch = NULL;
+    for (std::map<std::string,XeTeXFontMgrFont*>::iterator s = fam->styles->begin(); s != fam->styles->end(); ++s)
         if (bestMatch == NULL || styleDiff(s->second, wt, wd, slant) < styleDiff(bestMatch, wt, wd, slant))
             bestMatch = s->second;
     return bestMatch;
 }
 
 
-XeTeXFontMgr::OpSizeRec*
-XeTeXFontMgr::getOpSize(XeTeXFont font)
+XeTeXFontMgrOpSizeRec*
+XeTeXFontMgr_getOpSize(XeTeXFontMgr* self, XeTeXFont font)
 {
     hb_font_t *hbFont = ((XeTeXFontInst *) font)->getHbFont();
 
@@ -487,7 +487,7 @@ XeTeXFontMgr::getOpSize(XeTeXFont font)
 
 
 double
-XeTeXFontMgr::getDesignSize(XeTeXFont font)
+XeTeXFontMgr_getDesignSize(XeTeXFontMgr* self, XeTeXFont font)
 {
     OpSizeRec* pSizeRec = getOpSize(font);
 
@@ -501,7 +501,7 @@ XeTeXFontMgr::getDesignSize(XeTeXFont font)
 
 
 void
-XeTeXFontMgr::getOpSizeRecAndStyleFlags(Font* theFont)
+XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont)
 {
     XeTeXFont font = createFont(theFont->fontRef, 655360);
     XeTeXFontInst* fontInst = (XeTeXFontInst*) font;
@@ -556,7 +556,7 @@ XeTeXFontMgr::getOpSizeRecAndStyleFlags(Font* theFont)
 
 // append a name but only if it's not already in the list
 void
-XeTeXFontMgr::appendToList(std::list<std::string>* list, const char* str)
+XeTeXFontMgr_appendToList(XeTeXFontMgr* self, std::list<std::string>* list, const char* str)
 {
     for (std::list<std::string>::const_iterator i = list->begin(); i != list->end(); ++i)
         if (*i == str)
@@ -566,7 +566,7 @@ XeTeXFontMgr::appendToList(std::list<std::string>* list, const char* str)
 
 // prepend a name, removing it from later in the list if present
 void
-XeTeXFontMgr::prependToList(std::list<std::string>* list, const char* str)
+XeTeXFontMgr_prependToList(XeTeXFontMgr* self, std::list<std::string>* list, const char* str)
 {
     for (std::list<std::string>::iterator i = list->begin(); i != list->end(); ++i)
         if (*i == str) {
@@ -577,7 +577,7 @@ XeTeXFontMgr::prependToList(std::list<std::string>* list, const char* str)
 }
 
 void
-XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* names)
+XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const NameCollection* names)
 {
     if (m_platformRefToFont.find(platformFont) != m_platformRefToFont.end())
         return; // this font has already been cached
@@ -588,7 +588,7 @@ XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* name
     if (m_psNameToFont.find(names->m_psName) != m_psNameToFont.end())
         return; // duplicates an earlier PS name, so skip
 
-    Font* thisFont = new Font(platformFont);
+    XeTeXFontMgrFont* thisFont = new XeTeXFontMgrFont(platformFont);
     thisFont->m_psName = new std::string(names->m_psName);
     getOpSizeRecAndStyleFlags(thisFont);
 
@@ -610,10 +610,10 @@ XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* name
 
     std::list<std::string>::const_iterator i;
     for (i = names->m_familyNames.begin(); i != names->m_familyNames.end(); ++i) {
-        std::map<std::string,Family*>::iterator iFam = m_nameToFamily.find(*i);
-        Family* family;
+        std::map<std::string,XeTeXFontMgrFamily*>::iterator iFam = m_nameToFamily.find(*i);
+        XeTeXFontMgrFamily* family;
         if (iFam == m_nameToFamily.end()) {
-            family = new Family;
+            family = new XeTeXFontMgrFamily;
             m_nameToFamily[*i] = family;
             family->minWeight = thisFont->weight;
             family->maxWeight = thisFont->weight;
@@ -642,7 +642,7 @@ XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* name
 
         // ensure all style names in the family point to thisFont
         for (std::list<std::string>::const_iterator j = names->m_styleNames.begin(); j != names->m_styleNames.end(); ++j) {
-            std::map<std::string,Font*>::iterator iFont = family->styles->find(*j);
+            std::map<std::string,XeTeXFontMgrFont*>::iterator iFont = family->styles->find(*j);
             if (iFont == family->styles->end())
                 (*family->styles)[*j] = thisFont;
 /*
@@ -654,7 +654,7 @@ XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* name
     }
 
     for (i = names->m_fullNames.begin(); i != names->m_fullNames.end(); ++i) {
-        std::map<std::string,Font*>::iterator iFont = m_nameToFont.find(*i);
+        std::map<std::string,XeTeXFontMgrFont*>::iterator iFont = m_nameToFont.find(*i);
         if (iFont == m_nameToFont.end())
             m_nameToFont[*i] = thisFont;
 /*
@@ -666,6 +666,6 @@ XeTeXFontMgr::addToMaps(PlatformFontRef platformFont, const NameCollection* name
 }
 
 void
-XeTeXFontMgr::terminate()
+XeTeXFontMgr_terminate(XeTeXFontMgr* self)
 {
 }
