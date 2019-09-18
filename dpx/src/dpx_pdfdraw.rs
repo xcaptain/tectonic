@@ -41,15 +41,8 @@ use super::dpx_pdfdev::{
 };
 use super::dpx_pdfdoc::pdf_doc_add_page_content;
 
-use lazy_static::lazy_static;
-use std::sync::Mutex;
-
-lazy_static! { // TODO move to context structure
-    static ref gs_stack: Mutex<Vec<pdf_gstate>> = Mutex::new({
-        let mut v = vec![];
-        v
-    });
-}
+// TODO move to context structure
+static mut gs_stack: Vec<pdf_gstate> = Vec::new();
 
 use libc::sprintf;
 
@@ -810,14 +803,14 @@ unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_init_gstates() {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
     *stack = vec![];
     let gs = pdf_gstate::init();
     stack.push(gs);
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_clear_gstates() {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
 
     if stack.len() > 1 {
         /* at least 1 elem. */
@@ -827,7 +820,7 @@ pub unsafe extern "C" fn pdf_dev_clear_gstates() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_gsave() -> i32 {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
     let gs0 = stack.top();
 
     let mut gs1 = pdf_gstate::init();
@@ -839,7 +832,7 @@ pub unsafe extern "C" fn pdf_dev_gsave() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_grestore() -> i32 {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
     if stack.len() <= 1 {
         /* Initial state at bottom */
         warn!("Too many grestores."); /* op: Q */
@@ -852,7 +845,7 @@ pub unsafe extern "C" fn pdf_dev_grestore() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_push_gstate() -> i32 {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
 
     let gs0 = pdf_gstate::init();
     stack.push(gs0);
@@ -861,7 +854,7 @@ pub unsafe extern "C" fn pdf_dev_push_gstate() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_pop_gstate() -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     if gss.len() <= 1 {
         /* Initial state at bottom */
         warn!("Too many grestores.");
@@ -872,13 +865,13 @@ pub unsafe extern "C" fn pdf_dev_pop_gstate() -> i32 {
 }
 #[no_mangle]
 pub extern "C" fn pdf_dev_current_depth() -> usize {
-    let stack = gs_stack.lock().unwrap();
+    let stack = unsafe { &mut gs_stack };
     stack.len() - 1
     /* 0 means initial state */
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_grestore_to(mut depth: usize) {
-    let mut gss = gs_stack.lock().unwrap(); /* op: Q */
+    let mut gss = unsafe { &mut gs_stack }; /* op: Q */
     assert!(depth >= 0);
     if gss.len() > depth + 1 {
         warn!("Closing pending transformations at end of page/XObject.");
@@ -891,14 +884,14 @@ pub unsafe extern "C" fn pdf_dev_grestore_to(mut depth: usize) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_currentpoint(p: &mut pdf_coord) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     *p = gs.cp.clone();
     0i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_currentmatrix(M: &mut pdf_tmatrix) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     *M = gs.matrix.clone();
     0i32
@@ -911,7 +904,7 @@ pub unsafe extern "C" fn pdf_dev_currentmatrix(M: &mut pdf_tmatrix) -> i32 {
  */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut force: i32) {
-    let mut stack = gs_stack.lock().unwrap();
+    let mut stack = unsafe { &mut gs_stack };
     let mut len: i32 = 0;
     let mut gs = stack.top();
     let current = if mask as i32 != 0 {
@@ -957,7 +950,7 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_concat(M: &pdf_tmatrix) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1021,7 +1014,7 @@ pub unsafe extern "C" fn pdf_dev_concat(M: &pdf_tmatrix) -> i32 {
  */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_setmiterlimit(mut mlimit: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap(); /* op: M */
+    let mut gss = unsafe { &mut gs_stack }; /* op: M */
     let gs = gss.top(); /* op: J */
     let mut len: i32 = 0i32; /* op: j */
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr(); /* op: w */
@@ -1043,7 +1036,7 @@ pub unsafe extern "C" fn pdf_dev_setmiterlimit(mut mlimit: f64) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_setlinecap(mut capstyle: i32) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let mut len: i32 = 0i32;
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
@@ -1056,7 +1049,7 @@ pub unsafe extern "C" fn pdf_dev_setlinecap(mut capstyle: i32) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_setlinejoin(mut joinstyle: i32) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let mut len: i32 = 0i32;
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
@@ -1069,7 +1062,7 @@ pub unsafe extern "C" fn pdf_dev_setlinejoin(mut joinstyle: i32) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_setlinewidth(mut width: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let mut len: i32 = 0i32;
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
@@ -1095,7 +1088,7 @@ pub unsafe extern "C" fn pdf_dev_setdash(
     mut pattern: *mut f64,
     mut offset: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let mut len: i32 = 0i32;
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
@@ -1120,21 +1113,21 @@ pub unsafe extern "C" fn pdf_dev_setdash(
 /* ZSYUEDVEDEOF */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_clip() -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     pdf_dev__flushpath(cpa, 'W' as i32 as i8, 0i32, 0i32)
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_eoclip() -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     pdf_dev__flushpath(cpa, 'W' as i32 as i8, 1i32, 0i32)
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_flushpath(mut p_op: i8, mut fill_rule: i32) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let mut error: i32 = 0i32;
@@ -1149,7 +1142,7 @@ pub unsafe extern "C" fn pdf_dev_flushpath(mut p_op: i8, mut fill_rule: i32) -> 
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_newpath() -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let p = &mut gs.path;
     if !p.path.is_empty() {
@@ -1161,7 +1154,7 @@ pub unsafe extern "C" fn pdf_dev_newpath() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_moveto(mut x: f64, mut y: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1171,7 +1164,7 @@ pub unsafe extern "C" fn pdf_dev_moveto(mut x: f64, mut y: f64) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_rmoveto(mut x: f64, mut y: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1181,7 +1174,7 @@ pub unsafe extern "C" fn pdf_dev_rmoveto(mut x: f64, mut y: f64) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_lineto(mut x: f64, mut y: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1190,7 +1183,7 @@ pub unsafe extern "C" fn pdf_dev_lineto(mut x: f64, mut y: f64) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_rlineto(mut x: f64, mut y: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1206,7 +1199,7 @@ pub unsafe extern "C" fn pdf_dev_curveto(
     mut x2: f64,
     mut y2: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1222,7 +1215,7 @@ pub unsafe extern "C" fn pdf_dev_vcurveto(
     mut x1: f64,
     mut y1: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1238,7 +1231,7 @@ pub unsafe extern "C" fn pdf_dev_ycurveto(
     mut x1: f64,
     mut y1: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1255,7 +1248,7 @@ pub unsafe extern "C" fn pdf_dev_rcurveto(
     mut x2: f64,
     mut y2: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1266,7 +1259,7 @@ pub unsafe extern "C" fn pdf_dev_rcurveto(
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_closepath() -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpt = &mut gs.cp;
     let cpa = &mut gs.path;
@@ -1277,7 +1270,7 @@ pub unsafe extern "C" fn pdf_dev_dtransform(p: &mut pdf_coord, mut M: Option<&pd
     if let Some(m) = M {
         pdf_coord__dtransform(p, m);
     } else {
-        let mut gss = gs_stack.lock().unwrap();
+        let mut gss = unsafe { &mut gs_stack };
         let gs = gss.top();
         pdf_coord__dtransform(p, &mut gs.matrix);
     }
@@ -1287,7 +1280,7 @@ pub unsafe extern "C" fn pdf_dev_idtransform(p: &mut pdf_coord, M: Option<&pdf_t
     if let Some(m) = M {
         pdf_coord__idtransform(p, m);
     } else {
-        let mut gss = gs_stack.lock().unwrap();
+        let mut gss = unsafe { &mut gs_stack };
         let gs = gss.top();
         pdf_coord__idtransform(p, &mut gs.matrix);
     }
@@ -1297,14 +1290,14 @@ pub unsafe extern "C" fn pdf_dev_transform(p: &mut pdf_coord, M: Option<&pdf_tma
     if let Some(m) = M {
         pdf_coord__transform(p, m);
     } else {
-        let mut gss = gs_stack.lock().unwrap();
+        let mut gss = unsafe { &mut gs_stack };
         let gs = gss.top();
         pdf_coord__transform(p, &mut gs.matrix);
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_arc(c_x: f64, c_y: f64, r: f64, a_0: f64, a_1: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1314,7 +1307,7 @@ pub unsafe extern "C" fn pdf_dev_arc(c_x: f64, c_y: f64, r: f64, a_0: f64, a_1: 
 /* *negative* arc */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_arcn(c_x: f64, c_y: f64, r: f64, a_0: f64, a_1: f64) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1332,7 +1325,7 @@ pub unsafe extern "C" fn pdf_dev_arcx(
     a_d: i32,
     xar: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1349,7 +1342,7 @@ pub unsafe extern "C" fn pdf_dev_bspline(
     x2: f64,
     y2: f64,
 ) -> i32 {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
     let cpt = &mut gs.cp;
@@ -1390,8 +1383,8 @@ pub unsafe extern "C" fn pdf_dev_rectadd(x: f64, y: f64, w: f64, h: f64) -> i32 
     pdf_dev__rectshape(&mut r, None, ' ' as i32 as i8)
 }
 #[no_mangle]
-pub unsafe extern "C" fn pdf_dev_set_fixed_point(mut x: f64, mut y: f64) {
-    let mut gss = gs_stack.lock().unwrap();
+pub extern "C" fn pdf_dev_set_fixed_point(mut x: f64, mut y: f64) {
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     gs.pt_fixee.x = x;
     gs.pt_fixee.y = y;
@@ -1410,7 +1403,7 @@ pub unsafe extern "C" fn pdf_dev_set_fixed_point(mut x: f64, mut y: f64) {
  * and must recover until that depth at the end of page/xform.
  */
 pub fn pdf_dev_get_fixed_point() -> pdf_coord {
-    let mut gss = gs_stack.lock().unwrap();
+    let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     gs.pt_fixee.clone()
 }
