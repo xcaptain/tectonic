@@ -45,6 +45,15 @@ struct XeTeXFontMgr_FC {
 
 typedef struct XeTeXFontMgr_FC XeTeXFontMgr_FC;
 
+void
+XeTeXFontMgr_FC_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString* familyNames);
+
+inline void
+XeTeXFontMgr_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString* familyNames)
+{
+	XeTeXFontMgr_FC_cacheFamilyMembers(self, familyNames);
+}
+
 /*
 class XeTeXFontMgr_FC
     : public XeTeXFontMgr

@@ -148,9 +148,9 @@ XeTeXFontMgr_FC_readNames(XeTeXFontMgr* self, FcPattern* pat)
                                     break;
                             }
                             if (preferredName)
-                                prependToList(nameList, utf8name);
+                                XeTeXFontMgr_prependToList(self, nameList, utf8name);
                             else
-                                appendToList(nameList, utf8name);
+                                XeTeXFontMgr_appendToList(self, nameList, utf8name);
                             free(utf8name);
                         }
                     }
@@ -166,13 +166,13 @@ XeTeXFontMgr_FC_readNames(XeTeXFontMgr* self, FcPattern* pat)
     } else {
         index = 0;
         while (FcPatternGetString(pat, FC_FULLNAME, index++, (FcChar8**)&name) == FcResultMatch)
-            appendToList(&names->m_fullNames, name);
+            XeTeXFontMgr_appendToList(self, names->m_fullNames, name);
         index = 0;
         while (FcPatternGetString(pat, FC_FAMILY, index++, (FcChar8**)&name) == FcResultMatch)
-            appendToList(&names->m_familyNames, name);
+            XeTeXFontMgr_appendToList(self, names->m_familyNames, name);
         index = 0;
         while (FcPatternGetString(pat, FC_STYLE, index++, (FcChar8**)&name) == FcResultMatch)
-            appendToList(&names->m_styleNames, name);
+            XeTeXFontMgr_appendToList(self, names->m_styleNames, name);
 
         if (CppStdListOfString_size(names->m_fullNames) == 0) {
 			CppStdString* fullName = CppStdString_create();
@@ -212,88 +212,95 @@ XeTeXFontMgr_FC_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* 
 void
 XeTeXFontMgr_FC_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString* familyNames)
 {
-    if (CppStdListOfString_size(self->familyNames) == 0)
+	XeTeXFontMgr_FC* real_self = (XeTeXFontMgr_FC*)self;
+    if (CppStdListOfString_size(familyNames) == 0)
         return;
-    for (int f = 0; f < allFonts->nfont; ++f) {
-        FcPattern* pat = allFonts->fonts[f];
-        if (m_platformRefToFont.find(pat) != m_platformRefToFont.end())
-            continue;
+    for (int f = 0; f < real_self->allFonts->nfont; ++f) {
+        FcPattern* pat = real_self->allFonts->fonts[f];
+		if (CppStdMapFontRefToFontPtr_contains(self->m_platformRefToFont, pat))
+			continue;
         char* s;
         for (int i = 0; FcPatternGetString(pat, FC_FAMILY, i, (FcChar8**)&s) == FcResultMatch; ++i) {
-            for (std::list<std::string>::const_iterator j = familyNames.begin(); j != familyNames.end(); ++j) {
-                if (*j == s) {
-                    NameCollection* names = readNames(pat);
-                    addToMaps(pat, names);
-                    delete names;
-                    goto cached;
-                }
-            }
+			if (!CppStdListOfString_contains_const_char_ptr(familyNames, s))
+				continue;
+			XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+			XeTeXFontMgr_addToMaps(self, pat, names);
+			XeTeXFontMgrNameCollection_delete(names);
+			break;
         }
-    cached:
-        ;
     }
 }
 
 void
-XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const std::string& name)
+XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const char* name)
 {
-    if (cachedAll) // we've already loaded everything on an earlier search
+	XeTeXFontMgr_FC* real_self = (XeTeXFontMgr_FC*)self;
+    if (real_self->cachedAll) // we've already loaded everything on an earlier search
         return;
 
-    std::string famName;
-    int hyph = name.find('-');
-    if (hyph > 0 && hyph < (int) (name.length() - 1))
-        famName.assign(name.begin(), name.begin() + hyph);
-    else
-        hyph = 0;
+	CppStdString* famName = CppStdString_create();
+	char* hyph_pos = strchr(name, '-');
+    int hyph;
+	if (hyph_pos)
+	{
+		hyph = hyph_pos - name;
+		CppStdString_assign_n_chars(famName, name, hyph);
+	}
+	else
+	{
+		hyph = 0;
+	}
 
     bool found = false;
     while (1) {
-        for (int f = 0; f < allFonts->nfont; ++f) {
-            FcPattern* pat = allFonts->fonts[f];
-            if (m_platformRefToFont.find(pat) != m_platformRefToFont.end())
+        for (int f = 0; f < real_self->allFonts->nfont; ++f) {
+            FcPattern* pat = real_self->allFonts->fonts[f];
+			if (CppStdMapFontRefToFontPtr_contains(self->m_platformRefToFont, pat))
                 continue;
 
-            if (cachedAll) {
+            if (real_self->cachedAll) {
                 // failed to find it via FC; add everything to our maps (potentially slow) as a last resort
-                NameCollection* names = readNames(pat);
-                addToMaps(pat, names);
-                delete names;
+                XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                XeTeXFontMgr_addToMaps(self, pat, names);
+                XeTeXFontMgrNameCollection_delete(names);
                 continue;
             }
 
             char* s;
             int i;
             for (i = 0; FcPatternGetString(pat, FC_FULLNAME, i, (FcChar8**)&s) == FcResultMatch; ++i) {
-                if (name == s) {
-                    NameCollection* names = readNames(pat);
-                    addToMaps(pat, names);
-                    cacheFamilyMembers(names->m_familyNames);
-                    delete names;
+                if (CppStdString_const_char_ptr_equal_const_char_ptr(name,s)) {
+                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                    XeTeXFontMgr_addToMaps(self, pat, names);
+                    XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
+                    XeTeXFontMgrNameCollection_delete(names);
                     found = true;
                     goto next_font;
                 }
             }
 
             for (i = 0; FcPatternGetString(pat, FC_FAMILY, i, (FcChar8**)&s) == FcResultMatch; ++i) {
-                if (name == s || (hyph && famName == s)) {
-                    NameCollection* names = readNames(pat);
-                    addToMaps(pat, names);
-                    cacheFamilyMembers(names->m_familyNames);
-                    delete names;
+                if (CppStdString_const_char_ptr_equal_const_char_ptr(name,s) || (hyph && CppStdString_equal_const_char_ptr(famName, s))) {
+                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                    XeTeXFontMgr_addToMaps(self, pat, names);
+                    XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
+                    XeTeXFontMgrNameCollection_delete(names);
                     found = true;
                     goto next_font;
                 }
                 char* t;
                 for (int j = 0; FcPatternGetString(pat, FC_STYLE, j, (FcChar8**)&t) == FcResultMatch; ++j) {
-                    std::string full(s);
-                    full += " ";
-                    full += t;
-                    if (name == full) {
-                        NameCollection* names = readNames(pat);
-                        addToMaps(pat, names);
-                        cacheFamilyMembers(names->m_familyNames);
-                        delete names;
+					CppStdString* full = CppStdString_create();
+					CppStdString_append_const_char_ptr(full, s);
+					CppStdString_append_const_char_ptr(full, " ");
+					CppStdString_append_const_char_ptr(full, t);
+					bool matched = CppStdString_equal_const_char_ptr(full, name);
+					CppStdString_delete(full);
+                    if (matched) {
+                        XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                        XeTeXFontMgr_addToMaps(self, pat, names);
+                        XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
+                        XeTeXFontMgrNameCollection_delete(names);
                         found = true;
                         goto next_font;
                     }
@@ -304,10 +311,11 @@ XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const std::string
             ;
         }
 
-        if (found || cachedAll)
+        if (found || real_self->cachedAll)
             break;
-        cachedAll = true;
+        real_self->cachedAll = true;
     }
+	CppStdString_delete(famName);
 }
 
 void
@@ -362,10 +370,26 @@ char*
 XeTeXFontMgr_FC_getPlatformFontDesc(const XeTeXFontMgr* self, PlatformFontRef font)
 {
     FcChar8* s;
-	const char* path;
+	char* path;
     if (FcPatternGetString(font, FC_FILE, 0, (FcChar8**)&s) == FcResultMatch)
         path = strdup(s);
     else
         path = strdup("[unknown]");
     return path;
+}
+
+void XeTeXFontMgr_FC_ctor(XeTeXFontMgr_FC* self) {
+	XeTeXFontMgr_ctor(&self->super_);
+	self->super_.m_memfnInitialize = XeTeXFontMgr_FC_initialize;
+	self->super_.m_memfnTerminate = XeTeXFontMgr_FC_terminate;
+	self->super_.m_memfnGetOpSizeRecAndStyleFlags = XeTeXFontMgr_FC_getOpSizeRecAndStyleFlags;
+	self->super_.m_memfnGetPlatformFontDesc = XeTeXFontMgr_FC_getPlatformFontDesc;
+	self->super_.m_memfnSearchForHostPlatformFonts = XeTeXFontMgr_FC_searchForHostPlatformFonts;
+	self->super_.m_memfnReadNames = XeTeXFontMgr_FC_readNames;
+}
+
+XeTeXFontMgr_FC* XeTeXFontMgr_FC_create() {
+	XeTeXFontMgr_FC* self = malloc(sizeof(XeTeXFontMgr_FC));
+	XeTeXFontMgr_FC_ctor(self);
+	return self;
 }

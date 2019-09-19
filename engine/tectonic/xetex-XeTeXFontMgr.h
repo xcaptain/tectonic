@@ -51,6 +51,14 @@ typedef struct CppStdString CppStdString;
 CppStdString* CppStdString_create();
 void CppStdString_delete(CppStdString* self);
 
+bool CppStdString_equal(CppStdString* lhs, CppStdString* rhs);
+bool CppStdString_equal_const_char_ptr(CppStdString* lhs, const char* rhs);
+bool CppStdString_const_char_ptr_equal_const_char_ptr(const char* lhs, const char* rhs);
+
+void CppStdString_assign_from_const_char_ptr(CppStdString* self, const char* val);
+void CppStdString_assign_n_chars(CppStdString* self, const char* val, size_t count);
+void CppStdString_append_const_char_ptr(CppStdString* self, const char* val);
+
 struct CppStdMapStr2Font;
 typedef struct CppStdMapStr2Font CppStdMapStr2Font;
 
@@ -138,6 +146,12 @@ typedef struct CppStdListOfString CppStdListOfString;
 CppStdListOfString* CppStdListOfString_create();
 void CppStdListOfString_delete(CppStdListOfString* self);
 
+size_t CppStdListOfString_size(const CppStdListOfString* self);
+void CppStdListOfString_assign(CppStdListOfString* dest, CppStdListOfString* src);
+bool CppStdListOfString_contains_const_char_ptr(const CppStdListOfString* self, const char* val);
+void CppStdListOfString_append_copy_CppStdString(CppStdListOfString* list, CppStdString* val);
+const char* CppStdListOfString_front_const_char_ptr(const CppStdListOfString* self);
+
 struct XeTeXFontMgrNameCollection {
 	CppStdListOfString*  m_familyNames;
 	CppStdListOfString*  m_styleNames;
@@ -168,6 +182,17 @@ inline void XeTeXFontMgrNameCollection_delete(XeTeXFontMgrNameCollection* self) 
 	free(self);
 }
 
+struct CppStdMapStringToFontPtr;
+typedef struct CppStdMapStringToFontPtr CppStdMapStringToFontPtr;
+
+struct CppStdMapStringToFamilyPtr;
+typedef struct CppStdMapStringToFamilyPtr CppStdMapStringToFamilyPtr;
+
+struct CppStdMapFontRefToFontPtr;
+typedef struct CppStdMapFontRefToFontPtr CppStdMapFontRefToFontPtr;
+
+bool CppStdMapFontRefToFontPtr_contains(const CppStdMapFontRefToFontPtr* self, PlatformFontRef val);
+
 struct XeTeXFontMgr {
 	void              (*m_subdtor)(struct XeTeXFontMgr* self);
     void              (*m_memfnInitialize)(struct XeTeXFontMgr* self); /*abstract*/
@@ -176,10 +201,30 @@ struct XeTeXFontMgr {
     void    		  (*m_memfnGetOpSizeRecAndStyleFlags)(struct XeTeXFontMgr* self, XeTeXFontMgrFont* theFont);
     void 			  (*m_memfnSearchForHostPlatformFonts)(struct XeTeXFontMgr* self, const char* name); /* abstract */
     XeTeXFontMgrNameCollection*   (*m_memfnReadNames)(struct XeTeXFontMgr* self, PlatformFontRef fontRef); /* abstract */
+    CppStdMapStringToFontPtr*                 m_nameToFont;                     // maps full name (as used in TeX source) to font record
+    CppStdMapStringToFamilyPtr*               m_nameToFamily;
+    CppStdMapFontRefToFontPtr*                m_platformRefToFont;
+    CppStdMapStringToFontPtr*                 m_psNameToFont;                   // maps PS name (as used in .xdv) to font record
 };
 
 typedef struct XeTeXFontMgr XeTeXFontMgr;
 
+XeTeXFontMgr* XeTeXFontMgr_GetFontManager();
+void XeTeXFontMgr_Terminate();
+void XeTeXFontMgr_Destroy();
+
+void XeTeXFontMgr_ctor(XeTeXFontMgr* self);
+
+void
+XeTeXFontMgr_appendToList(XeTeXFontMgr* self, CppStdListOfString* list, const char* str);
+void
+XeTeXFontMgr_prependToList(XeTeXFontMgr* self, CppStdListOfString* list, const char* str);
+
+void
+XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const XeTeXFontMgrNameCollection* names);
+
+
+void XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont);
 /*
 #include <string>
 #include <map>
@@ -240,10 +285,6 @@ protected:
 
 
 
-    std::map<std::string,Font*>                 m_nameToFont;                     // maps full name (as used in TeX source) to font record
-    std::map<std::string,Family*>               m_nameToFamily;
-    std::map<PlatformFontRef,Font*>             m_platformRefToFont;
-    std::map<std::string,Font*>                 m_psNameToFont;                   // maps PS name (as used in .xdv) to font record
 
     int             weightAndWidthDiff(const Font* a, const Font* b) const;
     int             styleDiff(const Font* a, int wt, int wd, int slant) const;

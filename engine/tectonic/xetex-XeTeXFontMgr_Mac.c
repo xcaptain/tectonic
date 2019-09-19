@@ -62,7 +62,7 @@ CTFontDescriptorRef findFontWithName(CFStringRef name, CFStringRef key)
 }
 
 void
-XeTeXFontMgr_Mac::appendNameToList(CTFontRef font,
+XeTeXFontMgr_Mac_appendNameToList(XeTeXFontMgr* self, CTFontRef font,
                                    std::list<std::string>* nameList,
                                    CFStringRef nameKey)
 {
@@ -80,7 +80,7 @@ XeTeXFontMgr_Mac::appendNameToList(CTFontRef font,
 }
 
 XeTeXFontMgr::NameCollection*
-XeTeXFontMgr_Mac::readNames(CTFontDescriptorRef fontRef)
+XeTeXFontMgr_Mac_readNames(XeTeXFontMgr* self, CTFontDescriptorRef fontRef)
 {
     NameCollection* names = new NameCollection;
 
@@ -105,7 +105,7 @@ XeTeXFontMgr_Mac::readNames(CTFontDescriptorRef fontRef)
 }
 
 void
-XeTeXFontMgr_Mac::addFontsToCaches(CFArrayRef fonts)
+XeTeXFontMgr_Mac_addFontsToCaches(XeTeXFontMgr* self, CFArrayRef fonts)
 {
     NSEnumerator* enumerator = [(NSArray*)fonts objectEnumerator];
     while (id aFont = [enumerator nextObject]) {
@@ -117,7 +117,7 @@ XeTeXFontMgr_Mac::addFontsToCaches(CFArrayRef fonts)
 }
 
 void
-XeTeXFontMgr_Mac::addFamilyToCaches(CTFontDescriptorRef familyRef)
+XeTeXFontMgr_Mac_addFamilyToCaches(XeTeXFontMgr* self, CTFontDescriptorRef familyRef)
 {
     CFStringRef nameStr = (CFStringRef) CTFontDescriptorCopyAttribute(familyRef, kCTFontFamilyNameAttribute);
     if (nameStr) {
@@ -129,7 +129,7 @@ XeTeXFontMgr_Mac::addFamilyToCaches(CTFontDescriptorRef familyRef)
 }
 
 void
-XeTeXFontMgr_Mac::addFontAndSiblingsToCaches(CTFontDescriptorRef fontRef)
+XeTeXFontMgr_Mac_addFontAndSiblingsToCaches(XeTeXFontMgr* self, CTFontDescriptorRef fontRef)
 {
     CFStringRef name = (CFStringRef) CTFontDescriptorCopyAttribute(fontRef, kCTFontNameAttribute);
     if (name) {
@@ -142,7 +142,7 @@ XeTeXFontMgr_Mac::addFontAndSiblingsToCaches(CTFontDescriptorRef fontRef)
 }
 
 void
-XeTeXFontMgr_Mac::searchForHostPlatformFonts(const std::string& name)
+XeTeXFontMgr_Mac_searchForHostPlatformFonts(XeTeXFontMgr* self, const std::string& name)
 {
     // the name might be:
     //  FullName
@@ -205,13 +205,13 @@ XeTeXFontMgr_Mac::searchForHostPlatformFonts(const std::string& name)
 NSAutoreleasePool* pool = NULL;
 
 void
-XeTeXFontMgr_Mac::initialize()
+XeTeXFontMgr_Mac_initialize(XeTeXFontMgr* self)
 {
     pool = [[NSAutoreleasePool alloc] init];
 }
 
 void
-XeTeXFontMgr_Mac::terminate()
+XeTeXFontMgr_Mac_terminate(XeTeXFontMgr* self)
 {
     if (pool != NULL) {
         [pool release];
@@ -219,7 +219,7 @@ XeTeXFontMgr_Mac::terminate()
 }
 
 char*
-XeTeXFontMgr_Mac::getPlatformFontDesc(PlatformFontRef descriptor) const
+XeTeXFontMgr_Mac_getPlatformFontDesc(const XeTeXFontMgr* self, PlatformFontRef descriptor)
 {
     std::string path;
     CTFontRef ctFont = CTFontCreateWithFontDescriptor(descriptor, 0.0, 0);

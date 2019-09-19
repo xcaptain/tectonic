@@ -70,7 +70,7 @@ XeTeXFontMgr_GetFontManager()
 #else
         XeTeXFontMgr_sFontManager = XeTeXFontMgr_FC_create();
 #endif
-        XeTeXFontMgr_sFontManager->initialize();
+        XeTeXFontMgr_initialize(XeTeXFontMgr_sFontManager);
     }
 
     return XeTeXFontMgr_sFontManager;
@@ -80,7 +80,7 @@ void
 XeTeXFontMgr_Terminate()
 {
     if (XeTeXFontMgr_sFontManager != NULL) {
-        XeTeXFontMgr_sFontManager->terminate();
+		XeTeXFontMgr_terminate(XeTeXFontMgr_sFontManager);
         // we don't actually deallocate the manager, just ask it to clean up
         // any auxiliary data such as the cocoa pool or freetype/fontconfig stuff
         // as we still need to access font names after this is called
@@ -93,9 +93,24 @@ XeTeXFontMgr_Destroy()
     // Here we actually fully destroy the font manager.
 
     if (XeTeXFontMgr_sFontManager != NULL) {
-        delete XeTeXFontMgr_sFontManager;
+		XeTeXFontMgr_delete(XeTeXFontMgr_sFontManager);
         XeTeXFontMgr_sFontManager = NULL;
     }
+}
+
+// above are singleton operation.
+///////////////
+
+void XeTeXFontMgr_delete(XeTeXFontMgr* self) {
+	if (!self)
+		return;
+	if (self->m_subdtor)
+		(self->m_subdtor)(self);
+	CppStdMapStringToFontPtr_delete(self->m_nameToFont);
+	CppStdMapStringToFamilyPtr_delete(self->m_nameToFamily);
+	CppStdMapFontRefToFontPtr_delete(self->m_platformRefToFont);
+	CppStdMapStringToFontPtr_delete(self->m_psNameToFont);
+	free(self);
 }
 
 PlatformFontRef
@@ -103,7 +118,8 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
     // ptSize is in TeX points, or negative for 'scaled' factor
     // "variant" string will be shortened (in-place) by removal of /B and /I if present
 {
-    std::string nameStr(name);
+	CppStdString* nameStr = CppStdString_create();
+	CppStdString_assign_from_const_char_ptr(nameStr, name);
     XeTeXFontMgrFont* font = NULL;
     int dsize = 100;
     loaded_font_design_size = 655360L;
@@ -197,7 +213,8 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
             searchForHostPlatformFonts(nameStr);
         }
     }
-
+	CppStdString_delete(fontStr);
+	
     if (font == NULL)
         return 0;
 
@@ -205,7 +222,7 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
 
     // if there are variant requests, try to apply them
     // and delete B, I, and S=... codes from the string, just retain /engine option
-    sReqEngine = 0;
+    XeTeXFontMgr_sReqEngine = 0;
     bool reqBold = false;
     bool reqItal = false;
     if (variant != NULL) {
@@ -213,7 +230,7 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
         char* cp = variant;
         while (*cp) {
             if (strncmp(cp, "AAT", 3) == 0) {
-                sReqEngine = 'A';
+                XeTeXFontMgr_sReqEngine = 'A';
                 cp += 3;
                 if (varString.length() > 0 && *(varString.end() - 1) != '/')
                     varString.append("/");
@@ -221,7 +238,7 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
                 goto skip_to_slash;
             }
             if (strncmp(cp, "ICU", 3) == 0) { // for backword compatability
-                sReqEngine = 'O';
+                XeTeXFontMgr_sReqEngine = 'O';
                 cp += 3;
                 if (varString.length() > 0 && *(varString.end() - 1) != '/')
                     varString.append("/");
@@ -229,7 +246,7 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
                 goto skip_to_slash;
             }
             if (strncmp(cp, "OT", 2) == 0) {
-                sReqEngine = 'O';
+                XeTeXFontMgr_sReqEngine = 'O';
                 cp += 2;
                 if (varString.length() > 0 && *(varString.end() - 1) != '/')
                     varString.append("/");
@@ -237,7 +254,7 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
                 goto skip_to_slash;
             }
             if (strncmp(cp, "GR", 2) == 0) {
-                sReqEngine = 'G';
+                XeTeXFontMgr_sReqEngine = 'G';
                 cp += 2;
                 if (varString.length() > 0 && *(varString.end() - 1) != '/')
                     varString.append("/");
@@ -454,7 +471,7 @@ XeTeXFontMgr_bestMatchFromFamily(const XeTeXFontMgr* self, const XeTeXFontMgrFam
 {
     XeTeXFontMgrFont* bestMatch = NULL;
     for (std::map<std::string,XeTeXFontMgrFont*>::iterator s = fam->styles->begin(); s != fam->styles->end(); ++s)
-        if (bestMatch == NULL || styleDiff(s->second, wt, wd, slant) < styleDiff(bestMatch, wt, wd, slant))
+        if (bestMatch == NULL || XeTeXFontMgr_styleDiff(self, s->second, wt, wd, slant) < XeTeXFontMgr_styleDiff(self, bestMatch, wt, wd, slant))
             bestMatch = s->second;
     return bestMatch;
 }
@@ -463,13 +480,13 @@ XeTeXFontMgr_bestMatchFromFamily(const XeTeXFontMgr* self, const XeTeXFontMgrFam
 XeTeXFontMgrOpSizeRec*
 XeTeXFontMgr_getOpSize(XeTeXFontMgr* self, XeTeXFont font)
 {
-    hb_font_t *hbFont = ((XeTeXFontInst *) font)->getHbFont();
+    hb_font_t *hbFont = XeTeXFontInst_getHbFont((XeTeXFontInst *) font);
 
     if (hbFont == NULL)
         return NULL;
 
     hb_face_t *face = hb_font_get_face(hbFont);
-    OpSizeRec *pSizeRec = (OpSizeRec*) xmalloc(sizeof(OpSizeRec));
+    XeTeXFontMgrOpSizeRec *XeTeXFontMgrOpSizeRec = (XeTeXFontMgrOpSizeRec*) xmalloc(sizeof(XeTeXFontMgrOpSizeRec));
 
     bool ok = hb_ot_layout_get_size_params(face,
                                            &pSizeRec->designSize,
@@ -489,7 +506,7 @@ XeTeXFontMgr_getOpSize(XeTeXFontMgr* self, XeTeXFont font)
 double
 XeTeXFontMgr_getDesignSize(XeTeXFontMgr* self, XeTeXFont font)
 {
-    OpSizeRec* pSizeRec = getOpSize(font);
+    XeTeXFontMgrOpSizeRec* pSizeRec = XeTeXFontMgr_getOpSize(self, font);
 
     if (pSizeRec == NULL)
         return 10.0;
@@ -501,12 +518,12 @@ XeTeXFontMgr_getDesignSize(XeTeXFontMgr* self, XeTeXFont font)
 
 
 void
-XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont)
+XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont)
 {
     XeTeXFont font = createFont(theFont->fontRef, 655360);
     XeTeXFontInst* fontInst = (XeTeXFontInst*) font;
     if (font != 0) {
-        OpSizeRec* pSizeRec = getOpSize(font);
+        XeTeXFontMgrOpSizeRec* pSizeRec = XeTeXFontMgr_getOpSize(self, font);
 
         if (pSizeRec != NULL) {
             theFont->opSizeInfo.designSize = pSizeRec->designSize;
@@ -527,7 +544,7 @@ XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* the
 
     done_size:
 
-        const TT_OS2* os2Table = (TT_OS2*) fontInst->getFontTable(ft_sfnt_os2);
+        const TT_OS2* os2Table = (TT_OS2*) XeTeXFontInst_getFontTableFT(fontInst, ft_sfnt_os2);
         if (os2Table != NULL) {
             theFont->weight = os2Table->usWeightClass;
             theFont->width = os2Table->usWidthClass;
@@ -537,7 +554,7 @@ XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* the
             theFont->isItalic = (sel & (1 << 0)) != 0;
         }
 
-        const TT_Header* headTable = (TT_Header*) fontInst->getFontTable(ft_sfnt_head);
+        const TT_Header* headTable = (TT_Header*)XeTeXFontInst_getFontTableFT(fontInst, ft_sfnt_head);
         if (headTable != NULL) {
             uint16_t ms = headTable->Mac_Style;
             if ((ms & (1 << 0)) != 0)
@@ -546,7 +563,7 @@ XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* the
                 theFont->isItalic = true;
         }
 
-        const TT_Postscript* postTable = (const TT_Postscript*) fontInst->getFontTable(ft_sfnt_post);
+        const TT_Postscript* postTable = (const TT_Postscript*)XeTeXFontInst_getFontTableFT(fontInst, ft_sfnt_post);
         if (postTable != NULL) {
             theFont->slant = (int)(1000 * (tan(Fix2D(-postTable->italicAngle) * M_PI / 180.0)));
         }
@@ -556,7 +573,7 @@ XeTeXFontMgr_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* the
 
 // append a name but only if it's not already in the list
 void
-XeTeXFontMgr_appendToList(XeTeXFontMgr* self, std::list<std::string>* list, const char* str)
+XeTeXFontMgr_appendToList(XeTeXFontMgr* self, CppStdListOfString* list, const char* str)
 {
     for (std::list<std::string>::const_iterator i = list->begin(); i != list->end(); ++i)
         if (*i == str)
@@ -566,7 +583,7 @@ XeTeXFontMgr_appendToList(XeTeXFontMgr* self, std::list<std::string>* list, cons
 
 // prepend a name, removing it from later in the list if present
 void
-XeTeXFontMgr_prependToList(XeTeXFontMgr* self, std::list<std::string>* list, const char* str)
+XeTeXFontMgr_prependToList(XeTeXFontMgr* self, CppStdListOfString* list, const char* str)
 {
     for (std::list<std::string>::iterator i = list->begin(); i != list->end(); ++i)
         if (*i == str) {
@@ -577,7 +594,7 @@ XeTeXFontMgr_prependToList(XeTeXFontMgr* self, std::list<std::string>* list, con
 }
 
 void
-XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const NameCollection* names)
+XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const XeTeXFontMgrNameCollection* names)
 {
     if (m_platformRefToFont.find(platformFont) != m_platformRefToFont.end())
         return; // this font has already been cached
@@ -588,7 +605,7 @@ XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const N
     if (m_psNameToFont.find(names->m_psName) != m_psNameToFont.end())
         return; // duplicates an earlier PS name, so skip
 
-    XeTeXFontMgrFont* thisFont = new XeTeXFontMgrFont(platformFont);
+    XeTeXFontMgrFont* thisFont = XeTeXFontMgrFont_create(platformFont);
     thisFont->m_psName = new std::string(names->m_psName);
     getOpSizeRecAndStyleFlags(thisFont);
 
@@ -666,6 +683,20 @@ XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const N
 }
 
 void
-XeTeXFontMgr_terminate(XeTeXFontMgr* self)
+XeTeXFontMgr_base_terminate(XeTeXFontMgr* self)
 {
+}
+
+void XeTeXFontMgr_ctor(XeTeXFontMgr* self) {
+	self->m_subdtor = NULL;
+	self->m_memfnInitialize = NULL; /*abstract*/
+	self->m_memfnTerminate = XeTeXFontMgr_base_terminate;
+	self->m_memfnGetPlatformFontDesc = NULL; /*abstract*/
+	self->m_memfnGetOpSizeRecAndStyleFlags = XeTeXFontMgr_base_getOpSizeRecAndStyleFlags;
+	self->m_memfnSearchForHostPlatformFonts = NULL; /*abstract*/
+	self->m_memfnReadNames = NULL; /*abstract*/
+	self->m_nameToFont = CppStdMapStringToFontPtr_create();
+	self->m_nameToFamily = CppStdMapStringToFamilyPtr_create();
+	self->m_platformRefToFont = CppStdMapFontRefToFontPtr_create();
+	self->m_psNameToFont = CppStdMapStringToFontPtr_create();	
 }
