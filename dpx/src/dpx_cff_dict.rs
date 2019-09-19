@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_cff::{cff_add_string, cff_get_string};
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::work_buffer;
@@ -36,7 +39,6 @@ use crate::mfree;
 use crate::streq_ptr;
 use crate::stub_errno as errno;
 use crate::warn;
-use bridge::_tt_abort;
 use libc::{free, memset, sprintf, strcmp, strtod};
 
 pub type rust_input_handle_t = *mut libc::c_void;
@@ -885,7 +887,6 @@ unsafe extern "C" fn cff_dict_put_number(
 }
 unsafe extern "C" fn put_dict_entry(mut de: *mut cff_dict_entry, dest: &mut [u8]) -> usize {
     let mut len = 0_usize;
-    let mut i: i32 = 0;
     let mut type_0: i32 = 0;
     let mut id: i32 = 0;
     if (*de).count > 0i32 {
@@ -1048,10 +1049,10 @@ pub unsafe extern "C" fn cff_dict_get(
         }
     }
     if i == (*dict).count {
-        _tt_abort(
-            b"%s: DICT entry \"%s\" not found.\x00" as *const u8 as *const i8,
-            b"CFF\x00" as *const u8 as *const i8,
-            key,
+        panic!(
+            "{}: DICT entry \"{}\" not found.",
+            "CFF",
+            CStr::from_ptr(key).display(),
         );
     }
     value
@@ -1081,10 +1082,10 @@ pub unsafe extern "C" fn cff_dict_set(
         }
     }
     if i == (*dict).count {
-        _tt_abort(
-            b"%s: DICT entry \"%s\" not found.\x00" as *const u8 as *const i8,
-            b"CFF\x00" as *const u8 as *const i8,
-            key,
+        panic!(
+            "{}: DICT entry \"{}\" not found.",
+            "CFF",
+            CStr::from_ptr(key).display(),
         );
     };
 }

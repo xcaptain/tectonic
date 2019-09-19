@@ -20,25 +20,27 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
-    unused_mut
+dead_code,
+mutable_transmutes,
+non_camel_case_types,
+non_snake_case,
+non_upper_case_globals,
+unused_assignments,
+unused_mut
 )]
 
+use crate::dpx_error::dpx_warning;
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_transform};
 use crate::dpx_pdfximage::{
     pdf_ximage_findresource, pdf_ximage_get_reference, pdf_ximage_get_resname,
     pdf_ximage_scale_image,
 };
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::spc_warn;
 use super::{spc_begin_annot, spc_end_annot};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
-use crate::dpx_error::dpx_warning;
 use crate::dpx_mem::new;
 use crate::dpx_pdfdev::{
     graphics_mode, pdf_rect, pdf_tmatrix, transform_info, transform_info_clear,
@@ -62,7 +64,9 @@ pub type size_t = u64;
 use super::{spc_arg, spc_env};
 
 pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
+
 use super::spc_handler;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct spc_html_ {
@@ -71,6 +75,7 @@ pub struct spc_html_ {
     pub baseurl: *mut i8,
     pub pending_type: i32,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_0 {
@@ -173,6 +178,7 @@ unsafe extern "C" fn parse_key_val(
     *pp = p;
     error
 }
+
 unsafe extern "C" fn read_html_tag(
     mut name: *mut i8,
     mut attr: *mut pdf_obj,
@@ -275,6 +281,7 @@ unsafe extern "C" fn read_html_tag(
     *pp = p;
     0i32
 }
+
 unsafe extern "C" fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     (*sd).link_dict = 0 as *mut pdf_obj;
@@ -282,6 +289,7 @@ unsafe extern "C" fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
     (*sd).pending_type = -1i32;
     0i32
 }
+
 unsafe extern "C" fn spc_handler_html__clean(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
@@ -300,6 +308,7 @@ unsafe extern "C" fn spc_handler_html__clean(
     (*sd).link_dict = 0 as *mut pdf_obj;
     0i32
 }
+
 unsafe extern "C" fn spc_handler_html__bophook(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
@@ -314,6 +323,7 @@ unsafe extern "C" fn spc_handler_html__bophook(
     }
     0i32
 }
+
 unsafe extern "C" fn spc_handler_html__eophook(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
@@ -327,6 +337,7 @@ unsafe extern "C" fn spc_handler_html__eophook(
     }
     0i32
 }
+
 unsafe extern "C" fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut i8 {
     let mut q: *mut i8 = 0 as *mut i8;
     let mut len: i32 = 0i32;
@@ -351,6 +362,7 @@ unsafe extern "C" fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut 
     strcat(q, name);
     q
 }
+
 unsafe extern "C" fn html_open_link(
     mut spe: *mut spc_env,
     mut name: *const i8,
@@ -400,6 +412,7 @@ unsafe extern "C" fn html_open_link(
     (*sd).pending_type = 0i32;
     0i32
 }
+
 unsafe extern "C" fn html_open_dest(
     mut spe: *mut spc_env,
     mut name: *const i8,
@@ -434,6 +447,7 @@ unsafe extern "C" fn html_open_dest(
     (*sd).pending_type = 1i32;
     error
 }
+
 unsafe extern "C" fn spc_html__anchor_open(
     mut spe: *mut spc_env,
     mut attr: *mut pdf_obj,
@@ -472,6 +486,7 @@ unsafe extern "C" fn spc_html__anchor_open(
     }
     error
 }
+
 unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut spc_html_) -> i32 {
     let mut error: i32 = 0i32;
     match (*sd).pending_type {
@@ -500,6 +515,7 @@ unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut 
     }
     error
 }
+
 unsafe extern "C" fn spc_html__base_empty(
     mut spe: *mut spc_env,
     mut attr: *mut pdf_obj,
@@ -582,10 +598,7 @@ unsafe extern "C" fn atopt(mut a: *const i8) -> f64 {
             8 => u *= 72.0f64 / (72.27f64 * 65536i32 as f64),
             9 => u *= 1.0f64,
             _ => {
-                dpx_warning(
-                    b"Unknown unit of measure: %s\x00" as *const u8 as *const i8,
-                    q,
-                );
+                warn!("Unknown unit of measure: {}", CStr::from_ptr(q).display(),);
             }
         }
         free(q as *mut libc::c_void);
@@ -604,6 +617,7 @@ unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
     pdf_add_dict(dict, pdf_new_name("ca"), pdf_new_number(a));
     dict
 }
+
 unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: *const i8) -> i32 {
     let mut dict1: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut dict2: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -1008,21 +1022,25 @@ pub unsafe extern "C" fn spc_html_at_begin_document() -> i32 {
     let mut sd: *mut spc_html_ = &mut _html_state;
     spc_handler_html__init(sd as *mut libc::c_void)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_begin_page() -> i32 {
     let mut sd: *mut spc_html_ = &mut _html_state;
     spc_handler_html__bophook(0 as *mut spc_env, sd as *mut libc::c_void)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_end_page() -> i32 {
     let mut sd: *mut spc_html_ = &mut _html_state;
     spc_handler_html__eophook(0 as *mut spc_env, sd as *mut libc::c_void)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_end_document() -> i32 {
     let mut sd: *mut spc_html_ = &mut _html_state;
     spc_handler_html__clean(0 as *mut spc_env, sd as *mut libc::c_void)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_check_special(mut buffer: *const i8, mut size: i32) -> bool {
     let mut p: *const i8 = 0 as *const i8;

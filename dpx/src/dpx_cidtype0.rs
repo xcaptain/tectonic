@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_sfnt::{
     sfnt_close, sfnt_find_table_pos, sfnt_locate_table, sfnt_open, sfnt_read_table_directory,
 };
@@ -63,7 +66,6 @@ use super::dpx_cmap::{
 use super::dpx_cmap_write::CMap_create_stream;
 use super::dpx_cs_type2::cs_copy_charstring;
 use super::dpx_dpxfile::{dpx_open_opentype_file, dpx_open_truetype_file, dpx_open_type1_file};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::work_buffer_u8 as work_buffer;
 use super::dpx_pdffont::pdf_font_make_uniqueTag;
@@ -84,7 +86,6 @@ use crate::dpx_pdfobj::{
     pdf_ref_obj, pdf_release_obj, pdf_stream_dict,
 };
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
-use bridge::_tt_abort;
 use libc::{free, memmove, memset, sprintf, strcat, strcmp, strcpy, strlen, strstr};
 
 pub type __ssize_t = i64;
@@ -448,8 +449,6 @@ unsafe extern "C" fn add_CIDMetrics(
  * Create an instance of embeddable font.
  */
 unsafe extern "C" fn write_fontfile(mut font: *mut CIDFont, cffont: &mut cff_font) -> i32 {
-    let mut destlen: i32 = 0i32;
-    let mut i: i32 = 0;
     let mut offset = 0;
     let mut topdict_offset = 0;
     let mut fdarray_offset = 0;
@@ -622,36 +621,36 @@ unsafe extern "C" fn CIDFont_type0_get_used_chars(mut font: *mut CIDFont) -> *mu
 unsafe extern "C" fn CIDType0Error_Show(mut error: CIDType0Error, mut name: *const i8) {
     match error as i32 {
         -1 => {
-            _tt_abort(
-                b"Could not open OpenType font file: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Could not open OpenType font file: {}",
+                CStr::from_ptr(name).display()
             );
         }
         -2 => {
-            _tt_abort(
-                b"Could not open SFNT font file: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Could not open SFNT font file: {}",
+                CStr::from_ptr(name).display()
             );
         }
         -3 => {
-            _tt_abort(
-                b"Not a CFF/OpenType font: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Not a CFF/OpenType font: {}",
+                CStr::from_ptr(name).display()
             );
         }
         -4 => {
-            _tt_abort(
-                b"Could not open CFF font: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Could not open CFF font: {}",
+                CStr::from_ptr(name).display()
             );
         }
         -5 => {
-            _tt_abort(b"Not a CIDFont: %s\x00" as *const u8 as *const i8, name);
+            panic!("Not a CIDFont: {}", CStr::from_ptr(name).display());
         }
         -6 => {
-            _tt_abort(
-                b"Should not be a CIDFont: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Should not be a CIDFont: {}",
+                CStr::from_ptr(name).display()
             );
         }
         _ => {}
@@ -837,10 +836,10 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
             if *used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 != 0 {
                 gid = cff_charsets_lookup(cffont, cid as u16);
                 if cid != 0i32 && gid as i32 == 0i32 {
-                    dpx_warning(
-                        b"Glyph for CID %u missing in font \"%s\".\x00" as *const u8 as *const i8,
-                        cid as CID as i32,
-                        (*font).ident,
+                    warn!(
+                        "Glyph for CID {} missing in font \"{}\".",
+                        cid as CID,
+                        CStr::from_ptr((*font).ident).display(),
                     );
                     let ref mut fresh1 = *used_chars.offset((cid / 8i32) as isize);
                     *fresh1 = (*fresh1 as i32 & !(1i32 << 7i32 - cid % 8i32)) as i8
@@ -1076,9 +1075,9 @@ pub unsafe extern "C" fn CIDFont_type0_open(
         }
         sfont = sfnt_open(handle);
         if sfont.is_null() {
-            _tt_abort(
-                b"Not a CFF/OpenType font: %s\x00" as *const u8 as *const i8,
-                name,
+            panic!(
+                "Not a CFF/OpenType font: {}",
+                CStr::from_ptr(name).display()
             );
         }
         if (*sfont).type_0 == 1i32 << 4i32 {
@@ -1169,16 +1168,16 @@ pub unsafe extern "C" fn CIDFont_type0_open(
             || strcmp((*csi).ordering, (*cmap_csi).ordering) != 0i32
         {
             info!("\nCharacter collection mismatched:\n");
-            dpx_message(
-                b"\tFont: %s-%s-%d\n\x00" as *const u8 as *const i8,
-                (*csi).registry,
-                (*csi).ordering,
+            info!(
+                "\tFont: {}-{}-{}\n",
+                CStr::from_ptr((*csi).registry).display(),
+                CStr::from_ptr((*csi).ordering).display(),
                 (*csi).supplement,
             );
-            dpx_message(
-                b"\tCMap: %s-%s-%d\n\x00" as *const u8 as *const i8,
-                (*cmap_csi).registry,
-                (*cmap_csi).ordering,
+            info!(
+                "\tCMap: {}-{}-{}\n",
+                CStr::from_ptr((*cmap_csi).registry).display(),
+                CStr::from_ptr((*cmap_csi).ordering).display(),
                 (*cmap_csi).supplement,
             );
             panic!("Inconsistent CMap specified for this font.");
@@ -1213,9 +1212,9 @@ pub unsafe extern "C" fn CIDFont_type0_open(
     cff_close(cffont);
     if is_cid_font != 0 {
         if (*opt).embed != 0 && (*opt).style != 0i32 {
-            dpx_warning(
-                b"Embedding disabled due to style option for %s.\x00" as *const u8 as *const i8,
-                name,
+            warn!(
+                "Embedding disabled due to style option for {}.",
+                CStr::from_ptr(name).display()
             );
             (*opt).embed = 0i32
         }
@@ -1755,18 +1754,16 @@ unsafe extern "C" fn load_base_CMap(
                 let mut agln: *mut agl_name = 0 as *mut agl_name;
                 agln = agl_lookup_list(name);
                 if agln.is_null() {
-                    dpx_warning(
-                        b"Glyph \"%s\" inaccessible (no Unicode mapping)\x00" as *const u8
-                            as *const i8,
-                        glyph,
+                    warn!(
+                        "Glyph \"{}\" inaccessible (no Unicode mapping)",
+                        CStr::from_ptr(glyph).display()
                     );
                 }
                 while !agln.is_null() {
                     if (*agln).n_components > 1i32 {
-                        dpx_warning(
-                            b"Glyph \"%s\" inaccessible (composite character)\x00" as *const u8
-                                as *const i8,
-                            glyph,
+                        warn!(
+                            "Glyph \"{}\" inaccessible (composite character)",
+                            CStr::from_ptr(glyph).display()
                         );
                     } else if (*agln).n_components == 1i32 {
                         ucv = (*agln).unicodes[0];
@@ -1809,9 +1806,9 @@ pub unsafe extern "C" fn t1_load_UnicodeCMap(
     cmap_id = load_base_CMap(font_name, wmode, &*cffont);
     cff_close(cffont);
     if cmap_id < 0i32 {
-        _tt_abort(
-            b"Failed to create Unicode charmap for font \"%s\".\x00" as *const u8 as *const i8,
-            font_name,
+        panic!(
+            "Failed to create Unicode charmap for font \"{}\".",
+            CStr::from_ptr(font_name).display()
         );
     }
     if !otl_tags.is_null() {
@@ -1904,9 +1901,9 @@ unsafe extern "C" fn create_ToUnicode_stream(
             "{} glyph names (out of {}) missing Unicode mapping.",
             total_fail_count, glyph_count,
         );
-        dpx_warning(
-            b"ToUnicode CMap \"%s-UTF16\" removed.\x00" as *const u8 as *const i8,
-            font_name,
+        warn!(
+            "ToUnicode CMap \"{}-UTF16\" removed.",
+            CStr::from_ptr(font_name).display()
         );
     } else {
         stream = CMap_create_stream(cmap)

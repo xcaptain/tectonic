@@ -32,11 +32,12 @@
 use crate::mfree;
 use crate::streq_ptr;
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::{spc_arg, spc_env, spc_warn};
 
 use crate::dpx_dpxutil::{parse_c_ident, parse_c_string, parse_float_decimal};
-use crate::dpx_error::dpx_warning;
 use crate::dpx_mem::renew;
 use crate::dpx_pdfcolor::{pdf_color_brighten_color, pdf_color_get_current};
 use crate::dpx_pdfdev::pdf_dev_scale;
@@ -865,17 +866,17 @@ unsafe extern "C" fn tpic_filter_getopts(
             } else if streq_ptr(v, b"solid\x00" as *const u8 as *const i8) {
                 (*tp).mode.fill = 0i32
             } else {
-                dpx_warning(
-                    b"Invalid value for TPIC option fill-mode: %s\x00" as *const u8 as *const i8,
-                    v,
+                warn!(
+                    "Invalid value for TPIC option fill-mode: {}",
+                    CStr::from_ptr(v).display(),
                 );
                 error = -1i32
             }
         }
     } else {
-        dpx_warning(
-            b"Unrecognized option for TPIC special handler: %s\x00" as *const u8 as *const i8,
-            k,
+        warn!(
+            "Unrecognized option for TPIC special handler: {}",
+            CStr::from_ptr(k).display(),
         );
         error = -1i32
     }

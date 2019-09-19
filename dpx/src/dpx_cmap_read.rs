@@ -38,7 +38,6 @@ use super::dpx_cmap::{
     CMap_cache_get, CMap_is_valid, CMap_set_CIDSysInfo, CMap_set_name, CMap_set_type,
     CMap_set_usecmap, CMap_set_wmode,
 };
-use super::dpx_error::dpx_message;
 use super::dpx_mem::{new, renew};
 use super::dpx_pst::pst_get_token;
 use super::dpx_pst_obj::pst_obj;
@@ -104,10 +103,7 @@ unsafe extern "C" fn ifreader_read(mut reader: *mut ifreader, mut size: size_t) 
     bytesrem = ((*reader).endptr as size_t).wrapping_sub((*reader).cursor as size_t);
     if size > (*reader).max {
         if __verbose != 0 {
-            dpx_message(
-                b"\nExtending buffer (%zu bytes)...\n\x00" as *const u8 as *const i8,
-                size,
-            );
+            info!("\nExtending buffer ({} bytes)...\n", size,);
         }
         (*reader).buf = renew(
             (*reader).buf as *mut libc::c_void,

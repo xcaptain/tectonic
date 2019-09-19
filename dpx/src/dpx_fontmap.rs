@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_mfileio::work_buffer;
 use crate::mfree;
 use crate::{info, warn};
@@ -39,12 +42,11 @@ use super::dpx_dpxutil::{
     ht_clear_table, ht_init_table, ht_insert_table, ht_lookup_table, ht_remove_table,
 };
 use super::dpx_dpxutil::{parse_c_string, parse_float_decimal};
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, xmalloc};
 use super::dpx_mfileio::tt_mfgets;
 use super::dpx_subfont::{release_sfd_record, sfd_get_subfont_ids};
 use crate::ttstub_input_close;
-use bridge::_tt_abort;
 use libc::{
     atof, atoi, free, memcmp, memcpy, sprintf, strcat, strchr, strcmp, strcpy, strlen, strstr,
     strtol, strtoul,
@@ -451,9 +453,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                 }
                 (*mrec).opt.extend = atof(q);
                 if (*mrec).opt.extend <= 0.0f64 {
-                    dpx_warning(
-                        b"Invalid value for \'e\' option: %s\x00" as *const u8 as *const i8,
-                        q,
+                    warn!(
+                        "Invalid value for \'e\' option: {}",
+                        CStr::from_ptr(q).display(),
                     );
                     return -1i32;
                 }
@@ -468,9 +470,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                 }
                 (*mrec).opt.bold = atof(q);
                 if (*mrec).opt.bold <= 0.0f64 {
-                    dpx_warning(
-                        b"Invalid value for \'b\' option: %s\x00" as *const u8 as *const i8,
-                        q,
+                    warn!(
+                        "Invalid value for \'b\' option: {}",
+                        CStr::from_ptr(q).display(),
                     );
                     return -1i32;
                 }
@@ -486,10 +488,7 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                 }
                 (*mrec).opt.index = atoi(q);
                 if (*mrec).opt.index < 0i32 {
-                    dpx_warning(
-                        b"Invalid TTC index number: %s\x00" as *const u8 as *const i8,
-                        q,
-                    );
+                    warn!("Invalid TTC index number: {}", CStr::from_ptr(q).display(),);
                     return -1i32;
                 }
                 free(q as *mut libc::c_void);
@@ -503,9 +502,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                 }
                 v = strtol(q, 0 as *mut *mut i8, 0i32) as i32;
                 if v < 0i32 || v > 16i32 {
-                    dpx_warning(
-                        b"Invalid value for option \'p\': %s\x00" as *const u8 as *const i8,
-                        q,
+                    warn!(
+                        "Invalid value for option \'p\': {}",
+                        CStr::from_ptr(q).display(),
                     );
                 } else {
                     (*mrec).opt.mapc = v << 16i32
@@ -558,9 +557,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                         return -1i32;
                     } else {
                         if p < endptr && *p as i32 != '>' as i32 {
-                            dpx_warning(
-                                b"Invalid value for option \'m\': %s\x00" as *const u8 as *const i8,
-                                q,
+                            warn!(
+                                "Invalid value for option \'m\': {}",
+                                CStr::from_ptr(q).display(),
                             );
                             free(q as *mut libc::c_void);
                             return -1i32;
@@ -589,9 +588,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                     }
                     r = strchr(q, ',' as i32);
                     if r.is_null() {
-                        dpx_warning(
-                            b"Invalid value for option \'m\': %s\x00" as *const u8 as *const i8,
-                            q,
+                        warn!(
+                            "Invalid value for option \'m\': {}",
+                            CStr::from_ptr(q).display(),
                         );
                         free(q as *mut libc::c_void);
                         return -1i32;
@@ -601,9 +600,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                     rr = r;
                     skip_blank(&mut rr, r.offset(strlen(r) as isize));
                     if *rr as i32 == '\u{0}' as i32 {
-                        dpx_warning(
-                            b"Invalid value for option \'m\': %s,\x00" as *const u8 as *const i8,
-                            q,
+                        warn!(
+                            "Invalid value for option \'m\': {},",
+                            CStr::from_ptr(q).display()
                         );
                         free(q as *mut libc::c_void);
                         return -1i32;
@@ -626,9 +625,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                         return -1i32;
                     } else {
                         if p < endptr && libc::isspace(*p as _) == 0 {
-                            dpx_warning(
-                                b"Invalid value for option \'m\': %s\x00" as *const u8 as *const i8,
-                                q,
+                            warn!(
+                                "Invalid value for option \'m\': {}",
+                                CStr::from_ptr(q).display(),
                             );
                             free(q as *mut libc::c_void);
                             return -1i32;
@@ -660,9 +659,9 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
                 } else if atoi(q) == 0i32 {
                     (*mrec).opt.flags &= !(1i32 << 2i32)
                 } else {
-                    dpx_warning(
-                        b"Invalid value for option \'w\': %s\x00" as *const u8 as *const i8,
-                        q,
+                    warn!(
+                        "Invalid value for option \'w\': {}",
+                        CStr::from_ptr(q).display(),
                     );
                 }
                 free(q as *mut libc::c_void);
@@ -781,10 +780,7 @@ unsafe extern "C" fn fontmap_parse_mapdef_dps(
                 skip_blank(&mut p, endptr);
             }
             _ => {
-                dpx_warning(
-                    b"Found an invalid entry: %s\x00" as *const u8 as *const i8,
-                    p,
-                );
+                warn!("Found an invalid entry: {}", CStr::from_ptr(p).display(),);
                 return -1i32;
             }
         }
@@ -910,9 +906,9 @@ pub unsafe extern "C" fn pdf_append_fontmap_record(
         return -1i32;
     }
     if verbose > 3i32 {
-        dpx_message(
-            b"fontmap>> append key=\"%s\"...\x00" as *const u8 as *const i8,
-            kp,
+        info!(
+            "fontmap>> append key=\"{}\"...",
+            CStr::from_ptr(kp).display()
         );
     }
     fnt_name = chop_sfd_name(kp, &mut sfd_name);
@@ -987,9 +983,9 @@ pub unsafe extern "C" fn pdf_remove_fontmap_record(mut kp: *const i8) -> i32 {
         return -1i32;
     }
     if verbose > 3i32 {
-        dpx_message(
-            b"fontmap>> remove key=\"%s\"...\x00" as *const u8 as *const i8,
-            kp,
+        info!(
+            "fontmap>> remove key=\"{}\"...",
+            CStr::from_ptr(kp).display()
         );
     }
     fnt_name = chop_sfd_name(kp, &mut sfd_name);
@@ -1002,9 +998,9 @@ pub unsafe extern "C" fn pdf_remove_fontmap_record(mut kp: *const i8) -> i32 {
             return -1i32;
         }
         if verbose > 3i32 {
-            dpx_message(
-                b"\nfontmap>> Expand @%s@:\x00" as *const u8 as *const i8,
-                sfd_name,
+            info!(
+                "\nfontmap>> Expand @{}@:",
+                CStr::from_ptr(sfd_name).display()
             );
         }
         loop {
@@ -1018,7 +1014,7 @@ pub unsafe extern "C" fn pdf_remove_fontmap_record(mut kp: *const i8) -> i32 {
                 continue;
             }
             if verbose > 3i32 {
-                dpx_message(b" %s\x00" as *const u8 as *const i8, tfm_name);
+                info!(" {}", CStr::from_ptr(tfm_name).display());
             }
             ht_remove_table(
                 fontmap,
@@ -1049,9 +1045,9 @@ pub unsafe extern "C" fn pdf_insert_fontmap_record(
         return 0 as *mut fontmap_rec;
     }
     if verbose > 3i32 {
-        dpx_message(
-            b"fontmap>> insert key=\"%s\"...\x00" as *const u8 as *const i8,
-            kp,
+        info!(
+            "fontmap>> insert key=\"{}\"...",
+            CStr::from_ptr(kp).display()
         );
     }
     fnt_name = chop_sfd_name(kp, &mut sfd_name);
@@ -1061,18 +1057,18 @@ pub unsafe extern "C" fn pdf_insert_fontmap_record(
         let mut n: i32 = 0i32;
         subfont_ids = sfd_get_subfont_ids(sfd_name, &mut n);
         if subfont_ids.is_null() {
-            dpx_warning(
-                b"Could not open SFD file: %s\x00" as *const u8 as *const i8,
-                sfd_name,
+            warn!(
+                "Could not open SFD file: {}",
+                CStr::from_ptr(sfd_name).display(),
             );
             free(fnt_name as *mut libc::c_void);
             free(sfd_name as *mut libc::c_void);
             return 0 as *mut fontmap_rec;
         }
         if verbose > 3i32 {
-            dpx_message(
-                b"\nfontmap>> Expand @%s@:\x00" as *const u8 as *const i8,
-                sfd_name,
+            info!(
+                "\nfontmap>> Expand @{}@:",
+                CStr::from_ptr(sfd_name).display()
             );
         }
         loop {
@@ -1086,7 +1082,7 @@ pub unsafe extern "C" fn pdf_insert_fontmap_record(
                 continue;
             }
             if verbose > 3i32 {
-                dpx_message(b" %s\x00" as *const u8 as *const i8, tfm_name);
+                info!(" {}", CStr::from_ptr(tfm_name).display());
             }
             mrec = new((1_u64).wrapping_mul(::std::mem::size_of::<fontmap_rec>() as u64) as u32)
                 as *mut fontmap_rec;
@@ -1233,9 +1229,9 @@ pub unsafe extern "C" fn pdf_load_fontmap_file(mut filename: *const i8, mut mode
         TTInputFormat::FONTMAP,
     );
     if handle.is_null() {
-        dpx_warning(
-            b"Couldn\'t open font map file \"%s\".\x00" as *const u8 as *const i8,
-            filename,
+        warn!(
+            "Couldn\'t open font map file \"{}\".",
+            CStr::from_ptr(filename).display()
         );
         return -1i32;
     }
@@ -1254,14 +1250,14 @@ pub unsafe extern "C" fn pdf_load_fontmap_file(mut filename: *const i8, mut mode
         m = is_pdfm_mapline(p);
         if format * m < 0i32 {
             /* mismatch */
-            dpx_warning(
-                b"Found a mismatched fontmap line %d from %s.\x00" as *const u8 as *const i8,
+            warn!(
+                "Found a mismatched fontmap line {} from {}.",
                 lpos,
-                filename,
+                CStr::from_ptr(filename).display(),
             );
-            dpx_warning(
-                b"-- Ignore the current input buffer: %s\x00" as *const u8 as *const i8,
-                p,
+            warn!(
+                "-- Ignore the current input buffer: {}",
+                CStr::from_ptr(p).display(),
             );
         } else {
             format += m;
@@ -1271,14 +1267,14 @@ pub unsafe extern "C" fn pdf_load_fontmap_file(mut filename: *const i8, mut mode
             /* format > 0: DVIPDFM, format <= 0: DVIPS/pdfTeX */
             error = pdf_read_fontmap_line(mrec, p, llen, format); // CHECK
             if error != 0 {
-                dpx_warning(
-                    b"Invalid map record in fontmap line %d from %s.\x00" as *const u8 as *const i8,
+                warn!(
+                    "Invalid map record in fontmap line {} from {}.",
                     lpos,
-                    filename,
+                    CStr::from_ptr(filename).display(),
                 );
-                dpx_warning(
-                    b"-- Ignore the current input buffer: %s\x00" as *const u8 as *const i8,
-                    p,
+                warn!(
+                    "-- Ignore the current input buffer: {}",
+                    CStr::from_ptr(p).display(),
                 );
                 pdf_clear_fontmap_record(mrec);
                 free(mrec as *mut libc::c_void);
@@ -1335,10 +1331,7 @@ pub unsafe extern "C" fn pdf_insert_native_fontmap_record(
         embolden,
     );
     if verbose != 0 {
-        dpx_message(
-            b"<NATIVE-FONTMAP:%s\x00" as *const u8 as *const i8,
-            fontmap_key,
-        );
+        info!("<NATIVE-FONTMAP:{}", CStr::from_ptr(fontmap_key).display(),);
     }
     mrec = new((1_u64).wrapping_mul(::std::mem::size_of::<fontmap_rec>() as u64) as u32)
         as *mut fontmap_rec;
@@ -1462,10 +1455,10 @@ unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontma
         /* no-embedding */
         p = p.offset(1);
         if *p as i32 == '\u{0}' as i32 {
-            _tt_abort(
-                b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                map_name,
-                p,
+            panic!(
+                "Invalid map record: {} (--> {})",
+                CStr::from_ptr(map_name).display(),
+                CStr::from_ptr(p).display(),
             );
         }
         (*opt).flags |= 1i32 << 1i32
@@ -1473,10 +1466,10 @@ unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontma
     next = strchr(p, '/' as i32);
     if !next.is_null() {
         if next == p as *mut i8 {
-            _tt_abort(
-                b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                map_name,
-                p,
+            panic!(
+                "Invalid map record: {} (--> {})",
+                CStr::from_ptr(map_name).display(),
+                CStr::from_ptr(p).display(),
             );
         }
         font_name = substr(&mut p, '/' as i32 as i8);
@@ -1485,10 +1478,10 @@ unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontma
         next = strchr(p, ',' as i32);
         if !next.is_null() {
             if next == p as *mut i8 {
-                _tt_abort(
-                    b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                    map_name,
-                    p,
+                panic!(
+                    "Invalid map record: {} (--> {})",
+                    CStr::from_ptr(map_name).display(),
+                    CStr::from_ptr(p).display(),
                 );
             }
             font_name = substr(&mut p, ',' as i32 as i8);
@@ -1506,9 +1499,9 @@ unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontma
             (*opt).charcoll = substr(&mut p, ',' as i32 as i8);
             have_style = 1i32
         } else if *p.offset(0) as i32 == '\u{0}' as i32 {
-            _tt_abort(
-                b"Invalid map record: %s.\x00" as *const u8 as *const i8,
-                map_name,
+            panic!(
+                "Invalid map record: {}.",
+                CStr::from_ptr(map_name).display()
             );
         } else {
             (*opt).charcoll =
@@ -1520,28 +1513,28 @@ unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontma
     if have_style != 0 {
         if !strstartswith(p, b"BoldItalic\x00" as *const u8 as *const i8).is_null() {
             if *p.offset(10) != 0 {
-                _tt_abort(
-                    b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                    map_name,
-                    p,
+                panic!(
+                    "Invalid map record: {} (--> {})",
+                    CStr::from_ptr(map_name).display(),
+                    CStr::from_ptr(p).display(),
                 );
             }
             (*opt).style = 3i32
         } else if !strstartswith(p, b"Bold\x00" as *const u8 as *const i8).is_null() {
             if *p.offset(4) != 0 {
-                _tt_abort(
-                    b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                    map_name,
-                    p,
+                panic!(
+                    "Invalid map record: {} (--> {})",
+                    CStr::from_ptr(map_name).display(),
+                    CStr::from_ptr(p).display(),
                 );
             }
             (*opt).style = 1i32
         } else if !strstartswith(p, b"Italic\x00" as *const u8 as *const i8).is_null() {
             if *p.offset(6) != 0 {
-                _tt_abort(
-                    b"Invalid map record: %s (--> %s)\x00" as *const u8 as *const i8,
-                    map_name,
-                    p,
+                panic!(
+                    "Invalid map record: {} (--> {})",
+                    CStr::from_ptr(map_name).display(),
+                    CStr::from_ptr(p).display(),
                 );
             }
             (*opt).style = 2i32

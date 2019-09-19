@@ -38,7 +38,6 @@ use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_dict, pdf_new_name, pdf_new_number,
     pdf_new_stream, pdf_new_string, pdf_obj, pdf_stream_dict,
 };
-use bridge::_tt_abort;
 use libc::{free, memcmp, memset, sprintf, strlen};
 
 pub type size_t = u64;
@@ -228,10 +227,7 @@ unsafe extern "C" fn write_map(
         if count >= 100i32 as u64 || (*wbuf).curptr >= (*wbuf).limptr {
             let mut fmt_buf: [i8; 32] = [0; 32];
             if count > 100i32 as u64 {
-                _tt_abort(
-                    b"Unexpected error....: %zu\x00" as *const u8 as *const i8,
-                    count,
-                );
+                panic!("Unexpected error....: {}", count,);
             }
             sprintf(
                 fmt_buf.as_mut_ptr(),
@@ -585,10 +581,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
             /* Flush */
             let mut fmt_buf: [i8; 32] = [0; 32];
             if count > 100i32 as u64 {
-                _tt_abort(
-                    b"Unexpected error....: %zu\x00" as *const u8 as *const i8,
-                    count,
-                );
+                panic!("Unexpected error....: {}", count,);
             }
             sprintf(
                 fmt_buf.as_mut_ptr(),

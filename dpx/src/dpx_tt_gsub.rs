@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_numbers::{
     tt_get_signed_byte, tt_get_signed_pair, tt_get_unsigned_pair, tt_get_unsigned_quad,
 };
@@ -37,7 +40,7 @@ use crate::mfree;
 use crate::streq_ptr;
 use crate::{info, warn};
 
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_message;
 use super::dpx_mem::{new, renew};
 use super::dpx_otl_opt::{
     otl_match_optrule, otl_new_opt, otl_opt, otl_parse_optstring, otl_release_opt,
@@ -1388,11 +1391,11 @@ pub unsafe extern "C" fn otl_gsub_add_feat(
     strcpy((*gsub).feature, feature);
     if verbose > 0i32 {
         info!("\n");
-        dpx_message(
-            b"otl_gsub>> Reading \"%s.%s.%s\"...\n\x00" as *const u8 as *const i8,
-            script,
-            language,
-            feature,
+        info!(
+            "otl_gsub>> Reading \"{}.{}.{}\"...\n",
+            CStr::from_ptr(script).display(),
+            CStr::from_ptr(language).display(),
+            CStr::from_ptr(feature).display(),
         );
     }
     retval = otl_gsub_read_feat(gsub, sfont);
@@ -1436,9 +1439,9 @@ unsafe extern "C" fn scan_otl_tag(
         if period < p.offset(5) {
             strncpy(script, p, period.wrapping_offset_from(p) as _);
         } else {
-            dpx_warning(
-                b"Invalid OTL script tag found: %s\x00" as *const u8 as *const i8,
-                p,
+            warn!(
+                "Invalid OTL script tag found: {}",
+                CStr::from_ptr(p).display(),
             );
             return -1i32;
         }
@@ -1449,9 +1452,9 @@ unsafe extern "C" fn scan_otl_tag(
             if period < p.offset(5) {
                 strncpy(language, p, period.wrapping_offset_from(p) as _);
             } else {
-                dpx_warning(
-                    b"Invalid OTL lanuage tag found: %s\x00" as *const u8 as *const i8,
-                    p,
+                warn!(
+                    "Invalid OTL lanuage tag found: {}",
+                    CStr::from_ptr(p).display(),
                 );
                 return -1i32;
             }

@@ -30,6 +30,8 @@
 )]
 
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::dpx_error::dpx_warning;
 use super::dpx_mem::new;
@@ -128,7 +130,7 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
                     let mut expr: *mut bt_node = 0 as *mut bt_node;
                     expr = parse_expr(pp, endptr);
                     if expr.is_null() {
-                        dpx_warning(b"Syntax error: %s\n\x00" as *const u8 as *const i8, *pp);
+                        warn!("Syntax error: {}\n", CStr::from_ptr(*pp).display());
                         return 0 as *mut bt_node;
                     }
                     if **pp as i32 != ')' as i32 {
@@ -153,7 +155,7 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
             41 => return root,
             124 | 38 => {
                 if *pp >= endptr {
-                    dpx_warning(b"Syntax error: %s\n\x00" as *const u8 as *const i8, *pp);
+                    warn!("Syntax error: {}\n", CStr::from_ptr(*pp).display());
                     bt_release_tree(root);
                     return 0 as *mut bt_node;
                 } else {
@@ -204,7 +206,7 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
                         i += 1
                     }
                 } else {
-                    dpx_warning(b"Syntax error: %s\n\x00" as *const u8 as *const i8, *pp);
+                    warn!("Syntax error: {}\n", CStr::from_ptr(*pp).display());
                     bt_release_tree(root);
                     return 0 as *mut bt_node;
                 }

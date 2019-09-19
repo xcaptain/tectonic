@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_agl::{agl_close_map, agl_init_map, agl_set_verbose};
 use super::dpx_cid::CIDFont_set_verbose;
 use super::dpx_cidtype0::t1_load_UnicodeCMap;
@@ -36,7 +39,6 @@ use super::dpx_cmap::{
     CMap_cache_close, CMap_cache_find, CMap_cache_get, CMap_cache_init, CMap_get_name,
     CMap_get_profile, CMap_get_type, CMap_set_verbose,
 };
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_fontmap::pdf_lookup_fontmap_record;
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfencoding::{
@@ -61,7 +63,6 @@ use crate::dpx_pdfobj::{
 use crate::mfree;
 use crate::streq_ptr;
 use crate::{info, warn};
-use bridge::_tt_abort;
 use libc::{free, memset, rand, snprintf, sprintf, srand, strcpy, strlen, strstr};
 
 /* Options */
@@ -250,9 +251,9 @@ unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
                 }
             } else {
                 if (*font).fontname.is_null() {
-                    _tt_abort(
-                        b"Undefined in fontname... (%s)\x00" as *const u8 as *const i8,
-                        (*font).ident,
+                    panic!(
+                        "Undefined in fontname... ({})",
+                        CStr::from_ptr((*font).ident).display()
                     );
                 }
                 fontname = new(((7usize)
@@ -444,9 +445,9 @@ unsafe extern "C" fn try_load_ToUnicode_CMap(mut font: *mut pdf_font) -> i32 {
     fontdict = pdf_font_get_resource(font);
     tounicode = pdf_load_ToUnicode_stream(cmap_name);
     if tounicode.is_null() && (!mrec.is_null() && !(*mrec).opt.tounicode.is_null()) {
-        dpx_warning(
-            b"Failed to read ToUnicode mapping \"%s\"...\x00" as *const u8 as *const i8,
-            (*mrec).opt.tounicode,
+        warn!(
+            "Failed to read ToUnicode mapping \"{}\"...",
+            CStr::from_ptr((*mrec).opt.tounicode).display(),
         );
     } else if !tounicode.is_null() {
         if pdf_obj_typeof(tounicode) != PdfObjType::STREAM {
@@ -455,11 +456,10 @@ unsafe extern "C" fn try_load_ToUnicode_CMap(mut font: *mut pdf_font) -> i32 {
             if pdf_stream_length(tounicode) > 0i32 {
                 pdf_add_dict(fontdict, pdf_new_name("ToUnicode"), pdf_ref_obj(tounicode));
                 if __verbose != 0 {
-                    dpx_message(
-                        b"pdf_font>> ToUnicode CMap \"%s\" attached to font id=\"%s\".\n\x00"
-                            as *const u8 as *const i8,
-                        cmap_name,
-                        (*font).map_name,
+                    info!(
+                        "pdf_font>> ToUnicode CMap \"{}\" attached to font id=\"{}\".\n",
+                        CStr::from_ptr(cmap_name).display(),
+                        CStr::from_ptr((*font).map_name).display(),
                     );
                 }
             }
@@ -477,27 +477,25 @@ pub unsafe extern "C" fn pdf_close_fonts() {
         font = &mut *font_cache.fonts.offset(font_id as isize) as *mut pdf_font;
         if __verbose != 0 {
             if (*font).subtype != 4i32 {
-                dpx_message(
-                    b"(%s\x00" as *const u8 as *const i8,
-                    pdf_font_get_ident(font),
-                );
+                info!("({}", CStr::from_ptr(pdf_font_get_ident(font)).display(),);
                 if __verbose > 2i32 && pdf_font_get_flag(font, 1i32 << 0i32) == 0 {
-                    dpx_message(
-                        b"[%s+%s]\x00" as *const u8 as *const i8,
-                        pdf_font_get_uniqueTag(font),
-                        pdf_font_get_fontname(font),
+                    info!(
+                        "[{}+{}]",
+                        CStr::from_ptr(pdf_font_get_uniqueTag(font)).display(),
+                        CStr::from_ptr(pdf_font_get_fontname(font)).display(),
                     );
                 } else if __verbose > 1i32 {
-                    dpx_message(
-                        b"[%s]\x00" as *const u8 as *const i8,
-                        pdf_font_get_fontname(font),
+                    info!(
+                        "[{}]",
+                        CStr::from_ptr(pdf_font_get_fontname(font)).display()
                     );
                 }
                 if __verbose > 1i32 {
                     if pdf_font_get_encoding(font) >= 0i32 {
-                        dpx_message(
-                            b"[%s]\x00" as *const u8 as *const i8,
-                            pdf_encoding_get_name(pdf_font_get_encoding(font)),
+                        info!(
+                            "[{}]",
+                            CStr::from_ptr(pdf_encoding_get_name(pdf_font_get_encoding(font)))
+                                .display()
                         );
                     } else {
                         info!("[built-in]");
@@ -652,15 +650,13 @@ pub unsafe extern "C" fn pdf_font_findresource(
                 if minbytes == 2i32 && (*mrec).opt.mapc < 0i32 {
                     if __verbose != 0 {
                         info!("\n");
-                        dpx_message(
-                            b"pdf_font>> Input encoding \"%s\" requires at least 2 bytes.\n\x00"
-                                as *const u8 as *const i8,
-                            CMap_get_name(cmap),
+                        info!(
+                            "pdf_font>> Input encoding \"{}\" requires at least 2 bytes.\n",
+                            CStr::from_ptr(CMap_get_name(cmap)).display()
                         );
-                        dpx_message(
-                            b"pdf_font>> The -m <00> option will be assumed for \"%s\".\n\x00"
-                                as *const u8 as *const i8,
-                            (*mrec).font_name,
+                        info!(
+                            "pdf_font>> The -m <00> option will be assumed for \"{}\".\n",
+                            CStr::from_ptr((*mrec).font_name).display()
                         );
                     }
                     (*mrec).opt.mapc = 0i32
@@ -696,9 +692,9 @@ pub unsafe extern "C" fn pdf_font_findresource(
         if cmap_id < 0i32 {
             encoding_id = pdf_encoding_findresource((*mrec).enc_name);
             if encoding_id < 0i32 {
-                _tt_abort(
-                    b"Could not find encoding file \"%s\".\x00" as *const u8 as *const i8,
-                    (*mrec).enc_name,
+                panic!(
+                    "Could not find encoding file \"{}\".",
+                    CStr::from_ptr((*mrec).enc_name).display()
                 );
             }
         }
@@ -722,10 +718,9 @@ pub unsafe extern "C" fn pdf_font_findresource(
             {
                 found = 1i32;
                 if __verbose != 0 {
-                    dpx_message(
-                        b"\npdf_font>> Type0 font \"%s\" (cmap_id=%d) found at font_id=%d.\n\x00"
-                            as *const u8 as *const i8,
-                        (*mrec).font_name,
+                    info!(
+                        "\npdf_font>> Type0 font \"{}\" (cmap_id={}) found at font_id={}.\n",
+                        CStr::from_ptr((*mrec).font_name).display(),
                         cmap_id,
                         font_id,
                     );
@@ -754,18 +749,18 @@ pub unsafe extern "C" fn pdf_font_findresource(
             (*font).encoding_id = cmap_id;
             font_cache.count += 1;
             if __verbose != 0 {
-                dpx_message(
-                    b"\npdf_font>> Type0 font \"%s\"\x00" as *const u8 as *const i8,
-                    fontname,
+                info!(
+                    "\npdf_font>> Type0 font \"{}\"",
+                    CStr::from_ptr(fontname).display()
                 );
-                dpx_message(
-                    b" cmap_id=<%s,%d>\x00" as *const u8 as *const i8,
-                    (*mrec).enc_name,
+                info!(
+                    " cmap_id=<{},{}>",
+                    CStr::from_ptr((*mrec).enc_name).display(),
                     (*font).encoding_id,
                 );
-                dpx_message(
-                    b" opened at font_id=<%s,%d>.\n\x00" as *const u8 as *const i8,
-                    tex_name,
+                info!(
+                    " opened at font_id=<{},{}>.\n",
+                    CStr::from_ptr(tex_name).display(),
                     font_id,
                 );
             }
@@ -813,10 +808,9 @@ pub unsafe extern "C" fn pdf_font_findresource(
             }
             if found_0 != 0 {
                 if __verbose != 0 {
-                    dpx_message(
-                        b"\npdf_font>> Simple font \"%s\" (enc_id=%d) found at id=%d.\n\x00"
-                            as *const u8 as *const i8,
-                        fontname,
+                    info!(
+                        "\npdf_font>> Simple font \"{}\" (enc_id={}) found at id={}.\n",
+                        CStr::from_ptr(fontname).display(),
                         encoding_id,
                         font_id,
                     );
@@ -869,22 +863,24 @@ pub unsafe extern "C" fn pdf_font_findresource(
             }
             font_cache.count += 1;
             if __verbose != 0 {
-                dpx_message(
-                    b"\npdf_font>> Simple font \"%s\"\x00" as *const u8 as *const i8,
-                    fontname,
+                info!(
+                    "\npdf_font>> Simple font \"{}\"",
+                    CStr::from_ptr(fontname).display()
                 );
-                dpx_message(
-                    b" enc_id=<%s,%d>\x00" as *const u8 as *const i8,
+                info!(
+                    " enc_id=<{},{}>",
                     if !mrec.is_null() && !(*mrec).enc_name.is_null() {
-                        (*mrec).enc_name as *const i8
+                        CStr::from_ptr((*mrec).enc_name as *const i8)
+                            .to_str()
+                            .unwrap()
                     } else {
-                        b"builtin\x00" as *const u8 as *const i8
+                        "builtin"
                     },
                     (*font).encoding_id,
                 );
-                dpx_message(
-                    b" opened at font_id=<%s,%d>.\n\x00" as *const u8 as *const i8,
-                    tex_name,
+                info!(
+                    " opened at font_id=<{},{}>.\n",
+                    CStr::from_ptr(tex_name).display(),
                     font_id,
                 );
             }

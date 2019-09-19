@@ -657,8 +657,6 @@ unsafe extern "C" fn pdf_dev__flushpath(
     let mut n_seg: i32 = 0; /* default to 1 in PDF */
     let mut len: i32 = 0i32;
     let mut isrect: i32 = 0;
-    let mut i: i32 = 0;
-    let mut j: i32 = 0;
     assert!(b"fFsSbBW ".contains(&(opchr as u8)));
     let isclip = if opchr == b'W' as i8 { true } else { false };
     if

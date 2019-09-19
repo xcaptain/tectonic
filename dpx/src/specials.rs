@@ -40,6 +40,8 @@ pub mod util;
 pub mod xtx;
 
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use self::color::{spc_color_check_special, spc_color_setup_handler};
 use self::dvipdfmx::{spc_dvipdfmx_check_special, spc_dvipdfmx_setup_handler};
@@ -58,7 +60,6 @@ use self::tpic::{
 };
 use self::xtx::{spc_xtx_check_special, spc_xtx_setup_handler};
 use super::dpx_dvi::{dvi_dev_xpos, dvi_dev_ypos, dvi_link_annot, dvi_tag_depth, dvi_untag_depth};
-use super::dpx_error::dpx_warning;
 use super::dpx_pdfdoc::{
     pdf_doc_begin_annot, pdf_doc_current_page_number, pdf_doc_current_page_resources,
     pdf_doc_end_annot, pdf_doc_get_dictionary, pdf_doc_get_reference, pdf_doc_ref_page,
@@ -74,7 +75,6 @@ use super::specials::dvips::{
     spc_dvips_at_end_page, spc_dvips_check_special, spc_dvips_setup_handler,
 };
 use crate::dpx_pdfobj::{pdf_new_number, pdf_obj, pdf_ref_obj};
-use bridge::_tt_abort;
 use bridge::vsnprintf;
 use libc::{atoi, memcmp, sprintf, strcmp, strlen};
 
@@ -127,10 +127,15 @@ pub unsafe extern "C" fn spc_set_verbose(mut level: i32) {
 #[no_mangle]
 pub unsafe extern "C" fn spc_warn(mut spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
     let mut ap: ::std::ffi::VaListImpl;
-    static mut buf: [i8; 1024] = [0; 1024];
+    static mut buf: [u8; 1024] = [0; 1024];
     ap = args.clone();
-    vsnprintf(buf.as_mut_ptr(), buf.len() as _, fmt, ap.as_va_list());
-    dpx_warning(b"%s\x00" as *const u8 as *const i8, buf.as_mut_ptr());
+    vsnprintf(
+        buf.as_mut_ptr() as *mut i8,
+        buf.len() as _,
+        fmt,
+        ap.as_va_list(),
+    );
+    warn!("{}", CStr::from_bytes_with_nul(&buf[..]).unwrap().display());
 }
 /* This is currently just to make other spc_xxx to not directly
  * call dvi_xxx.
@@ -250,9 +255,9 @@ pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_ob
         }
     };
     if value.is_null() {
-        _tt_abort(
-            b"Object reference %s not exist.\x00" as *const u8 as *const i8,
-            key,
+        panic!(
+            "Object reference {} not exist.",
+            CStr::from_ptr(key).display(),
         );
     }
     value
@@ -296,7 +301,7 @@ pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
     }
     /* spc_handler_pdfm_bead() in spc_pdfm.c controls NULL too.
       if (!value) {
-        _tt_abort("Object reference %s not exist.", key);
+        panic!("Object reference %s not exist.", key);
       }
     */
     return value; /* _FIXME_ */
@@ -627,10 +632,10 @@ unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut
     let mut c = pdf_coord::new((*spe).x_user, (*spe).y_user);
     pdf_dev_transform(&mut c, None);
     if !(*ap).command.is_null() && !name.is_null() {
-        dpx_warning(
-            b"Interpreting special command %s (%s) failed.\x00" as *const u8 as *const i8,
-            (*ap).command,
-            name,
+        warn!(
+            "Interpreting special command {} ({}) failed.",
+            CStr::from_ptr((*ap).command).display(),
+            CStr::from_ptr(name).display(),
         );
         warn!(
             ">> at page=\"{}\" position=\"({}, {})\" (in PDF)",
@@ -667,10 +672,7 @@ unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut
             ebuf[i as usize] = '.' as i32 as i8
         }
     }
-    dpx_warning(
-        b">> xxx \"%s\"\x00" as *const u8 as *const i8,
-        ebuf.as_mut_ptr(),
-    );
+    warn!(">> xxx \"{}\"", CStr::from_ptr(ebuf.as_mut_ptr()).display());
     if (*ap).curptr < (*ap).endptr {
         i = 0i32;
         p = (*ap).curptr;
@@ -702,9 +704,9 @@ unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut
                 ebuf[i as usize] = '.' as i32 as i8
             }
         }
-        dpx_warning(
-            b">> Reading special command stopped around >>%s<<\x00" as *const u8 as *const i8,
-            ebuf.as_mut_ptr(),
+        warn!(
+            ">> Reading special command stopped around >>{}<<",
+            CStr::from_ptr(ebuf.as_mut_ptr()).display()
         );
         (*ap).curptr = (*ap).endptr
     };

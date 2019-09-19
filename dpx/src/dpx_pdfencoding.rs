@@ -30,6 +30,8 @@
 )]
 
 use crate::info;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::dpx_agl::{agl_lookup_list, agl_sput_UTF16BE};
 use super::dpx_cid::CSI_UNICODE;
@@ -40,7 +42,6 @@ use super::dpx_cmap::{
 use super::dpx_cmap_read::{CMap_parse, CMap_parse_check_sig};
 use super::dpx_cmap_write::CMap_create_stream;
 use super::dpx_dpxfile::dpx_tt_open;
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
@@ -52,7 +53,6 @@ use crate::dpx_pdfparse::{parse_pdf_array, parse_pdf_name, pdfparse_skip_line};
 use crate::mfree;
 use crate::streq_ptr;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_read};
-use bridge::_tt_abort;
 use libc::{free, memset, sprintf, strcmp, strcpy, strlen};
 
 pub type __ssize_t = i64;
@@ -290,7 +290,7 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
         return -1i32;
     }
     if verbose != 0 {
-        dpx_message(b"(Encoding:%s\x00" as *const u8 as *const i8, filename);
+        info!("(Encoding:{}", CStr::from_ptr(filename).display());
     }
     handle = dpx_tt_open(
         filename,
@@ -306,7 +306,7 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
             as *mut i8;
     *wbuf_0.offset(fsize as isize) = '\u{0}' as i32 as i8;
     if ttstub_input_read(handle, wbuf_0, fsize as size_t) != fsize as i64 {
-        _tt_abort(b"error reading %s\x00" as *const u8 as *const i8, filename);
+        panic!("error reading {}", CStr::from_ptr(filename).display());
     }
     ttstub_input_close(handle);
     p = wbuf_0;
@@ -347,10 +347,7 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
     );
     if !enc_name.is_null() {
         if verbose as i32 > 1i32 {
-            dpx_message(
-                b"[%s]\x00" as *const u8 as *const i8,
-                pdf_name_value(enc_name),
-            );
+            info!("[{}]", CStr::from_ptr(pdf_name_value(enc_name)).display());
         }
         pdf_release_obj(enc_name);
     }
@@ -478,10 +475,10 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
     if !baseenc_name.is_null() {
         let mut baseenc_id: i32 = pdf_encoding_findresource(baseenc_name);
         if baseenc_id < 0i32 || pdf_encoding_is_predefined(baseenc_id) == 0 {
-            _tt_abort(
-                b"Illegal base encoding %s for encoding %s\n\x00" as *const u8 as *const i8,
-                baseenc_name,
-                (*encoding).enc_name,
+            panic!(
+                "Illegal base encoding {} for encoding {}\n",
+                CStr::from_ptr(baseenc_name).display(),
+                CStr::from_ptr((*encoding).enc_name).display()
             );
         }
         (*encoding).baseenc =
@@ -781,20 +778,20 @@ pub unsafe extern "C" fn pdf_load_ToUnicode_stream(mut ident: *const i8) -> *mut
     }
     cmap = CMap_new();
     if CMap_parse(cmap, handle) < 0i32 {
-        dpx_warning(
-            b"Reading CMap file \"%s\" failed.\x00" as *const u8 as *const i8,
-            ident,
-        );
+        warn!(
+            "Reading CMap file \"{}\" failed.",
+            CStr::from_ptr(ident).display()
+        )
     } else {
         if verbose != 0 {
-            dpx_message(b"(CMap:%s)\x00" as *const u8 as *const i8, ident);
+            info!("(CMap:{})", CStr::from_ptr(ident).display());
         }
         stream = CMap_create_stream(cmap);
         if stream.is_null() {
-            dpx_warning(
-                b"Failed to creat ToUnicode CMap stream for \"%s\".\x00" as *const u8 as *const i8,
-                ident,
-            );
+            warn!(
+                "Failed to creat ToUnicode CMap stream for \"{}\".",
+                CStr::from_ptr(ident).display()
+            )
         }
     }
     CMap_release(cmap);

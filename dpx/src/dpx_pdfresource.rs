@@ -31,12 +31,12 @@
 
 use crate::streq_ptr;
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew};
 use crate::dpx_pdfobj::{pdf_link_obj, pdf_obj, pdf_ref_obj, pdf_release_obj};
 use crate::mfree;
-use bridge::_tt_abort;
 use libc::{free, strcpy, strlen};
 
 #[derive(Copy, Clone)]
@@ -234,9 +234,9 @@ pub unsafe extern "C" fn pdf_defineresource(
     assert!(!category.is_null() && !object.is_null());
     cat_id = get_category(category);
     if cat_id < 0i32 {
-        _tt_abort(
-            b"Unknown resource category: %s\x00" as *const u8 as *const i8,
-            category,
+        panic!(
+            "Unknown resource category: {}",
+            CStr::from_ptr(category).display(),
         );
     }
     rc = &mut *resources.as_mut_ptr().offset(cat_id as isize) as *mut res_cache;
@@ -245,10 +245,10 @@ pub unsafe extern "C" fn pdf_defineresource(
         while res_id < (*rc).count {
             res = &mut *(*rc).resources.offset(res_id as isize) as *mut pdf_res;
             if streq_ptr(resname, (*res).ident) {
-                dpx_warning(
-                    b"Resource %s (category: %s) already defined...\x00" as *const u8 as *const i8,
-                    resname,
-                    category,
+                warn!(
+                    "Resource {} (category: {}) already defined...",
+                    CStr::from_ptr(resname).display(),
+                    CStr::from_ptr(category).display(),
                 );
                 pdf_flush_resource(res);
                 (*res).flags = flags;
@@ -303,9 +303,9 @@ pub unsafe extern "C" fn pdf_findresource(mut category: *const i8, mut resname: 
     assert!(!resname.is_null() && !category.is_null());
     cat_id = get_category(category);
     if cat_id < 0i32 {
-        _tt_abort(
-            b"Unknown resource category: %s\x00" as *const u8 as *const i8,
-            category,
+        panic!(
+            "Unknown resource category: {}",
+            CStr::from_ptr(category).display(),
         );
     }
     rc = &mut *resources.as_mut_ptr().offset(cat_id as isize) as *mut res_cache;

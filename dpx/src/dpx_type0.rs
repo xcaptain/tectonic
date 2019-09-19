@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_cid::{
     CIDFont, CIDFont_attach_parent, CIDFont_cache_close, CIDFont_cache_find, CIDFont_cache_get,
     CIDFont_get_CIDSysInfo, CIDFont_get_embedding, CIDFont_get_flag, CIDFont_get_fontname,
@@ -36,7 +39,6 @@ use super::dpx_cid::{
     CIDFont_get_subtype, CIDFont_is_ACCFont, CIDFont_is_UCSFont,
 };
 use super::dpx_cmap::{CMap_cache_get, CMap_get_CIDSysInfo, CMap_get_wmode, CMap_is_Identity};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfencoding::pdf_load_ToUnicode_stream;
 use super::dpx_pdfresource::{pdf_defineresource, pdf_findresource, pdf_get_resource_reference};
@@ -249,9 +251,9 @@ unsafe extern "C" fn add_ToUnicode(mut font: *mut Type0Font) {
     if !tounicode.is_null() {
         pdf_add_dict((*font).fontdict, pdf_new_name("ToUnicode"), tounicode);
     } else {
-        dpx_warning(
-            b"Failed to load ToUnicode CMap for font \"%s\"\x00" as *const u8 as *const i8,
-            fontname,
+        warn!(
+            "Failed to load ToUnicode CMap for font \"{}\"",
+            CStr::from_ptr(fontname).display(),
         );
     };
 }
@@ -454,12 +456,9 @@ pub unsafe extern "C" fn Type0Font_cache_find(
     fontname = CIDFont_get_fontname(cidfont); /* skip XXXXXX+ */
     if __verbose != 0 {
         if CIDFont_get_embedding(cidfont) != 0 && strlen(fontname) > 7 {
-            dpx_message(
-                b"(CID:%s)\x00" as *const u8 as *const i8,
-                fontname.offset(7),
-            );
+            info!("(CID:{})", CStr::from_ptr(fontname.offset(7)).display());
         } else {
-            dpx_message(b"(CID:%s)\x00" as *const u8 as *const i8, fontname);
+            info!("(CID:{})", CStr::from_ptr(fontname).display());
         }
     }
     /*

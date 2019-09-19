@@ -38,7 +38,7 @@ use crate::{streq_ptr, strstartswith};
 use std::ffi::CStr;
 
 use super::dpx_dpxutil::{ht_append_table, ht_clear_table, ht_init_table, ht_lookup_table};
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_message;
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::{tt_mfgets, work_buffer};
 use super::dpx_pdfdev::pdf_sprint_number;
@@ -3031,7 +3031,7 @@ pub unsafe extern "C" fn pdf_concat_stream(mut dst: *mut pdf_obj, mut src: *mut 
                 filter = pdf_get_array(filter, 0i32)
             }
             if !filter.is_null() && pdf_obj_typeof(filter) == PdfObjType::NAME {
-                let filter_name = CStr::from_ptr(pdf_name_value(filter)).to_str().unwrap();
+                let filter_name = CStr::from_ptr(pdf_name_value(filter)).to_string_lossy();
                 if filter_name == "FlateDecode" {
                     if have_parms != 0 {
                         error = pdf_add_stream_flate_filtered(
@@ -3456,9 +3456,9 @@ unsafe extern "C" fn parse_trailer(mut pf: *mut pdf_file) -> *mut pdf_obj {
         .is_null()
     {
         warn!("No trailer.  Are you sure this is a PDF file?");
-        dpx_warning(
-            b"buffer:\n->%s<-\n\x00" as *const u8 as *const i8,
-            work_buffer.as_mut_ptr(),
+        warn!(
+            "buffer:\n->{}<-\n",
+            CStr::from_ptr(work_buffer.as_mut_ptr()).to_string_lossy(),
         );
         result = 0 as *mut pdf_obj
     } else {
@@ -3708,10 +3708,9 @@ unsafe extern "C" fn pdf_get_object(
             && (*(*pf).xref_table.offset(obj_num as isize)).field3 as i32 == obj_gen as i32
             || (*(*pf).xref_table.offset(obj_num as isize)).typ as i32 == 2i32 && obj_gen == 0))
     {
-        dpx_warning(
-            b"Trying to read nonexistent or deleted object: %u %hu\x00" as *const u8 as *const i8,
-            obj_num,
-            obj_gen as i32,
+        warn!(
+            "Trying to read nonexistent or deleted object: {} {}",
+            obj_num, obj_gen,
         );
         return pdf_new_null();
     }

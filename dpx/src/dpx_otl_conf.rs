@@ -29,11 +29,13 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use crate::info;
 
 use super::dpx_agl::agl_get_unicodes;
 use super::dpx_dpxutil::parse_c_ident;
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::new;
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
@@ -43,7 +45,6 @@ use crate::dpx_pdfobj::{
 };
 use crate::streq_ptr;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_read};
-use bridge::_tt_abort;
 use libc::{free, memset, strcat, strcmp, strcpy, strlen};
 
 pub type __ssize_t = i64;
@@ -99,10 +100,7 @@ unsafe extern "C" fn parse_uc_coverage(
                 glyphclass = parse_c_ident(pp, endptr);
                 cvalues = pdf_lookup_dict(gclass, glyphclass);
                 if cvalues.is_null() {
-                    _tt_abort(
-                        b"%s not defined...\x00" as *const u8 as *const i8,
-                        glyphclass,
-                    );
+                    panic!("{} not defined...", CStr::from_ptr(glyphclass).display());
                 }
                 size = pdf_array_length(cvalues) as i32;
                 i = 0i32;
@@ -120,9 +118,9 @@ unsafe extern "C" fn parse_uc_coverage(
                 if (*pp).offset(1) < endptr && **pp as i32 == '-' as i32 {
                     value = pdf_new_array();
                     if agl_get_unicodes(glyphname, &mut ucv, 1i32) != 1i32 {
-                        _tt_abort(
-                            b"Invalid Unicode char: %s\x00" as *const u8 as *const i8,
-                            glyphname,
+                        panic!(
+                            "Invalid Unicode char: {}",
+                            CStr::from_ptr(glyphname).display(),
                         );
                     }
                     pdf_add_array(value, pdf_new_number(ucv as f64));
@@ -131,24 +129,24 @@ unsafe extern "C" fn parse_uc_coverage(
                     skip_white(pp, endptr);
                     glyphname = parse_c_ident(pp, endptr);
                     if glyphname.is_null() {
-                        _tt_abort(
-                            b"Invalid Unicode char: %s\x00" as *const u8 as *const i8,
-                            glyphname,
+                        panic!(
+                            "Invalid Unicode char: {}",
+                            CStr::from_ptr(glyphname).display(),
                         );
                     }
                     if agl_get_unicodes(glyphname, &mut ucv, 1i32) != 1i32 {
-                        _tt_abort(
-                            b"Invalid Unicode char: %s\x00" as *const u8 as *const i8,
-                            glyphname,
+                        panic!(
+                            "Invalid Unicode char: {}",
+                            CStr::from_ptr(glyphname).display(),
                         );
                     }
                     pdf_add_array(value, pdf_new_number(ucv as f64));
                     free(glyphname as *mut libc::c_void);
                 } else {
                     if agl_get_unicodes(glyphname, &mut ucv, 1i32) != 1i32 {
-                        _tt_abort(
-                            b"Invalid Unicode char: %s\x00" as *const u8 as *const i8,
-                            glyphname,
+                        panic!(
+                            "Invalid Unicode char: {}",
+                            CStr::from_ptr(glyphname).display(),
                         );
                     }
                     value = pdf_new_number(ucv as f64);
@@ -176,34 +174,33 @@ unsafe extern "C" fn add_rule(
     if *first.offset(0) as i32 == '@' as i32 {
         glyph1 = pdf_lookup_dict(gclass, &mut *first.offset(1));
         if glyph1.is_null() {
-            dpx_warning(
-                b"No glyph class \"%s\" found.\x00" as *const u8 as *const i8,
-                &mut *first.offset(1) as *mut i8,
+            warn!(
+                "No glyph class \"{}\" found.",
+                CStr::from_ptr(&mut *first.offset(1) as *mut i8).display()
             );
             return;
         }
         pdf_link_obj(glyph1);
         if verbose > 0i32 {
-            dpx_message(
-                b"otl_conf>> Output glyph sequence: %s\n\x00" as *const u8 as *const i8,
-                first,
+            info!(
+                "otl_conf>> Output glyph sequence: {}\n",
+                CStr::from_ptr(first).display()
             );
         }
     } else {
         n_unicodes = agl_get_unicodes(first, unicodes.as_mut_ptr(), 16i32);
         if n_unicodes < 1i32 {
-            dpx_warning(
-                b"Failed to convert glyph \"%s\" to Unicode sequence.\x00" as *const u8
-                    as *const i8,
-                first,
+            warn!(
+                "Failed to convert glyph \"{}\" to Unicode sequence.",
+                CStr::from_ptr(first).display()
             );
             return;
         }
         glyph1 = pdf_new_array();
         if verbose > 0i32 {
-            dpx_message(
-                b"otl_conf>> Output glyph sequence: %s ->\x00" as *const u8 as *const i8,
-                first,
+            info!(
+                "otl_conf>> Output glyph sequence: {} ->",
+                CStr::from_ptr(first).display()
             );
         }
         i = 0i32;
@@ -225,41 +222,40 @@ unsafe extern "C" fn add_rule(
     if *second.offset(0) as i32 == '@' as i32 {
         glyph2 = pdf_lookup_dict(gclass, &mut *second.offset(1));
         if glyph2.is_null() {
-            dpx_warning(
-                b"No glyph class \"%s\" found.\x00" as *const u8 as *const i8,
-                &mut *second.offset(1) as *mut i8,
+            warn!(
+                "No glyph class \"{}\" found.",
+                CStr::from_ptr(&mut *second.offset(1) as *mut i8).display()
             );
             return;
         }
         pdf_link_obj(glyph2);
         if verbose > 0i32 {
-            dpx_message(
-                b"otl_conf>> Input glyph sequence: %s (%s)\n\x00" as *const u8 as *const i8,
-                second,
-                suffix,
+            info!(
+                "otl_conf>> Input glyph sequence: {} ({})\n",
+                CStr::from_ptr(second).display(),
+                CStr::from_ptr(suffix).display(),
             );
         }
     } else {
         n_unicodes = agl_get_unicodes(second, unicodes.as_mut_ptr(), 16i32);
         if n_unicodes < 1i32 {
-            dpx_warning(
-                b"Failed to convert glyph \"%s\" to Unicode sequence.\x00" as *const u8
-                    as *const i8,
-                second,
+            warn!(
+                "Failed to convert glyph \"{}\" to Unicode sequence.",
+                CStr::from_ptr(second).display()
             );
             return;
         }
         if verbose > 0i32 {
             if !suffix.is_null() {
-                dpx_message(
-                    b"otl_conf>> Input glyph sequence: %s.%s ->\x00" as *const u8 as *const i8,
-                    second,
-                    suffix,
+                info!(
+                    "otl_conf>> Input glyph sequence: {}.{} ->",
+                    CStr::from_ptr(second).display(),
+                    CStr::from_ptr(suffix).display(),
                 );
             } else {
-                dpx_message(
-                    b"otl_conf>> Input glyph sequence: %s ->\x00" as *const u8 as *const i8,
-                    second,
+                info!(
+                    "otl_conf>> Input glyph sequence: {} ->",
+                    CStr::from_ptr(second).display()
                 );
             }
         }
@@ -277,7 +273,7 @@ unsafe extern "C" fn add_rule(
             i += 1
         }
         if verbose > 0i32 {
-            dpx_message(b" (%s)\n\x00" as *const u8 as *const i8, suffix);
+            info!(" ({})\n", CStr::from_ptr(suffix).display());
         }
     }
     /* OK */
@@ -347,7 +343,7 @@ unsafe extern "C" fn parse_substrule(
                 if strcmp(tmp, b"by\x00" as *const u8 as *const i8) != 0
                     && strcmp(tmp, b"to\x00" as *const u8 as *const i8) != 0
                 {
-                    _tt_abort(b"Syntax error (2): %s\x00" as *const u8 as *const i8, *pp);
+                    panic!("Syntax error (2): {}", CStr::from_ptr(*pp).display());
                 }
                 skip_white(pp, endptr);
                 second = parse_c_ident(pp, endptr);
@@ -368,7 +364,7 @@ unsafe extern "C" fn parse_substrule(
                 free(second as *mut libc::c_void);
                 free(suffix as *mut libc::c_void);
             } else {
-                _tt_abort(b"Unkown command %s.\x00" as *const u8 as *const i8, token);
+                panic!("Unkown command {}.", CStr::from_ptr(token).display());
             }
             free(token as *mut libc::c_void);
             skip_white(pp, endptr);
@@ -449,10 +445,10 @@ unsafe extern "C" fn parse_block(
                         pdf_new_string(tmp as *const libc::c_void, strlen(tmp) as _),
                     );
                     if verbose > 0i32 {
-                        dpx_message(
-                            b"otl_conf>> Current %s set to \"%s\"\n\x00" as *const u8 as *const i8,
-                            token,
-                            tmp,
+                        info!(
+                            "otl_conf>> Current {} set to \"{}\"\n",
+                            CStr::from_ptr(token).display(),
+                            CStr::from_ptr(tmp).display(),
                         );
                     }
                     free(tmp as *mut libc::c_void);
@@ -468,9 +464,9 @@ unsafe extern "C" fn parse_block(
                 skip_white(pp, endptr);
                 tmp = parse_c_ident(pp, endptr);
                 if verbose > 0i32 {
-                    dpx_message(
-                        b"otl_conf>> Reading option \"%s\"\n\x00" as *const u8 as *const i8,
-                        tmp,
+                    info!(
+                        "otl_conf>> Reading option \"{}\"\n",
+                        CStr::from_ptr(tmp).display()
                     );
                 }
                 skip_white(pp, endptr);
@@ -484,9 +480,9 @@ unsafe extern "C" fn parse_block(
                 let mut subst: *mut pdf_obj = 0 as *mut pdf_obj;
                 let mut rule_block: *mut pdf_obj = 0 as *mut pdf_obj;
                 if verbose > 0i32 {
-                    dpx_message(
-                        b"otl_conf>> Reading block (%s)\n\x00" as *const u8 as *const i8,
-                        token,
+                    info!(
+                        "otl_conf>> Reading block ({})\n",
+                        CStr::from_ptr(token).display()
                     );
                 }
                 skip_white(pp, endptr);
@@ -507,9 +503,9 @@ unsafe extern "C" fn parse_block(
                 *pp = (*pp).offset(1);
                 skip_white(pp, endptr);
                 if verbose > 0i32 {
-                    dpx_message(
-                        b"otl_conf>> Glyph class \"%s\"\n\x00" as *const u8 as *const i8,
-                        token,
+                    info!(
+                        "otl_conf>> Glyph class \"{}\"\n",
+                        CStr::from_ptr(token).display()
                     );
                 }
                 coverage = parse_uc_coverage(gclass, pp, endptr);
@@ -552,11 +548,10 @@ unsafe extern "C" fn otl_read_conf(mut conf_name: *const i8) -> *mut pdf_obj {
     size = ttstub_input_get_size(handle as rust_input_handle_t) as i32;
     if verbose > 0i32 {
         info!("\n");
-        dpx_message(
-            b"otl_conf>> Layout config. \"%s\" found: file=\"%s\" (%d bytes)\n\x00" as *const u8
-                as *const i8,
-            conf_name,
-            filename,
+        info!(
+            "otl_conf>> Layout config. \"{}\" found: file=\"{}\" ({} bytes)\n",
+            CStr::from_ptr(conf_name).display(),
+            CStr::from_ptr(filename).display(),
             size,
         );
     }
@@ -572,9 +567,9 @@ unsafe extern "C" fn otl_read_conf(mut conf_name: *const i8) -> *mut pdf_obj {
         len = ttstub_input_read(handle as rust_input_handle_t, p, size as size_t) as i32;
         if len < 0i32 {
             ttstub_input_close(handle as rust_input_handle_t);
-            _tt_abort(
-                b"error reading OTL configuration file \"%s\"\x00" as *const u8 as *const i8,
-                filename,
+            panic!(
+                "error reading OTL configuration file \"{}\"",
+                CStr::from_ptr(filename).display()
             );
         }
         p = p.offset(len as isize);
@@ -590,7 +585,7 @@ unsafe extern "C" fn otl_read_conf(mut conf_name: *const i8) -> *mut pdf_obj {
 }
 static mut otl_confs: *mut pdf_obj = 0 as *const pdf_obj as *mut pdf_obj;
 #[no_mangle]
-pub unsafe extern "C" fn otl_find_conf(mut conf_name: *const i8) -> *mut pdf_obj {
+pub unsafe extern "C" fn otl_find_conf(mut _conf_name: *const i8) -> *mut pdf_obj {
     let mut _rule: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut _script: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut _language: *mut pdf_obj = 0 as *mut pdf_obj;

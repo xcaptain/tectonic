@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_sfnt::{
     dfont_open, sfnt_close, sfnt_find_table_pos, sfnt_locate_table, sfnt_open,
     sfnt_read_table_directory,
@@ -45,7 +48,7 @@ use super::dpx_dpxfile::{
 };
 use super::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 use super::dpx_dvipdfmx::{is_xdv, landscape_mode, paper_height, paper_width};
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_warning;
 use super::dpx_fontmap::{pdf_insert_native_fontmap_record, pdf_lookup_fontmap_record};
 use super::dpx_mem::{new, renew, xmalloc};
 use super::dpx_numbers::{
@@ -85,7 +88,6 @@ use crate::{
     ttstub_input_close, ttstub_input_get_size, ttstub_input_getc, ttstub_input_open,
     ttstub_input_read, ttstub_input_seek, ttstub_input_ungetc,
 };
-use bridge::_tt_abort;
 use libc::{atof, free, memcmp, memset, sprintf, strcmp, strlen, strncpy, strtol};
 
 use crate::TTInputFormat;
@@ -699,11 +701,9 @@ pub unsafe extern "C" fn dvi_set_verbose(mut level: i32) {
 pub unsafe extern "C" fn dvi_npages() -> u32 {
     num_pages
 }
-static mut invalid_signature: [i8; 53] = [
-    83, 111, 109, 101, 116, 104, 105, 110, 103, 32, 105, 115, 32, 119, 114, 111, 110, 103, 46, 32,
-    65, 114, 101, 32, 121, 111, 117, 32, 115, 117, 114, 101, 32, 116, 104, 105, 115, 32, 105, 115,
-    32, 97, 32, 68, 86, 73, 32, 102, 105, 108, 101, 63, 0,
-];
+
+const invalid_signature: &str = "Something is wrong. Are you sure this is a DVI file?";
+
 static mut pre_id_byte: i32 = 0;
 static mut post_id_byte: i32 = 0;
 static mut is_ptex: i32 = 0i32;
@@ -755,7 +755,7 @@ unsafe extern "C" fn find_post() -> i32 {
         || !(ch == 2i32 || ch == 3i32 || ch == 7i32 || ch == 6i32)
     {
         info!("DVI ID = {}\n", ch);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     post_id_byte = ch;
     is_xdv = (ch == 7i32 || ch == 6i32) as i32;
@@ -766,14 +766,14 @@ unsafe extern "C" fn find_post() -> i32 {
     ch = ttstub_input_getc(dvi_handle);
     if ch != 249i32 {
         info!("Found {} where post_post opcode should be\n", ch);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     current = tt_get_signed_quad(dvi_handle);
     ttstub_input_seek(dvi_handle, current as ssize_t, 0i32);
     ch = ttstub_input_getc(dvi_handle);
     if ch != 248i32 {
         info!("Found {} where post_post opcode should be\n", ch);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     /* Finally check the ID byte in the preamble */
     /* An Ascii pTeX DVI file has id_byte DVI_ID in the preamble but DVIV_ID in the postamble. */
@@ -781,12 +781,12 @@ unsafe extern "C" fn find_post() -> i32 {
     ch = tt_get_unsigned_byte(dvi_handle) as i32;
     if ch != 247i32 {
         info!("Found {} where PRE was expected\n", ch);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     ch = tt_get_unsigned_byte(dvi_handle) as i32;
     if !(ch == 2i32 || ch == 7i32 || ch == 6i32) {
         info!("DVI ID = {}\n", ch);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     pre_id_byte = ch;
     check_id_bytes();
@@ -809,7 +809,7 @@ unsafe extern "C" fn get_page_info(mut post_location: i32) {
     if (*page_loc.offset(num_pages.wrapping_sub(1_u32) as isize)).wrapping_add(41_u32)
         > dvi_file_size
     {
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     i = num_pages.wrapping_sub(2_u32) as i32;
     while i >= 0i32 {
@@ -822,7 +822,7 @@ unsafe extern "C" fn get_page_info(mut post_location: i32) {
         if (*page_loc.offset(num_pages.wrapping_sub(1_u32) as isize)).wrapping_add(41_u32)
             > dvi_file_size
         {
-            _tt_abort(invalid_signature.as_ptr());
+            panic!(invalid_signature);
         }
         i -= 1
     }
@@ -896,14 +896,14 @@ unsafe extern "C" fn read_font_record(mut tex_id: u32) {
         ((dir_length + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32
     ) as *mut i8;
     if ttstub_input_read(dvi_handle, directory, dir_length as size_t) != dir_length as i64 {
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     *directory.offset(dir_length as isize) = '\u{0}' as i32 as i8;
     free(directory as *mut libc::c_void);
     font_name = new(((name_length + 1i32) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     if ttstub_input_read(dvi_handle, font_name, name_length as size_t) != name_length as i64 {
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     *font_name.offset(name_length as isize) = '\u{0}' as i32 as i8;
     (*def_fonts.offset(num_def_fonts as isize)).tex_id = tex_id;
@@ -945,7 +945,7 @@ unsafe extern "C" fn read_native_font_record(mut tex_id: u32) {
         new(((len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
             as *mut i8;
     if ttstub_input_read(dvi_handle, font_name, len as size_t) != len as i64 {
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     *font_name.offset(len as isize) = '\u{0}' as i32 as i8;
     index = tt_get_positive_quad(
@@ -1001,7 +1001,7 @@ unsafe extern "C" fn get_dvi_fonts(mut post_location: i32) {
             }
             _ => {
                 info!("Unexpected op code: {:3}\n", code,);
-                _tt_abort(invalid_signature.as_ptr());
+                panic!(invalid_signature);
             }
         }
     }
@@ -1011,9 +1011,9 @@ unsafe extern "C" fn get_dvi_fonts(mut post_location: i32) {
         info!("DVI file font info\n");
         i = 0_u32;
         while i < num_def_fonts {
-            dpx_message(
-                b"TeX Font: %10s loaded at ID=%5d, \x00" as *const u8 as *const i8,
-                (*def_fonts.offset(i as isize)).font_name,
+            info!(
+                "TeX Font: {:10} loaded at ID={:5}, ",
+                CStr::from_ptr((*def_fonts.offset(i as isize)).font_name).display(),
                 (*def_fonts.offset(i as isize)).tex_id,
             );
             info!(
@@ -1035,13 +1035,13 @@ unsafe extern "C" fn get_comment() {
     if ttstub_input_read(dvi_handle, dvi_info.comment.as_mut_ptr(), length as size_t)
         != length as i64
     {
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     dvi_info.comment[length as usize] = '\u{0}' as i32 as i8;
     if verbose != 0 {
-        dpx_message(
-            b"DVI Comment: %s\n\x00" as *const u8 as *const i8,
-            dvi_info.comment.as_mut_ptr(),
+        info!(
+            "DVI Comment: {}\n",
+            CStr::from_ptr(dvi_info.comment.as_mut_ptr()).display()
         );
     };
 }
@@ -1165,9 +1165,9 @@ pub unsafe extern "C" fn dvi_locate_font(mut tfm_name: *const i8, mut ptsize: sp
     let mut font_id: i32 = 0;
     let mut mrec: *mut fontmap_rec = 0 as *mut fontmap_rec;
     if verbose != 0 {
-        dpx_message(
-            b"<%s@%.2fpt\x00" as *const u8 as *const i8,
-            tfm_name,
+        info!(
+            "<{}@{:.2}pt",
+            CStr::from_ptr(tfm_name).display(),
             ptsize as f64 * dvi2pts,
         );
     }
@@ -1241,11 +1241,10 @@ pub unsafe extern "C" fn dvi_locate_font(mut tfm_name: *const i8, mut ptsize: sp
         if !mrec1.is_null() && (*mrec1).enc_name.is_null() {
             font_id = vf_locate_font((*mrec1).font_name, ptsize);
             if font_id < 0i32 {
-                dpx_warning(
-                    b"Could not locate Omega Virtual Font \"%s\" for \"%s\".\x00" as *const u8
-                        as *const i8,
-                    (*mrec1).font_name,
-                    tfm_name,
+                warn!(
+                    "Could not locate Omega Virtual Font \"{}\" for \"{}\".",
+                    CStr::from_ptr((*mrec1).font_name).display(),
+                    CStr::from_ptr(tfm_name).display(),
                 );
             } else {
                 (*loaded_fonts.offset(cur_id as isize)).type_0 = 2i32;
@@ -1274,52 +1273,46 @@ pub unsafe extern "C" fn dvi_locate_font(mut tfm_name: *const i8, mut ptsize: sp
     /* We need ptsize for PK font creation. */
     font_id = pdf_dev_locate_font(name, ptsize);
     if font_id < 0i32 {
-        dpx_warning(
-            b"Could not locate a virtual/physical font for TFM \"%s\".\x00" as *const u8
-                as *const i8,
-            tfm_name,
+        warn!(
+            "Could not locate a virtual/physical font for TFM \"{}\".",
+            CStr::from_ptr(tfm_name).display()
         );
         if !mrec.is_null() && !(*mrec).map_name.is_null() {
             /* has map_name */
             let mut mrec1_0: *mut fontmap_rec = pdf_lookup_fontmap_record((*mrec).map_name); // CHECK this is enough
-            dpx_warning(b">> This font is mapped to an intermediate 16-bit font \"%s\" with SFD charmap=<%s,%s>,\x00"
-                            as *const u8 as *const i8,
-                        (*mrec).map_name, (*mrec).charmap.sfd_name,
-                        (*mrec).charmap.subfont_id);
+            warn!(">> This font is mapped to an intermediate 16-bit font \"{}\" with SFD charmap=<{},{}>,",
+                        CStr::from_ptr((*mrec).map_name).display(), CStr::from_ptr((*mrec).charmap.sfd_name).display(),
+                        CStr::from_ptr((*mrec).charmap.subfont_id).display()
+                        );
             if mrec1_0.is_null() {
-                dpx_warning(
-                    b">> but I couldn\'t find font mapping for \"%s\".\x00" as *const u8
-                        as *const i8,
-                    (*mrec).map_name,
+                warn!(
+                    ">> but I couldn\'t find font mapping for \"{}\".",
+                    CStr::from_ptr((*mrec).map_name).display()
                 );
             } else {
-                dpx_warning(
-                    b">> and then mapped to a physical font \"%s\" by fontmap.\x00" as *const u8
-                        as *const i8,
-                    (*mrec1_0).font_name,
+                warn!(
+                    ">> and then mapped to a physical font \"{}\" by fontmap.",
+                    CStr::from_ptr((*mrec1_0).font_name).display()
                 );
-                dpx_warning(
-                    b">> Please check if kpathsea library can find this font: %s\x00" as *const u8
-                        as *const i8,
-                    (*mrec1_0).font_name,
+                warn!(
+                    ">> Please check if kpathsea library can find this font: {}",
+                    CStr::from_ptr((*mrec1_0).font_name).display(),
                 );
             }
         } else if !mrec.is_null() && (*mrec).map_name.is_null() {
-            dpx_warning(
-                b">> This font is mapped to a physical font \"%s\".\x00" as *const u8 as *const i8,
-                (*mrec).font_name,
+            warn!(
+                ">> This font is mapped to a physical font \"{}\".",
+                CStr::from_ptr((*mrec).font_name).display()
             );
-            dpx_warning(
-                b">> Please check if kpathsea library can find this font: %s\x00" as *const u8
-                    as *const i8,
-                (*mrec).font_name,
+            warn!(
+                ">> Please check if kpathsea library can find this font: {}",
+                CStr::from_ptr((*mrec).font_name).display(),
             );
         } else {
             warn!(">> There are no valid font mapping entry for this font.");
-            dpx_warning(
-                b">> Font file name \"%s\" was assumed but failed to locate that font.\x00"
-                    as *const u8 as *const i8,
-                tfm_name,
+            warn!(
+                ">> Font file name \"{}\" was assumed but failed to locate that font.",
+                CStr::from_ptr(tfm_name).display()
             );
         }
         panic!("Cannot proceed without .vf or \"physical\" font for PDF output...");
@@ -1352,9 +1345,9 @@ unsafe extern "C" fn dvi_locate_native_font(
     let mut is_dfont: i32 = 0i32;
     let mut is_type1: i32 = 0i32;
     if verbose != 0 {
-        dpx_message(
-            b"<%s@%.2fpt\x00" as *const u8 as *const i8,
-            filename,
+        info!(
+            "<{}@{:.2}pt",
+            CStr::from_ptr(filename).display(),
             ptsize as f64 * dvi2pts,
         );
     }
@@ -1371,9 +1364,9 @@ unsafe extern "C" fn dvi_locate_native_font(
                 handle = dpx_open_truetype_file(filename);
                 handle.is_null()
             } {
-                _tt_abort(
-                    b"Cannot proceed without the font: %s\x00" as *const u8 as *const i8,
-                    filename,
+                panic!(
+                    "Cannot proceed without the font: {}",
+                    CStr::from_ptr(filename).display()
                 );
             }
         }
@@ -1402,9 +1395,9 @@ unsafe extern "C" fn dvi_locate_native_font(
         mrec =
             pdf_insert_native_fontmap_record(filename, index, layout_dir, extend, slant, embolden);
         if mrec.is_null() {
-            _tt_abort(
-                b"Failed to insert font record for font: %s\x00" as *const u8 as *const i8,
-                filename,
+            panic!(
+                "Failed to insert font record for font: {}",
+                CStr::from_ptr(filename).display()
             );
         }
     }
@@ -1421,7 +1414,7 @@ unsafe extern "C" fn dvi_locate_native_font(
         let mut cffont: *mut cff_font = 0 as *mut cff_font;
         let mut enc_vec: [*mut i8; 256] = [0 as *mut i8; 256];
         /*if (!is_pfb(fp))
-         *  _tt_abort("Failed to read Type 1 font \"%s\".", filename);
+         *  panic!("Failed to read Type 1 font \"{}\".", filename);
          */
         warn!("skipping PFB sanity check -- needs Tectonic I/O update");
         memset(
@@ -1431,9 +1424,9 @@ unsafe extern "C" fn dvi_locate_native_font(
         );
         cffont = t1_load_font(enc_vec.as_mut_ptr(), 0i32, handle);
         if cffont.is_null() {
-            _tt_abort(
-                b"Failed to read Type 1 font \"%s\".\x00" as *const u8 as *const i8,
-                filename,
+            panic!(
+                "Failed to read Type 1 font \"{}\".",
+                CStr::from_ptr(filename).display()
             );
         }
         let ref mut fresh18 = (*loaded_fonts.offset(cur_id as isize)).cffont;
@@ -2242,7 +2235,7 @@ unsafe extern "C" fn check_postamble() {
         || post_id_byte == 6i32)
     {
         info!("DVI ID = {}\n", post_id_byte);
-        _tt_abort(invalid_signature.as_ptr());
+        panic!(invalid_signature);
     }
     check_id_bytes();
     if has_ptex != 0 && post_id_byte != 3i32 {
@@ -2468,10 +2461,7 @@ pub unsafe extern "C" fn dvi_init(mut dvi_filename: *const i8, mut mag: f64) -> 
     }
     dvi_handle = ttstub_input_open(dvi_filename, TTInputFormat::BINARY, 0i32);
     if dvi_handle.is_null() {
-        _tt_abort(
-            b"cannot open \"%s\"\x00" as *const u8 as *const i8,
-            dvi_filename,
-        );
+        panic!("cannot open \"{}\"", CStr::from_ptr(dvi_filename).display());
     }
     /* DVI files are most easily read backwards by searching for post_post and
      * then post opcode.
@@ -2647,10 +2637,7 @@ unsafe extern "C" fn read_length(
                 7 => u *= 12.0f64 * 1238.0f64 / 1157.0f64 * 72.0f64 / 72.27f64,
                 8 => u *= 72.0f64 / (72.27f64 * 65536i32 as f64),
                 _ => {
-                    dpx_warning(
-                        b"Unknown unit of measure: %s\x00" as *const u8 as *const i8,
-                        q,
-                    );
+                    warn!("Unknown unit of measure: {}", CStr::from_ptr(q).display(),);
                     error = -1i32
                 }
             }

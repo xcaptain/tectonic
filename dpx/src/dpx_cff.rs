@@ -33,7 +33,6 @@ use crate::streq_ptr;
 use crate::warn;
 
 use super::dpx_cff_dict::{cff_dict_get, cff_dict_known, cff_dict_unpack, cff_release_dict};
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{tt_get_unsigned_byte, tt_get_unsigned_pair};
 use crate::{ttstub_input_read, ttstub_input_seek};
@@ -118,7 +117,6 @@ impl Pack for CffIndex {
     fn pack(&mut self, mut dest: &mut [u8]) -> usize {
         let destlen = dest.len();
         let mut datalen: size_t = 0;
-        let mut i: u16 = 0;
         if self.count < 1 {
             if destlen < 2 {
                 panic!("Not enough space available...");
@@ -759,9 +757,9 @@ pub unsafe extern "C" fn cff_open(
         panic!("invalid offsize data");
     }
     if (*cff).header.major as i32 > 1i32 || (*cff).header.minor as i32 > 0i32 {
-        dpx_warning(
-            b"%s: CFF version %u.%u not supported.\x00" as *const u8 as *const i8,
-            b"CFF\x00" as *const u8 as *const i8,
+        warn!(
+            "{}: CFF version {}.{} not supported.",
+            "CFF",
             (*cff).header.major as i32,
             (*cff).header.minor as i32,
         );
@@ -1543,7 +1541,6 @@ pub unsafe extern "C" fn cff_read_encoding(cff: &mut cff_font) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn cff_pack_encoding(cff: &cff_font, dest: &mut [u8]) -> usize {
-    let destlen = dest.len();
     let mut len = 0_usize;
     if cff.flag & (1i32 << 3i32 | 1i32 << 4i32) != 0 || cff.encoding.is_null() {
         return 0;
@@ -1795,7 +1792,6 @@ pub unsafe extern "C" fn cff_read_charsets(cff: &mut cff_font) -> i32 {
 pub unsafe extern "C" fn cff_pack_charsets(cff: &cff_font, dest: &mut [u8]) -> usize {
     let destlen = dest.len();
     let mut len = 0;
-    let mut i: u16 = 0;
     let mut charset: *mut cff_charsets = 0 as *mut cff_charsets;
     if cff.flag & (1 << 5 | 1 << 6 | 1 << 7) != 0 || cff.charsets.is_null() {
         return 0;
@@ -2170,9 +2166,7 @@ pub unsafe extern "C" fn cff_read_fdselect(cff: &mut cff_font) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn cff_pack_fdselect(cff: &cff_font, dest: &mut [u8]) -> usize {
-    let destlen = dest.len();
     let mut len = 0;
-    let mut i: u16 = 0;
     if cff.fdselect.is_null() {
         return 0;
     }
