@@ -77,14 +77,9 @@ use crate::dpx_pdfobj::{
 };
 use crate::{ttstub_input_close, ttstub_input_open};
 use bridge::_tt_abort;
-use libc::{
-    free, gmtime, gmtime_r, localtime, localtime_r, memcpy, mktime, sprintf, strcmp, strcpy,
-    strlen, strncmp, strncpy, time, tm,
-};
+use libc::{free, memcpy, sprintf, strcmp, strcpy, strlen, strncmp, strncpy};
 
-pub type __time_t = i64;
 pub type size_t = u64;
-pub type time_t = __time_t;
 
 use crate::TTInputFormat;
 
@@ -503,86 +498,19 @@ pub unsafe extern "C" fn pdf_doc_set_eop_content(mut content: *const i8, mut len
         (*p).pages.eop = 0 as *mut pdf_obj
     };
 }
-/* auxiliary function to compute timezone offset on
-systems that do not support the tm_gmtoff in struct tm,
-or have a timezone variable.  Such as i386-solaris.  */
-unsafe extern "C" fn compute_timezone_offset() -> i32 {
-    let mut now: time_t = 0;
-    let mut tm: tm = tm {
-        tm_sec: 0,
-        tm_min: 0,
-        tm_hour: 0,
-        tm_mday: 0,
-        tm_mon: 0,
-        tm_year: 0,
-        tm_wday: 0,
-        tm_yday: 0,
-        tm_isdst: 0,
-        tm_gmtoff: 0,
-        tm_zone: std::ptr::null_mut(),
+
+fn asn_date() -> String {
+    use chrono::prelude::*;
+
+    let timeformat = "D:%Y%m%d%H%M%S%z";
+    let time = match get_unique_time_if_given() {
+        Some(x) => DateTime::<Utc>::from(x).format(timeformat),
+        None => Local::now().format(timeformat),
     };
-    let mut local: tm = tm {
-        tm_sec: 0,
-        tm_min: 0,
-        tm_hour: 0,
-        tm_mday: 0,
-        tm_mon: 0,
-        tm_year: 0,
-        tm_wday: 0,
-        tm_yday: 0,
-        tm_isdst: 0,
-        tm_gmtoff: 0,
-        tm_zone: std::ptr::null_mut(),
-    };
-    now = get_unique_time_if_given();
-    if now == -1i32 as time_t {
-        now = time(0 as *mut time_t);
-        localtime_r(&mut now, &mut local);
-        gmtime_r(&mut now, &mut tm);
-        return (mktime(&mut local) - mktime(&mut tm)) as i32;
-    } else {
-        return 0i32;
-    };
+
+    format!("{}", time)
 }
-/* HAVE_TIMEZONE */
-/* HAVE_TM_GMTOFF */
-/*
- * Docinfo
- */
-unsafe extern "C" fn asn_date(mut date_string: *mut i8) -> i32 {
-    let mut tz_offset: i32 = 0;
-    let mut current_time: time_t = 0;
-    let mut bd_time: *mut tm = 0 as *mut tm;
-    current_time = get_unique_time_if_given();
-    if current_time == -1i32 as time_t {
-        time(&mut current_time);
-        bd_time = localtime(&mut current_time);
-        tz_offset = compute_timezone_offset()
-    /* HAVE_TIMEZONE */
-    /* HAVE_TM_GMTOFF */
-    } else {
-        bd_time = gmtime(&mut current_time);
-        tz_offset = 0i32
-    }
-    sprintf(
-        date_string,
-        b"D:%04d%02d%02d%02d%02d%02d%c%02d\'%02d\'\x00" as *const u8 as *const i8,
-        (*bd_time).tm_year + 1900i32,
-        (*bd_time).tm_mon + 1i32,
-        (*bd_time).tm_mday,
-        (*bd_time).tm_hour,
-        (*bd_time).tm_min,
-        (*bd_time).tm_sec,
-        if tz_offset > 0i32 {
-            '+' as i32
-        } else {
-            '-' as i32
-        },
-        tz_offset.abs() / 3600i32,
-        tz_offset.abs() / 60i32 % 60i32,
-    );
-    strlen(date_string) as i32
-}
+
 unsafe extern "C" fn pdf_doc_init_docinfo(mut p: *mut pdf_doc) {
     (*p).info = pdf_new_dict();
     pdf_set_info((*p).info);
@@ -649,15 +577,13 @@ unsafe extern "C" fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
         );
     }
     if pdf_lookup_dict(docinfo, b"CreationDate\x00" as *const u8 as *const i8).is_null() {
-        let mut now: [i8; 80] = [0; 80];
-        asn_date(now.as_mut_ptr());
+        let now = asn_date();
+        let l = now.len();
+
         pdf_add_dict(
             docinfo,
             pdf_new_name(b"CreationDate\x00" as *const u8 as *const i8),
-            pdf_new_string(
-                now.as_mut_ptr() as *const libc::c_void,
-                strlen(now.as_mut_ptr()) as _,
-            ),
+            pdf_new_string(now.as_ptr() as *const libc::c_void, l as _),
         );
     }
     pdf_release_obj(docinfo);
