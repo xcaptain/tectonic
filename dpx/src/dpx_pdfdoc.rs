@@ -502,13 +502,18 @@ pub unsafe extern "C" fn pdf_doc_set_eop_content(mut content: *const i8, mut len
 fn asn_date() -> String {
     use chrono::prelude::*;
 
-    let timeformat = "D:%Y%m%d%H%M%S%z";
-    let time = match get_unique_time_if_given() {
-        Some(x) => DateTime::<Utc>::from(x).format(timeformat),
-        None => Local::now().format(timeformat),
-    };
-
-    format!("{}", time)
+    let timeformat = "D:%Y%m%d%H%M%S";
+    match get_unique_time_if_given() {
+        Some(x) => {
+            let x = DateTime::<Utc>::from(x);
+            format!("{}-00'00'", x.format(timeformat))
+        }
+        None => {
+            let x = Local::now();
+            let tz = format!("{}", x.format("%s"));
+            format!("{}{}'{}'", x.format(timeformat), &tz[0..3], &tz[3..])
+        }
+    }
 }
 
 unsafe extern "C" fn pdf_doc_init_docinfo(mut p: *mut pdf_doc) {
