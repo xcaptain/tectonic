@@ -54,21 +54,16 @@ use super::dpx_type0::{
 };
 use super::dpx_type1::{pdf_font_load_type1, pdf_font_open_type1};
 use super::dpx_type1c::{pdf_font_load_type1c, pdf_font_open_type1c};
-use super::strtoll;
 use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_dict, pdf_new_name, pdf_obj,
     pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_stream_length, PdfObjType,
 };
 use crate::mfree;
 use crate::streq_ptr;
-use crate::stub_errno as errno;
 use crate::{info, warn};
 use bridge::_tt_abort;
-use libc::{free, getenv, memset, rand, snprintf, sprintf, srand, strcpy, strlen, strstr, time};
+use libc::{free, memset, rand, snprintf, sprintf, srand, strcpy, strlen, strstr};
 
-pub type __time_t = i64;
-pub type size_t = u64;
-pub type time_t = __time_t;
 /* Options */
 use super::dpx_fontmap::fontmap_rec;
 #[derive(Copy, Clone)]
@@ -150,24 +145,24 @@ pub unsafe extern "C" fn pdf_font_set_dpi(mut font_dpi: i32) {
  */
 /* The following routines are not appropriate for pdfobj.
  */
-#[no_mangle]
-pub unsafe extern "C" fn get_unique_time_if_given() -> time_t {
-    let mut epoch: i64 = 0; /* Type0 ID */
-    let mut endptr: *mut i8 = 0 as *mut i8;
-    let mut ret: time_t = -1i32 as time_t;
-    let mut got_it: i32 = 0;
-    let mut source_date_epoch: *const i8 = 0 as *const i8;
-    source_date_epoch = getenv(b"SOURCE_DATE_EPOCH\x00" as *const u8 as *const i8);
-    got_it = (source_date_epoch != 0 as *mut libc::c_void as *const i8) as i32;
-    if got_it != 0 {
-        errno::set_errno(errno::ZERO);
-        epoch = strtoll(source_date_epoch, &mut endptr, 10i32) as i64;
-        if !(*endptr as i32 != '\u{0}' as i32 || errno::errno() != errno::ZERO) {
-            ret = epoch
-        }
-    }
-    ret
+
+use std::time::SystemTime;
+pub fn get_unique_time_if_given() -> Option<SystemTime> {
+    use std::time::Duration;
+
+    let env = std::env::var("SOURCE_DATE_EPOCH");
+
+    env.ok()
+        .map(|x| {
+            x.trim()
+                .parse::<u64>()
+                .ok()
+                .map(|x| SystemTime::UNIX_EPOCH.checked_add(Duration::new(x, 0)))
+        })
+        .unwrap_or(None)
+        .unwrap_or(None)
 }
+
 static mut unique_tag_state: i32 = 1i32;
 static mut unique_tags_deterministic: i32 = 0i32;
 #[no_mangle]
@@ -193,12 +188,17 @@ pub unsafe extern "C" fn pdf_font_make_uniqueTag(mut tag: *mut i8) {
         return;
     }
     if unique_tag_state != 0 {
-        let mut current_time: time_t = 0;
-        current_time = get_unique_time_if_given();
-        if current_time == -1i32 as time_t {
-            current_time = time(0 as *mut time_t)
-        }
-        srand(current_time as u32);
+        let current_time = match get_unique_time_if_given() {
+            Some(x) => x,
+            None => SystemTime::now(),
+        };
+
+        let seconds_since_epoch = current_time
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_else(|x| x.duration())
+            .as_secs();
+
+        srand(seconds_since_epoch as _);
         unique_tag_state = 0i32
     }
     i = 0i32;

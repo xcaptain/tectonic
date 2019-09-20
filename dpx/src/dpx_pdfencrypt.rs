@@ -31,9 +31,8 @@
 
 use std::slice::from_raw_parts;
 
-use crate::warn;
-use super::dpx_dpxcrypt::{AES_cbc_encrypt_tectonic, AES_ecb_encrypt, ARC4_set_key, ARC4};
 use super::dpx_dpxcrypt::ARC4_CONTEXT;
+use super::dpx_dpxcrypt::{AES_cbc_encrypt_tectonic, AES_ecb_encrypt, ARC4_set_key, ARC4};
 use super::dpx_mem::new;
 use super::dpx_pdfdoc::pdf_doc_get_dictionary;
 use super::dpx_pdffont::get_unique_time_if_given;
@@ -42,16 +41,14 @@ use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_get_version, pdf_new_array, pdf_new_dict, pdf_new_name,
     pdf_new_number, pdf_new_string, pdf_obj,
 };
-use libc::{
-    free, gmtime, localtime, memcpy, memset, srand, strcpy, strlen, time,
-};
-use md5::{Md5, Digest};
-use sha2::{Sha256, Sha384, Sha512};
+use crate::warn;
+use chrono::prelude::*;
+use libc::{free, memcpy, memset, srand, strcpy, strlen};
+use md5::{Digest, Md5};
 use rand::prelude::*;
+use sha2::{Sha256, Sha384, Sha512};
 
-pub type __time_t = i64;
 pub type size_t = u64;
-pub type time_t = __time_t;
 
 /* Encryption support
  *
@@ -128,14 +125,17 @@ pub unsafe extern "C" fn pdf_enc_set_verbose(mut level: i32) {
 }
 
 unsafe extern "C" fn pdf_enc_init(mut use_aes: i32, mut encrypt_metadata: i32) {
-    let mut current_time: time_t = 0;
     let p = &mut sec_data;
-    current_time = get_unique_time_if_given();
-    if current_time == -1 {
-        current_time = time(std::ptr::null_mut())
-    }
+    let current_time = match get_unique_time_if_given() {
+        Some(x) => x,
+        None => std::time::SystemTime::now(),
+    };
+    let seconds_since_epoch = current_time
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .unwrap_or_else(|x| x.duration())
+        .as_secs();
     // TODO: libc rand is not used in this module
-    srand(current_time as u32);
+    srand(seconds_since_epoch as _);
     p.setting.use_aes = use_aes;
     p.setting.encrypt_metadata = encrypt_metadata;
 }
@@ -144,23 +144,15 @@ pub unsafe fn pdf_enc_compute_id_string(dviname: Option<&[u8]>, mut pdfname: Opt
     let p = &mut sec_data;
     /* FIXME: This should be placed in main() or somewhere. */
     pdf_enc_init(1i32, 1i32);
-    let mut current_time = get_unique_time_if_given();
-    let bd_time = *(if current_time == -1 as time_t {
-        time(&mut current_time);
-        localtime(&mut current_time)
-    } else {
-        gmtime(&mut current_time)
-    });
+
+    let timeformat = "%Y%m%d%H%M%S";
+    let current_time = match get_unique_time_if_given() {
+        Some(x) => DateTime::<Utc>::from(x).format(timeformat),
+        None => Local::now().format(timeformat),
+    };
+
     let mut md5 = Md5::new();
-    md5.input(&format!(
-        "{:04}{:02}{:02}{:02}{:02}{:02}",
-        bd_time.tm_year + 1900,
-        bd_time.tm_mon + 1,
-        bd_time.tm_mday,
-        bd_time.tm_hour,
-        bd_time.tm_min,
-        bd_time.tm_sec,
-    ));
+    md5.input(&format!("{}", current_time));
     md5.input(&format!(
         "{}-{}, Copyright 2002-2015 by Jin-Hwan Cho, Matthias Franz, and Shunsaku Hirata",
         // TODO: Are these variables?
@@ -491,12 +483,7 @@ unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *con
     let mut OE: *mut u8 = 0 as *mut u8;
     let mut iv: [u8; 16] = [0; 16];
     let mut OE_len: size_t = 0;
-    hash = compute_hash_V5(
-        oplain,
-        vsalt.as_mut_ptr(),
-        p.U.as_mut_ptr(),
-        p.R,
-    );
+    hash = compute_hash_V5(oplain, vsalt.as_mut_ptr(), p.U.as_mut_ptr(), p.R);
     memcpy(
         p.O.as_mut_ptr() as *mut libc::c_void,
         hash.as_mut_ptr() as *const libc::c_void,
@@ -512,12 +499,7 @@ unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *con
         ksalt.as_mut_ptr() as *const libc::c_void,
         8,
     );
-    hash = compute_hash_V5(
-        oplain,
-        ksalt.as_mut_ptr(),
-        p.U.as_mut_ptr(),
-        p.R,
-    );
+    hash = compute_hash_V5(oplain, ksalt.as_mut_ptr(), p.U.as_mut_ptr(), p.R);
     memset(iv.as_mut_ptr() as *mut libc::c_void, 0i32, 16);
     AES_cbc_encrypt_tectonic(
         hash.as_mut_ptr(),
@@ -544,12 +526,7 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
     let mut iv: [u8; 16] = [0; 16];
     let mut UE_len: size_t = 0;
     let mut i: i32 = 0;
-    hash = compute_hash_V5(
-        uplain,
-        vsalt.as_mut_ptr(),
-        0 as *const u8,
-        p.R,
-    );
+    hash = compute_hash_V5(uplain, vsalt.as_mut_ptr(), 0 as *const u8, p.R);
     memcpy(
         p.U.as_mut_ptr() as *mut libc::c_void,
         hash.as_mut_ptr() as *const libc::c_void,
@@ -565,12 +542,7 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
         ksalt.as_mut_ptr() as *const libc::c_void,
         8,
     );
-    hash = compute_hash_V5(
-        uplain,
-        ksalt.as_mut_ptr(),
-        0 as *const u8,
-        p.R,
-    );
+    hash = compute_hash_V5(uplain, ksalt.as_mut_ptr(), 0 as *const u8, p.R);
     memset(iv.as_mut_ptr() as *mut libc::c_void, 0i32, 16);
     AES_cbc_encrypt_tectonic(
         hash.as_mut_ptr(),
