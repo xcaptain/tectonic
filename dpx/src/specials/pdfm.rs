@@ -69,9 +69,9 @@ use crate::dpx_pdfdoc::{
 };
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_grestore, pdf_dev_gsave, pdf_dev_transform};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_file, pdf_foreach_dict,
-    pdf_get_array, pdf_link_obj, pdf_lookup_dict, pdf_merge_dict, pdf_name_value, pdf_new_array,
-    pdf_new_dict, pdf_new_name, pdf_new_stream, pdf_number_value, pdf_obj, pdf_obj_typeof,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_copy_name, pdf_file,
+    pdf_foreach_dict, pdf_get_array, pdf_link_obj, pdf_lookup_dict, pdf_merge_dict, pdf_name_value,
+    pdf_new_array, pdf_new_dict, pdf_new_stream, pdf_number_value, pdf_obj, pdf_obj_typeof,
     pdf_release_obj, pdf_remove_dict, pdf_set_string, pdf_stream_dict, pdf_string_length,
     pdf_string_value, PdfObjType,
 };
@@ -234,7 +234,7 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     while !default_taintkeys[i as usize].is_null() {
         pdf_add_array(
             (*sd).cd.taintkeys,
-            pdf_new_name(default_taintkeys[i as usize]),
+            pdf_copy_name(default_taintkeys[i as usize]),
         );
         i += 1
     }
@@ -318,7 +318,7 @@ unsafe extern "C" fn safeputresdict(
     key = pdf_name_value(kp);
     dict = pdf_lookup_dict(dp as *mut pdf_obj, key);
     if pdf_obj_typeof(vp) == PdfObjType::INDIRECT {
-        pdf_add_dict(dp as *mut pdf_obj, pdf_new_name(key), pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, pdf_copy_name(key), pdf_link_obj(vp));
     } else if pdf_obj_typeof(vp) == PdfObjType::DICT {
         if !dict.is_null() {
             pdf_foreach_dict(
@@ -334,7 +334,7 @@ unsafe extern "C" fn safeputresdict(
                 dict as *mut libc::c_void,
             );
         } else {
-            pdf_add_dict(dp as *mut pdf_obj, pdf_new_name(key), pdf_link_obj(vp));
+            pdf_add_dict(dp as *mut pdf_obj, pdf_copy_name(key), pdf_link_obj(vp));
         }
     } else {
         dpx_warning(

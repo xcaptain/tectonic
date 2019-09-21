@@ -113,8 +113,8 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     descriptor = pdf_new_dict();
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+        pdf_new_name("Type"),
+        pdf_new_name("FontDescriptor"),
     );
     if *embed != 0 && !os2.is_null() {
         /*
@@ -166,7 +166,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     if !os2.is_null() {
         pdf_add_dict(
             descriptor,
-            pdf_new_name(b"Ascent\x00" as *const u8 as *const i8),
+            pdf_new_name("Ascent"),
             pdf_new_number(
                 (1000.0f64 * (*os2).sTypoAscender as i32 as f64
                     / (*head).unitsPerEm as i32 as f64
@@ -178,7 +178,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         );
         pdf_add_dict(
             descriptor,
-            pdf_new_name(b"Descent\x00" as *const u8 as *const i8),
+            pdf_new_name("Descent"),
             pdf_new_number(
                 (1000.0f64 * (*os2).sTypoDescender as i32 as f64
                     / (*head).unitsPerEm as i32 as f64
@@ -196,13 +196,13 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         } /* arbitrary */
         pdf_add_dict(
             descriptor,
-            pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
+            pdf_new_name("StemV"),
             pdf_new_number(stemv as f64),
         );
         if (*os2).version as i32 == 0x2i32 {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"CapHeight\x00" as *const u8 as *const i8),
+                pdf_new_name("CapHeight"),
                 pdf_new_number(
                     (1000.0f64 * (*os2).sCapHeight as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -215,7 +215,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             /* optional */
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"XHeight\x00" as *const u8 as *const i8),
+                pdf_new_name("XHeight"),
                 pdf_new_number(
                     (1000.0f64 * (*os2).sxHeight as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -228,7 +228,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         } else {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"CapHeight\x00" as *const u8 as *const i8),
+                pdf_new_name("CapHeight"),
                 pdf_new_number(
                     (1000.0f64 * (*os2).sTypoAscender as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         if (*os2).xAvgCharWidth as i32 != 0i32 {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"AvgWidth\x00" as *const u8 as *const i8),
+                pdf_new_name("AvgWidth"),
                 pdf_new_number(
                     (1000.0f64 * (*os2).xAvgCharWidth as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -301,15 +301,11 @@ pub unsafe extern "C" fn tt_get_fontdesc(
                 * 1i32 as f64,
         ),
     );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontBBox\x00" as *const u8 as *const i8),
-        bbox,
-    );
+    pdf_add_dict(descriptor, pdf_new_name("FontBBox"), bbox);
     /* post */
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"ItalicAngle\x00" as *const u8 as *const i8),
+        pdf_new_name("ItalicAngle"),
         pdf_new_number(
             ((*post).italicAngle as i64 % 0x10000) as f64 / 0x10000i64 as f64
                 + ((*post).italicAngle as i64 / 0x10000) as f64
@@ -340,7 +336,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     }
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"Flags\x00" as *const u8 as *const i8),
+        pdf_new_name("Flags"),
         pdf_new_number(flag as f64),
     );
     /* insert panose if you want */
@@ -357,14 +353,10 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         styledict = pdf_new_dict();
         pdf_add_dict(
             styledict,
-            pdf_new_name(b"Panose\x00" as *const u8 as *const i8),
+            pdf_new_name("Panose"),
             pdf_new_string(panose.as_mut_ptr() as *const libc::c_void, 12i32 as size_t),
         );
-        pdf_add_dict(
-            descriptor,
-            pdf_new_name(b"Style\x00" as *const u8 as *const i8),
-            styledict,
-        );
+        pdf_add_dict(descriptor, pdf_new_name("Style"), styledict);
     }
     free(head as *mut libc::c_void);
     free(os2 as *mut libc::c_void);

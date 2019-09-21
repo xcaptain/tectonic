@@ -240,24 +240,14 @@ pub unsafe extern "C" fn bmp_include_image(
         );
         free(palette as *mut libc::c_void);
         colorspace = pdf_new_array();
-        pdf_add_array(
-            colorspace,
-            pdf_new_name(b"Indexed\x00" as *const u8 as *const i8),
-        );
-        pdf_add_array(
-            colorspace,
-            pdf_new_name(b"DeviceRGB\x00" as *const u8 as *const i8),
-        );
+        pdf_add_array(colorspace, pdf_new_name("Indexed"));
+        pdf_add_array(colorspace, pdf_new_name("DeviceRGB"));
         pdf_add_array(colorspace, pdf_new_number((num_palette - 1i32) as f64));
         pdf_add_array(colorspace, lookup);
     } else {
-        colorspace = pdf_new_name(b"DeviceRGB\x00" as *const u8 as *const i8)
+        colorspace = pdf_new_name("DeviceRGB")
     }
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"ColorSpace\x00" as *const u8 as *const i8),
-        colorspace,
-    );
+    pdf_add_dict(stream_dict, pdf_new_name("ColorSpace"), colorspace);
     /* Raster data of BMP is four-byte aligned. */
     let mut rowbytes: i32 = 0;
     let mut n: i32 = 0;

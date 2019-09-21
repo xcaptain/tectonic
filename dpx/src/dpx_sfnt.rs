@@ -558,7 +558,7 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
     stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(
         stream_dict,
-        pdf_new_name(b"Length1\x00" as *const u8 as *const i8),
+        pdf_new_name("Length1"),
         pdf_new_number(offset as f64),
     );
     stream

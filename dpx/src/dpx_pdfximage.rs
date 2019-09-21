@@ -538,31 +538,23 @@ pub unsafe extern "C" fn pdf_ximage_set_image(
     (*I).attr.ydensity = info.ydensity;
     (*I).reference = pdf_ref_obj(resource);
     dict = pdf_stream_dict(resource);
+    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("XObject"));
+    pdf_add_dict(dict, pdf_new_name("Subtype"), pdf_new_name("Image"));
     pdf_add_dict(
         dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"XObject\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Image\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"Width\x00" as *const u8 as *const i8),
+        pdf_new_name("Width"),
         pdf_new_number((*info).width as f64),
     );
     pdf_add_dict(
         dict,
-        pdf_new_name(b"Height\x00" as *const u8 as *const i8),
+        pdf_new_name("Height"),
         pdf_new_number((*info).height as f64),
     );
     if (*info).bits_per_component > 0i32 {
         /* Ignored for JPXDecode filter. FIXME */
         pdf_add_dict(
             dict,
-            pdf_new_name(b"BitsPerComponent\x00" as *const u8 as *const i8),
+            pdf_new_name("BitsPerComponent"),
             pdf_new_number((*info).bits_per_component as f64),
         ); /* Caller don't know we are using reference. */
     }

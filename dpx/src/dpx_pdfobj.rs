@@ -29,6 +29,8 @@
     unused_mut
 )]
 
+use std::ffi::CString;
+
 use crate::dpx_pdfparse::{parse_number, parse_pdf_dict, parse_pdf_object, parse_unsigned};
 use crate::mfree;
 use crate::{info, warn};
@@ -314,11 +316,7 @@ pub unsafe extern "C" fn pdf_out_init(
             xref_stream = pdf_new_stream(1i32 << 0i32);
             (*xref_stream).flags |= 1i32 << 1i32;
             trailer_dict = pdf_stream_dict(xref_stream);
-            pdf_add_dict(
-                trailer_dict,
-                pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-                pdf_new_name(b"XRef\x00" as *const u8 as *const i8),
-            );
+            pdf_add_dict(trailer_dict, pdf_new_name("Type"), pdf_new_name("XRef"));
             do_objstm = 1i32
         } else {
             trailer_dict = pdf_new_dict();
@@ -455,11 +453,7 @@ unsafe extern "C" fn dump_xref_stream() {
     pdf_add_array(w, pdf_new_number(1i32 as f64));
     pdf_add_array(w, pdf_new_number(poslen as f64));
     pdf_add_array(w, pdf_new_number(2i32 as f64));
-    pdf_add_dict(
-        trailer_dict,
-        pdf_new_name(b"W\x00" as *const u8 as *const i8),
-        w,
-    );
+    pdf_add_dict(trailer_dict, pdf_new_name("W"), w);
     /* We need the xref entry for the xref stream right now */
     add_xref_entry(next_label.wrapping_sub(1_u32), 1_u8, startxref, 0_u16);
     i = 0_u32;
@@ -511,7 +505,7 @@ pub unsafe extern "C" fn pdf_out_flush() {
         startxref = pdf_output_file_position as u32;
         pdf_add_dict(
             trailer_dict,
-            pdf_new_name(b"Size\x00" as *const u8 as *const i8),
+            pdf_new_name("Size"),
             pdf_new_number(next_label as f64),
         );
         if !xref_stream.is_null() {
@@ -572,12 +566,7 @@ pub unsafe extern "C" fn pdf_error_cleanup() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_set_root(mut object: *mut pdf_obj) {
-    if pdf_add_dict(
-        trailer_dict,
-        pdf_new_name(b"Root\x00" as *const u8 as *const i8),
-        pdf_ref_obj(object),
-    ) != 0
-    {
+    if pdf_add_dict(trailer_dict, pdf_new_name("Root"), pdf_ref_obj(object)) != 0 {
         panic!("Root object already set!");
     }
     /* Adobe Readers don't like a document catalog inside an encrypted
@@ -591,34 +580,19 @@ pub unsafe extern "C" fn pdf_set_root(mut object: *mut pdf_obj) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_set_info(mut object: *mut pdf_obj) {
-    if pdf_add_dict(
-        trailer_dict,
-        pdf_new_name(b"Info\x00" as *const u8 as *const i8),
-        pdf_ref_obj(object),
-    ) != 0
-    {
+    if pdf_add_dict(trailer_dict, pdf_new_name("Info"), pdf_ref_obj(object)) != 0 {
         panic!("Info object already set!");
     };
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_set_id(mut id: *mut pdf_obj) {
-    if pdf_add_dict(
-        trailer_dict,
-        pdf_new_name(b"ID\x00" as *const u8 as *const i8),
-        id,
-    ) != 0
-    {
+    if pdf_add_dict(trailer_dict, pdf_new_name("ID"), id) != 0 {
         panic!("ID already set!");
     };
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_set_encrypt(mut encrypt: *mut pdf_obj) {
-    if pdf_add_dict(
-        trailer_dict,
-        pdf_new_name(b"Encrypt\x00" as *const u8 as *const i8),
-        pdf_ref_obj(encrypt),
-    ) != 0
-    {
+    if pdf_add_dict(trailer_dict, pdf_new_name("Encrypt"), pdf_ref_obj(encrypt)) != 0 {
         panic!("Encrypt object already set!");
     }
     (*encrypt).flags |= 1i32 << 1i32;
@@ -686,12 +660,11 @@ unsafe extern "C" fn pdf_out_white(mut handle: rust_output_handle_t) {
         pdf_out_char(handle, ' ' as i32 as i8);
     };
 }
-unsafe extern "C" fn pdf_new_obj(mut typ: i32) -> *mut pdf_obj {
+unsafe extern "C" fn pdf_new_obj(typ: PdfObjType) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
-    assert!(typ >= 0 && typ <= 10, "Invalid object type: {}", typ);
     result =
         new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_obj>() as u64) as u32) as *mut pdf_obj;
-    (*result).typ = typ;
+    (*result).typ = typ as i32;
     (*result).data = 0 as *mut libc::c_void;
     (*result).label = 0_u32;
     (*result).generation = 0_u16;
@@ -788,14 +761,14 @@ unsafe extern "C" fn write_indirect(
 #[no_mangle]
 pub unsafe extern "C" fn pdf_new_undefined() -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
-    result = pdf_new_obj(10i32);
+    result = pdf_new_obj(PdfObjType::UNDEFINED);
     (*result).data = 0 as *mut libc::c_void;
     result
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_new_null() -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
-    result = pdf_new_obj(8i32);
+    result = pdf_new_obj(PdfObjType::NULL);
     (*result).data = 0 as *mut libc::c_void;
     result
 }
@@ -810,7 +783,7 @@ unsafe extern "C" fn write_null(mut handle: rust_output_handle_t) {
 pub unsafe extern "C" fn pdf_new_boolean(mut value: i8) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_boolean = 0 as *mut pdf_boolean;
-    result = pdf_new_obj(1i32);
+    result = pdf_new_obj(PdfObjType::BOOLEAN);
     data = new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_boolean>() as u64) as u32)
         as *mut pdf_boolean;
     (*data).value = value;
@@ -857,7 +830,7 @@ pub unsafe extern "C" fn pdf_boolean_value(mut object: *mut pdf_obj) -> i8 {
 pub unsafe extern "C" fn pdf_new_number(mut value: f64) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_number = 0 as *mut pdf_number;
-    result = pdf_new_obj(2i32);
+    result = pdf_new_obj(PdfObjType::NUMBER);
     data = new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_number>() as u64) as u32)
         as *mut pdf_number;
     (*data).value = value;
@@ -920,7 +893,7 @@ pub unsafe extern "C" fn pdf_new_string(
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_string = 0 as *mut pdf_string;
     assert!(!str.is_null());
-    result = pdf_new_obj(3i32);
+    result = pdf_new_obj(PdfObjType::STRING);
     data = new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_string>() as u64) as u32)
         as *mut pdf_string;
     (*result).data = data as *mut libc::c_void;
@@ -1156,31 +1129,40 @@ pub unsafe extern "C" fn pdf_set_string(
     };
 }
 /* Name does *not* include the /. */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_new_name(mut name: *const i8) -> *mut pdf_obj {
+pub unsafe fn pdf_new_name(name: &str) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut length: u32 = 0;
     let mut data: *mut pdf_name = 0 as *mut pdf_name;
-    result = pdf_new_obj(4i32);
-    data =
-        new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_name>() as u64) as u32) as *mut pdf_name;
+    result = pdf_new_obj(PdfObjType::NAME);
+    data = new(::std::mem::size_of::<pdf_name>() as u32) as *mut pdf_name;
     (*result).data = data as *mut libc::c_void;
-    length = strlen(name) as u32;
-    if length != 0_u32 {
-        (*data).name = new((length.wrapping_add(1_u32) as u64)
-            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-            as *mut i8;
-        libc::memcpy(
-            (*data).name as *mut libc::c_void,
-            name as *const libc::c_void,
-            length as usize,
-        );
-        *(*data).name.offset(length as isize) = '\u{0}' as i32 as i8
+    let length = name.len();
+    let name = CString::new(name).unwrap();
+    if length != 0 {
+        (*data).name = name.into_raw();
     } else {
         (*data).name = 0 as *mut i8
     }
+    (*result).data = data as *mut libc::c_void;
     result
 }
+
+pub unsafe fn pdf_copy_name(name: *const i8) -> *mut pdf_obj {
+    let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
+    let mut data: *mut pdf_name = 0 as *mut pdf_name;
+    result = pdf_new_obj(PdfObjType::NAME);
+    data = new(::std::mem::size_of::<pdf_name>() as u32) as *mut pdf_name;
+    (*result).data = data as *mut libc::c_void;
+    let length = strlen(name);
+    let name = CStr::from_ptr(name).to_owned();
+    if length != 0 {
+        (*data).name = name.into_raw();
+    } else {
+        (*data).name = 0 as *mut i8
+    }
+    (*result).data = data as *mut libc::c_void;
+    result
+}
+
 unsafe extern "C" fn write_name(mut name: *mut pdf_name, mut handle: rust_output_handle_t) {
     let mut s: *mut i8 = 0 as *mut i8;
     let mut length: i32 = 0;
@@ -1219,7 +1201,9 @@ unsafe extern "C" fn write_name(mut name: *mut pdf_name, mut handle: rust_output
     }
 }
 unsafe extern "C" fn release_name(mut data: *mut pdf_name) {
-    (*data).name = mfree((*data).name as *mut libc::c_void) as *mut i8;
+    if !(*data).name.is_null() {
+        let _ = CString::from_raw((*data).name);
+    }
     free(data as *mut libc::c_void);
 }
 #[no_mangle]
@@ -1248,7 +1232,7 @@ pub unsafe extern "C" fn pdf_name_value(mut object: *mut pdf_obj) -> *mut i8 {
 pub unsafe extern "C" fn pdf_new_array() -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_array = 0 as *mut pdf_array;
-    result = pdf_new_obj(5i32);
+    result = pdf_new_obj(PdfObjType::ARRAY);
     data = new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_array>() as u64) as u32)
         as *mut pdf_array;
     (*data).values = 0 as *mut *mut pdf_obj;
@@ -1427,7 +1411,7 @@ unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, mut handle: rust_output
 pub unsafe extern "C" fn pdf_new_dict() -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_dict = 0 as *mut pdf_dict;
-    result = pdf_new_obj(6i32);
+    result = pdf_new_obj(PdfObjType::DICT);
     data =
         new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_dict>() as u64) as u32) as *mut pdf_dict;
     (*data).key = 0 as *mut pdf_obj;
@@ -1613,7 +1597,7 @@ pub unsafe extern "C" fn pdf_dict_keys(mut dict: *mut pdf_obj) -> *mut pdf_obj {
         /* We duplicate name object rather than linking keys.
          * If we forget to free keys, broken PDF is generated.
          */
-        pdf_add_array(keys, pdf_new_name(pdf_name_value((*data).key)));
+        pdf_add_array(keys, pdf_copy_name(pdf_name_value((*data).key)));
         data = (*data).next
     }
     keys
@@ -1652,7 +1636,7 @@ pub unsafe extern "C" fn pdf_remove_dict(mut dict: *mut pdf_obj, mut name: *cons
 pub unsafe extern "C" fn pdf_new_stream(mut flags: i32) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_stream = 0 as *mut pdf_stream;
-    result = pdf_new_obj(7i32);
+    result = pdf_new_obj(PdfObjType::STREAM);
     data = new((1_u64).wrapping_mul(::std::mem::size_of::<pdf_stream>() as u64) as u32)
         as *mut pdf_stream;
     /*
@@ -2134,22 +2118,18 @@ unsafe extern "C" fn filter_create_predictor_dict(
     parms = pdf_new_dict();
     pdf_add_dict(
         parms,
-        pdf_new_name(b"BitsPerComponent\x00" as *const u8 as *const i8),
+        pdf_new_name("BitsPerComponent"),
         pdf_new_number(bpc as f64),
     );
+    pdf_add_dict(parms, pdf_new_name("Colors"), pdf_new_number(colors as f64));
     pdf_add_dict(
         parms,
-        pdf_new_name(b"Colors\x00" as *const u8 as *const i8),
-        pdf_new_number(colors as f64),
-    );
-    pdf_add_dict(
-        parms,
-        pdf_new_name(b"Columns\x00" as *const u8 as *const i8),
+        pdf_new_name("Columns"),
         pdf_new_number(columns as f64),
     );
     pdf_add_dict(
         parms,
-        pdf_new_name(b"Predictor\x00" as *const u8 as *const i8),
+        pdf_new_name("Predictor"),
         pdf_new_number(predictor as f64),
     );
     return parms;
@@ -2244,11 +2224,7 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
                     free(filtered as *mut libc::c_void);
                     filtered = filtered2;
                     filtered_length = length2 as libc::c_uint;
-                    pdf_add_dict(
-                        (*stream).dict,
-                        pdf_new_name(b"DecodeParms\x00" as *const u8 as *const i8),
-                        parms,
-                    );
+                    pdf_add_dict((*stream).dict, pdf_new_name("DecodeParms"), parms);
                 }
             }
             filters = pdf_lookup_dict((*stream).dict, b"Filter\x00" as *const u8 as *const i8);
@@ -2260,8 +2236,7 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
             buffer = new((buffer_length as u32 as libc::c_ulong)
                 .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong)
                 as u32) as *mut libc::c_uchar;
-            let mut filter_name: *mut pdf_obj =
-                pdf_new_name(b"FlateDecode\x00" as *const u8 as *const i8);
+            let mut filter_name: *mut pdf_obj = pdf_new_name("FlateDecode");
             if !filters.is_null() {
                 /*
                  * FlateDecode is the first filter to be applied to the stream.
@@ -2273,11 +2248,7 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
                  * is crucial because otherwise Adobe Reader cannot read the
                  * cross-reference stream any more, cf. the PDF v1.5 Errata.
                  */
-                pdf_add_dict(
-                    (*stream).dict,
-                    pdf_new_name(b"Filter\x00" as *const u8 as *const i8),
-                    filter_name,
-                );
+                pdf_add_dict((*stream).dict, pdf_new_name("Filter"), filter_name);
             }
 
             #[cfg(not(feature = "legacy-libz"))]
@@ -2336,7 +2307,7 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
     }
     pdf_add_dict(
         (*stream).dict,
-        pdf_new_name(b"Length\x00" as *const u8 as *const i8),
+        pdf_new_name("Length"),
         pdf_new_number(filtered_length as f64),
     );
     pdf_write_obj((*stream).dict, handle);
@@ -3245,19 +3216,11 @@ unsafe extern "C" fn release_objstm(objstm: *mut pdf_obj) {
         );
     }
     dict = pdf_stream_dict(objstm);
+    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("ObjStm"));
+    pdf_add_dict(dict, pdf_new_name("N"), pdf_new_number(pos as f64));
     pdf_add_dict(
         dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"ObjStm\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"N\x00" as *const u8 as *const i8),
-        pdf_new_number(pos as f64),
-    );
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"First\x00" as *const u8 as *const i8),
+        pdf_new_name("First"),
         pdf_new_number((*stream).stream_length as f64),
     );
     pdf_add_stream(objstm, old_buf as *const libc::c_void, old_length as i32);
@@ -3547,7 +3510,7 @@ pub unsafe extern "C" fn pdf_new_indirect(
     (*indirect).obj = 0 as *mut pdf_obj;
     (*indirect).label = obj_num;
     (*indirect).generation = obj_gen;
-    result = pdf_new_obj(9i32);
+    result = pdf_new_obj(PdfObjType::INDIRECT);
     (*result).data = indirect as *mut libc::c_void;
     result
 }

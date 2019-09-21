@@ -383,13 +383,13 @@ pub unsafe extern "C" fn jp2_include_image(mut ximage: *mut pdf_ximage, mut fp: 
     stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(
         stream_dict,
-        pdf_new_name(b"Filter\x00" as *const u8 as *const i8),
-        pdf_new_name(b"JPXDecode\x00" as *const u8 as *const i8),
+        pdf_new_name("Filter"),
+        pdf_new_name("JPXDecode"),
     );
     if smask != 0 {
         pdf_add_dict(
             stream_dict,
-            pdf_new_name(b"SMaskInData\x00" as *const u8 as *const i8),
+            pdf_new_name("SMaskInData"),
             pdf_new_number(1i32 as f64),
         );
     }

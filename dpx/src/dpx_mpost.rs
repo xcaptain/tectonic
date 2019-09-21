@@ -61,9 +61,10 @@ use super::dpx_pdfparse::dump;
 use super::dpx_subfont::{lookup_sfd_record, sfd_load_record};
 use super::dpx_tfm::{tfm_exists, tfm_get_width, tfm_open, tfm_string_width};
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_array_length, pdf_file, pdf_get_array, pdf_lookup_dict, pdf_name_value,
-    pdf_new_dict, pdf_new_name, pdf_new_number, pdf_number_value, pdf_obj, pdf_obj_typeof,
-    pdf_release_obj, pdf_set_number, pdf_string_length, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_array_length, pdf_copy_name, pdf_file, pdf_get_array, pdf_lookup_dict,
+    pdf_name_value, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_number_value, pdf_obj,
+    pdf_obj_typeof, pdf_release_obj, pdf_set_number, pdf_string_length, pdf_string_value,
+    PdfObjType,
 };
 use crate::dpx_pdfparse::{
     parse_ident, parse_number, parse_pdf_array, parse_pdf_dict, parse_pdf_name, parse_pdf_string,
@@ -2784,30 +2785,18 @@ unsafe extern "C" fn do_findfont() -> i32 {
              * font scale.
              */
             font_dict = pdf_new_dict();
-            pdf_add_dict(
-                font_dict,
-                pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-                pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-            );
+            pdf_add_dict(font_dict, pdf_new_name("Type"), pdf_new_name("Font"));
             if !font_name.is_null() && pdf_obj_typeof(font_name) == PdfObjType::STRING {
                 pdf_add_dict(
                     font_dict,
-                    pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-                    pdf_new_name(pdf_string_value(font_name) as *const i8),
+                    pdf_new_name("FontName"),
+                    pdf_copy_name(pdf_string_value(font_name) as *const i8),
                 );
                 pdf_release_obj(font_name);
             } else {
-                pdf_add_dict(
-                    font_dict,
-                    pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-                    font_name,
-                );
+                pdf_add_dict(font_dict, pdf_new_name("FontName"), font_name);
             }
-            pdf_add_dict(
-                font_dict,
-                pdf_new_name(b"FontScale\x00" as *const u8 as *const i8),
-                pdf_new_number(1.0f64),
-            );
+            pdf_add_dict(font_dict, pdf_new_name("FontScale"), pdf_new_number(1.0f64));
             if top_stack < 1024_u32 {
                 let fresh3 = top_stack;
                 top_stack = top_stack.wrapping_add(1);
@@ -2902,19 +2891,15 @@ unsafe extern "C" fn do_currentfont() -> i32 {
         return 1i32;
     } else {
         font_dict = pdf_new_dict();
+        pdf_add_dict(font_dict, pdf_new_name("Type"), pdf_new_name("Font"));
         pdf_add_dict(
             font_dict,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"Font\x00" as *const u8 as *const i8),
+            pdf_new_name("FontName"),
+            pdf_copy_name((*font).font_name),
         );
         pdf_add_dict(
             font_dict,
-            pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-            pdf_new_name((*font).font_name),
-        );
-        pdf_add_dict(
-            font_dict,
-            pdf_new_name(b"FontScale\x00" as *const u8 as *const i8),
+            pdf_new_name("FontScale"),
             pdf_new_number((*font).pt_size),
         );
         if top_stack < 1024_u32 {
@@ -3705,7 +3690,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
                 if top_stack < 1024_u32 {
                     let fresh18 = top_stack;
                     top_stack = top_stack.wrapping_add(1);
-                    stack[fresh18 as usize] = pdf_new_name(token)
+                    stack[fresh18 as usize] = pdf_copy_name(token)
                 } else {
                     warn!("PS stack overflow including MetaPost file or inline PS code");
                     error = 1i32

@@ -55,8 +55,8 @@ use super::dpx_type0::{
 use super::dpx_type1::{pdf_font_load_type1, pdf_font_open_type1};
 use super::dpx_type1c::{pdf_font_load_type1c, pdf_font_open_type1c};
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_dict, pdf_new_name, pdf_obj,
-    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_stream_length, PdfObjType,
+    pdf_add_dict, pdf_copy_name, pdf_link_obj, pdf_lookup_dict, pdf_new_dict, pdf_new_name,
+    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_stream_length, PdfObjType,
 };
 use crate::mfree;
 use crate::streq_ptr;
@@ -238,14 +238,14 @@ unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
             if pdf_font_get_flag(font, 1i32 << 0i32) != 0 {
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-                    pdf_new_name((*font).fontname),
+                    pdf_new_name("BaseFont"),
+                    pdf_copy_name((*font).fontname),
                 );
                 if !(*font).descriptor.is_null() {
                     pdf_add_dict(
                         (*font).descriptor,
-                        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-                        pdf_new_name((*font).fontname),
+                        pdf_new_name("FontName"),
+                        pdf_copy_name((*font).fontname),
                     );
                 }
             } else {
@@ -269,14 +269,14 @@ unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
                 );
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-                    pdf_new_name(fontname),
+                    pdf_new_name("BaseFont"),
+                    pdf_copy_name(fontname),
                 );
                 if !(*font).descriptor.is_null() {
                     pdf_add_dict(
                         (*font).descriptor,
-                        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-                        pdf_new_name(fontname),
+                        pdf_new_name("FontName"),
+                        pdf_copy_name(fontname),
                     );
                 }
                 free(fontname as *mut libc::c_void);
@@ -284,7 +284,7 @@ unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
             if !(*font).descriptor.is_null() {
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+                    pdf_new_name("FontDescriptor"),
                     pdf_ref_obj((*font).descriptor),
                 );
             }
@@ -453,11 +453,7 @@ unsafe extern "C" fn try_load_ToUnicode_CMap(mut font: *mut pdf_font) -> i32 {
             panic!("Object returned by pdf_load_ToUnicode_stream() not stream object! (This must be bug)");
         } else {
             if pdf_stream_length(tounicode) > 0i32 {
-                pdf_add_dict(
-                    fontdict,
-                    pdf_new_name(b"ToUnicode\x00" as *const u8 as *const i8),
-                    pdf_ref_obj(tounicode),
-                );
+                pdf_add_dict(fontdict, pdf_new_name("ToUnicode"), pdf_ref_obj(tounicode));
                 if __verbose != 0 {
                     dpx_message(
                         b"pdf_font>> ToUnicode CMap \"%s\" attached to font id=\"%s\".\n\x00"
@@ -567,7 +563,7 @@ pub unsafe extern "C" fn pdf_close_fonts() {
             if !enc_obj.is_null() {
                 pdf_add_dict(
                     (*font_0).resource,
-                    pdf_new_name(b"Encoding\x00" as *const u8 as *const i8),
+                    pdf_new_name("Encoding"),
                     if !enc_obj.is_null() && pdf_obj_typeof(enc_obj) == PdfObjType::NAME {
                         pdf_link_obj(enc_obj)
                     } else {
@@ -587,7 +583,7 @@ pub unsafe extern "C" fn pdf_close_fonts() {
             {
                 pdf_add_dict(
                     (*font_0).resource,
-                    pdf_new_name(b"ToUnicode\x00" as *const u8 as *const i8),
+                    pdf_new_name("ToUnicode"),
                     pdf_ref_obj(tounicode),
                 );
             }
@@ -596,8 +592,8 @@ pub unsafe extern "C" fn pdf_close_fonts() {
              * We use MacRoman as "default" encoding. */
             pdf_add_dict(
                 (*font_0).resource,
-                pdf_new_name(b"Encoding\x00" as *const u8 as *const i8),
-                pdf_new_name(b"MacRomanEncoding\x00" as *const u8 as *const i8),
+                pdf_new_name("Encoding"),
+                pdf_new_name("MacRomanEncoding"),
             ); /* After encoding */
         }
         pdf_flush_font(font_0);
@@ -930,31 +926,27 @@ pub unsafe extern "C" fn pdf_font_get_resource(mut font: *mut pdf_font) -> *mut 
     assert!(!font.is_null());
     if (*font).resource.is_null() {
         (*font).resource = pdf_new_dict();
-        pdf_add_dict(
-            (*font).resource,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-        );
+        pdf_add_dict((*font).resource, pdf_new_name("Type"), pdf_new_name("Font"));
         match (*font).subtype {
             0 | 1 => {
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-                    pdf_new_name(b"Type1\x00" as *const u8 as *const i8),
+                    pdf_new_name("Subtype"),
+                    pdf_new_name("Type1"),
                 );
             }
             2 => {
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-                    pdf_new_name(b"Type3\x00" as *const u8 as *const i8),
+                    pdf_new_name("Subtype"),
+                    pdf_new_name("Type3"),
                 );
             }
             3 => {
                 pdf_add_dict(
                     (*font).resource,
-                    pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-                    pdf_new_name(b"TrueType\x00" as *const u8 as *const i8),
+                    pdf_new_name("Subtype"),
+                    pdf_new_name("TrueType"),
                 );
             }
             _ => {}
@@ -969,8 +961,8 @@ pub unsafe extern "C" fn pdf_font_get_descriptor(mut font: *mut pdf_font) -> *mu
         (*font).descriptor = pdf_new_dict();
         pdf_add_dict(
             (*font).descriptor,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+            pdf_new_name("Type"),
+            pdf_new_name("FontDescriptor"),
         );
     }
     (*font).descriptor

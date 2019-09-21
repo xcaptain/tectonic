@@ -45,9 +45,9 @@ use super::dpx_cidtype2::{
 use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_file, pdf_get_version, pdf_link_obj, pdf_lookup_dict, pdf_name_value,
-    pdf_new_name, pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj,
-    pdf_remove_dict, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_copy_name, pdf_file, pdf_get_version, pdf_link_obj, pdf_lookup_dict,
+    pdf_name_value, pdf_new_name, pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_ref_obj,
+    pdf_release_obj, pdf_remove_dict, pdf_string_value, PdfObjType,
 };
 use bridge::_tt_abort;
 use libc::{free, memcpy, memset, strcat, strchr, strcmp, strcpy, strlen, strncmp, strtoul};
@@ -1032,25 +1032,17 @@ unsafe extern "C" fn CIDFont_base_open(
             pdf_remove_dict(fontdict, b"W2\x00" as *const u8 as *const i8);
         }
     }
+    pdf_add_dict(fontdict, pdf_new_name("Type"), pdf_new_name("Font"));
+    pdf_add_dict(fontdict, pdf_new_name("BaseFont"), pdf_copy_name(fontname));
     pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        descriptor,
+        pdf_new_name("Type"),
+        pdf_new_name("FontDescriptor"),
     );
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        pdf_new_name("FontName"),
+        pdf_copy_name(fontname),
     );
     (*font).fontdict = fontdict;
     (*font).descriptor = descriptor;

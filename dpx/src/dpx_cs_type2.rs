@@ -32,7 +32,6 @@
 use crate::warn;
 use libc::memmove;
 
-
 use super::dpx_cff::cff_index;
 #[derive(Copy, Clone)]
 #[repr(C)]

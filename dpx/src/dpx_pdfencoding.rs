@@ -44,9 +44,9 @@ use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_file, pdf_get_array, pdf_get_version, pdf_link_obj,
-    pdf_name_value, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_obj,
-    pdf_release_obj,
+    pdf_add_array, pdf_add_dict, pdf_copy_name, pdf_file, pdf_get_array, pdf_get_version,
+    pdf_link_obj, pdf_name_value, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_number,
+    pdf_obj, pdf_release_obj,
 };
 use crate::dpx_pdfparse::{parse_pdf_array, parse_pdf_name, pdfparse_skip_line};
 use crate::mfree;
@@ -135,15 +135,11 @@ unsafe extern "C" fn create_encoding_resource(
         if !baseenc.is_null() {
             pdf_add_dict(
                 resource,
-                pdf_new_name(b"BaseEncoding\x00" as *const u8 as *const i8),
+                pdf_new_name("BaseEncoding"),
                 pdf_link_obj((*baseenc).resource),
             );
         }
-        pdf_add_dict(
-            resource,
-            pdf_new_name(b"Differences\x00" as *const u8 as *const i8),
-            differences,
-        );
+        pdf_add_dict(resource, pdf_new_name("Differences"), differences);
         return resource;
     } else {
         /* Fix a bug with the MinionPro package using MnSymbol fonts
@@ -261,7 +257,7 @@ unsafe extern "C" fn make_encoding_differences(
             if skipping != 0 {
                 pdf_add_array(differences, pdf_new_number(code as f64));
             }
-            pdf_add_array(differences, pdf_new_name(*enc_vec.offset(code as isize)));
+            pdf_add_array(differences, pdf_copy_name(*enc_vec.offset(code as isize)));
             skipping = 0i32;
             count += 1
         } else {
@@ -492,7 +488,7 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
             &mut *enc_cache.encodings.offset(baseenc_id as isize) as *mut pdf_encoding
     }
     if flags & 1i32 << 0i32 != 0 {
-        (*encoding).resource = pdf_new_name((*encoding).enc_name)
+        (*encoding).resource = pdf_copy_name((*encoding).enc_name)
     }
     enc_id
 }

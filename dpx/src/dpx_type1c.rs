@@ -312,21 +312,17 @@ unsafe extern "C" fn add_SimpleMetrics(
         }
     }
     if pdf_array_length(tmp_array) > 0_u32 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"Widths\x00" as *const u8 as *const i8),
-            pdf_ref_obj(tmp_array),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("Widths"), pdf_ref_obj(tmp_array));
     }
     pdf_release_obj(tmp_array);
     pdf_add_dict(
         fontdict,
-        pdf_new_name(b"FirstChar\x00" as *const u8 as *const i8),
+        pdf_new_name("FirstChar"),
         pdf_new_number(firstchar as f64),
     );
     pdf_add_dict(
         fontdict,
-        pdf_new_name(b"LastChar\x00" as *const u8 as *const i8),
+        pdf_new_name("LastChar"),
         pdf_new_number(lastchar as f64),
     );
 }
@@ -471,11 +467,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
         if pdf_lookup_dict(fontdict, b"ToUnicode\x00" as *const u8 as *const i8).is_null() {
             tounicode = pdf_create_ToUnicode_CMap(fullname, enc_vec, usedchars);
             if !tounicode.is_null() {
-                pdf_add_dict(
-                    fontdict,
-                    pdf_new_name(b"ToUnicode\x00" as *const u8 as *const i8),
-                    pdf_ref_obj(tounicode),
-                );
+                pdf_add_dict(fontdict, pdf_new_name("ToUnicode"), pdf_ref_obj(tounicode));
                 pdf_release_obj(tounicode);
             }
         }
@@ -544,11 +536,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
             b"StdVW\x00" as *const u8 as *const i8,
             0i32,
         );
-        pdf_add_dict(
-            descriptor,
-            pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
-            pdf_new_number(stemv),
-        );
+        pdf_add_dict(descriptor, pdf_new_name("StemV"), pdf_new_number(stemv));
     }
     /*
      * Widths
@@ -983,7 +971,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
      */
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"CharSet\x00" as *const u8 as *const i8),
+        pdf_new_name("CharSet"),
         pdf_new_string(
             pdf_stream_dataptr(pdfcharset),
             pdf_stream_length(pdfcharset) as size_t,
@@ -995,16 +983,8 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
      */
     fontfile = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(fontfile);
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontFile3\x00" as *const u8 as *const i8),
-        pdf_ref_obj(fontfile),
-    );
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Type1C\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(descriptor, pdf_new_name("FontFile3"), pdf_ref_obj(fontfile));
+    pdf_add_dict(stream_dict, pdf_new_name("Subtype"), pdf_new_name("Type1C"));
     pdf_add_stream(
         fontfile,
         stream_data.as_mut_ptr() as *mut libc::c_void,
