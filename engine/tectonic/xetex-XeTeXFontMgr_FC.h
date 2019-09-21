@@ -54,6 +54,7 @@ XeTeXFontMgr_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString* fa
 	XeTeXFontMgr_FC_cacheFamilyMembers(self, familyNames);
 }
 
+XeTeXFontMgr_FC* XeTeXFontMgr_FC_create();
 /*
 class XeTeXFontMgr_FC
     : public XeTeXFontMgr

@@ -54,19 +54,20 @@ void CppStdString_delete(CppStdString* self);
 bool CppStdString_equal(CppStdString* lhs, CppStdString* rhs);
 bool CppStdString_equal_const_char_ptr(CppStdString* lhs, const char* rhs);
 bool CppStdString_const_char_ptr_equal_const_char_ptr(const char* lhs, const char* rhs);
+CppStdString* CppStdString_clone(CppStdString* self);
 
 void CppStdString_assign_from_const_char_ptr(CppStdString* self, const char* val);
 void CppStdString_assign_n_chars(CppStdString* self, const char* val, size_t count);
 void CppStdString_append_const_char_ptr(CppStdString* self, const char* val);
 
-struct CppStdMapStr2Font;
-typedef struct CppStdMapStr2Font CppStdMapStr2Font;
+const char* CppStdString_cstr(const CppStdString* self);
+int CppStdString_length(const CppStdString* self);
 
-CppStdMapStr2Font* CppStdMapStr2Font_create();
-void CppStdMapStr2Font_delete(CppStdMapStr2Font* self);
+struct CppStdMapStringToFontPtr;
+typedef struct CppStdMapStringToFontPtr CppStdMapStringToFontPtr;
 
 struct XeTeXFontMgrFamily {
-	CppStdMapStr2Font*    styles;
+	CppStdMapStringToFontPtr*    styles;
 	uint16_t              minWeight;
 	uint16_t              maxWeight;
 	uint16_t              minWidth;
@@ -76,25 +77,6 @@ struct XeTeXFontMgrFamily {
 };
 
 typedef struct XeTeXFontMgrFamily XeTeXFontMgrFamily;
-
-inline XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
-{
-	XeTeXFontMgrFamily* self = malloc(sizeof(XeTeXFontMgrFamily));
-	self->minWeight = (0);
-	self->maxWeight = (0);
-	self->minWidth = (0);
-	self->maxWidth = (0);
-	self->minSlant = (0);
-	self->maxSlant = (0);
-    self->styles = CppStdMapStr2Font_create();
-}
-inline void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
-{
-	if(!self)
-		return;
-	CppStdMapStr2Font_delete(self->styles);
-	free(self);
-}
 
 struct XeTeXFontMgrFont {
 	CppStdString*    m_fullName;
@@ -112,6 +94,96 @@ struct XeTeXFontMgrFont {
 	bool            isItalic;
 };
 typedef struct XeTeXFontMgrFont XeTeXFontMgrFont;
+
+
+struct CppStdListOfString;
+typedef struct CppStdListOfString CppStdListOfString;
+
+CppStdListOfString* CppStdListOfString_create();
+void CppStdListOfString_delete(CppStdListOfString* self);
+
+size_t CppStdListOfString_size(const CppStdListOfString* self);
+void CppStdListOfString_assign(CppStdListOfString* dest, CppStdListOfString* src);
+bool CppStdListOfString_contains_const_char_ptr(const CppStdListOfString* self, const char* val);
+void CppStdListOfString_append_copy_CppStdString(CppStdListOfString* list, CppStdString* val);
+const char* CppStdListOfString_front_const_char_ptr(const CppStdListOfString* self);
+
+struct CppStdListOfString_Iter {
+	void* dummy;
+};
+typedef struct CppStdListOfString_Iter CppStdListOfString_Iter;
+CppStdListOfString_Iter CppStdListOfString_begin(CppStdListOfString* self);
+CppStdListOfString_Iter CppStdListOfString_end(CppStdListOfString* self);
+void CppStdListOfString_Iter_inc(CppStdListOfString_Iter* iter);
+
+CppStdString* CppStdString_clone_from_iter(CppStdListOfString_Iter self);
+
+struct XeTeXFontMgrNameCollection {
+	CppStdListOfString*  m_familyNames;
+	CppStdListOfString*  m_styleNames;
+	CppStdListOfString*  m_fullNames;
+	CppStdString*        m_psName;
+	CppStdString*        m_subFamily;
+};
+typedef struct XeTeXFontMgrNameCollection XeTeXFontMgrNameCollection;
+
+struct CppStdMapStringToFontPtr;
+typedef struct CppStdMapStringToFontPtr CppStdMapStringToFontPtr;
+
+struct CppStdMapStringToFontPtr_Iter {
+	void* dummy;
+};
+typedef struct CppStdMapStringToFontPtr_Iter CppStdMapStringToFontPtr_Iter;
+
+
+CppStdMapStringToFontPtr* CppStdMapStringToFontPtr_create();
+void CppStdMapStringToFontPtr_delete(CppStdMapStringToFontPtr* self);
+
+CppStdMapStringToFontPtr_Iter CppStdMapStringToFontPtr_find(CppStdMapStringToFontPtr* self, CppStdString* val);
+CppStdMapStringToFontPtr_Iter CppStdMapStringToFontPtr_begin(CppStdMapStringToFontPtr* self);
+CppStdMapStringToFontPtr_Iter CppStdMapStringToFontPtr_end(CppStdMapStringToFontPtr* self);
+bool CppStdMapStringToFontPtr_Iter_neq(CppStdMapStringToFontPtr_Iter lhs, CppStdMapStringToFontPtr_Iter rhs);
+XeTeXFontMgrFont* CppStdMapStringToFontPtr_Iter_second(CppStdMapStringToFontPtr_Iter self);
+void CppStdMapStringToFontPtr_Iter_inc(CppStdMapStringToFontPtr_Iter* iter);
+
+
+struct CppStdMapStringToFamilyPtr;
+typedef struct CppStdMapStringToFamilyPtr CppStdMapStringToFamilyPtr;
+CppStdMapStringToFamilyPtr* CppStdMapStringToFamilyPtr_create();
+void CppStdMapStringToFamilyPtr_delete(CppStdMapStringToFamilyPtr* self);
+
+struct CppStdMapStringToFamilyPtr_Iter {
+	void* dummy;
+};
+typedef struct CppStdMapStringToFamilyPtr_Iter CppStdMapStringToFamilyPtr_Iter;
+XeTeXFontMgrFamily* CppStdMapStringToFamilyPtr_Iter_second(CppStdMapStringToFamilyPtr_Iter self);
+
+struct CppStdMapFontRefToFontPtr;
+typedef struct CppStdMapFontRefToFontPtr CppStdMapFontRefToFontPtr;
+CppStdMapFontRefToFontPtr* CppStdMapFontRefToFontPtr_create();
+void CppStdMapFontRefToFontPtr_delete(CppStdMapFontRefToFontPtr* self);
+
+bool CppStdMapFontRefToFontPtr_contains(const CppStdMapFontRefToFontPtr* self, PlatformFontRef val);
+
+
+inline XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
+{
+	XeTeXFontMgrFamily* self = malloc(sizeof(XeTeXFontMgrFamily));
+	self->minWeight = (0);
+	self->maxWeight = (0);
+	self->minWidth = (0);
+	self->maxWidth = (0);
+	self->minSlant = (0);
+	self->maxSlant = (0);
+    self->styles = CppStdMapStringToFontPtr_create();
+}
+inline void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
+{
+	if(!self)
+		return;
+	CppStdMapStringToFontPtr_delete(self->styles);
+	free(self);
+}
 
 inline XeTeXFontMgrFont* XeTeXFontMgrFont_create(PlatformFontRef ref) {
 	XeTeXFontMgrFont* self = malloc(sizeof(XeTeXFontMgrFont));
@@ -140,26 +212,6 @@ inline void XeTeXFontMgrFont_delete(XeTeXFontMgrFont* self) {
 	free(self);
 }
 
-struct CppStdListOfString;
-typedef struct CppStdListOfString CppStdListOfString;
-
-CppStdListOfString* CppStdListOfString_create();
-void CppStdListOfString_delete(CppStdListOfString* self);
-
-size_t CppStdListOfString_size(const CppStdListOfString* self);
-void CppStdListOfString_assign(CppStdListOfString* dest, CppStdListOfString* src);
-bool CppStdListOfString_contains_const_char_ptr(const CppStdListOfString* self, const char* val);
-void CppStdListOfString_append_copy_CppStdString(CppStdListOfString* list, CppStdString* val);
-const char* CppStdListOfString_front_const_char_ptr(const CppStdListOfString* self);
-
-struct XeTeXFontMgrNameCollection {
-	CppStdListOfString*  m_familyNames;
-	CppStdListOfString*  m_styleNames;
-	CppStdListOfString*  m_fullNames;
-	CppStdString*        m_psName;
-	CppStdString*        m_subFamily;
-};
-typedef struct XeTeXFontMgrNameCollection XeTeXFontMgrNameCollection;
 
 inline XeTeXFontMgrNameCollection* XeTeXFontMgrNameCollection_create() {
 	XeTeXFontMgrNameCollection* self = malloc(sizeof(XeTeXFontMgrNameCollection));
@@ -182,16 +234,6 @@ inline void XeTeXFontMgrNameCollection_delete(XeTeXFontMgrNameCollection* self) 
 	free(self);
 }
 
-struct CppStdMapStringToFontPtr;
-typedef struct CppStdMapStringToFontPtr CppStdMapStringToFontPtr;
-
-struct CppStdMapStringToFamilyPtr;
-typedef struct CppStdMapStringToFamilyPtr CppStdMapStringToFamilyPtr;
-
-struct CppStdMapFontRefToFontPtr;
-typedef struct CppStdMapFontRefToFontPtr CppStdMapFontRefToFontPtr;
-
-bool CppStdMapFontRefToFontPtr_contains(const CppStdMapFontRefToFontPtr* self, PlatformFontRef val);
 
 struct XeTeXFontMgr {
 	void              (*m_subdtor)(struct XeTeXFontMgr* self);
@@ -214,6 +256,17 @@ void XeTeXFontMgr_Terminate();
 void XeTeXFontMgr_Destroy();
 
 void XeTeXFontMgr_ctor(XeTeXFontMgr* self);
+
+inline void XeTeXFontMgr_initialize(XeTeXFontMgr* self) {
+	self->m_memfnInitialize(self);
+}
+
+inline void XeTeXFontMgr_terminate(XeTeXFontMgr* self) {
+	self->m_memfnTerminate(self);
+}
+
+
+void XeTeXFontMgr_delete(XeTeXFontMgr* self);
 
 void
 XeTeXFontMgr_appendToList(XeTeXFontMgr* self, CppStdListOfString* list, const char* str);
