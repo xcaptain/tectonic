@@ -46,8 +46,8 @@ use super::dpx_mem::{new, renew};
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_copy_name, pdf_file, pdf_get_array, pdf_get_version,
-    pdf_link_obj, pdf_name_value, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_number,
-    pdf_obj, pdf_release_obj,
+    pdf_link_obj, pdf_name_value, pdf_new_array, pdf_new_dict, pdf_new_number, pdf_obj,
+    pdf_release_obj,
 };
 use crate::dpx_pdfparse::{parse_pdf_array, parse_pdf_name, pdfparse_skip_line};
 use crate::mfree;
@@ -133,13 +133,9 @@ unsafe extern "C" fn create_encoding_resource(
     if !differences.is_null() {
         let mut resource: *mut pdf_obj = pdf_new_dict();
         if !baseenc.is_null() {
-            pdf_add_dict(
-                resource,
-                pdf_new_name("BaseEncoding"),
-                pdf_link_obj((*baseenc).resource),
-            );
+            pdf_add_dict(resource, "BaseEncoding", pdf_link_obj((*baseenc).resource));
         }
-        pdf_add_dict(resource, pdf_new_name("Differences"), differences);
+        pdf_add_dict(resource, "Differences", differences);
         return resource;
     } else {
         /* Fix a bug with the MinionPro package using MnSymbol fonts
@@ -331,12 +327,12 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
     }
     code = 0i32;
     while code < 256i32 {
-        enc_vec[code as usize] = pdf_name_value(pdf_get_array(encoding_array, code));
+        enc_vec[code as usize] = pdf_name_value(&*pdf_get_array(encoding_array, code)).as_ptr();
         code += 1
     }
     enc_id = pdf_encoding_new_encoding(
         if !enc_name.is_null() {
-            pdf_name_value(enc_name)
+            pdf_name_value(&*enc_name).as_ptr()
         } else {
             0 as *mut i8
         },
@@ -347,7 +343,7 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
     );
     if !enc_name.is_null() {
         if verbose as i32 > 1i32 {
-            info!("[{}]", CStr::from_ptr(pdf_name_value(enc_name)).display());
+            info!("[{:?}]", pdf_name_value(&*enc_name).display());
         }
         pdf_release_obj(enc_name);
     }

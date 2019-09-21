@@ -29,14 +29,15 @@ unused_assignments,
 unused_mut
 )]
 
+use std::ffi::{CStr, CString};
+use crate::DisplayExt;
 use crate::dpx_error::dpx_warning;
+
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_transform};
 use crate::dpx_pdfximage::{
     pdf_ximage_findresource, pdf_ximage_get_reference, pdf_ximage_get_resname,
     pdf_ximage_scale_image,
 };
-use crate::DisplayExt;
-use std::ffi::CStr;
 
 use super::spc_warn;
 use super::{spc_begin_annot, spc_end_annot};
@@ -51,13 +52,13 @@ use crate::dpx_pdfdoc::{
 };
 use crate::dpx_pdfdraw::{pdf_dev_grestore, pdf_dev_gsave, pdf_dev_rectclip};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_copy_name, pdf_link_obj, pdf_lookup_dict, pdf_new_array,
+    pdf_add_array, pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_array,
     pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string,
     pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::mfree;
 use crate::streq_ptr;
-use libc::{atof, free, memcmp, memcpy, sprintf, strcat, strcmp, strcpy, strlen};
+use libc::{atof, free, memcmp, memcpy, strcat, strcmp, strcpy, strlen};
 
 pub type size_t = u64;
 
@@ -243,7 +244,7 @@ unsafe extern "C" fn read_html_tag(
             }
             pdf_add_dict(
                 attr,
-                pdf_copy_name(kp),
+                CStr::from_ptr(kp).to_str().unwrap(), // TODO: check
                 pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
             );
             free(kp as *mut libc::c_void);
@@ -373,23 +374,19 @@ unsafe extern "C" fn html_open_link(
     assert!(!name.is_null());
     assert!((*sd).link_dict.is_null());
     (*sd).link_dict = pdf_new_dict();
-    pdf_add_dict((*sd).link_dict, pdf_new_name("Type"), pdf_new_name("Annot"));
-    pdf_add_dict(
-        (*sd).link_dict,
-        pdf_new_name("Subtype"),
-        pdf_new_name("Link"),
-    );
+    pdf_add_dict((*sd).link_dict, "Type", pdf_new_name("Annot"));
+    pdf_add_dict((*sd).link_dict, "Subtype", pdf_new_name("Link"));
     color = pdf_new_array();
     pdf_add_array(color, pdf_new_number(0.0f64));
     pdf_add_array(color, pdf_new_number(0.0f64));
     pdf_add_array(color, pdf_new_number(1.0f64));
-    pdf_add_dict((*sd).link_dict, pdf_new_name("C"), color);
+    pdf_add_dict((*sd).link_dict, "C", color);
     url = fqurl((*sd).baseurl, name);
     if *url.offset(0) as i32 == '#' as i32 {
         /* url++; causes memory leak in free(url) */
         pdf_add_dict(
             (*sd).link_dict,
-            pdf_new_name("Dest"),
+            "Dest",
             pdf_new_string(
                 url.offset(1) as *const libc::c_void,
                 strlen(url.offset(1)) as _,
@@ -397,14 +394,14 @@ unsafe extern "C" fn html_open_link(
         ); /* Otherwise must be bug */
     } else {
         let mut action: *mut pdf_obj = pdf_new_dict();
-        pdf_add_dict(action, pdf_new_name("Type"), pdf_new_name("Action"));
-        pdf_add_dict(action, pdf_new_name("S"), pdf_new_name("URI"));
+        pdf_add_dict(action, "Type", pdf_new_name("Action"));
+        pdf_add_dict(action, "S", pdf_new_name("URI"));
         pdf_add_dict(
             action,
-            pdf_new_name("URI"),
+            "URI",
             pdf_new_string(url as *const libc::c_void, strlen(url) as _),
         );
-        pdf_add_dict((*sd).link_dict, pdf_new_name("A"), pdf_link_obj(action));
+        pdf_add_dict((*sd).link_dict, "A", pdf_link_obj(action));
         pdf_release_obj(action);
     }
     free(url as *mut libc::c_void);
@@ -463,28 +460,31 @@ unsafe extern "C" fn spc_html__anchor_open(
         );
         return -1i32;
     }
-    href = pdf_lookup_dict(attr, b"href\x00" as *const u8 as *const i8);
-    name = pdf_lookup_dict(attr, b"name\x00" as *const u8 as *const i8);
-    if !href.is_null() && !name.is_null() {
-        spc_warn(
-            spe,
-            b"Sorry, you can\'t have both \"href\" and \"name\" in anchor tag...\x00" as *const u8
-                as *const i8,
-        );
-        error = -1i32
-    } else if !href.is_null() {
-        error = html_open_link(spe, pdf_string_value(href) as *const i8, sd)
-    } else if !name.is_null() {
-        /* name */
-        error = html_open_dest(spe, pdf_string_value(name) as *const i8, sd)
-    } else {
-        spc_warn(
-            spe,
-            b"You should have \"href\" or \"name\" in anchor tag!\x00" as *const u8 as *const i8,
-        );
-        error = -1i32
+    let href = pdf_lookup_dict(attr, "href");
+    let name = pdf_lookup_dict(attr, "name");
+    match (href, name) {
+        (Some(_), Some(_)) => {
+            spc_warn(
+                spe,
+                b"Sorry, you can\'t have both \"href\" and \"name\" in anchor tag...\x00"
+                    as *const u8 as *const i8,
+            );
+            -1i32
+        }
+        (Some(href), None) => html_open_link(spe, pdf_string_value(href) as *const i8, sd),
+        (None, Some(name)) => {
+            /* name */
+            html_open_dest(spe, pdf_string_value(name) as *const i8, sd)
+        }
+        _ => {
+            spc_warn(
+                spe,
+                b"You should have \"href\" or \"name\" in anchor tag!\x00" as *const u8
+                    as *const i8,
+            );
+            -1i32
+        }
     }
-    error
 }
 
 unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut spc_html_) -> i32 {
@@ -521,16 +521,16 @@ unsafe extern "C" fn spc_html__base_empty(
     mut attr: *mut pdf_obj,
     mut sd: *mut spc_html_,
 ) -> i32 {
-    let mut href: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut vp: *mut i8 = 0 as *mut i8;
-    href = pdf_lookup_dict(attr, b"href\x00" as *const u8 as *const i8);
-    if href.is_null() {
+    let href = pdf_lookup_dict(attr, "href");
+    if href.is_none() {
         spc_warn(
             spe,
             b"\"href\" not found for \"base\" tag!\x00" as *const u8 as *const i8,
         );
         return -1i32;
     }
+    let href = href.unwrap();
     vp = pdf_string_value(href) as *mut i8;
     if !(*sd).baseurl.is_null() {
         spc_warn(
@@ -610,24 +610,20 @@ unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
     dict = pdf_new_dict();
-    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("ExtGState"));
+    pdf_add_dict(dict, "Type", pdf_new_name("ExtGState"));
     if f_ais != 0 {
-        pdf_add_dict(dict, pdf_new_name("AIS"), pdf_new_boolean(1_i8));
+        pdf_add_dict(dict, "AIS", pdf_new_boolean(1_i8));
     }
-    pdf_add_dict(dict, pdf_new_name("ca"), pdf_new_number(a));
+    pdf_add_dict(dict, "ca", pdf_new_number(a));
     dict
 }
-
-unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: *const i8) -> i32 {
-    let mut dict1: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut dict2: *mut pdf_obj = 0 as *mut pdf_obj;
-    dict1 = pdf_doc_current_page_resources();
+unsafe fn check_resourcestatus(category: &str, mut resname: &str) -> i32 {
+    let dict1 = pdf_doc_current_page_resources();
     if dict1.is_null() {
         return 0i32;
     }
-    dict2 = pdf_lookup_dict(dict1, category);
-    if !dict2.is_null() && pdf_obj_typeof(dict2) == PdfObjType::DICT {
-        if !pdf_lookup_dict(dict2, resname).is_null() {
+    if let Some(dict2) = pdf_lookup_dict(dict1, category) {
+        if pdf_obj_typeof(dict2) == PdfObjType::DICT && pdf_lookup_dict(dict2, resname).is_some() {
             return 1i32;
         }
     }
@@ -635,8 +631,6 @@ unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: 
 }
 /* ENABLE_HTML_SVG_OPACITY */
 unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut pdf_obj) -> i32 {
-    let mut src: *mut pdf_obj = 0 as *mut pdf_obj; /* meaning fully opaque */
-    let mut obj: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -664,27 +658,25 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         spe,
         b"html \"img\" tag found (not completed, plese don\'t use!).\x00" as *const u8 as *const i8,
     );
-    src = pdf_lookup_dict(attr, b"src\x00" as *const u8 as *const i8);
-    if src.is_null() {
+    let src = pdf_lookup_dict(attr, "src");
+    if src.is_none() {
         spc_warn(
             spe,
             b"\"src\" attribute not found for \"img\" tag!\x00" as *const u8 as *const i8,
         );
         return -1i32;
     }
+    let src = src.unwrap();
     transform_info_clear(&mut ti);
-    obj = pdf_lookup_dict(attr, b"width\x00" as *const u8 as *const i8);
-    if !obj.is_null() {
+    if let Some(obj) = pdf_lookup_dict(attr, "width") {
         ti.width = atopt(pdf_string_value(obj) as *const i8);
         ti.flags |= 1i32 << 1i32
     }
-    obj = pdf_lookup_dict(attr, b"height\x00" as *const u8 as *const i8);
-    if !obj.is_null() {
+    if let Some(obj) = pdf_lookup_dict(attr, "height") {
         ti.height = atopt(pdf_string_value(obj) as *const i8);
         ti.flags |= 1i32 << 2i32
     }
-    obj = pdf_lookup_dict(attr, b"svg:opacity\x00" as *const u8 as *const i8);
-    if !obj.is_null() {
+    if let Some(obj) = pdf_lookup_dict(attr, "svg:opacity") {
         alpha = atof(pdf_string_value(obj) as *const i8);
         if alpha < 0.0f64 || alpha > 1.0f64 {
             spc_warn(
@@ -696,8 +688,7 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         }
     }
     /* ENABLE_HTML_SVG_OPCAITY */
-    obj = pdf_lookup_dict(attr, b"svg:transform\x00" as *const u8 as *const i8);
-    if !obj.is_null() {
+    if let Some(obj) = pdf_lookup_dict(attr, "svg:transform") {
         let mut p: *const i8 = pdf_string_value(obj) as *const i8;
         let mut N = pdf_tmatrix::new();
         while *p as i32 != 0 && libc::isspace(*p as _) != 0 {
@@ -756,31 +747,23 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         ); /* op: gs */
         error = -1i32
     } else {
-        let mut res_name: *mut i8 = 0 as *mut i8;
         let mut r = pdf_rect::new();
         graphics_mode();
         pdf_dev_gsave();
         let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
         let mut a: i32 = (100.0f64 * alpha).round() as i32;
         if a != 0i32 {
-            res_name = new(
-                (strlen(b"_Tps_a100_\x00" as *const u8 as *const i8).wrapping_add(1))
-                    .wrapping_mul(::std::mem::size_of::<i8>()) as _,
-            ) as *mut i8;
-            sprintf(res_name, b"_Tps_a%03d_\x00" as *const u8 as *const i8, a);
-            if check_resourcestatus(b"ExtGState\x00" as *const u8 as *const i8, res_name) == 0 {
+            let res_name = format!("_Tps_a{:03}_", a);
+            let res_name_c = CString::new(res_name.as_str()).unwrap().into_raw();
+            if check_resourcestatus("ExtGState", &res_name) == 0 {
                 dict = create_xgstate((0.01f64 * a as f64 / 0.01f64).round() * 0.01f64, 0i32);
-                pdf_doc_add_page_resource(
-                    b"ExtGState\x00" as *const u8 as *const i8,
-                    res_name,
-                    pdf_ref_obj(dict),
-                );
+                pdf_doc_add_page_resource("ExtGState", res_name_c, pdf_ref_obj(dict));
                 pdf_release_obj(dict);
             }
             pdf_doc_add_page_content(b" /\x00" as *const u8 as *const i8, 2_u32);
-            pdf_doc_add_page_content(res_name, strlen(res_name) as u32);
+            pdf_doc_add_page_content(res_name_c, res_name.len() as u32);
             pdf_doc_add_page_content(b" gs\x00" as *const u8 as *const i8, 3_u32);
-            free(res_name as *mut libc::c_void);
+            let _ = CString::from_raw(res_name_c);
         }
         /* ENABLE_HTML_SVG_OPACITY */
         pdf_ximage_scale_image(id, &mut M1, &mut r, &mut ti); /* op: */
@@ -800,16 +783,12 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         M.f += M1.e * _tmp_b_0 + M1.f * _tmp_d_0;
         pdf_dev_concat(&mut M);
         pdf_dev_rectclip(r.llx, r.lly, r.urx - r.llx, r.ury - r.lly);
-        res_name = pdf_ximage_get_resname(id);
+        let res_name = pdf_ximage_get_resname(id);
         pdf_doc_add_page_content(b" /\x00" as *const u8 as *const i8, 2_u32);
         pdf_doc_add_page_content(res_name, strlen(res_name) as u32);
         pdf_doc_add_page_content(b" Do\x00" as *const u8 as *const i8, 3_u32);
         pdf_dev_grestore();
-        pdf_doc_add_page_resource(
-            b"XObject\x00" as *const u8 as *const i8,
-            res_name,
-            pdf_ximage_get_reference(id),
-        );
+        pdf_doc_add_page_resource("XObject", res_name, pdf_ximage_get_reference(id));
         /* ENABLE_HTML_SVG_XXX */
     }
     error

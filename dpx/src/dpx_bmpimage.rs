@@ -243,7 +243,7 @@ pub unsafe extern "C" fn bmp_include_image(
     } else {
         colorspace = pdf_new_name("DeviceRGB")
     }
-    pdf_add_dict(stream_dict, pdf_new_name("ColorSpace"), colorspace);
+    pdf_add_dict(stream_dict, "ColorSpace", colorspace);
     /* Raster data of BMP is four-byte aligned. */
     let mut rowbytes: i32 = 0;
     let mut n: i32 = 0;

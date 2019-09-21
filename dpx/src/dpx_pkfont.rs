@@ -772,7 +772,11 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                         pkh.chrcode as u8 as i32,
                     );
                 }
-                pdf_add_dict(charprocs, pdf_copy_name(charname), pdf_ref_obj(charproc));
+                pdf_add_dict(
+                    charprocs,
+                    CStr::from_ptr(charname).to_str().unwrap(),
+                    pdf_ref_obj(charproc),
+                );
                 pdf_release_obj(charproc);
             }
             charavail[(pkh.chrcode & 0xffi32) as usize] = 1_i8
@@ -811,7 +815,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     }
     /* Now actually fill fontdict. */
     fontdict = pdf_font_get_resource(font);
-    pdf_add_dict(fontdict, pdf_new_name("CharProcs"), pdf_ref_obj(charprocs));
+    pdf_add_dict(fontdict, "CharProcs", pdf_ref_obj(charprocs));
     pdf_release_obj(charprocs);
     /*
      * Resources:
@@ -825,8 +829,8 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     tmp_array = pdf_new_array();
     pdf_add_array(tmp_array, pdf_new_name("PDF"));
     pdf_add_array(tmp_array, pdf_new_name("ImageB"));
-    pdf_add_dict(procset, pdf_new_name("ProcSet"), tmp_array);
-    pdf_add_dict(fontdict, pdf_new_name("Resources"), procset);
+    pdf_add_dict(procset, "ProcSet", tmp_array);
+    pdf_add_dict(fontdict, "Resources", procset);
     /* Encoding */
     tmp_array = pdf_new_array();
     prev = -2i32;
@@ -879,9 +883,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     if encoding_id < 0i32 || enc_vec.is_null() {
         /* ENABLE_GLYPHENC */
         encoding = pdf_new_dict();
-        pdf_add_dict(encoding, pdf_new_name("Type"), pdf_new_name("Encoding"));
-        pdf_add_dict(encoding, pdf_new_name("Differences"), tmp_array);
-        pdf_add_dict(fontdict, pdf_new_name("Encoding"), pdf_ref_obj(encoding));
+        pdf_add_dict(encoding, "Type", pdf_new_name("Encoding"));
+        pdf_add_dict(encoding, "Differences", tmp_array);
+        pdf_add_dict(fontdict, "Encoding", pdf_ref_obj(encoding));
         pdf_release_obj(encoding);
     } else {
         pdf_release_obj(tmp_array);
@@ -893,7 +897,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_add_array(tmp_array, pdf_new_number(bbox.lly));
     pdf_add_array(tmp_array, pdf_new_number(bbox.urx));
     pdf_add_array(tmp_array, pdf_new_number(bbox.ury));
-    pdf_add_dict(fontdict, pdf_new_name("FontBBox"), tmp_array);
+    pdf_add_dict(fontdict, "FontBBox", tmp_array);
     /* Widths:
      *  Indirect reference preffered. (See PDF Reference)
      */
@@ -907,7 +911,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
         }
         code += 1
     }
-    pdf_add_dict(fontdict, pdf_new_name("Widths"), pdf_ref_obj(tmp_array));
+    pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     pdf_release_obj(tmp_array);
     /* FontMatrix */
     tmp_array = pdf_new_array();
@@ -917,16 +921,8 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_add_array(tmp_array, pdf_new_number(0.001f64 * pix2charu));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
-    pdf_add_dict(fontdict, pdf_new_name("FontMatrix"), tmp_array);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name("FirstChar"),
-        pdf_new_number(firstchar as f64),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name("LastChar"),
-        pdf_new_number(lastchar as f64),
-    );
+    pdf_add_dict(fontdict, "FontMatrix", tmp_array);
+    pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
+    pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
     0i32
 }

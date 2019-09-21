@@ -398,24 +398,12 @@ unsafe extern "C" fn get_font_attr(mut font: *mut pdf_font, cffont: &cff_font) {
         flags |= 1i32 << 17i32
     }
     flags |= 1i32 << 2i32;
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name("CapHeight"),
-        pdf_new_number(capheight),
-    );
-    pdf_add_dict(descriptor, pdf_new_name("Ascent"), pdf_new_number(ascent));
-    pdf_add_dict(descriptor, pdf_new_name("Descent"), pdf_new_number(descent));
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name("ItalicAngle"),
-        pdf_new_number(italicangle),
-    );
-    pdf_add_dict(descriptor, pdf_new_name("StemV"), pdf_new_number(stemv));
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name("Flags"),
-        pdf_new_number(flags as f64),
-    );
+    pdf_add_dict(descriptor, "CapHeight", pdf_new_number(capheight));
+    pdf_add_dict(descriptor, "Ascent", pdf_new_number(ascent));
+    pdf_add_dict(descriptor, "Descent", pdf_new_number(descent));
+    pdf_add_dict(descriptor, "ItalicAngle", pdf_new_number(italicangle));
+    pdf_add_dict(descriptor, "StemV", pdf_new_number(stemv));
+    pdf_add_dict(descriptor, "Flags", pdf_new_number(flags as f64));
 }
 unsafe extern "C" fn add_metrics(
     mut font: *mut pdf_font,
@@ -471,7 +459,7 @@ unsafe extern "C" fn add_metrics(
         );
         i += 1
     }
-    pdf_add_dict(descriptor, pdf_new_name("FontBBox"), tmp_array);
+    pdf_add_dict(descriptor, "FontBBox", tmp_array);
     tmp_array = pdf_new_array();
     if num_glyphs <= 1i32 {
         /* This must be an error. */
@@ -546,19 +534,11 @@ unsafe extern "C" fn add_metrics(
         }
     }
     if pdf_array_length(tmp_array) > 0_u32 {
-        pdf_add_dict(fontdict, pdf_new_name("Widths"), pdf_ref_obj(tmp_array));
+        pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     }
     pdf_release_obj(tmp_array);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name("FirstChar"),
-        pdf_new_number(firstchar as f64),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name("LastChar"),
-        pdf_new_number(lastchar as f64),
-    );
+    pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
+    pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
 }
 unsafe extern "C" fn write_fontfile(
     mut font: *mut pdf_font,
@@ -703,8 +683,8 @@ unsafe extern "C" fn write_fontfile(
     /* Flush Font File */
     fontfile = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(fontfile);
-    pdf_add_dict(descriptor, pdf_new_name("FontFile3"), pdf_ref_obj(fontfile));
-    pdf_add_dict(stream_dict, pdf_new_name("Subtype"), pdf_new_name("Type1C"));
+    pdf_add_dict(descriptor, "FontFile3", pdf_ref_obj(fontfile));
+    pdf_add_dict(stream_dict, "Subtype", pdf_new_name("Type1C"));
     pdf_add_stream(
         fontfile,
         stream_data.as_ptr() as *mut libc::c_void,
@@ -713,7 +693,7 @@ unsafe extern "C" fn write_fontfile(
     pdf_release_obj(fontfile);
     pdf_add_dict(
         descriptor,
-        pdf_new_name("CharSet"),
+        "CharSet",
         pdf_new_string(
             pdf_stream_dataptr(pdfcharset),
             pdf_stream_length(pdfcharset) as size_t,
@@ -803,10 +783,10 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     } else {
         /* Create enc_vec and ToUnicode CMap for built-in encoding. */
         let mut tounicode: *mut pdf_obj = 0 as *mut pdf_obj;
-        if pdf_lookup_dict(fontdict, b"ToUnicode\x00" as *const u8 as *const i8).is_null() {
+        if pdf_lookup_dict(fontdict, "ToUnicode").is_none() {
             tounicode = pdf_create_ToUnicode_CMap(fullname, enc_vec, usedchars);
             if !tounicode.is_null() {
-                pdf_add_dict(fontdict, pdf_new_name("ToUnicode"), pdf_ref_obj(tounicode));
+                pdf_add_dict(fontdict, "ToUnicode", pdf_ref_obj(tounicode));
                 pdf_release_obj(tounicode);
             }
         }
