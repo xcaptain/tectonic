@@ -49,9 +49,9 @@ use crate::dpx_pdfdoc::{
 };
 use crate::dpx_pdfdraw::{pdf_dev_grestore, pdf_dev_gsave, pdf_dev_rectclip};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_array, pdf_new_boolean,
-    pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string, pdf_obj,
-    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
+    pdf_add_array, pdf_add_dict, pdf_copy_name, pdf_link_obj, pdf_lookup_dict, pdf_new_array,
+    pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string,
+    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::mfree;
 use crate::streq_ptr;
@@ -237,7 +237,7 @@ unsafe extern "C" fn read_html_tag(
             }
             pdf_add_dict(
                 attr,
-                pdf_new_name(kp),
+                pdf_copy_name(kp),
                 pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
             );
             free(kp as *mut libc::c_void);
@@ -361,31 +361,23 @@ unsafe extern "C" fn html_open_link(
     assert!(!name.is_null());
     assert!((*sd).link_dict.is_null());
     (*sd).link_dict = pdf_new_dict();
+    pdf_add_dict((*sd).link_dict, pdf_new_name("Type"), pdf_new_name("Annot"));
     pdf_add_dict(
         (*sd).link_dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Annot\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        (*sd).link_dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Link\x00" as *const u8 as *const i8),
+        pdf_new_name("Subtype"),
+        pdf_new_name("Link"),
     );
     color = pdf_new_array();
     pdf_add_array(color, pdf_new_number(0.0f64));
     pdf_add_array(color, pdf_new_number(0.0f64));
     pdf_add_array(color, pdf_new_number(1.0f64));
-    pdf_add_dict(
-        (*sd).link_dict,
-        pdf_new_name(b"C\x00" as *const u8 as *const i8),
-        color,
-    );
+    pdf_add_dict((*sd).link_dict, pdf_new_name("C"), color);
     url = fqurl((*sd).baseurl, name);
     if *url.offset(0) as i32 == '#' as i32 {
         /* url++; causes memory leak in free(url) */
         pdf_add_dict(
             (*sd).link_dict,
-            pdf_new_name(b"Dest\x00" as *const u8 as *const i8),
+            pdf_new_name("Dest"),
             pdf_new_string(
                 url.offset(1) as *const libc::c_void,
                 strlen(url.offset(1)) as _,
@@ -393,26 +385,14 @@ unsafe extern "C" fn html_open_link(
         ); /* Otherwise must be bug */
     } else {
         let mut action: *mut pdf_obj = pdf_new_dict();
+        pdf_add_dict(action, pdf_new_name("Type"), pdf_new_name("Action"));
+        pdf_add_dict(action, pdf_new_name("S"), pdf_new_name("URI"));
         pdf_add_dict(
             action,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"Action\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            action,
-            pdf_new_name(b"S\x00" as *const u8 as *const i8),
-            pdf_new_name(b"URI\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            action,
-            pdf_new_name(b"URI\x00" as *const u8 as *const i8),
+            pdf_new_name("URI"),
             pdf_new_string(url as *const libc::c_void, strlen(url) as _),
         );
-        pdf_add_dict(
-            (*sd).link_dict,
-            pdf_new_name(b"A\x00" as *const u8 as *const i8),
-            pdf_link_obj(action),
-        );
+        pdf_add_dict((*sd).link_dict, pdf_new_name("A"), pdf_link_obj(action));
         pdf_release_obj(action);
     }
     free(url as *mut libc::c_void);
@@ -434,7 +414,7 @@ unsafe extern "C" fn html_open_dest(
     assert!(!page_ref.is_null());
     array = pdf_new_array();
     pdf_add_array(array, page_ref);
-    pdf_add_array(array, pdf_new_name(b"XYZ\x00" as *const u8 as *const i8));
+    pdf_add_array(array, pdf_new_name("XYZ"));
     pdf_add_array(array, pdf_new_null());
     pdf_add_array(array, pdf_new_number(cp.y + 24.0f64));
     pdf_add_array(array, pdf_new_null());
@@ -617,23 +597,11 @@ unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
     dict = pdf_new_dict();
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"ExtGState\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("ExtGState"));
     if f_ais != 0 {
-        pdf_add_dict(
-            dict,
-            pdf_new_name(b"AIS\x00" as *const u8 as *const i8),
-            pdf_new_boolean(1_i8),
-        );
+        pdf_add_dict(dict, pdf_new_name("AIS"), pdf_new_boolean(1_i8));
     }
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"ca\x00" as *const u8 as *const i8),
-        pdf_new_number(a),
-    );
+    pdf_add_dict(dict, pdf_new_name("ca"), pdf_new_number(a));
     dict
 }
 unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: *const i8) -> i32 {

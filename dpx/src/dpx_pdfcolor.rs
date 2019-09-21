@@ -29,9 +29,6 @@
     unused_mut
 )]
 
-use std::slice::from_raw_parts;
-use crate::mfree;
-use crate::{info, warn};
 use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::sget_unsigned_pair;
@@ -41,8 +38,11 @@ use crate::dpx_pdfobj::{
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
     pdf_stream_dict,
 };
+use crate::mfree;
+use crate::{info, warn};
 use libc::{free, memcmp, memcpy, memset, sprintf, strcmp, strcpy, strlen};
-use md5::{Md5, Digest};
+use md5::{Digest, Md5};
+use std::slice::from_raw_parts;
 
 pub type size_t = u64;
 
@@ -697,10 +697,10 @@ pub unsafe extern "C" fn iccp_get_rendering_intent(
         | (*p.offset(66) as i32) << 8i32
         | *p.offset(67) as i32;
     match intent >> 16i32 & 0xffi32 {
-        2 => ri = pdf_new_name(b"Saturation\x00" as *const u8 as *const i8),
-        0 => ri = pdf_new_name(b"Perceptual\x00" as *const u8 as *const i8),
-        3 => ri = pdf_new_name(b"AbsoluteColorimetric\x00" as *const u8 as *const i8),
-        1 => ri = pdf_new_name(b"RelativeColorimetric\x00" as *const u8 as *const i8),
+        2 => ri = pdf_new_name("Saturation"),
+        0 => ri = pdf_new_name("Perceptual"),
+        3 => ri = pdf_new_name("AbsoluteColorimetric"),
+        1 => ri = pdf_new_name("RelativeColorimetric"),
         _ => {
             warn!(
                 "Invalid rendering intent type: {}",
@@ -829,10 +829,7 @@ unsafe extern "C" fn iccp_unpack_header(
     }
     0i32
 }
-unsafe extern "C" fn iccp_get_checksum(
-    profile: *const u8,
-    proflen: usize,
-) -> [u8; 16] {
+unsafe extern "C" fn iccp_get_checksum(profile: *const u8, proflen: usize) -> [u8; 16] {
     let mut md5 = Md5::new();
     md5.input(from_raw_parts(profile.offset(0), 56));
     md5.input(&[0u8; 12]);
@@ -1199,15 +1196,12 @@ pub unsafe extern "C" fn iccp_load_profile(
     }
     let resource = pdf_new_array();
     let stream = pdf_new_stream(1i32 << 0i32);
-    pdf_add_array(
-        resource,
-        pdf_new_name(b"ICCBased\x00" as *const u8 as *const i8),
-    );
+    pdf_add_array(resource, pdf_new_name("ICCBased"));
     pdf_add_array(resource, pdf_ref_obj(stream));
     let stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(
         stream_dict,
-        pdf_new_name(b"N\x00" as *const u8 as *const i8),
+        pdf_new_name("N"),
         pdf_new_number(get_num_components_iccbased(cdata) as f64),
     );
     pdf_add_stream(stream, profile, proflen);

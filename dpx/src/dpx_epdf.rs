@@ -587,19 +587,11 @@ pub unsafe extern "C" fn pdf_include_page(
                         let mut bbox: *mut pdf_obj = 0 as *mut pdf_obj;
                         let mut matrix: *mut pdf_obj = 0 as *mut pdf_obj;
                         contents_dict = pdf_stream_dict(contents);
+                        pdf_add_dict(contents_dict, pdf_new_name("Type"), pdf_new_name("XObject"));
+                        pdf_add_dict(contents_dict, pdf_new_name("Subtype"), pdf_new_name("Form"));
                         pdf_add_dict(
                             contents_dict,
-                            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-                            pdf_new_name(b"XObject\x00" as *const u8 as *const i8),
-                        );
-                        pdf_add_dict(
-                            contents_dict,
-                            pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-                            pdf_new_name(b"Form\x00" as *const u8 as *const i8),
-                        );
-                        pdf_add_dict(
-                            contents_dict,
-                            pdf_new_name(b"FormType\x00" as *const u8 as *const i8),
+                            pdf_new_name("FormType"),
                             pdf_new_number(1.0f64),
                         );
                         bbox = pdf_new_array();
@@ -607,11 +599,7 @@ pub unsafe extern "C" fn pdf_include_page(
                         pdf_add_array(bbox, pdf_new_number(info.bbox.lly));
                         pdf_add_array(bbox, pdf_new_number(info.bbox.urx));
                         pdf_add_array(bbox, pdf_new_number(info.bbox.ury));
-                        pdf_add_dict(
-                            contents_dict,
-                            pdf_new_name(b"BBox\x00" as *const u8 as *const i8),
-                            bbox,
-                        );
+                        pdf_add_dict(contents_dict, pdf_new_name("BBox"), bbox);
                         matrix = pdf_new_array();
                         pdf_add_array(matrix, pdf_new_number(info.matrix.a));
                         pdf_add_array(matrix, pdf_new_number(info.matrix.b));
@@ -619,14 +607,10 @@ pub unsafe extern "C" fn pdf_include_page(
                         pdf_add_array(matrix, pdf_new_number(info.matrix.d));
                         pdf_add_array(matrix, pdf_new_number(info.matrix.e));
                         pdf_add_array(matrix, pdf_new_number(info.matrix.f));
+                        pdf_add_dict(contents_dict, pdf_new_name("Matrix"), matrix);
                         pdf_add_dict(
                             contents_dict,
-                            pdf_new_name(b"Matrix\x00" as *const u8 as *const i8),
-                            matrix,
-                        );
-                        pdf_add_dict(
-                            contents_dict,
-                            pdf_new_name(b"Resources\x00" as *const u8 as *const i8),
+                            pdf_new_name("Resources"),
                             pdf_import_object(resources),
                         );
                         pdf_release_obj(resources);

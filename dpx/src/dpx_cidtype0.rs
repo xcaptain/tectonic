@@ -79,9 +79,9 @@ use super::dpx_type0::{
     Type0Font, Type0Font_cache_get, Type0Font_get_usedchars, Type0Font_set_ToUnicode,
 };
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_new_array, pdf_new_dict,
-    pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj, pdf_ref_obj,
-    pdf_release_obj, pdf_stream_dict,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_copy_name, pdf_new_array,
+    pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj,
+    pdf_ref_obj, pdf_release_obj, pdf_stream_dict,
 };
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
 use bridge::_tt_abort;
@@ -251,15 +251,11 @@ unsafe extern "C" fn add_CIDHMetrics(
      */
     pdf_add_dict(
         fontdict,
-        pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+        pdf_new_name("DW"),
         pdf_new_number(defaultAdvanceWidth),
     );
     if empty == 0 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"W\x00" as *const u8 as *const i8),
-            pdf_ref_obj(w_array),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("W"), pdf_ref_obj(w_array));
     }
     pdf_release_obj(w_array);
 }
@@ -400,18 +396,10 @@ unsafe extern "C" fn add_CIDVMetrics(
         an_array = pdf_new_array();
         pdf_add_array(an_array, pdf_new_number(defaultVertOriginY));
         pdf_add_array(an_array, pdf_new_number(-defaultAdvanceHeight));
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"DW2\x00" as *const u8 as *const i8),
-            an_array,
-        );
+        pdf_add_dict(fontdict, pdf_new_name("DW2"), an_array);
     }
     if empty == 0 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"W2\x00" as *const u8 as *const i8),
-            pdf_ref_obj(w2_array),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("W2"), pdf_ref_obj(w2_array));
     }
     pdf_release_obj(w2_array);
     free((*vorg).vertOriginYMetrics as *mut libc::c_void);
@@ -599,13 +587,13 @@ unsafe extern "C" fn write_fontfile(mut font: *mut CIDFont, cffont: &mut cff_fon
     stream_dict = pdf_stream_dict(fontfile);
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"FontFile3\x00" as *const u8 as *const i8),
+        pdf_new_name("FontFile3"),
         pdf_ref_obj(fontfile),
     );
     pdf_add_dict(
         stream_dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"CIDFontType0C\x00" as *const u8 as *const i8),
+        pdf_new_name("Subtype"),
+        pdf_new_name("CIDFontType0C"),
     );
     pdf_add_stream(
         fontfile,
@@ -754,7 +742,7 @@ unsafe extern "C" fn CIDFont_type0_add_CIDSet(
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"CIDSet\x00" as *const u8 as *const i8),
+        pdf_new_name("CIDSet"),
         pdf_ref_obj(cidset),
     );
     pdf_release_obj(cidset);
@@ -792,7 +780,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
     }
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+        pdf_new_name("FontDescriptor"),
         pdf_ref_obj((*font).descriptor),
     );
     if CIDFont_is_BaseFont(font) {
@@ -802,7 +790,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
             /* No metrics needed. */
             pdf_add_dict(
                 (*font).fontdict,
-                pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+                pdf_new_name("DW"),
                 pdf_new_number(1000.0f64),
             );
             return;
@@ -823,7 +811,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
     if opt_flags & 1i32 << 1i32 != 0 {
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+            pdf_new_name("DW"),
             pdf_new_number(1000.0f64),
         );
     } else {
@@ -1256,15 +1244,11 @@ pub unsafe extern "C" fn CIDFont_type0_open(
     (*font).csi = csi;
     (*font).flags |= expected_flag;
     (*font).fontdict = pdf_new_dict();
+    pdf_add_dict((*font).fontdict, pdf_new_name("Type"), pdf_new_name("Font"));
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        (*font).fontdict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"CIDFontType0\x00" as *const u8 as *const i8),
+        pdf_new_name("Subtype"),
+        pdf_new_name("CIDFontType0"),
     );
     if expect_type1_font != 0 || (*opt).embed != 0 {
         memmove(
@@ -1286,18 +1270,18 @@ pub unsafe extern "C" fn CIDFont_type0_open(
     }
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        pdf_new_name("FontName"),
+        pdf_copy_name(fontname),
     );
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        pdf_new_name("BaseFont"),
+        pdf_copy_name(fontname),
     );
     let mut csi_dict: *mut pdf_obj = pdf_new_dict();
     pdf_add_dict(
         csi_dict,
-        pdf_new_name(b"Registry\x00" as *const u8 as *const i8),
+        pdf_new_name("Registry"),
         pdf_new_string(
             (*csi).registry as *const libc::c_void,
             strlen((*csi).registry) as _,
@@ -1305,7 +1289,7 @@ pub unsafe extern "C" fn CIDFont_type0_open(
     );
     pdf_add_dict(
         csi_dict,
-        pdf_new_name(b"Ordering\x00" as *const u8 as *const i8),
+        pdf_new_name("Ordering"),
         pdf_new_string(
             (*csi).ordering as *const libc::c_void,
             strlen((*csi).ordering) as _,
@@ -1313,18 +1297,14 @@ pub unsafe extern "C" fn CIDFont_type0_open(
     );
     pdf_add_dict(
         csi_dict,
-        pdf_new_name(b"Supplement\x00" as *const u8 as *const i8),
+        pdf_new_name("Supplement"),
         pdf_new_number((*csi).supplement as f64),
     );
-    pdf_add_dict(
-        (*font).fontdict,
-        pdf_new_name(b"CIDSystemInfo\x00" as *const u8 as *const i8),
-        csi_dict,
-    );
+    pdf_add_dict((*font).fontdict, pdf_new_name("CIDSystemInfo"), csi_dict);
     if is_cid_font != 0 {
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+            pdf_new_name("DW"),
             pdf_new_number(1000i32 as f64),
         );
         /* not sure */
@@ -1367,7 +1347,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     }
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+        pdf_new_name("FontDescriptor"),
         pdf_ref_obj((*font).descriptor),
     );
     used_chars = CIDFont_type0_get_used_chars(font);
@@ -1393,7 +1373,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
         );
         pdf_add_dict(
             (*font).descriptor,
-            pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
+            pdf_new_name("StemV"),
             pdf_new_number(stemv),
         );
     }
@@ -2165,32 +2145,32 @@ unsafe extern "C" fn get_font_attr(mut font: *mut CIDFont, cffont: &cff_font) {
     flags |= 1i32 << 2i32;
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"CapHeight\x00" as *const u8 as *const i8),
+        pdf_new_name("CapHeight"),
         pdf_new_number(capheight),
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"Ascent\x00" as *const u8 as *const i8),
+        pdf_new_name("Ascent"),
         pdf_new_number(ascent),
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"Descent\x00" as *const u8 as *const i8),
+        pdf_new_name("Descent"),
         pdf_new_number(descent),
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"ItalicAngle\x00" as *const u8 as *const i8),
+        pdf_new_name("ItalicAngle"),
         pdf_new_number(italicangle),
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
+        pdf_new_name("StemV"),
         pdf_new_number(stemv),
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"Flags\x00" as *const u8 as *const i8),
+        pdf_new_name("Flags"),
         pdf_new_number(flags as f64),
     );
 }
@@ -2232,11 +2212,7 @@ unsafe extern "C" fn add_metrics(
         );
         i += 1
     }
-    pdf_add_dict(
-        (*font).descriptor,
-        pdf_new_name(b"FontBBox\x00" as *const u8 as *const i8),
-        tmp,
-    );
+    pdf_add_dict((*font).descriptor, pdf_new_name("FontBBox"), tmp);
     parent_id = CIDFont_get_parent_id(font, 0i32);
     if parent_id < 0i32 && {
         parent_id = CIDFont_get_parent_id(font, 1i32);
@@ -2278,15 +2254,11 @@ unsafe extern "C" fn add_metrics(
     }
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+        pdf_new_name("DW"),
         pdf_new_number(default_width),
     );
     if pdf_array_length(tmp) > 0_u32 {
-        pdf_add_dict(
-            (*font).fontdict,
-            pdf_new_name(b"W\x00" as *const u8 as *const i8),
-            pdf_ref_obj(tmp),
-        );
+        pdf_add_dict((*font).fontdict, pdf_new_name("W"), pdf_ref_obj(tmp));
     }
     pdf_release_obj(tmp);
 }
@@ -2311,7 +2283,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
     }
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+        pdf_new_name("FontDescriptor"),
         pdf_ref_obj((*font).descriptor),
     );
     handle = dpx_open_type1_file((*font).ident);

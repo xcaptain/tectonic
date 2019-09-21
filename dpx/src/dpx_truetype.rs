@@ -253,16 +253,8 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     }
     sfnt_close(sfont);
     ttstub_input_close(handle as rust_input_handle_t);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"TrueType\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(fontdict, pdf_new_name("Type"), pdf_new_name("Font"));
+    pdf_add_dict(fontdict, pdf_new_name("Subtype"), pdf_new_name("TrueType"));
     0i32
 }
 static mut required_table: [NameTable; 13] = [
@@ -396,21 +388,17 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
         code += 1
     }
     if pdf_array_length(tmparray) > 0_u32 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"Widths\x00" as *const u8 as *const i8),
-            pdf_ref_obj(tmparray),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("Widths"), pdf_ref_obj(tmparray));
     }
     pdf_release_obj(tmparray);
     pdf_add_dict(
         fontdict,
-        pdf_new_name(b"FirstChar\x00" as *const u8 as *const i8),
+        pdf_new_name("FirstChar"),
         pdf_new_number(firstchar as f64),
     );
     pdf_add_dict(
         fontdict,
-        pdf_new_name(b"LastChar\x00" as *const u8 as *const i8),
+        pdf_new_name("LastChar"),
         pdf_new_number(lastchar as f64),
     );
 }
@@ -1305,11 +1293,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     if verbose > 1i32 {
         info!("[{} bytes]", pdf_stream_length(fontfile));
     }
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontFile2\x00" as *const u8 as *const i8),
-        pdf_ref_obj(fontfile),
-    );
+    pdf_add_dict(descriptor, pdf_new_name("FontFile2"), pdf_ref_obj(fontfile));
     pdf_release_obj(fontfile);
     0i32
 }

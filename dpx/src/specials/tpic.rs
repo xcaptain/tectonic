@@ -50,9 +50,9 @@ use crate::dpx_pdfdraw::{
     pdf_dev_setmiterlimit,
 };
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict, pdf_name_value,
-    pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string, pdf_obj,
-    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_copy_name, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict,
+    pdf_name_value, pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string,
+    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_pdfparse::parse_val_ident;
 use libc::{atof, free, memcmp, sprintf, strlen};
@@ -118,23 +118,11 @@ unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj; /* dash pattern */
     dict = pdf_new_dict();
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"ExtGState\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("ExtGState"));
     if f_ais != 0 {
-        pdf_add_dict(
-            dict,
-            pdf_new_name(b"AIS\x00" as *const u8 as *const i8),
-            pdf_new_boolean(1_i8),
-        );
+        pdf_add_dict(dict, pdf_new_name("AIS"), pdf_new_boolean(1_i8));
     }
-    pdf_add_dict(
-        dict,
-        pdf_new_name(b"ca\x00" as *const u8 as *const i8),
-        pdf_new_number(a),
-    );
+    pdf_add_dict(dict, pdf_new_name("ca"), pdf_new_number(a));
     dict
 }
 unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: *const i8) -> i32 {
@@ -832,7 +820,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
                 } else {
                     pdf_add_dict(
                         dict,
-                        pdf_new_name(kp),
+                        pdf_copy_name(kp),
                         pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
                     );
                     free(vp as *mut libc::c_void);
@@ -840,7 +828,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
             }
         } else {
             /* Treated as 'flag' */
-            pdf_add_dict(dict, pdf_new_name(kp), pdf_new_boolean(1_i8));
+            pdf_add_dict(dict, pdf_copy_name(kp), pdf_new_boolean(1_i8));
         }
         free(kp as *mut libc::c_void);
         if error == 0 {

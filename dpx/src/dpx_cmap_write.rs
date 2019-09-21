@@ -35,8 +35,8 @@ use super::dpx_cid::{CSI_IDENTITY, CSI_UNICODE};
 use super::dpx_cmap::{CMap_get_CIDSysInfo, CMap_is_valid};
 use super::dpx_mem::new;
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_add_stream, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_stream,
-    pdf_new_string, pdf_obj, pdf_stream_dict,
+    pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_dict, pdf_new_name, pdf_new_number,
+    pdf_new_stream, pdf_new_string, pdf_obj, pdf_stream_dict,
 };
 use bridge::_tt_abort;
 use libc::{free, memcmp, memset, sprintf, strlen};
@@ -411,7 +411,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         csi_dict = pdf_new_dict();
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Registry\x00" as *const u8 as *const i8),
+            pdf_new_name("Registry"),
             pdf_new_string(
                 (*csi).registry as *const libc::c_void,
                 strlen((*csi).registry) as _,
@@ -419,7 +419,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Ordering\x00" as *const u8 as *const i8),
+            pdf_new_name("Ordering"),
             pdf_new_string(
                 (*csi).ordering as *const libc::c_void,
                 strlen((*csi).ordering) as _,
@@ -427,28 +427,20 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Supplement\x00" as *const u8 as *const i8),
+            pdf_new_name("Supplement"),
             pdf_new_number((*csi).supplement as f64),
         );
+        pdf_add_dict(stream_dict, pdf_new_name("Type"), pdf_new_name("CMap"));
         pdf_add_dict(
             stream_dict,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"CMap\x00" as *const u8 as *const i8),
+            pdf_new_name("CMapName"),
+            pdf_copy_name((*cmap).name),
         );
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"CMapName\x00" as *const u8 as *const i8),
-            pdf_new_name((*cmap).name),
-        );
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"CIDSystemInfo\x00" as *const u8 as *const i8),
-            csi_dict,
-        );
+        pdf_add_dict(stream_dict, pdf_new_name("CIDSystemInfo"), csi_dict);
         if (*cmap).wmode != 0i32 {
             pdf_add_dict(
                 stream_dict,
-                pdf_new_name(b"WMode\x00" as *const u8 as *const i8),
+                pdf_new_name("WMode"),
                 pdf_new_number((*cmap).wmode as f64),
             );
         }

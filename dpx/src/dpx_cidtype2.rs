@@ -54,9 +54,9 @@ use super::dpx_tt_gsub::{
 use super::dpx_tt_table::tt_get_ps_fontname;
 use super::dpx_type0::{Type0Font, Type0Font_cache_get, Type0Font_get_usedchars};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_new_array, pdf_new_dict, pdf_new_name,
-    pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj, pdf_ref_obj, pdf_release_obj,
-    pdf_stream_length,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_array, pdf_new_dict,
+    pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj, pdf_ref_obj,
+    pdf_release_obj, pdf_stream_length,
 };
 use crate::ttstub_input_close;
 use bridge::_tt_abort;
@@ -581,17 +581,9 @@ unsafe extern "C" fn add_TTCIDHMetrics(
         pdf_add_array(w_array, an_array);
         empty = 0i32
     }
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"DW\x00" as *const u8 as *const i8),
-        pdf_new_number(dw),
-    );
+    pdf_add_dict(fontdict, pdf_new_name("DW"), pdf_new_number(dw));
     if empty == 0 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"W\x00" as *const u8 as *const i8),
-            pdf_ref_obj(w_array),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("W"), pdf_ref_obj(w_array));
     }
     pdf_release_obj(w_array);
 }
@@ -671,18 +663,10 @@ unsafe extern "C" fn add_TTCIDVMetrics(
         an_array = pdf_new_array();
         pdf_add_array(an_array, pdf_new_number(defaultVertOriginY));
         pdf_add_array(an_array, pdf_new_number(-defaultAdvanceHeight));
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"DW2\x00" as *const u8 as *const i8),
-            an_array,
-        );
+        pdf_add_dict(fontdict, pdf_new_name("DW2"), an_array);
     }
     if empty == 0 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"W2\x00" as *const u8 as *const i8),
-            pdf_ref_obj(w2_array),
-        );
+        pdf_add_dict(fontdict, pdf_new_name("W2"), pdf_ref_obj(w2_array));
     }
     pdf_release_obj(w2_array);
 }
@@ -854,7 +838,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     }
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
+        pdf_new_name("FontDescriptor"),
         pdf_ref_obj((*font).descriptor),
     );
     if CIDFont_is_BaseFont(font) {
@@ -867,7 +851,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     tmp = pdf_new_dict();
     pdf_add_dict(
         tmp,
-        pdf_new_name(b"Registry\x00" as *const u8 as *const i8),
+        pdf_new_name("Registry"),
         pdf_new_string(
             (*(*font).csi).registry as *const libc::c_void,
             strlen((*(*font).csi).registry) as _,
@@ -875,7 +859,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     );
     pdf_add_dict(
         tmp,
-        pdf_new_name(b"Ordering\x00" as *const u8 as *const i8),
+        pdf_new_name("Ordering"),
         pdf_new_string(
             (*(*font).csi).ordering as *const libc::c_void,
             strlen((*(*font).csi).ordering) as _,
@@ -883,19 +867,15 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     );
     pdf_add_dict(
         tmp,
-        pdf_new_name(b"Supplement\x00" as *const u8 as *const i8),
+        pdf_new_name("Supplement"),
         pdf_new_number((*(*font).csi).supplement as f64),
     );
-    pdf_add_dict(
-        (*font).fontdict,
-        pdf_new_name(b"CIDSystemInfo\x00" as *const u8 as *const i8),
-        tmp,
-    );
+    pdf_add_dict((*font).fontdict, pdf_new_name("CIDSystemInfo"), tmp);
     /* Quick exit for non-embedded & fixed-pitch font. */
     if CIDFont_get_embedding(font) == 0 && opt_flags & 1i32 << 1i32 != 0 {
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+            pdf_new_name("DW"),
             pdf_new_number(1000.0f64),
         );
         return;
@@ -1268,7 +1248,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     if opt_flags & 1i32 << 1i32 != 0 {
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"DW\x00" as *const u8 as *const i8),
+            pdf_new_name("DW"),
             pdf_new_number(1000.0f64),
         );
     } else {
@@ -1322,7 +1302,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     }
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"FontFile2\x00" as *const u8 as *const i8),
+        pdf_new_name("FontFile2"),
         pdf_ref_obj(fontfile),
     );
     pdf_release_obj(fontfile);
@@ -1338,7 +1318,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     );
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"CIDSet\x00" as *const u8 as *const i8),
+        pdf_new_name("CIDSet"),
         pdf_ref_obj(cidset),
     );
     pdf_release_obj(cidset);
@@ -1351,8 +1331,8 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     if cidtogidmap.is_null() {
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"CIDToGIDMap\x00" as *const u8 as *const i8),
-            pdf_new_name(b"Identity\x00" as *const u8 as *const i8),
+            pdf_new_name("CIDToGIDMap"),
+            pdf_new_name("Identity"),
         );
     } else {
         let mut c2gmstream: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -1364,7 +1344,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         );
         pdf_add_dict(
             (*font).fontdict,
-            pdf_new_name(b"CIDToGIDMap\x00" as *const u8 as *const i8),
+            pdf_new_name("CIDToGIDMap"),
             pdf_ref_obj(c2gmstream),
         );
         pdf_release_obj(c2gmstream);
@@ -1542,15 +1522,11 @@ pub unsafe extern "C" fn CIDFont_type2_open(
         (*(*font).csi).supplement = 0i32
     }
     (*font).fontdict = pdf_new_dict();
+    pdf_add_dict((*font).fontdict, pdf_new_name("Type"), pdf_new_name("Font"));
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        (*font).fontdict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"CIDFontType2\x00" as *const u8 as *const i8),
+        pdf_new_name("Subtype"),
+        pdf_new_name("CIDFontType2"),
     );
     (*font).descriptor = tt_get_fontdesc(sfont, &mut (*opt).embed, (*opt).stemv, 0i32, name);
     if (*font).descriptor.is_null() {
@@ -1567,13 +1543,13 @@ pub unsafe extern "C" fn CIDFont_type2_open(
     }
     pdf_add_dict(
         (*font).descriptor,
-        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        pdf_new_name("FontName"),
+        pdf_copy_name(fontname),
     );
     pdf_add_dict(
         (*font).fontdict,
-        pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
+        pdf_new_name("BaseFont"),
+        pdf_copy_name(fontname),
     );
     sfnt_close(sfont);
     if !handle.is_null() {

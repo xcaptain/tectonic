@@ -37,9 +37,9 @@ use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::new;
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_array_length, pdf_get_array, pdf_link_obj, pdf_lookup_dict,
-    pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string,
-    pdf_obj, pdf_ref_obj, pdf_release_obj, pdf_string_value,
+    pdf_add_array, pdf_add_dict, pdf_array_length, pdf_copy_name, pdf_get_array, pdf_link_obj,
+    pdf_lookup_dict, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number,
+    pdf_new_string, pdf_obj, pdf_ref_obj, pdf_release_obj, pdf_string_value,
 };
 use crate::streq_ptr;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_read};
@@ -355,7 +355,7 @@ unsafe extern "C" fn parse_substrule(
                     panic!("Syntax error (3)");
                 }
                 /* (assign|substitute) tag dst src */
-                pdf_add_array(substrule, pdf_new_name(token)); /* = */
+                pdf_add_array(substrule, pdf_copy_name(token)); /* = */
                 if (*pp).offset(1) < endptr && **pp as i32 == '.' as i32 {
                     *pp = (*pp).offset(1);
                     suffix = parse_c_ident(pp, endptr)
@@ -445,7 +445,7 @@ unsafe extern "C" fn parse_block(
                     }
                     pdf_add_dict(
                         rule,
-                        pdf_new_name(token),
+                        pdf_copy_name(token),
                         pdf_new_string(tmp as *const libc::c_void, strlen(tmp) as _),
                     );
                     if verbose > 0i32 {
@@ -463,11 +463,7 @@ unsafe extern "C" fn parse_block(
                 opt_dict = pdf_lookup_dict(rule, b"option\x00" as *const u8 as *const i8);
                 if opt_dict.is_null() {
                     opt_dict = pdf_new_dict();
-                    pdf_add_dict(
-                        rule,
-                        pdf_new_name(b"option\x00" as *const u8 as *const i8),
-                        opt_dict,
-                    );
+                    pdf_add_dict(rule, pdf_new_name("option"), opt_dict);
                 }
                 skip_white(pp, endptr);
                 tmp = parse_c_ident(pp, endptr);
@@ -479,7 +475,7 @@ unsafe extern "C" fn parse_block(
                 }
                 skip_white(pp, endptr);
                 opt_rule = parse_block(gclass, pp, endptr);
-                pdf_add_dict(opt_dict, pdf_new_name(tmp), opt_rule);
+                pdf_add_dict(opt_dict, pdf_copy_name(tmp), opt_rule);
                 free(tmp as *mut libc::c_void);
             } else if streq_ptr(token, b"prefered\x00" as *const u8 as *const i8) as i32 != 0
                 || streq_ptr(token, b"required\x00" as *const u8 as *const i8) as i32 != 0
@@ -501,11 +497,7 @@ unsafe extern "C" fn parse_block(
                 subst = pdf_lookup_dict(rule, b"rule\x00" as *const u8 as *const i8);
                 if subst.is_null() {
                     subst = pdf_new_array();
-                    pdf_add_dict(
-                        rule,
-                        pdf_new_name(b"rule\x00" as *const u8 as *const i8),
-                        subst,
-                    );
+                    pdf_add_dict(rule, pdf_new_name("rule"), subst);
                 }
                 pdf_add_array(subst, pdf_new_number(*token.offset(0) as f64));
                 pdf_add_array(subst, rule_block);
@@ -524,7 +516,7 @@ unsafe extern "C" fn parse_block(
                 if coverage.is_null() {
                     panic!("No valid Unicode characters...");
                 }
-                pdf_add_dict(gclass, pdf_new_name(&mut *token.offset(1)), coverage);
+                pdf_add_dict(gclass, pdf_copy_name(&mut *token.offset(1)), coverage);
             }
             free(token as *mut libc::c_void);
             skip_white(pp, endptr);
