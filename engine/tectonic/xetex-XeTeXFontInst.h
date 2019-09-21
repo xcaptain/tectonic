@@ -149,4 +149,6 @@ UChar32 XeTeXFontInst_getLastCharCode(XeTeXFontInst* self);
 float XeTeXFontInst_unitsToPoints(const XeTeXFontInst* self, float units);
 float XeTeXFontInst_pointsToUnits(const XeTeXFontInst* self, float points);
 
+void XeTeXFontInst_base_ctor(XeTeXFontInst* self, const char* pathname, int index, float pointSize, int *status);
+
 #endif

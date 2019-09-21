@@ -706,7 +706,7 @@ XeTeXFontMgr_base_terminate(XeTeXFontMgr* self)
 {
 }
 
-void XeTeXFontMgr_ctor(XeTeXFontMgr* self) {
+void XeTeXFontMgr_base_ctor(XeTeXFontMgr* self) {
 	self->m_subdtor = NULL;
 	self->m_memfnInitialize = NULL; /*abstract*/
 	self->m_memfnTerminate = XeTeXFontMgr_base_terminate;

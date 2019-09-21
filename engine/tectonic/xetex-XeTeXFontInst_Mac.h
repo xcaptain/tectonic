@@ -46,7 +46,7 @@ authorization from the copyright holders.
 
 #include "xetex-XeTeXFontInst.h"
 
-#include <ApplicationServices/ApplicationServices.h>
+//#include <ApplicationServices/ApplicationServices.h>
 
 struct XeTeXFontInst_Mac {
 	XeTeXFontInst super_;
@@ -54,6 +54,9 @@ struct XeTeXFontInst_Mac {
     CTFontRef           m_fontRef;	
 };
 
+typedef struct XeTeXFontInst_Mac XeTeXFontInst_Mac;
+
+/*
 class XeTeXFontInst_Mac : public XeTeXFontInst
 {
 protected:
@@ -65,5 +68,9 @@ public:
 
     virtual void initialize(int &status);
 };
+*/
+
+XeTeXFontInst_Mac* XeTeXFontInst_Mac_create(CTFontDescriptorRef descriptor, float pointSize, int *status);
+
 
 #endif

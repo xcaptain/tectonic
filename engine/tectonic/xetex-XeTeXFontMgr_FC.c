@@ -31,7 +31,7 @@ authorization from the copyright holders.
 \****************************************************************************/
 
 #include "xetex-core.h"
-
+#ifndef XETEX_MAC
 #include "xetex-XeTeXFontMgr_FC.h"
 
 /* allow compilation with old Fontconfig header */
@@ -223,7 +223,7 @@ XeTeXFontMgr_FC_cacheFamilyMembers(XeTeXFontMgr* self, const CppStdListOfString*
         for (int i = 0; FcPatternGetString(pat, FC_FAMILY, i, (FcChar8**)&s) == FcResultMatch; ++i) {
 			if (!CppStdListOfString_contains_const_char_ptr(familyNames, s))
 				continue;
-			XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+			XeTeXFontMgrNameCollection* names = XeTeXFontMgr_readNames(self, pat);
 			XeTeXFontMgr_addToMaps(self, pat, names);
 			XeTeXFontMgrNameCollection_delete(names);
 			break;
@@ -260,7 +260,7 @@ XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const char* name)
 
             if (real_self->cachedAll) {
                 // failed to find it via FC; add everything to our maps (potentially slow) as a last resort
-                XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                XeTeXFontMgrNameCollection* names = XeTeXFontMgr_readNames(self, pat);
                 XeTeXFontMgr_addToMaps(self, pat, names);
                 XeTeXFontMgrNameCollection_delete(names);
                 continue;
@@ -270,7 +270,7 @@ XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const char* name)
             int i;
             for (i = 0; FcPatternGetString(pat, FC_FULLNAME, i, (FcChar8**)&s) == FcResultMatch; ++i) {
                 if (CppStdString_const_char_ptr_equal_const_char_ptr(name,s)) {
-                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_readNames(self, pat);
                     XeTeXFontMgr_addToMaps(self, pat, names);
                     XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
                     XeTeXFontMgrNameCollection_delete(names);
@@ -281,7 +281,7 @@ XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const char* name)
 
             for (i = 0; FcPatternGetString(pat, FC_FAMILY, i, (FcChar8**)&s) == FcResultMatch; ++i) {
                 if (CppStdString_const_char_ptr_equal_const_char_ptr(name,s) || (hyph && CppStdString_equal_const_char_ptr(famName, s))) {
-                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                    XeTeXFontMgrNameCollection* names = XeTeXFontMgr_readNames(self, pat);
                     XeTeXFontMgr_addToMaps(self, pat, names);
                     XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
                     XeTeXFontMgrNameCollection_delete(names);
@@ -297,7 +297,7 @@ XeTeXFontMgr_FC_searchForHostPlatformFonts(XeTeXFontMgr* self, const char* name)
 					bool matched = CppStdString_equal_const_char_ptr(full, name);
 					CppStdString_delete(full);
                     if (matched) {
-                        XeTeXFontMgrNameCollection* names = XeTeXFontMgr_FC_readNames(self, pat);
+                        XeTeXFontMgrNameCollection* names = XeTeXFontMgr_readNames(self, pat);
                         XeTeXFontMgr_addToMaps(self, pat, names);
                         XeTeXFontMgr_cacheFamilyMembers(self, names->m_familyNames);
                         XeTeXFontMgrNameCollection_delete(names);
@@ -379,7 +379,7 @@ XeTeXFontMgr_FC_getPlatformFontDesc(const XeTeXFontMgr* self, PlatformFontRef fo
 }
 
 void XeTeXFontMgr_FC_ctor(XeTeXFontMgr_FC* self) {
-	XeTeXFontMgr_ctor(&self->super_);
+	XeTeXFontMgr_base_ctor(&self->super_);
 	self->super_.m_memfnInitialize = XeTeXFontMgr_FC_initialize;
 	self->super_.m_memfnTerminate = XeTeXFontMgr_FC_terminate;
 	self->super_.m_memfnGetOpSizeRecAndStyleFlags = XeTeXFontMgr_FC_getOpSizeRecAndStyleFlags;
@@ -393,3 +393,6 @@ XeTeXFontMgr_FC* XeTeXFontMgr_FC_create() {
 	XeTeXFontMgr_FC_ctor(self);
 	return self;
 }
+
+#endif
+

@@ -73,7 +73,7 @@ FT_Library gFreeTypeLibrary = 0;
 
 static hb_font_funcs_t* hbFontFuncs = NULL;
 
-void XeTeXFontInst_ctor(XeTeXFontInst* self, const char* pathname, int index, float pointSize, int *status) {
+void XeTeXFontInst_base_ctor(XeTeXFontInst* self, const char* pathname, int index, float pointSize, int *status) {
     self->m_unitsPerEM = 0;
     self->m_pointSize = pointSize;
     self->m_ascent = 0;
@@ -96,7 +96,7 @@ void XeTeXFontInst_ctor(XeTeXFontInst* self, const char* pathname, int index, fl
 XeTeXFontInst* XeTeXFontInst_create(const char* pathname, int index, float pointSize, int *status)
 {
 	XeTeXFontInst* self = malloc(sizeof(XeTeXFontInst));
-	XeTeXFontInst_ctor(self, pathname, index, pointSize, status);
+	XeTeXFontInst_base_ctor(self, pathname, index, pointSize, status);
 	return self;
 }
 

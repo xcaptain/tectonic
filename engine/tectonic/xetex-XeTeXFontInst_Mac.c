@@ -43,12 +43,13 @@ authorization from the copyright holders.
 #include "xetex-XeTeXFontInst_Mac.h"
 #include "xetex-ext.h"
 
-XeTeXFontInst_Mac_dtor(XeTeXFontInst_Mac* self)
+void XeTeXFontInst_Mac_dtor(XeTeXFontInst* self)
 {
-    if (self->m_descriptor != 0)
-        CFRelease(self->m_descriptor);
-    if (self->m_fontRef != 0)
-        CFRelease(self->m_fontRef);
+    XeTeXFontInst_Mac* real_self = (XeTeXFontInst_Mac*)self;
+    if (real_self->m_descriptor != 0)
+        CFRelease(real_self->m_descriptor);
+    if (real_self->m_fontRef != 0)
+        CFRelease(real_self->m_fontRef);
 }
 
 
@@ -66,14 +67,14 @@ XeTeXFontInst_Mac_initialize(XeTeXFontInst_Mac* self, int *status)
     // Create a copy of original font descriptor with font cascading (fallback) disabled
     CFArrayRef emptyCascadeList = CFArrayCreate(NULL, NULL, 0, &kCFTypeArrayCallBacks);
     const void* values[] = { emptyCascadeList };
-    static const void* attributeKeys[] = { kCTFontCascadeListAttribute };
+    const void* attributeKeys[] = { kCTFontCascadeListAttribute };
     CFDictionaryRef attributes = CFDictionaryCreate(NULL, attributeKeys, values, 1,
         &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     CFRelease(emptyCascadeList);
 
     self->m_descriptor = CTFontDescriptorCreateCopyWithAttributes(self->m_descriptor, attributes);
     CFRelease(attributes);
-    self->m_fontRef = CTFontCreateWithFontDescriptor(self->m_descriptor, m_pointSize * 72.0 / 72.27, NULL);
+    self->m_fontRef = CTFontCreateWithFontDescriptor(self->m_descriptor, self->super_.m_pointSize * 72.0 / 72.27, NULL);
     if (self->m_fontRef) {
         char *pathname;
         uint32_t index;
@@ -88,8 +89,8 @@ XeTeXFontInst_Mac_initialize(XeTeXFontInst_Mac* self, int *status)
 }
 
 void XeTeXFontInst_Mac_ctor(XeTeXFontInst_Mac* self, CTFontDescriptorRef descriptor, float pointSize, int *status) {
-	XeTeXFontInst_ctor(&self->super_, NULL, 0, pointSize, status);
-	self->m_subdtor = XeTeXFontInst_Mac_dtor;
+	XeTeXFontInst_base_ctor(&self->super_, NULL, 0, pointSize, status);
+	self->super_.m_subdtor = XeTeXFontInst_Mac_dtor;
 	self->m_descriptor = descriptor;
 	self->m_fontRef = 0;
 	XeTeXFontInst_Mac_initialize(self, status);

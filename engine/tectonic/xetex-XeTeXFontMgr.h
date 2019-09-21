@@ -206,6 +206,7 @@ inline XeTeXFontMgrFamily* XeTeXFontMgrFamily_create()
 	self->minSlant = (0);
 	self->maxSlant = (0);
     self->styles = CppStdMapStringToFontPtr_create();
+	return self;
 }
 inline void XeTeXFontMgrFamily_delete(XeTeXFontMgrFamily* self)
 {
@@ -285,7 +286,7 @@ XeTeXFontMgr* XeTeXFontMgr_GetFontManager();
 void XeTeXFontMgr_Terminate();
 void XeTeXFontMgr_Destroy();
 
-void XeTeXFontMgr_ctor(XeTeXFontMgr* self);
+void XeTeXFontMgr_base_ctor(XeTeXFontMgr* self);
 
 inline void XeTeXFontMgr_initialize(XeTeXFontMgr* self) {
 	self->m_memfnInitialize(self);
@@ -307,6 +308,9 @@ inline void XeTeXFontMgr_getOpSizeRecAndStyleFlags(struct XeTeXFontMgr* self, Xe
 	self->m_memfnGetOpSizeRecAndStyleFlags(self, theFont);
 }
 
+inline XeTeXFontMgrNameCollection* XeTeXFontMgr_readNames(struct XeTeXFontMgr* self, PlatformFontRef fontRef) {
+    return self->m_memfnReadNames(self, fontRef); 
+}
 void XeTeXFontMgr_delete(XeTeXFontMgr* self);
 
 void
@@ -321,6 +325,9 @@ XeTeXFontMgr_addToMaps(XeTeXFontMgr* self, PlatformFontRef platformFont, const X
 void XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(XeTeXFontMgr* self, XeTeXFontMgrFont* theFont);
 XeTeXFontMgrFont* XeTeXFontMgr_bestMatchFromFamily(const XeTeXFontMgr* self, const XeTeXFontMgrFamily* fam, int wt, int wd, int slant);
 int XeTeXFontMgr_weightAndWidthDiff(const XeTeXFontMgr* self, const XeTeXFontMgrFont* a, const XeTeXFontMgrFont* b);
+
+PlatformFontRef
+XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, double ptSize);
 
 /*
 #include <string>

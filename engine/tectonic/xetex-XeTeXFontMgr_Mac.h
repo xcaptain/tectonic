@@ -45,6 +45,10 @@ struct XeTeXFontMgr_Mac {
 	
 };
 
+typedef struct XeTeXFontMgr_Mac XeTeXFontMgr_Mac;
+
+XeTeXFontMgr_Mac* XeTeXFontMgr_Mac_create();
+
 /*
 class XeTeXFontMgr_Mac
     : public XeTeXFontMgr
