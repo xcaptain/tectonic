@@ -143,47 +143,47 @@ pub unsafe extern "C" fn CIDFont_type2_set_flags(mut flags: i32) {
 const required_table: [NameTable; 11] = [
     NameTable {
             name: *b"OS/2",
-            must_exist: 0i32,
+            must_exist: false,
         },
     NameTable {
             name: *b"head",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"hhea",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"loca",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"maxp",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"name",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"glyf",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable {
             name: *b"hmtx",
-            must_exist: 1i32,
+            must_exist: true,
         },
     NameTable{
         name: *b"fpgm",
-        must_exist: 0i32,
+        must_exist: false,
     },
     NameTable {
         name: *b"cvt ",
-        must_exist: 0i32,
+        must_exist: false,
     },
     NameTable {
         name: *b"prep",
-        must_exist: 0i32,
+        must_exist: false,
     },
 ];
 unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
@@ -1244,16 +1244,12 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         return;
     }
     /* Create font file */
-    for NameTable { name, must_exist } in &required_table {
-        if sfnt_require_table(
-            sfont,
-            &name,
-            *must_exist,
-        ) < 0i32
+    for table in &required_table {
+        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err()
         {
             _tt_abort(
                 b"Some required TrueType table (%s) does not exist.\x00" as *const u8 as *const i8,
-                name,
+                table.name,
             );
         }
     }

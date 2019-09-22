@@ -29,6 +29,7 @@
     unused_mut
 )]
 
+use crate::dpx_truetype::NameTable;
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{tt_get_unsigned_pair, tt_get_unsigned_quad};
 use crate::dpx_pdfobj::{
@@ -371,25 +372,21 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
 }
 #[no_mangle]
 pub unsafe extern "C" fn sfnt_require_table(
-    mut sfont: *mut sfnt,
-    mut tag: &[u8; 4],
-    mut must_exist: i32,
-) -> i32 {
-    let mut td: *mut sfnt_table_directory = 0 as *mut sfnt_table_directory;
-    let mut idx: i32 = 0;
-    assert!(!sfont.is_null() && !(*sfont).directory.is_null());
-    td = (*sfont).directory;
-    idx = find_table_index(td.as_ref(), tag);
-    if idx < 0i32 {
-        if must_exist != 0 {
-            return -1i32;
+    sfont: &mut sfnt,
+    table: &NameTable,
+) -> Result<(), ()> {
+    let mut td = (*sfont).directory.as_mut().unwrap();
+    let idx = find_table_index(Some(td), &table.name);
+    if idx < 0 {
+        if table.must_exist {
+            return Err(());
         }
     } else {
-        let ref mut fresh2 = *(*td).flags.offset(idx as isize);
+        let ref mut fresh2 = *td.flags.offset(idx as isize);
         *fresh2 = (*fresh2 as i32 | 1i32 << 0i32) as i8;
-        (*td).num_kept_tables = (*td).num_kept_tables.wrapping_add(1)
+        td.num_kept_tables = td.num_kept_tables + 1;
     }
-    0i32
+    Ok(())
 }
 /*
  * o All tables begin on four byte boundries, and pad any remaining space

@@ -97,7 +97,7 @@ use super::dpx_tt_cmap::tt_cmap;
 #[repr(C)]
 pub struct NameTable {
     pub name: [u8; 4],
-    pub must_exist: i32,
+    pub must_exist: bool,
 }
 use super::dpx_tt_glyf::tt_glyphs;
 
@@ -269,73 +269,73 @@ const required_table: [NameTable; 12] = [
     {
         NameTable {
             name: *b"OS/2",
-            must_exist: 0i32,
+            must_exist: false,
         }
     },
     {
         NameTable {
             name: *b"head",
-            must_exist: 1i32,
+            must_exist: false,
         }
     },
     {
         NameTable {
             name: *b"hhea",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"loca",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"maxp",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"name",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"glyf",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"hmtx",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
     {
         NameTable {
             name: *b"fpgm",
-            must_exist: 0i32,
+            must_exist: false,
         }
     },
     {
         NameTable {
             name: *b"cvt ",
-            must_exist: 0i32,
+            must_exist: false,
         }
     },
     {
         NameTable {
             name: *b"prep",
-            must_exist: 0i32,
+            must_exist: false,
         }
     },
     {
         NameTable {
             name: *b"cmap",
-            must_exist: 1i32,
+            must_exist: true,
         }
     },
 ];
@@ -1268,11 +1268,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
      */
 
     for table in &required_table {
-        if sfnt_require_table(
-            sfont,
-            &table.name,
-            table.must_exist,
-        ) < 0i32
+        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err()
         {
             sfnt_close(sfont);
             ttstub_input_close(handle as rust_input_handle_t);
