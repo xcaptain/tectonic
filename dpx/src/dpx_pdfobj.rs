@@ -1152,15 +1152,17 @@ pub unsafe extern "C" fn pdf_set_string(
     };
 }
 /* Name does *not* include the /. */
-pub unsafe fn pdf_new_name(name: &str) -> *mut pdf_obj {
+pub unsafe fn pdf_new_name<K>(name: K) -> *mut pdf_obj
+where
+    K: Into<Vec<u8>>,
+{
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut data: *mut pdf_name = 0 as *mut pdf_name;
     result = pdf_new_obj(PdfObjType::NAME);
     data = new(::std::mem::size_of::<pdf_name>() as u32) as *mut pdf_name;
     (*result).data = data as *mut libc::c_void;
-    let length = name.len();
     let name = CString::new(name).unwrap();
-    if length != 0 {
+    if name.to_bytes().len() != 0 {
         (*data).name = name.into_raw();
     } else {
         (*data).name = 0 as *mut i8
@@ -1447,12 +1449,10 @@ unsafe extern "C" fn release_dict(mut data: *mut pdf_dict) {
 }
 /* Array is ended by a node with NULL this pointer */
 /* pdf_add_dict returns 0 if the key is new and non-zero otherwise */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_add_dict(
-    mut dict: *mut pdf_obj,
-    key: &str,
-    mut value: *mut pdf_obj,
-) -> i32 {
+pub unsafe fn pdf_add_dict<K>(mut dict: *mut pdf_obj, key: K, mut value: *mut pdf_obj) -> i32
+where
+    K: Into<Vec<u8>> + AsRef<[u8]>,
+{
     let mut data: *mut pdf_dict = 0 as *mut pdf_dict;
     let mut new_node: *mut pdf_dict = 0 as *mut pdf_dict;
     if dict.is_null() || !(*dict).is_dict() {
@@ -1470,7 +1470,7 @@ pub unsafe extern "C" fn pdf_add_dict(
     /* If this key already exists, simply replace the value */
     data = (*dict).data as *mut pdf_dict;
     while !(*data).key.is_null() {
-        if key == pdf_name_value(&*(*data).key).to_string_lossy() {
+        if key.as_ref() == pdf_name_value(&*(*data).key).to_bytes() {
             /* Release the old value */
             pdf_release_obj((*data).value);
             (*data).value = value;
@@ -1526,7 +1526,7 @@ pub unsafe extern "C" fn pdf_merge_dict(mut dict1: *mut pdf_obj, mut dict2: *mut
         pdf_add_dict(
             dict1,
             //pdf_link_obj((*data).key),
-            pdf_name_value(&*(*data).key).to_str().unwrap(),
+            pdf_name_value(&*(*data).key).to_bytes(),
             pdf_link_obj((*data).value),
         );
         data = (*data).next
@@ -1558,11 +1558,11 @@ pub unsafe extern "C" fn pdf_foreach_dict(
     }
     error
 }
-#[no_mangle]
-pub unsafe extern "C" fn pdf_lookup_dict(
-    mut dict: *mut pdf_obj,
-    name: &str,
-) -> Option<*mut pdf_obj> {
+
+pub unsafe fn pdf_lookup_dict<K>(mut dict: *mut pdf_obj, name: K) -> Option<*mut pdf_obj>
+where
+    K: AsRef<[u8]>,
+{
     let mut data: *mut pdf_dict = 0 as *mut pdf_dict;
     if dict.is_null() || !(*dict).is_dict() {
         panic!(
@@ -1574,7 +1574,7 @@ pub unsafe extern "C" fn pdf_lookup_dict(
     }
     data = (*dict).data as *mut pdf_dict;
     while !(*data).key.is_null() {
-        if name == pdf_name_value(&*(*data).key).to_string_lossy() {
+        if name.as_ref() == pdf_name_value(&*(*data).key).to_bytes() {
             return Some((*data).value);
         }
         data = (*data).next
@@ -1605,8 +1605,11 @@ pub unsafe extern "C" fn pdf_dict_keys(mut dict: *mut pdf_obj) -> *mut pdf_obj {
     }
     keys
 }
-#[no_mangle]
-pub unsafe extern "C" fn pdf_remove_dict(mut dict: *mut pdf_obj, name: &str) {
+
+pub unsafe fn pdf_remove_dict<K>(mut dict: *mut pdf_obj, name: K)
+where
+    K: AsRef<[u8]>,
+{
     let mut data: *mut pdf_dict = 0 as *mut pdf_dict;
     let mut data_p: *mut *mut pdf_dict = 0 as *mut *mut pdf_dict;
     if dict.is_null() || !(*dict).is_dict() {
@@ -1621,8 +1624,8 @@ pub unsafe extern "C" fn pdf_remove_dict(mut dict: *mut pdf_obj, name: &str) {
     data_p = &mut (*dict).data as *mut *mut libc::c_void as *mut libc::c_void as *mut *mut pdf_dict;
     while !(*data).key.is_null() {
         if !(*data).key.is_null()
-            && (CStr::from_ptr((*((*(*data).key).data as *mut pdf_name)).name).to_string_lossy()
-                == name)
+            && (CStr::from_ptr((*((*(*data).key).data as *mut pdf_name)).name).to_bytes()
+                == name.as_ref())
         {
             pdf_release_obj((*data).key);
             pdf_release_obj((*data).value);
@@ -4533,7 +4536,7 @@ unsafe extern "C" fn import_dict(
     if tmp.is_null() {
         return -1i32;
     }
-    pdf_add_dict(copy, pdf_name_value(&*key).to_str().unwrap(), tmp); // TODO: check
+    pdf_add_dict(copy, pdf_name_value(&*key).to_bytes(), tmp); // TODO: check
     0i32
 }
 static mut loop_marker: pdf_obj = {

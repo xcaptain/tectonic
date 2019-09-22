@@ -525,7 +525,7 @@ unsafe extern "C" fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
     ];
     let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
     for key in KEYS.iter() {
-        if let Some(value) = pdf_lookup_dict(docinfo, key) {
+        if let Some(value) = pdf_lookup_dict(docinfo, *key) {
             if !(pdf_obj_typeof(value) == PdfObjType::STRING) {
                 warn!("\"{}\" in DocInfo dictionary not string type.", key,);
                 pdf_remove_dict(docinfo, key);
@@ -607,9 +607,9 @@ pub unsafe extern "C" fn pdf_doc_add_page_resource(
         resource_ref = pdf_ref_obj(resource_ref)
         /* leak */
     }
-    let resource_name = CStr::from_ptr(resource_name).to_str().unwrap();
+    let resource_name = CStr::from_ptr(resource_name);
     resources = pdf_doc_get_page_resources(p, category);
-    if pdf_lookup_dict(resources, resource_name)
+    if pdf_lookup_dict(resources, resource_name.to_bytes())
         .filter(|duplicate| pdf_compare_reference(*duplicate, resource_ref) != 0)
         .is_some()
     {
@@ -617,12 +617,12 @@ pub unsafe extern "C" fn pdf_doc_add_page_resource(
             "Conflicting page resource found (page: {}, category: {}, name: {}).",
             pdf_doc_current_page_number(),
             category,
-            resource_name,
+            resource_name.display(),
         );
         warn!("Ignoring...");
         pdf_release_obj(resource_ref);
     } else {
-        pdf_add_dict(resources, resource_name, resource_ref);
+        pdf_add_dict(resources, resource_name.to_bytes(), resource_ref);
     };
 }
 unsafe extern "C" fn doc_flush_page(

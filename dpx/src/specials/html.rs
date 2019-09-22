@@ -29,9 +29,9 @@ unused_assignments,
 unused_mut
 )]
 
-use std::ffi::{CStr, CString};
-use crate::DisplayExt;
 use crate::dpx_error::dpx_warning;
+use crate::DisplayExt;
+use std::ffi::{CStr, CString};
 
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_transform};
 use crate::dpx_pdfximage::{
@@ -52,9 +52,9 @@ use crate::dpx_pdfdoc::{
 };
 use crate::dpx_pdfdraw::{pdf_dev_grestore, pdf_dev_gsave, pdf_dev_rectclip};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_array,
-    pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string,
-    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
+    pdf_add_array, pdf_add_dict, pdf_link_obj, pdf_lookup_dict, pdf_new_array, pdf_new_boolean,
+    pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number, pdf_new_string, pdf_obj,
+    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::mfree;
 use crate::streq_ptr;
@@ -244,7 +244,7 @@ unsafe extern "C" fn read_html_tag(
             }
             pdf_add_dict(
                 attr,
-                CStr::from_ptr(kp).to_str().unwrap(), // TODO: check
+                CStr::from_ptr(kp).to_bytes(),
                 pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
             );
             free(kp as *mut libc::c_void);

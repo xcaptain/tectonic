@@ -51,9 +51,9 @@ use crate::dpx_pdfdraw::{
     pdf_dev_setmiterlimit,
 };
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict,
-    pdf_name_value, pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string,
-    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict, pdf_name_value,
+    pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string, pdf_obj,
+    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_pdfparse::parse_val_ident;
 use libc::{atof, free, memcmp, sprintf, strlen};
@@ -821,7 +821,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
                 } else {
                     pdf_add_dict(
                         dict,
-                        CStr::from_ptr(kp).to_str().unwrap(),
+                        CStr::from_ptr(kp).to_bytes(),
                         pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
                     );
                     free(vp as *mut libc::c_void);
@@ -829,11 +829,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
             }
         } else {
             /* Treated as 'flag' */
-            pdf_add_dict(
-                dict,
-                CStr::from_ptr(kp).to_str().unwrap(),
-                pdf_new_boolean(1_i8),
-            );
+            pdf_add_dict(dict, CStr::from_ptr(kp).to_bytes(), pdf_new_boolean(1_i8));
         }
         free(kp as *mut libc::c_void);
         if error == 0 {
