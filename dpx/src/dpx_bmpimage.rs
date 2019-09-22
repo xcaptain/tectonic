@@ -153,7 +153,6 @@ pub unsafe extern "C" fn bmp_include_image(
     };
     let mut num_palette: i32 = 0;
     let mut flip: i32 = 0;
-    let mut i: i32 = 0;
     pdf_ximage_init_image_info(&mut info);
     colorspace = 0 as *mut pdf_obj;
     stream_dict = colorspace;
@@ -215,8 +214,7 @@ pub unsafe extern "C" fn bmp_include_image(
         let mut bgrq: [u8; 4] = [0; 4];
         palette = new(((num_palette * 3i32 + 1i32) as u32 as u64)
             .wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
-        i = 0i32;
-        while i < num_palette {
+        for i in 0..num_palette {
             if ttstub_input_read(handle, bgrq.as_mut_ptr() as *mut i8, hdr.psize as size_t)
                 != hdr.psize as i64
             {
@@ -228,7 +226,6 @@ pub unsafe extern "C" fn bmp_include_image(
             *palette.offset((3i32 * i) as isize) = bgrq[2];
             *palette.offset((3i32 * i + 1i32) as isize) = bgrq[1];
             *palette.offset((3i32 * i + 2i32) as isize) = bgrq[0];
-            i += 1
         }
         lookup = pdf_new_string(
             palette as *const libc::c_void,

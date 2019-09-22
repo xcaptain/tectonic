@@ -204,15 +204,12 @@ static mut misc_handlers: [spc_handler; 6] = [
 pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size: i32) -> bool {
     let mut p: *const i8 = 0 as *const i8;
     let mut endptr: *const i8 = 0 as *const i8;
-    let mut i: size_t = 0;
     p = buffer;
     endptr = p.offset(size as isize);
     skip_white(&mut p, endptr);
     size = endptr.wrapping_offset_from(p) as i64 as i32;
-    i = 0i32 as size_t;
-    while i
-        < (::std::mem::size_of::<[spc_handler; 6]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+    for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
+        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
         if size as usize >= strlen(misc_handlers[i as usize].key)
             && strncmp(
@@ -223,7 +220,6 @@ pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size:
         {
             return true;
         }
-        i = i.wrapping_add(1)
     }
     false
 }
@@ -235,7 +231,6 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
 ) -> i32 {
     let mut key: *const i8 = 0 as *const i8;
     let mut keylen: i32 = 0;
-    let mut i: size_t = 0;
     assert!(!handle.is_null() && !spe.is_null() && !args.is_null());
     skip_white(&mut (*args).curptr, (*args).endptr);
     key = (*args).curptr;
@@ -249,10 +244,8 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
     if keylen < 1i32 {
         return -1i32;
     }
-    i = 0i32 as size_t;
-    while i
-        < (::std::mem::size_of::<[spc_handler; 6]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+    for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
+        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
         if keylen as usize == strlen(misc_handlers[i as usize].key)
             && strncmp(key, misc_handlers[i as usize].key, keylen as _) == 0
@@ -263,7 +256,6 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
             (*handle).exec = misc_handlers[i as usize].exec;
             return 0i32;
         }
-        i = i.wrapping_add(1)
     }
     -1i32
 }

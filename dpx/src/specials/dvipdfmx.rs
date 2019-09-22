@@ -84,7 +84,6 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut i: size_t = 0;
     let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_white(&mut (*ap).curptr, (*ap).endptr);
@@ -110,10 +109,8 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        i = 0i32 as size_t;
-        while i
-            < (::std::mem::size_of::<[spc_handler; 1]>() as u64)
-                .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+        for i in 0..(::std::mem::size_of::<[spc_handler; 1]>() as u64)
+            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
             if streq_ptr(q, dvipdfmx_handlers[i as usize].key) {
                 (*ap).command = dvipdfmx_handlers[i as usize].key;
@@ -122,8 +119,6 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
-            } else {
-                i = i.wrapping_add(1)
             }
         }
         free(q as *mut libc::c_void);
