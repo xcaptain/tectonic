@@ -744,7 +744,7 @@ pub unsafe extern "C" fn parse_pdf_dict(
             warn!("Could not find a value in dictionary object.");
             return 0 as *mut pdf_obj;
         }
-        pdf_add_dict(result, pdf_name_value(&*key).to_str().unwrap(), value); // TODO: check
+        pdf_add_dict(result, pdf_name_value(&*key).to_bytes(), value);
         skip_white(&mut p, endptr);
     }
     if p.offset(2) > endptr

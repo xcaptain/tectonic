@@ -1526,7 +1526,7 @@ pub unsafe extern "C" fn pdf_merge_dict(mut dict1: *mut pdf_obj, mut dict2: *mut
         pdf_add_dict(
             dict1,
             //pdf_link_obj((*data).key),
-            pdf_name_value(&*(*data).key).to_str().unwrap(),
+            pdf_name_value(&*(*data).key).to_bytes(),
             pdf_link_obj((*data).value),
         );
         data = (*data).next
@@ -4536,7 +4536,7 @@ unsafe extern "C" fn import_dict(
     if tmp.is_null() {
         return -1i32;
     }
-    pdf_add_dict(copy, pdf_name_value(&*key).to_str().unwrap(), tmp); // TODO: check
+    pdf_add_dict(copy, pdf_name_value(&*key).to_bytes(), tmp); // TODO: check
     0i32
 }
 static mut loop_marker: pdf_obj = {

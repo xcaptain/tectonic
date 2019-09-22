@@ -821,7 +821,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
                 } else {
                     pdf_add_dict(
                         dict,
-                        CStr::from_ptr(kp).to_str().unwrap(),
+                        CStr::from_ptr(kp).to_bytes(),
                         pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
                     );
                     free(vp as *mut libc::c_void);
@@ -829,11 +829,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
             }
         } else {
             /* Treated as 'flag' */
-            pdf_add_dict(
-                dict,
-                CStr::from_ptr(kp).to_str().unwrap(),
-                pdf_new_boolean(1_i8),
-            );
+            pdf_add_dict(dict, CStr::from_ptr(kp).to_bytes(), pdf_new_boolean(1_i8));
         }
         free(kp as *mut libc::c_void);
         if error == 0 {

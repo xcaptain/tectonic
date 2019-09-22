@@ -774,7 +774,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 }
                 pdf_add_dict(
                     charprocs,
-                    CStr::from_ptr(charname).to_str().unwrap(),
+                    CStr::from_ptr(charname).to_bytes(),
                     pdf_ref_obj(charproc),
                 );
                 pdf_release_obj(charproc);

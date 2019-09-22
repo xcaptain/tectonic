@@ -30,6 +30,7 @@
 )]
 
 use crate::warn;
+use crate::DisplayExt;
 use crate::TTInputFormat;
 use crate::{streq_ptr, strstartswith};
 
@@ -294,11 +295,14 @@ unsafe extern "C" fn safeputresdent(
     mut dp: *mut libc::c_void,
 ) -> i32 {
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    let key = pdf_name_value(&*kp).to_str().unwrap();
-    if pdf_lookup_dict(dp as *mut pdf_obj, key).is_some() {
-        warn!("Object \"{}\" already defined in dict! (ignored)", key);
+    let key = pdf_name_value(&*kp);
+    if pdf_lookup_dict(dp as *mut pdf_obj, key.to_bytes()).is_some() {
+        warn!(
+            "Object \"{}\" already defined in dict! (ignored)",
+            key.display()
+        );
     } else {
-        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
     }
     0i32
 }
@@ -309,10 +313,10 @@ unsafe extern "C" fn safeputresdict(
 ) -> i32 {
     let mut key: *mut i8 = 0 as *mut i8;
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    let key = pdf_name_value(&*kp).to_str().unwrap();
-    let dict = pdf_lookup_dict(dp as *mut pdf_obj, key);
+    let key = pdf_name_value(&*kp);
+    let dict = pdf_lookup_dict(dp as *mut pdf_obj, key.to_bytes());
     if (*vp).is_indirect() {
-        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
     } else if pdf_obj_typeof(vp) == PdfObjType::DICT {
         if let Some(dict) = dict {
             pdf_foreach_dict(
@@ -328,12 +332,12 @@ unsafe extern "C" fn safeputresdict(
                 dict as *mut libc::c_void,
             );
         } else {
-            pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+            pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
         }
     } else {
         warn!(
             "Invalid type (not DICT) for page/form resource dict entry: key=\"{}\"",
-            key,
+            key.display(),
         );
         return -1i32;
     }
