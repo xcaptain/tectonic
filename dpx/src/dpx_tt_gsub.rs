@@ -824,7 +824,7 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
     let mut language: *mut otl_opt = 0 as *mut otl_opt;
     let mut feature: *mut otl_opt = 0 as *mut otl_opt;
     assert!(!gsub.is_null() && !sfont.is_null());
-    gsub_offset = sfnt_find_table_pos(sfont, b"GSUB\x00" as *const u8 as *const i8);
+    gsub_offset = sfnt_find_table_pos(sfont, b"GSUB");
     if gsub_offset == 0_u32 {
         return -1i32;
     }

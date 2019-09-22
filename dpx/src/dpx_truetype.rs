@@ -96,7 +96,7 @@ use super::dpx_tt_cmap::tt_cmap;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct NameTable {
-    pub name: *const i8,
+    pub name: [u8; 4],
     pub must_exist: i32,
 }
 use super::dpx_tt_glyf::tt_glyphs;
@@ -265,86 +265,81 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     );
     0i32
 }
-static mut required_table: [NameTable; 13] = [
+const required_table: [NameTable; 12] = [
     {
         NameTable {
-            name: b"OS/2\x00" as *const u8 as *const i8,
+            name: *b"OS/2",
             must_exist: 0i32,
         }
     },
     {
         NameTable {
-            name: b"head\x00" as *const u8 as *const i8,
+            name: *b"head",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"hhea\x00" as *const u8 as *const i8,
+            name: *b"hhea",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"loca\x00" as *const u8 as *const i8,
+            name: *b"loca",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"maxp\x00" as *const u8 as *const i8,
+            name: *b"maxp",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"name\x00" as *const u8 as *const i8,
+            name: *b"name",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"glyf\x00" as *const u8 as *const i8,
+            name: *b"glyf",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"hmtx\x00" as *const u8 as *const i8,
+            name: *b"hmtx",
             must_exist: 1i32,
         }
     },
     {
         NameTable {
-            name: b"fpgm\x00" as *const u8 as *const i8,
+            name: *b"fpgm",
             must_exist: 0i32,
         }
     },
     {
         NameTable {
-            name: b"cvt \x00" as *const u8 as *const i8,
+            name: *b"cvt ",
             must_exist: 0i32,
         }
     },
     {
         NameTable {
-            name: b"prep\x00" as *const u8 as *const i8,
+            name: *b"prep",
             must_exist: 0i32,
         }
     },
     {
         NameTable {
-            name: b"cmap\x00" as *const u8 as *const i8,
+            name: *b"cmap",
             must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: 0 as *const i8,
-            must_exist: 0i32,
         }
     },
 ];
+
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut tmparray: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -524,7 +519,7 @@ unsafe extern "C" fn do_builtin_encoding(
     tt_build_finish(glyphs);
     sfnt_set_table(
         sfont,
-        b"cmap\x00" as *const u8 as *const i8,
+        b"cmap",
         cmap_table as *mut libc::c_void,
         274_u32,
     );
@@ -1172,7 +1167,7 @@ unsafe extern "C" fn do_custom_encoding(
     tt_build_finish(glyphs);
     sfnt_set_table(
         sfont,
-        b"cmap\x00" as *const u8 as *const i8,
+        b"cmap",
         cmap_table as *mut libc::c_void,
         274_u32,
     );
@@ -1271,12 +1266,12 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     /*
      * TODO: post table?
      */
-    i = 0i32;
-    while !required_table[i as usize].name.is_null() {
+
+    for table in &required_table {
         if sfnt_require_table(
             sfont,
-            required_table[i as usize].name,
-            required_table[i as usize].must_exist,
+            &table.name,
+            table.must_exist,
         ) < 0i32
         {
             sfnt_close(sfont);
@@ -1284,11 +1279,10 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
             _tt_abort(
                 b"Required TrueType table \"%s\" does not exist in font: %s\x00" as *const u8
                     as *const i8,
-                required_table[i as usize].name,
+                table.name,
                 ident,
             );
         }
-        i += 1
     }
     /*
      * FontFile2

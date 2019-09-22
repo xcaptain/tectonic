@@ -554,7 +554,7 @@ pub unsafe extern "C" fn tt_cmap_read(
     let mut i: u16 = 0;
     let mut n_subtabs: u16 = 0;
     assert!(!sfont.is_null());
-    offset = sfnt_locate_table(sfont, b"cmap\x00" as *const u8 as *const i8);
+    offset = sfnt_locate_table(sfont, b"cmap");
     tt_get_unsigned_pair((*sfont).handle);
     n_subtabs = tt_get_unsigned_pair((*sfont).handle);
     i = 0_u16;
@@ -836,7 +836,7 @@ unsafe extern "C" fn handle_CIDFont(
     let mut map: *mut u8 = 0 as *mut u8;
     let mut maxp: *mut tt_maxp_table = 0 as *mut tt_maxp_table;
     assert!(!csi.is_null());
-    offset = sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8) as i32;
+    offset = sfnt_find_table_pos(sfont, b"CFF ") as i32;
     if offset == 0i32 {
         (*csi).registry = 0 as *mut i8;
         (*csi).ordering = 0 as *mut i8;
@@ -1131,7 +1131,7 @@ unsafe extern "C" fn prepare_CIDFont_from_sfnt<'a>(
     let mut cffont: *mut cff_font = 0 as *mut cff_font;
     let mut offset: u32 = 0_u32;
     if (*sfont).type_0 != 1i32 << 2i32 || sfnt_read_table_directory(sfont, 0_u32) < 0i32 || {
-        offset = sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8);
+        offset = sfnt_find_table_pos(sfont, b"CFF ");
         offset == 0_u32
     } {
         return None;
