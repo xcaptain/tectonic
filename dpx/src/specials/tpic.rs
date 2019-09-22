@@ -51,9 +51,9 @@ use crate::dpx_pdfdraw::{
     pdf_dev_setmiterlimit,
 };
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict,
-    pdf_name_value, pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string,
-    pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict, pdf_name_value,
+    pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string, pdf_obj,
+    pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_pdfparse::parse_val_ident;
 use libc::{atof, free, memcmp, sprintf, strlen};

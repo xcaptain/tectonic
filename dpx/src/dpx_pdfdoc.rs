@@ -525,7 +525,7 @@ unsafe extern "C" fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
     ];
     let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
     for key in KEYS.iter() {
-        if let Some(value) = pdf_lookup_dict(docinfo, key) {
+        if let Some(value) = pdf_lookup_dict(docinfo, *key) {
             if !(pdf_obj_typeof(value) == PdfObjType::STRING) {
                 warn!("\"{}\" in DocInfo dictionary not string type.", key,);
                 pdf_remove_dict(docinfo, key);

@@ -172,10 +172,7 @@ unsafe extern "C" fn add_rule(
         let s = CStr::from_ptr(first.offset(1)).to_str().unwrap();
         let glyph1_opt = pdf_lookup_dict(gclass, s);
         if glyph1_opt.is_none() {
-            warn!(
-                "No glyph class \"{}\" found.",
-                s,
-            );
+            warn!("No glyph class \"{}\" found.", s,);
             return;
         }
         glyph1 = glyph1_opt.unwrap();
@@ -220,13 +217,9 @@ unsafe extern "C" fn add_rule(
     }
     if *second.offset(0) as i32 == '@' as i32 {
         let s = CStr::from_ptr(second.offset(1)).to_str().unwrap();
-        let glyph2_opt =
-            pdf_lookup_dict(gclass, s);
+        let glyph2_opt = pdf_lookup_dict(gclass, s);
         if glyph2_opt.is_none() {
-            warn!(
-                "No glyph class \"{}\" found.",
-                s,
-            );
+            warn!("No glyph class \"{}\" found.", s,);
             return;
         }
         glyph2 = glyph2_opt.unwrap();
