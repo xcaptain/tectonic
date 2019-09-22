@@ -51,7 +51,7 @@ use crate::dpx_pdfdraw::{
     pdf_dev_setmiterlimit,
 };
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_copy_name, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict,
+    pdf_add_dict, pdf_foreach_dict, pdf_get_version, pdf_lookup_dict,
     pdf_name_value, pdf_new_boolean, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_string,
     pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
@@ -119,23 +119,20 @@ unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj; /* dash pattern */
     dict = pdf_new_dict();
-    pdf_add_dict(dict, pdf_new_name("Type"), pdf_new_name("ExtGState"));
+    pdf_add_dict(dict, "Type", pdf_new_name("ExtGState"));
     if f_ais != 0 {
-        pdf_add_dict(dict, pdf_new_name("AIS"), pdf_new_boolean(1_i8));
+        pdf_add_dict(dict, "AIS", pdf_new_boolean(1_i8));
     }
-    pdf_add_dict(dict, pdf_new_name("ca"), pdf_new_number(a));
+    pdf_add_dict(dict, "ca", pdf_new_number(a));
     dict
 }
-unsafe extern "C" fn check_resourcestatus(mut category: *const i8, mut resname: *const i8) -> i32 {
-    let mut dict1: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut dict2: *mut pdf_obj = 0 as *mut pdf_obj;
-    dict1 = pdf_doc_current_page_resources();
+unsafe fn check_resourcestatus(category: &str, mut resname: &str) -> i32 {
+    let dict1 = pdf_doc_current_page_resources();
     if dict1.is_null() {
         return 0i32;
     }
-    dict2 = pdf_lookup_dict(dict1, category);
-    if !dict2.is_null() && pdf_obj_typeof(dict2) == PdfObjType::DICT {
-        if !pdf_lookup_dict(dict2, resname).is_null() {
+    if let Some(dict2) = pdf_lookup_dict(dict1, category) {
+        if pdf_obj_typeof(dict2) == PdfObjType::DICT && pdf_lookup_dict(dict2, resname).is_some() {
             return 1i32;
         }
     }
@@ -162,20 +159,23 @@ unsafe extern "C" fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
 }
 unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i32 {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut resname: [i8; 32] = [0; 32];
+    let mut resname: [u8; 32] = [0; 32];
     let mut buf: [i8; 38] = [0; 38];
     let mut alp: i32 = 0;
     let mut len: i32 = 0i32;
     if a > 0.0f64 {
         alp = (100.0f64 * a).round() as i32;
         sprintf(
-            resname.as_mut_ptr(),
+            resname.as_mut_ptr() as *mut i8,
             b"_Tps_a%03d_\x00" as *const u8 as *const i8,
             alp,
         );
         if check_resourcestatus(
-            b"ExtGState\x00" as *const u8 as *const i8,
-            resname.as_mut_ptr(),
+            "ExtGState",
+            CStr::from_bytes_with_nul(&resname)
+                .unwrap()
+                .to_str()
+                .unwrap(),
         ) == 0
         {
             dict = create_xgstate(
@@ -183,8 +183,8 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
                 f_ais,
             );
             pdf_doc_add_page_resource(
-                b"ExtGState\x00" as *const u8 as *const i8,
-                resname.as_mut_ptr(),
+                "ExtGState",
+                resname.as_ptr() as *const i8,
                 pdf_ref_obj(dict),
             );
             pdf_release_obj(dict);
@@ -192,7 +192,7 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
         len += sprintf(
             buf.as_mut_ptr().offset(len as isize),
             b" /%s gs\x00" as *const u8 as *const i8,
-            resname.as_mut_ptr(),
+            resname.as_ptr() as *const i8,
         );
         pdf_doc_add_page_content(buf.as_mut_ptr(), len as u32);
         /* op: gs */
@@ -821,7 +821,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
                 } else {
                     pdf_add_dict(
                         dict,
-                        pdf_copy_name(kp),
+                        CStr::from_ptr(kp).to_str().unwrap(),
                         pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
                     );
                     free(vp as *mut libc::c_void);
@@ -829,7 +829,11 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
             }
         } else {
             /* Treated as 'flag' */
-            pdf_add_dict(dict, pdf_copy_name(kp), pdf_new_boolean(1_i8));
+            pdf_add_dict(
+                dict,
+                CStr::from_ptr(kp).to_str().unwrap(),
+                pdf_new_boolean(1_i8),
+            );
         }
         free(kp as *mut libc::c_void);
         if error == 0 {
@@ -848,12 +852,11 @@ unsafe extern "C" fn tpic_filter_getopts(
     mut dp: *mut libc::c_void,
 ) -> i32 {
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
-    let mut k: *mut i8 = 0 as *mut i8;
     let mut v: *mut i8 = 0 as *mut i8;
     let mut error: i32 = 0i32;
     assert!(!kp.is_null() && !vp.is_null() && !tp.is_null());
-    k = pdf_name_value(kp);
-    if streq_ptr(k, b"fill-mode\x00" as *const u8 as *const i8) {
+    let k = pdf_name_value(&*kp).to_string_lossy();
+    if k == "fill-mode" {
         if pdf_obj_typeof(vp) != PdfObjType::STRING {
             warn!("Invalid value for TPIC option fill-mode...");
             error = -1i32
@@ -874,10 +877,7 @@ unsafe extern "C" fn tpic_filter_getopts(
             }
         }
     } else {
-        warn!(
-            "Unrecognized option for TPIC special handler: {}",
-            CStr::from_ptr(k).display(),
-        );
+        warn!("Unrecognized option for TPIC special handler: {}", k,);
         error = -1i32
     }
     error

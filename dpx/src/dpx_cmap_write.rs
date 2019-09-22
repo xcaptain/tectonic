@@ -407,7 +407,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         csi_dict = pdf_new_dict();
         pdf_add_dict(
             csi_dict,
-            pdf_new_name("Registry"),
+            "Registry",
             pdf_new_string(
                 (*csi).registry as *const libc::c_void,
                 strlen((*csi).registry) as _,
@@ -415,7 +415,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name("Ordering"),
+            "Ordering",
             pdf_new_string(
                 (*csi).ordering as *const libc::c_void,
                 strlen((*csi).ordering) as _,
@@ -423,22 +423,14 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name("Supplement"),
+            "Supplement",
             pdf_new_number((*csi).supplement as f64),
         );
-        pdf_add_dict(stream_dict, pdf_new_name("Type"), pdf_new_name("CMap"));
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name("CMapName"),
-            pdf_copy_name((*cmap).name),
-        );
-        pdf_add_dict(stream_dict, pdf_new_name("CIDSystemInfo"), csi_dict);
+        pdf_add_dict(stream_dict, "Type", pdf_new_name("CMap"));
+        pdf_add_dict(stream_dict, "CMapName", pdf_copy_name((*cmap).name));
+        pdf_add_dict(stream_dict, "CIDSystemInfo", csi_dict);
         if (*cmap).wmode != 0i32 {
-            pdf_add_dict(
-                stream_dict,
-                pdf_new_name("WMode"),
-                pdf_new_number((*cmap).wmode as f64),
-            );
+            pdf_add_dict(stream_dict, "WMode", pdf_new_number((*cmap).wmode as f64));
         }
     }
     /* TODO:

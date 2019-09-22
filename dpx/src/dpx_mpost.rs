@@ -72,7 +72,7 @@ use crate::dpx_pdfparse::{
     parse_ident, parse_number, parse_pdf_array, parse_pdf_dict, parse_pdf_name, parse_pdf_string,
     pdfparse_skip_line, skip_white,
 };
-use libc::{atof, fread, free, rewind, sprintf, strchr, strcmp, strcpy, strlen, strtod};
+use libc::{atof, fread, free, rewind, sprintf, strchr, strcpy, strlen, strtod};
 
 pub type __off_t = i64;
 pub type __off64_t = i64;
@@ -2744,26 +2744,24 @@ unsafe extern "C" fn cvr_array(
     count + 1i32
 }
 unsafe extern "C" fn is_fontdict(mut dict: *mut pdf_obj) -> bool {
-    let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     if !(!dict.is_null() && pdf_obj_typeof(dict) == PdfObjType::DICT) {
         return false;
     }
-    tmp = pdf_lookup_dict(dict, b"Type\x00" as *const u8 as *const i8);
-    if tmp.is_null()
-        || !(!tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::NAME)
-        || strcmp(pdf_name_value(tmp), b"Font\x00" as *const u8 as *const i8) != 0
-    {
+    let tmp = pdf_lookup_dict(dict, "Type").filter(|tmp| {
+        pdf_obj_typeof(*tmp) == PdfObjType::NAME
+            && pdf_name_value(&**tmp).to_string_lossy() == "Font"
+    });
+    if tmp.is_none() {
         return false;
     }
-    tmp = pdf_lookup_dict(dict, b"FontName\x00" as *const u8 as *const i8);
-    if tmp.is_null() || !(!tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::NAME) {
+    let tmp =
+        pdf_lookup_dict(dict, "FontName").filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::NAME);
+    if tmp.is_none() {
         return false;
     }
-    tmp = pdf_lookup_dict(dict, b"FontScale\x00" as *const u8 as *const i8);
-    if tmp.is_null() || !(!tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::NUMBER) {
-        return false;
-    }
-    true
+    let tmp =
+        pdf_lookup_dict(dict, "FontScale").filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::NUMBER);
+    tmp.is_some()
 }
 unsafe extern "C" fn do_findfont() -> i32 {
     let mut error: i32 = 0i32;
@@ -2786,18 +2784,18 @@ unsafe extern "C" fn do_findfont() -> i32 {
              * font scale.
              */
             font_dict = pdf_new_dict();
-            pdf_add_dict(font_dict, pdf_new_name("Type"), pdf_new_name("Font"));
+            pdf_add_dict(font_dict, "Type", pdf_new_name("Font"));
             if !font_name.is_null() && pdf_obj_typeof(font_name) == PdfObjType::STRING {
                 pdf_add_dict(
                     font_dict,
-                    pdf_new_name("FontName"),
+                    "FontName",
                     pdf_copy_name(pdf_string_value(font_name) as *const i8),
                 );
                 pdf_release_obj(font_name);
             } else {
-                pdf_add_dict(font_dict, pdf_new_name("FontName"), font_name);
+                pdf_add_dict(font_dict, "FontName", font_name);
             }
-            pdf_add_dict(font_dict, pdf_new_name("FontScale"), pdf_new_number(1.0f64));
+            pdf_add_dict(font_dict, "FontScale", pdf_new_number(1.0f64));
             if top_stack < 1024_u32 {
                 let fresh3 = top_stack;
                 top_stack = top_stack.wrapping_add(1);
@@ -2831,7 +2829,7 @@ unsafe extern "C" fn do_scalefont() -> i32 {
     if font_dict.is_null() {
         error = 1i32
     } else if is_fontdict(font_dict) {
-        font_scale = pdf_lookup_dict(font_dict, b"FontScale\x00" as *const u8 as *const i8);
+        let font_scale = pdf_lookup_dict(font_dict, "FontScale").unwrap();
         pdf_set_number(font_scale, pdf_number_value(font_scale) * scale);
         if top_stack < 1024_u32 {
             let fresh4 = top_stack;
@@ -2849,8 +2847,6 @@ unsafe extern "C" fn do_scalefont() -> i32 {
 }
 unsafe extern "C" fn do_setfont() -> i32 {
     let mut error: i32 = 0i32;
-    let mut font_name: *mut i8 = 0 as *mut i8;
-    let mut font_scale: f64 = 0.;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     font_dict = if top_stack > 0_u32 {
         top_stack = top_stack.wrapping_sub(1);
@@ -2864,15 +2860,9 @@ unsafe extern "C" fn do_setfont() -> i32 {
         /* Subfont support prevent us from managing
          * font in a single place...
          */
-        font_name = pdf_name_value(pdf_lookup_dict(
-            font_dict,
-            b"FontName\x00" as *const u8 as *const i8,
-        ));
-        font_scale = pdf_number_value(pdf_lookup_dict(
-            font_dict,
-            b"FontScale\x00" as *const u8 as *const i8,
-        ));
-        error = mp_setfont(font_name, font_scale)
+        let font_name = pdf_name_value(&*pdf_lookup_dict(font_dict, "FontName").unwrap());
+        let font_scale = pdf_number_value(pdf_lookup_dict(font_dict, "FontScale").unwrap());
+        error = mp_setfont(font_name.as_ptr(), font_scale)
     }
     pdf_release_obj(font_dict);
     error
@@ -2892,17 +2882,9 @@ unsafe extern "C" fn do_currentfont() -> i32 {
         return 1i32;
     } else {
         font_dict = pdf_new_dict();
-        pdf_add_dict(font_dict, pdf_new_name("Type"), pdf_new_name("Font"));
-        pdf_add_dict(
-            font_dict,
-            pdf_new_name("FontName"),
-            pdf_copy_name((*font).font_name),
-        );
-        pdf_add_dict(
-            font_dict,
-            pdf_new_name("FontScale"),
-            pdf_new_number((*font).pt_size),
-        );
+        pdf_add_dict(font_dict, "Type", pdf_new_name("Font"));
+        pdf_add_dict(font_dict, "FontName", pdf_copy_name((*font).font_name));
+        pdf_add_dict(font_dict, "FontScale", pdf_new_number((*font).pt_size));
         if top_stack < 1024_u32 {
             let fresh5 = top_stack;
             top_stack = top_stack.wrapping_add(1);

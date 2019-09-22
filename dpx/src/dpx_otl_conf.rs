@@ -40,8 +40,8 @@ use super::dpx_mem::new;
 use super::dpx_pdfparse::skip_white;
 use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_array_length, pdf_copy_name, pdf_get_array, pdf_link_obj,
-    pdf_lookup_dict, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_null, pdf_new_number,
-    pdf_new_string, pdf_obj, pdf_ref_obj, pdf_release_obj, pdf_string_value,
+    pdf_lookup_dict, pdf_new_array, pdf_new_dict, pdf_new_null, pdf_new_number, pdf_new_string,
+    pdf_obj, pdf_ref_obj, pdf_release_obj, pdf_string_value,
 };
 use crate::streq_ptr;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_read};
@@ -76,7 +76,6 @@ unsafe extern "C" fn parse_uc_coverage(
     let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut ucv: i32 = 0i32;
     let mut glyphname: *mut i8 = 0 as *mut i8;
-    let mut glyphclass: *mut i8 = 0 as *mut i8;
     if (*pp).offset(1) >= endptr {
         return 0 as *mut pdf_obj;
     }
@@ -97,11 +96,9 @@ unsafe extern "C" fn parse_uc_coverage(
                 let mut i: i32 = 0;
                 let mut size: i32 = 0;
                 *pp = (*pp).offset(1);
-                glyphclass = parse_c_ident(pp, endptr);
-                cvalues = pdf_lookup_dict(gclass, glyphclass);
-                if cvalues.is_null() {
-                    panic!("{} not defined...", CStr::from_ptr(glyphclass).display());
-                }
+                let glyphclass = CStr::from_ptr(parse_c_ident(pp, endptr)).to_str().unwrap();
+                let cvalues = pdf_lookup_dict(gclass, glyphclass)
+                    .expect(&format!("{} not defined...", glyphclass));
                 size = pdf_array_length(cvalues) as i32;
                 i = 0i32;
                 while i < size {
@@ -172,14 +169,16 @@ unsafe extern "C" fn add_rule(
     let mut i: i32 = 0;
     let mut n_unicodes: i32 = 0;
     if *first.offset(0) as i32 == '@' as i32 {
-        glyph1 = pdf_lookup_dict(gclass, &mut *first.offset(1));
-        if glyph1.is_null() {
+        let s = CStr::from_ptr(first.offset(1)).to_str().unwrap();
+        let glyph1_opt = pdf_lookup_dict(gclass, s);
+        if glyph1_opt.is_none() {
             warn!(
                 "No glyph class \"{}\" found.",
-                CStr::from_ptr(&mut *first.offset(1) as *mut i8).display()
+                s,
             );
             return;
         }
+        glyph1 = glyph1_opt.unwrap();
         pdf_link_obj(glyph1);
         if verbose > 0i32 {
             info!(
@@ -220,14 +219,17 @@ unsafe extern "C" fn add_rule(
         }
     }
     if *second.offset(0) as i32 == '@' as i32 {
-        glyph2 = pdf_lookup_dict(gclass, &mut *second.offset(1));
-        if glyph2.is_null() {
+        let s = CStr::from_ptr(second.offset(1)).to_str().unwrap();
+        let glyph2_opt =
+            pdf_lookup_dict(gclass, s);
+        if glyph2_opt.is_none() {
             warn!(
                 "No glyph class \"{}\" found.",
-                CStr::from_ptr(&mut *second.offset(1) as *mut i8).display()
+                s,
             );
             return;
         }
+        glyph2 = glyph2_opt.unwrap();
         pdf_link_obj(glyph2);
         if verbose > 0i32 {
             info!(
@@ -381,7 +383,6 @@ unsafe extern "C" fn parse_block(
     mut endptr: *const i8,
 ) -> *mut pdf_obj {
     let mut rule: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut token: *mut i8 = 0 as *mut i8;
     let mut tmp: *mut i8 = 0 as *mut i8;
     skip_white(pp, endptr);
     if *pp < endptr && **pp as i32 == '{' as i32 {
@@ -410,13 +411,12 @@ unsafe extern "C" fn parse_block(
             *pp = (*pp).offset(1)
         } else {
             skip_white(pp, endptr);
-            token = parse_c_ident(pp, endptr);
+            let token = parse_c_ident(pp, endptr);
             if token.is_null() {
                 break;
             }
-            if streq_ptr(token, b"script\x00" as *const u8 as *const i8) as i32 != 0
-                || streq_ptr(token, b"language\x00" as *const u8 as *const i8) as i32 != 0
-            {
+            let token_s = CStr::from_ptr(token).to_str().unwrap();
+            if token_s == "script" || token_s == "language" {
                 let mut i: i32 = 0;
                 let mut len: i32 = 0;
                 skip_white(pp, endptr);
@@ -441,78 +441,65 @@ unsafe extern "C" fn parse_block(
                     }
                     pdf_add_dict(
                         rule,
-                        pdf_copy_name(token),
+                        token_s,
                         pdf_new_string(tmp as *const libc::c_void, strlen(tmp) as _),
                     );
                     if verbose > 0i32 {
                         info!(
                             "otl_conf>> Current {} set to \"{}\"\n",
-                            CStr::from_ptr(token).display(),
-                            CStr::from_ptr(tmp).display(),
+                            token_s,
+                            CStr::from_ptr(tmp).to_string_lossy(),
                         );
                     }
                     free(tmp as *mut libc::c_void);
                 }
-            } else if streq_ptr(token, b"option\x00" as *const u8 as *const i8) {
-                let mut opt_dict: *mut pdf_obj = 0 as *mut pdf_obj;
+            } else if token_s == "option" {
                 let mut opt_rule: *mut pdf_obj = 0 as *mut pdf_obj;
-                opt_dict = pdf_lookup_dict(rule, b"option\x00" as *const u8 as *const i8);
-                if opt_dict.is_null() {
-                    opt_dict = pdf_new_dict();
-                    pdf_add_dict(rule, pdf_new_name("option"), opt_dict);
-                }
+                let opt_dict = pdf_lookup_dict(rule, "option").unwrap_or_else(|| {
+                    let opt_dict = pdf_new_dict();
+                    pdf_add_dict(rule, "option", opt_dict);
+                    opt_dict
+                });
                 skip_white(pp, endptr);
                 tmp = parse_c_ident(pp, endptr);
+                let tmp_s = CStr::from_ptr(tmp).to_str().unwrap();
                 if verbose > 0i32 {
-                    info!(
-                        "otl_conf>> Reading option \"{}\"\n",
-                        CStr::from_ptr(tmp).display()
-                    );
+                    info!("otl_conf>> Reading option \"{}\"\n", tmp_s,);
                 }
                 skip_white(pp, endptr);
                 opt_rule = parse_block(gclass, pp, endptr);
-                pdf_add_dict(opt_dict, pdf_copy_name(tmp), opt_rule);
+                pdf_add_dict(opt_dict, tmp_s, opt_rule);
                 free(tmp as *mut libc::c_void);
-            } else if streq_ptr(token, b"prefered\x00" as *const u8 as *const i8) as i32 != 0
-                || streq_ptr(token, b"required\x00" as *const u8 as *const i8) as i32 != 0
-                || streq_ptr(token, b"optional\x00" as *const u8 as *const i8) as i32 != 0
-            {
-                let mut subst: *mut pdf_obj = 0 as *mut pdf_obj;
+            } else if token_s == "prefered" || token_s == "required" || token_s == "optional" {
                 let mut rule_block: *mut pdf_obj = 0 as *mut pdf_obj;
                 if verbose > 0i32 {
-                    info!(
-                        "otl_conf>> Reading block ({})\n",
-                        CStr::from_ptr(token).display()
-                    );
+                    info!("otl_conf>> Reading block ({})\n", token_s,);
                 }
                 skip_white(pp, endptr);
                 if *pp >= endptr || **pp as i32 != '{' as i32 {
                     panic!("Syntax error (1)");
                 }
                 rule_block = parse_substrule(gclass, pp, endptr);
-                subst = pdf_lookup_dict(rule, b"rule\x00" as *const u8 as *const i8);
-                if subst.is_null() {
-                    subst = pdf_new_array();
-                    pdf_add_dict(rule, pdf_new_name("rule"), subst);
-                }
+                let subst = pdf_lookup_dict(rule, "rule").unwrap_or_else(|| {
+                    let subst = pdf_new_array();
+                    pdf_add_dict(rule, "rule", subst);
+                    subst
+                });
                 pdf_add_array(subst, pdf_new_number(*token.offset(0) as f64));
                 pdf_add_array(subst, rule_block);
-            } else if *token.offset(0) as i32 == '@' as i32 {
+            } else if token_s.chars().nth(0) == Some('@') {
                 let mut coverage: *mut pdf_obj = 0 as *mut pdf_obj;
                 skip_white(pp, endptr);
                 *pp = (*pp).offset(1);
                 skip_white(pp, endptr);
                 if verbose > 0i32 {
-                    info!(
-                        "otl_conf>> Glyph class \"{}\"\n",
-                        CStr::from_ptr(token).display()
-                    );
+                    info!("otl_conf>> Glyph class \"{}\"\n", token_s,);
                 }
                 coverage = parse_uc_coverage(gclass, pp, endptr);
                 if coverage.is_null() {
                     panic!("No valid Unicode characters...");
                 }
-                pdf_add_dict(gclass, pdf_copy_name(&mut *token.offset(1)), coverage);
+                pdf_add_dict(gclass, &token_s[1..], coverage);
             }
             free(token as *mut libc::c_void);
             skip_white(pp, endptr);
@@ -594,38 +581,34 @@ pub unsafe extern "C" fn otl_find_conf(mut _conf_name: *const i8) -> *mut pdf_ob
 }
 #[no_mangle]
 pub unsafe extern "C" fn otl_conf_get_script(mut conf: *mut pdf_obj) -> *mut i8 {
-    let mut script: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!conf.is_null());
-    script = pdf_lookup_dict(conf, b"script\x00" as *const u8 as *const i8);
+    let script = pdf_lookup_dict(conf, "script").unwrap_or(0 as *mut pdf_obj);
     pdf_string_value(script) as *mut i8
 }
 #[no_mangle]
 pub unsafe extern "C" fn otl_conf_get_language(mut conf: *mut pdf_obj) -> *mut i8 {
-    let mut language: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!conf.is_null());
-    language = pdf_lookup_dict(conf, b"language\x00" as *const u8 as *const i8);
+    let language = pdf_lookup_dict(conf, "language").unwrap_or(0 as *mut pdf_obj);
     pdf_string_value(language) as *mut i8
 }
 #[no_mangle]
 pub unsafe extern "C" fn otl_conf_get_rule(mut conf: *mut pdf_obj) -> *mut pdf_obj {
     assert!(!conf.is_null());
-    pdf_lookup_dict(conf, b"rule\x00" as *const u8 as *const i8)
+    pdf_lookup_dict(conf, "rule").unwrap_or(0 as *mut pdf_obj)
 }
 #[no_mangle]
 pub unsafe extern "C" fn otl_conf_find_opt(
     mut conf: *mut pdf_obj,
     mut opt_tag: *const i8,
 ) -> *mut pdf_obj {
-    let mut opt_conf: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut options: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!conf.is_null());
-    options = pdf_lookup_dict(conf, b"option\x00" as *const u8 as *const i8);
-    if !options.is_null() && !opt_tag.is_null() {
-        opt_conf = pdf_lookup_dict(options, opt_tag)
+    if let Some(options) = pdf_lookup_dict(conf, "option").filter(|_| !opt_tag.is_null()) {
+        pdf_lookup_dict(options, CStr::from_ptr(opt_tag).to_str().unwrap())
+            .unwrap_or(0 as *mut pdf_obj)
     } else {
-        opt_conf = 0 as *mut pdf_obj
+        0 as *mut pdf_obj
     }
-    opt_conf
 }
 #[no_mangle]
 pub unsafe extern "C" fn otl_init_conf() {

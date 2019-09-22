@@ -381,17 +381,9 @@ pub unsafe extern "C" fn jp2_include_image(mut ximage: *mut pdf_ximage, mut fp: 
     }
     stream = pdf_new_stream(0i32);
     stream_dict = pdf_stream_dict(stream);
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name("Filter"),
-        pdf_new_name("JPXDecode"),
-    );
+    pdf_add_dict(stream_dict, "Filter", pdf_new_name("JPXDecode"));
     if smask != 0 {
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name("SMaskInData"),
-            pdf_new_number(1i32 as f64),
-        );
+        pdf_add_dict(stream_dict, "SMaskInData", pdf_new_number(1i32 as f64));
     }
     /* Read whole file */
     let mut nb_read: i32 = 0;

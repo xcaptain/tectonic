@@ -960,21 +960,12 @@ unsafe extern "C" fn CIDFont_base_open(
     let mut registry: *mut i8 = 0 as *mut i8;
     let mut ordering: *mut i8 = 0 as *mut i8;
     let mut supplement: i32 = 0;
-    let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
-    tmp = pdf_lookup_dict(fontdict, b"CIDSystemInfo\x00" as *const u8 as *const i8);
-    assert!(!tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::DICT);
-    registry = pdf_string_value(pdf_lookup_dict(
-        tmp,
-        b"Registry\x00" as *const u8 as *const i8,
-    )) as *mut i8;
-    ordering = pdf_string_value(pdf_lookup_dict(
-        tmp,
-        b"Ordering\x00" as *const u8 as *const i8,
-    )) as *mut i8;
-    supplement = pdf_number_value(pdf_lookup_dict(
-        tmp,
-        b"Supplement\x00" as *const u8 as *const i8,
-    )) as i32;
+    let tmp = pdf_lookup_dict(fontdict, "CIDSystemInfo")
+        .filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::DICT)
+        .unwrap();
+    registry = pdf_string_value(pdf_lookup_dict(tmp, "Registry").unwrap()) as *mut i8;
+    ordering = pdf_string_value(pdf_lookup_dict(tmp, "Ordering").unwrap()) as *mut i8;
+    supplement = pdf_number_value(pdf_lookup_dict(tmp, "Supplement").unwrap()) as i32;
     if !cmap_csi.is_null() {
         /* NULL for accept any */
         if strcmp(registry, (*cmap_csi).registry) != 0
@@ -1005,41 +996,29 @@ unsafe extern "C" fn CIDFont_base_open(
     strcpy((*(*font).csi).registry, registry);
     strcpy((*(*font).csi).ordering, ordering);
     (*(*font).csi).supplement = supplement;
-    let mut tmp_0: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut type_0: *mut i8 = 0 as *mut i8;
-    tmp_0 = pdf_lookup_dict(fontdict, b"Subtype\x00" as *const u8 as *const i8);
-    assert!(!tmp_0.is_null() && pdf_obj_typeof(tmp_0) == PdfObjType::NAME);
-    type_0 = pdf_name_value(tmp_0);
-    if streq_ptr(type_0, b"CIDFontType0\x00" as *const u8 as *const i8) {
+    let tmp = pdf_lookup_dict(fontdict, "Subtype")
+        .filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::NAME)
+        .unwrap();
+    let typ = pdf_name_value(&*tmp).to_string_lossy();
+    if typ == "CIDFontType0" {
         (*font).subtype = 1i32
-    } else if streq_ptr(type_0, b"CIDFontType2\x00" as *const u8 as *const i8) {
+    } else if typ == "CIDFontType2" {
         (*font).subtype = 2i32
     } else {
-        panic!(
-            "Unknown CIDFontType \"{}\"",
-            CStr::from_ptr(type_0).display()
-        );
+        panic!("Unknown CIDFontType \"{}\"", typ);
     }
     if cidoptflags & 1i32 << 1i32 != 0 {
-        if !pdf_lookup_dict(fontdict, b"W\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(fontdict, b"W\x00" as *const u8 as *const i8);
+        if pdf_lookup_dict(fontdict, "W").is_some() {
+            pdf_remove_dict(fontdict, "W");
         }
-        if !pdf_lookup_dict(fontdict, b"W2\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(fontdict, b"W2\x00" as *const u8 as *const i8);
+        if pdf_lookup_dict(fontdict, "W2").is_some() {
+            pdf_remove_dict(fontdict, "W2");
         }
     }
-    pdf_add_dict(fontdict, pdf_new_name("Type"), pdf_new_name("Font"));
-    pdf_add_dict(fontdict, pdf_new_name("BaseFont"), pdf_copy_name(fontname));
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name("Type"),
-        pdf_new_name("FontDescriptor"),
-    );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name("FontName"),
-        pdf_copy_name(fontname),
-    );
+    pdf_add_dict(fontdict, "Type", pdf_new_name("Font"));
+    pdf_add_dict(fontdict, "BaseFont", pdf_copy_name(fontname));
+    pdf_add_dict(descriptor, "Type", pdf_new_name("FontDescriptor"));
+    pdf_add_dict(descriptor, "FontName", pdf_copy_name(fontname));
     (*font).fontdict = fontdict;
     (*font).descriptor = descriptor;
     (*opt).embed = 0i32;

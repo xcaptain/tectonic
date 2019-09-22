@@ -1032,7 +1032,7 @@ unsafe extern "C" fn dev_set_font(mut font_id: i32) -> i32 {
     }
     if (*real_font).used_on_this_page == 0 {
         pdf_doc_add_page_resource(
-            b"Font\x00" as *const u8 as *const i8,
+            "Font",
             (*real_font).short_name.as_mut_ptr(),
             pdf_link_obj((*real_font).resource),
         );
@@ -2124,11 +2124,7 @@ pub unsafe extern "C" fn pdf_dev_put_image(
     );
     pdf_doc_add_page_content(work_buffer.as_mut_ptr(), len as u32);
     pdf_dev_grestore();
-    pdf_doc_add_page_resource(
-        b"XObject\x00" as *const u8 as *const i8,
-        res_name,
-        pdf_ximage_get_reference(id),
-    );
+    pdf_doc_add_page_resource("XObject", res_name, pdf_ximage_get_reference(id));
     if dvi_is_tracking_boxes() {
         let mut P = pdf_tmatrix::new();
         let mut i: u32 = 0;

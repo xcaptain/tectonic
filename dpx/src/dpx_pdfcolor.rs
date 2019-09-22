@@ -1197,7 +1197,7 @@ pub unsafe extern "C" fn iccp_load_profile(
     let stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(
         stream_dict,
-        pdf_new_name("N"),
+        "N",
         pdf_new_number(get_num_components_iccbased(cdata) as f64),
     );
     pdf_add_stream(stream, profile, proflen);
