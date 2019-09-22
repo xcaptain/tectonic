@@ -94,11 +94,31 @@ use super::dpx_tt_cmap::tt_cmap;
  * not use 'OS/2' table, though...
  */
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct NameTable {
-    pub name: [u8; 4],
-    pub must_exist: bool,
+    name: [u8; 4],
+    must_exist: bool,
 }
+
+impl NameTable {
+    pub const fn new(name: [u8; 4], must_exist: bool) -> Self {
+        NameTable { name, must_exist }
+    }
+
+    pub const fn name(&self) -> &[u8; 4] {
+        &self.name
+    }
+
+    /// # Safety
+    /// This function assumes the name is valid utf8.
+    pub unsafe fn name_str(&self) -> &str {
+        &std::str::from_utf8_unchecked(&self.name)
+    }
+
+    pub const fn must_exist(&self) -> bool {
+        self.must_exist
+    }
+}
+
 use super::dpx_tt_glyf::tt_glyphs;
 
 /* Acoid conflict with CHAR ... from <winnt.h>.  */
@@ -254,78 +274,18 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     0i32
 }
 const required_table: [NameTable; 12] = [
-    {
-        NameTable {
-            name: *b"OS/2",
-            must_exist: false,
-        }
-    },
-    {
-        NameTable {
-            name: *b"head",
-            must_exist: false,
-        }
-    },
-    {
-        NameTable {
-            name: *b"hhea",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"loca",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"maxp",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"name",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"glyf",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"hmtx",
-            must_exist: true,
-        }
-    },
-    {
-        NameTable {
-            name: *b"fpgm",
-            must_exist: false,
-        }
-    },
-    {
-        NameTable {
-            name: *b"cvt ",
-            must_exist: false,
-        }
-    },
-    {
-        NameTable {
-            name: *b"prep",
-            must_exist: false,
-        }
-    },
-    {
-        NameTable {
-            name: *b"cmap",
-            must_exist: true,
-        }
-    },
+    NameTable::new(*b"OS/2", false),
+    NameTable::new(*b"head", false),
+    NameTable::new(*b"hhea", true),
+    NameTable::new(*b"loca", true),
+    NameTable::new(*b"maxp", true),
+    NameTable::new(*b"name", true),
+    NameTable::new(*b"glyf", true),
+    NameTable::new(*b"hmtx", true),
+    NameTable::new(*b"fpgm", false),
+    NameTable::new(*b"cvt ", false),
+    NameTable::new(*b"prep", false),
+    NameTable::new(*b"cmap", true),
 ];
 
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
@@ -1227,7 +1187,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
             ttstub_input_close(handle as rust_input_handle_t);
             panic!(
                 "Required TrueType table \"{}\" does not exist in font: {}",
-                std::str::from_utf8(table.name).unwrap(),
+                table.name_str(),
                 CStr::from_ptr(ident).display(),
             );
         }

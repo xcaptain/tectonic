@@ -142,50 +142,17 @@ pub unsafe extern "C" fn CIDFont_type2_set_flags(mut flags: i32) {
 }
 
 const required_table: [NameTable; 11] = [
-    NameTable {
-        name: *b"OS/2",
-        must_exist: false,
-    },
-    NameTable {
-        name: *b"head",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"hhea",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"loca",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"maxp",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"name",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"glyf",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"hmtx",
-        must_exist: true,
-    },
-    NameTable {
-        name: *b"fpgm",
-        must_exist: false,
-    },
-    NameTable {
-        name: *b"cvt ",
-        must_exist: false,
-    },
-    NameTable {
-        name: *b"prep",
-        must_exist: false,
-    },
+    NameTable::new(*b"OS/2", false),
+    NameTable::new(*b"head", true),
+    NameTable::new(*b"hhea", true),
+    NameTable::new(*b"loca", true),
+    NameTable::new(*b"maxp", true),
+    NameTable::new(*b"name", true),
+    NameTable::new(*b"glyf", true),
+    NameTable::new(*b"hmtx", true),
+    NameTable::new(*b"fpgm", false),
+    NameTable::new(*b"cvt ", false),
+    NameTable::new(*b"prep", false),
 ];
 unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
     let mut i: i32 = 0;
@@ -1223,7 +1190,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err() {
             panic!(
                 "Some required TrueType table ({}) does not exist.",
-                std::str::from_utf8(table.name).unwrap()
+                table.name_str()
             );
         }
     }
