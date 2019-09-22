@@ -30,6 +30,7 @@ shall not be used in advertising or otherwise to promote the sale,
 use or other dealings in this Software without prior written
 authorization from the copyright holders.
 \****************************************************************************/
+#ifdef XETEX_MAC
 
 #include "xetex-core.h"
 #include "xetex-XeTeXFontMgr_Mac.h"
@@ -291,4 +292,6 @@ XeTeXFontMgr_Mac* XeTeXFontMgr_Mac_create() {
         XeTeXFontMgr_Mac_ctor(self);
 	return self;
 }
+
+#endif
 

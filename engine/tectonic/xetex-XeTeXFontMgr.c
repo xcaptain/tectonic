@@ -98,6 +98,18 @@ XeTeXFontMgr_Destroy()
     }
 }
 
+char XeTeXFontMgr_getReqEngine(const XeTeXFontMgr* self) {
+    // return the requested rendering technology for the most recent findFont
+    // or 0 if no specific technology was requested	
+	
+	return XeTeXFontMgr_sReqEngine;
+}
+
+void XeTeXFontMgr_setReqEngine(const XeTeXFontMgr* self, char reqEngine)
+{
+	XeTeXFontMgr_sReqEngine = reqEngine;
+}
+
 // above are singleton operation.
 ///////////////
 
@@ -115,9 +127,26 @@ void XeTeXFontMgr_delete(XeTeXFontMgr* self) {
 
 PlatformFontRef
 XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, double ptSize)
+{
+	// 1st arg is name as specified by user (C string, UTF-8)
+        // 2nd is /B/I/AAT/OT/ICU/GR/S=## qualifiers
+        // 1. try name given as "full name"
+        // 2. if there's a hyphen, split and try "family-style"
+        // 3. try as PostScript name
+        // 4. try name as family with "Regular/Plain/Normal" style
+        // apply style qualifiers and optical sizing if present
+
+        // SIDE EFFECT: sets sReqEngine to 'A' or 'O' or 'G' if appropriate,
+        //   else clears it to 0
+
+        // SIDE EFFECT: updates TeX variables /nameoffile/ and /namelength/,
+        //   to match the actual font found
+
+        // SIDE EFFECT: edits /variant/ string in-place removing /B or /I
+
     // ptSize is in TeX points, or negative for 'scaled' factor
     // "variant" string will be shortened (in-place) by removal of /B and /I if present
-{
+		
 	CppStdString* nameStr = CppStdString_create();
 	CppStdString_assign_from_const_char_ptr(nameStr, name);
     XeTeXFontMgrFont* font = NULL;
@@ -442,6 +471,8 @@ XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, doubl
 const char*
 XeTeXFontMgr_getFullName(const XeTeXFontMgr* self, PlatformFontRef font)
 {
+// return the full name of the font, suitable for use in XeTeX source
+        // without requiring style qualifiers	
     CppStdMapFontRefToFontPtr_Iter i = CppStdMapFontRefToFontPtr_find(self->m_platformRefToFont, font);
     if (CppStdMapFontRefToFontPtr_Iter_eq(i, CppStdMapFontRefToFontPtr_end(self->m_platformRefToFont)))
         _tt_abort("internal error %d in XeTeXFontMgr", 2);

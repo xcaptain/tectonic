@@ -84,21 +84,9 @@ public:
     void *getFontTable(OTTag tableTag) const;
     void *getFontTable(FT_Sfnt_Tag tableTag) const;
 
-    const char *getFilename(uint32_t* index) const
-    {
-        *index = m_index;
-        return m_filename;
-    }
     hb_font_t *getHbFont() const { return m_hbFont; }
     void setLayoutDirVertical(bool vertical);
     bool getLayoutDirVertical() const { return m_vertical; }
-
-    float getPointSize() const { return m_pointSize; }
-    float getAscent() const { return m_ascent; }
-    float getDescent() const { return m_descent; }
-    float getCapHeight() const { return m_capHeight; }
-    float getXHeight() const { return m_xHeight; }
-    float getItalicAngle() const { return m_italicAngle; }
 
     GlyphID mapCharToGlyph(UChar32 ch) const;
     GlyphID mapGlyphToIndex(const char* glyphName) const;
@@ -148,6 +136,21 @@ UChar32 XeTeXFontInst_getFirstCharCode(XeTeXFontInst* self);
 UChar32 XeTeXFontInst_getLastCharCode(XeTeXFontInst* self);
 float XeTeXFontInst_unitsToPoints(const XeTeXFontInst* self, float units);
 float XeTeXFontInst_pointsToUnits(const XeTeXFontInst* self, float points);
+
+inline bool XeTeXFontInst_getLayoutDirVertical(const XeTeXFontInst* self) { return self->m_vertical; }
+
+inline float XeTeXFontInst_getPointSize(const XeTeXFontInst* self)  { return self->m_pointSize; }
+inline float XeTeXFontInst_getAscent(const XeTeXFontInst* self)  { return self->m_ascent; }
+inline float XeTeXFontInst_getDescent(const XeTeXFontInst* self)  { return self->m_descent; }
+inline float XeTeXFontInst_getCapHeight(const XeTeXFontInst* self)  { return self->m_capHeight; }
+inline float XeTeXFontInst_getXHeight(const XeTeXFontInst* self)  { return self->m_xHeight; }
+inline float XeTeXFontInst_getItalicAngle(const XeTeXFontInst* self)  { return self->m_italicAngle; }
+
+inline const char *XeTeXFontInst_getFilename(const XeTeXFontInst* self, uint32_t* index)
+{
+	*index = self->m_index;
+	return self->m_filename;
+}
 
 void XeTeXFontInst_base_ctor(XeTeXFontInst* self, const char* pathname, int index, float pointSize, int *status);
 

@@ -69,34 +69,55 @@ struct XeTeXLayoutEngine_rec
     hb_buffer_t*    hbBuffer;
 };
 
-#if 0 //CPP_TO_C_DELAY
+typedef struct XeTeXLayoutEngine_rec XeTeXLayoutEngine_rec;
 
 /*******************************************************************/
 /* Glyph bounding box cache to speed up \XeTeXuseglyphmetrics mode */
 /*******************************************************************/
-#include <map>
 
 // key is combined value representing (font_id << 16) + glyph
 // value is glyph bounding box in TeX points
-static std::map<uint32_t,GlyphBBox> sGlyphBoxes;
+
+struct CppStdMapU32ToGlyphBBox;
+typedef struct CppStdMapU32ToGlyphBBox CppStdMapU32ToGlyphBBox;
+CppStdMapU32ToGlyphBBox* CppStdMapU32ToGlyphBBox_create();
+
+struct CppStdMapU32ToGlyphBBox_Iter {
+	void* unused;
+};
+typedef struct CppStdMapU32ToGlyphBBox_Iter CppStdMapU32ToGlyphBBox_Iter;
+CppStdMapU32ToGlyphBBox_Iter CppStdMapU32ToGlyphBBox_find(CppStdMapU32ToGlyphBBox* self, uint32_t key);
+CppStdMapU32ToGlyphBBox_Iter CppStdMapU32ToGlyphBBox_end(CppStdMapU32ToGlyphBBox* self);
+bool CppStdMapU32ToGlyphBBox_Iter_eq(CppStdMapU32ToGlyphBBox_Iter lhs, CppStdMapU32ToGlyphBBox_Iter rhs);
+GlyphBBox CppStdMapU32ToGlyphBBox_Iter_second(CppStdMapU32ToGlyphBBox_Iter self);
+void CppStdMapU32ToGlyphBBox_put(CppStdMapU32ToGlyphBBox* self, uint32_t key, GlyphBBox val);
+
+CppStdMapU32ToGlyphBBox* getGlyphBBoxCache() {
+	static CppStdMapU32ToGlyphBBox* cache = NULL;
+	if (!cache)
+		cache = CppStdMapU32ToGlyphBBox_create();
+	return cache;
+}
 
 int
 getCachedGlyphBBox(uint16_t fontID, uint16_t glyphID, GlyphBBox* bbox)
 {
+	CppStdMapU32ToGlyphBBox* sGlyphBoxes = getGlyphBBoxCache();
     uint32_t key = ((uint32_t)fontID << 16) + glyphID;
-    std::map<uint32_t,GlyphBBox>::const_iterator i = sGlyphBoxes.find(key);
-    if (i == sGlyphBoxes.end()) {
+    CppStdMapU32ToGlyphBBox_Iter i = CppStdMapU32ToGlyphBBox_find(sGlyphBoxes, key);
+    if (CppStdMapU32ToGlyphBBox_Iter_eq(i, CppStdMapU32ToGlyphBBox_end(sGlyphBoxes))) {
         return 0;
     }
-    *bbox = i->second;
+    *bbox = CppStdMapU32ToGlyphBBox_Iter_second(i);
     return 1;
 }
 
 void
 cacheGlyphBBox(uint16_t fontID, uint16_t glyphID, const GlyphBBox* bbox)
 {
+	CppStdMapU32ToGlyphBBox* sGlyphBoxes = getGlyphBBoxCache();
     uint32_t key = ((uint32_t)fontID << 16) + glyphID;
-    sGlyphBoxes[key] = *bbox;
+	CppStdMapU32ToGlyphBBox_put(sGlyphBoxes, key, *bbox);
 }
 
 /* The following code used to be in a file called "hz.cpp" and there's no
@@ -104,53 +125,80 @@ cacheGlyphBBox(uint16_t fontID, uint16_t glyphID, const GlyphBBox* bbox)
  * name so I wanted to get rid of it. The functions are invoked from the C
  * code. */
 
-typedef std::pair<int, unsigned int> GlyphId;
-typedef std::map<GlyphId, int>  ProtrusionFactor;
-ProtrusionFactor leftProt, rightProt;
+struct GlyphId {
+	int fontNum;
+	unsigned int code;
+};
 
-void
-set_cp_code(int fontNum, unsigned int code, int side, int value)
+typedef struct GlyphId GlyphId;
+
+inline GlyphId GlyphId_create(int fontNum, unsigned int code)
 {
-    GlyphId id(fontNum, code);
+	GlyphId id;
+	id.fontNum = fontNum;
+	id.code = code;
+	return id;
+}
 
+struct CppStdMapGlyphIdToInt;
+typedef struct CppStdMapGlyphIdToInt CppStdMapGlyphIdToInt;
+CppStdMapGlyphIdToInt* CppStdMapGlyphIdToInt_create();
+
+struct CppStdMapGlyphIdToInt_Iter {
+	void* unused;
+};
+typedef struct CppStdMapGlyphIdToInt_Iter CppStdMapGlyphIdToInt_Iter;
+CppStdMapGlyphIdToInt_Iter CppStdMapGlyphIdToInt_find(CppStdMapGlyphIdToInt* self, GlyphId id);
+CppStdMapGlyphIdToInt_Iter CppStdMapGlyphIdToInt_end(CppStdMapGlyphIdToInt* self);
+bool CppStdMapGlyphIdToInt_Iter_eq(CppStdMapGlyphIdToInt_Iter lhs, CppStdMapGlyphIdToInt_Iter rhs);
+int CppStdMapGlyphIdToInt_Iter_second(CppStdMapGlyphIdToInt_Iter self);
+void CppStdMapGlyphIdToInt_put(CppStdMapGlyphIdToInt* self, GlyphId key, int val);
+
+typedef CppStdMapGlyphIdToInt ProtrusionFactor;
+
+ProtrusionFactor* getProtrusionFactor(int side) {
+	static ProtrusionFactor* leftProt = NULL;
+	static ProtrusionFactor* rightProt = NULL;
+    ProtrusionFactor *container = NULL;
     switch (side) {
     case LEFT_SIDE:
-        leftProt[id] = value;
+		if (!leftProt)
+			leftProt = CppStdMapGlyphIdToInt_create();
+        container = leftProt;
         break;
     case RIGHT_SIDE:
-        rightProt[id] = value;
+		if (!rightProt)
+			rightProt = CppStdMapGlyphIdToInt_create();
+        container = rightProt;
         break;
     default:
         assert(0); // we should not reach here
     }
+	return container;
+}
+
+void
+set_cp_code(int fontNum, unsigned int code, int side, int value)
+{
+    GlyphId id = GlyphId_create(fontNum, code);
+    ProtrusionFactor *container = getProtrusionFactor(side);
+
+	CppStdMapGlyphIdToInt_put(container, id, value);
 }
 
 
 int
 get_cp_code(int fontNum, unsigned int code, int side)
 {
-    GlyphId id(fontNum, code);
-    ProtrusionFactor *container;
+    GlyphId id = GlyphId_create(fontNum, code);
+    ProtrusionFactor *container = getProtrusionFactor(side);
 
-    switch (side) {
-    case LEFT_SIDE:
-        container = &leftProt;
-        break;
-    case RIGHT_SIDE:
-        container = &rightProt;
-        break;
-    default:
-        assert(0); // we should not reach here
-    }
-
-    ProtrusionFactor::iterator it = container->find(id);
-    if (it == container->end())
+    CppStdMapGlyphIdToInt_Iter it = CppStdMapGlyphIdToInt_find(container, id);
+    if (CppStdMapGlyphIdToInt_Iter_eq(it, CppStdMapGlyphIdToInt_end(container)))
         return 0;
 
-    return it->second;
+    return CppStdMapGlyphIdToInt_Iter_second(it);
 }
-#endif //CPP_TO_C_DELAY
-
 
 /*******************************************************************/
 
@@ -686,6 +734,14 @@ getEmboldenFactor(XeTeXLayoutEngine engine)
     return engine->embolden;
 }
 
+XeTeXLayoutEngine_rec* XeTeXLayoutEngine_create() {
+	return malloc(sizeof(XeTeXLayoutEngine_rec));	
+}
+
+void XeTeXLayoutEngine_delete(XeTeXLayoutEngine_rec* engine) {
+	free(engine);
+}
+
 XeTeXLayoutEngine
 createLayoutEngine(PlatformFontRef fontRef, XeTeXFont font, hb_tag_t script, char *language,
                     hb_feature_t* features, int nFeatures, char **shapers, uint32_t rgbValue,
@@ -791,7 +847,7 @@ layoutChars(XeTeXLayoutEngine engine, uint16_t chars[], int32_t offset, int32_t 
         engine->ShaperList[1] = NULL;
     }
 
-    shape_plan = hb_shape_plan_create_cached(hbFace, &segment_props, engine->features, engine->nFeatures, engine->ShaperList);
+    shape_plan = hb_shape_plan_create_cached(hbFace, &segment_props, engine->features, engine->nFeatures, (const char * const*)engine->ShaperList);
     res = hb_shape_plan_execute(shape_plan, hbFont, engine->hbBuffer, engine->features, engine->nFeatures);
 
     if (engine->shaper != NULL) {

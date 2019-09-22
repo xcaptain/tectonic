@@ -328,7 +328,15 @@ int XeTeXFontMgr_weightAndWidthDiff(const XeTeXFontMgr* self, const XeTeXFontMgr
 
 PlatformFontRef
 XeTeXFontMgr_findFont(XeTeXFontMgr* self, const char* name, char* variant, double ptSize);
+char XeTeXFontMgr_getReqEngine(const XeTeXFontMgr* self);
 
+void XeTeXFontMgr_setReqEngine(const XeTeXFontMgr* self, char reqEngine);
+
+const char*
+XeTeXFontMgr_getFullName(const XeTeXFontMgr* self, PlatformFontRef font);
+
+double
+XeTeXFontMgr_getDesignSize(XeTeXFontMgr* self, XeTeXFont font);
 /*
 #include <string>
 #include <map>
@@ -344,35 +352,6 @@ public:
         // clean up (may be required if using the cocoa implementation)
     static void Destroy();
 
-    PlatformFontRef                 findFont(const char* name, char* variant, double ptSize);
-        // 1st arg is name as specified by user (C string, UTF-8)
-        // 2nd is /B/I/AAT/OT/ICU/GR/S=## qualifiers
-        // 1. try name given as "full name"
-        // 2. if there's a hyphen, split and try "family-style"
-        // 3. try as PostScript name
-        // 4. try name as family with "Regular/Plain/Normal" style
-        // apply style qualifiers and optical sizing if present
-
-        // SIDE EFFECT: sets sReqEngine to 'A' or 'O' or 'G' if appropriate,
-        //   else clears it to 0
-
-        // SIDE EFFECT: updates TeX variables /nameoffile/ and /namelength/,
-        //   to match the actual font found
-
-        // SIDE EFFECT: edits /variant/ string in-place removing /B or /I
-
-    const char*                     getFullName(PlatformFontRef font) const;
-        // return the full name of the font, suitable for use in XeTeX source
-        // without requiring style qualifiers
-
-    double                          getDesignSize(XeTeXFont font);
-
-    char                            getReqEngine() const { return sReqEngine; }
-        // return the requested rendering technology for the most recent findFont
-        // or 0 if no specific technology was requested
-
-    void                            setReqEngine(char reqEngine) const { sReqEngine = reqEngine; }
-
 protected:
                                     XeTeXFontMgr()
                                         { }
@@ -383,9 +362,6 @@ protected:
     virtual void                    terminate();
 
     virtual char*             		getPlatformFontDesc(PlatformFontRef font) const = 0;
-
-
-    
 
 
 

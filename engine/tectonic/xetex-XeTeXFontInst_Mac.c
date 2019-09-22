@@ -39,6 +39,8 @@ authorization from the copyright holders.
  *   created by: Jonathan Kew
  */
 
+#ifdef XETEX_MAC
+
 #include "xetex-core.h"
 #include "xetex-XeTeXFontInst_Mac.h"
 #include "xetex-ext.h"
@@ -104,4 +106,5 @@ XeTeXFontInst_Mac* XeTeXFontInst_Mac_create(CTFontDescriptorRef descriptor, floa
 
 
 
+#endif
 
