@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use crate::dpx_pdfparse::parse_pdf_dict;
 use crate::mfree;
 use crate::{info, warn};
@@ -42,14 +45,12 @@ use super::dpx_cidtype0::{
 use super::dpx_cidtype2::{
     CIDFont_type2_dofont, CIDFont_type2_open, CIDFont_type2_set_flags, CIDFont_type2_set_verbose,
 };
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_file, pdf_get_version, pdf_link_obj, pdf_lookup_dict, pdf_name_value,
-    pdf_new_name, pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj,
-    pdf_remove_dict, pdf_string_value, PdfObjType,
+    pdf_add_dict, pdf_copy_name, pdf_file, pdf_get_version, pdf_link_obj, pdf_lookup_dict,
+    pdf_name_value, pdf_new_name, pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_ref_obj,
+    pdf_release_obj, pdf_remove_dict, pdf_string_value, PdfObjType,
 };
-use bridge::_tt_abort;
 use libc::{free, memcpy, memset, strcat, strchr, strcmp, strcpy, strlen, strncmp, strtoul};
 
 pub type size_t = u64;
@@ -585,11 +586,11 @@ unsafe extern "C" fn CIDFont_dofont(mut font: *mut CIDFont) {
         return;
     }
     if __verbose != 0 {
-        dpx_message(b":%s\x00" as *const u8 as *const i8, (*font).ident);
+        info!(":{}", CStr::from_ptr((*font).ident).display());
     }
     if __verbose > 1i32 {
         if !(*font).fontname.is_null() {
-            dpx_message(b"[%s]\x00" as *const u8 as *const i8, (*font).fontname);
+            info!("[{}]", CStr::from_ptr((*font).fontname).display());
         }
     }
     match (*font).subtype {
@@ -612,11 +613,7 @@ unsafe extern "C" fn CIDFont_dofont(mut font: *mut CIDFont) {
             CIDFont_type2_dofont(font);
         }
         _ => {
-            _tt_abort(
-                b"%s: Unknown CIDFontType %d.\x00" as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                (*font).subtype,
-            );
+            panic!("{}: Unknown CIDFontType {}.", "CIDFont", (*font).subtype,);
         }
     };
 }
@@ -963,36 +960,26 @@ unsafe extern "C" fn CIDFont_base_open(
     let mut registry: *mut i8 = 0 as *mut i8;
     let mut ordering: *mut i8 = 0 as *mut i8;
     let mut supplement: i32 = 0;
-    let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
-    tmp = pdf_lookup_dict(fontdict, b"CIDSystemInfo\x00" as *const u8 as *const i8);
-    assert!(!tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::DICT);
-    registry = pdf_string_value(pdf_lookup_dict(
-        tmp,
-        b"Registry\x00" as *const u8 as *const i8,
-    )) as *mut i8;
-    ordering = pdf_string_value(pdf_lookup_dict(
-        tmp,
-        b"Ordering\x00" as *const u8 as *const i8,
-    )) as *mut i8;
-    supplement = pdf_number_value(pdf_lookup_dict(
-        tmp,
-        b"Supplement\x00" as *const u8 as *const i8,
-    )) as i32;
+    let tmp = pdf_lookup_dict(fontdict, "CIDSystemInfo")
+        .filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::DICT)
+        .unwrap();
+    registry = pdf_string_value(pdf_lookup_dict(tmp, "Registry").unwrap()) as *mut i8;
+    ordering = pdf_string_value(pdf_lookup_dict(tmp, "Ordering").unwrap()) as *mut i8;
+    supplement = pdf_number_value(pdf_lookup_dict(tmp, "Supplement").unwrap()) as i32;
     if !cmap_csi.is_null() {
         /* NULL for accept any */
         if strcmp(registry, (*cmap_csi).registry) != 0
             || strcmp(ordering, (*cmap_csi).ordering) != 0
         {
-            _tt_abort(
-                b"Inconsistent CMap used for CID-keyed font %s.\x00" as *const u8 as *const i8,
-                cid_basefont[idx as usize].fontname,
+            panic!(
+                "Inconsistent CMap used for CID-keyed font {}.",
+                CStr::from_ptr(cid_basefont[idx as usize].fontname).display()
             );
         } else {
             if supplement < (*cmap_csi).supplement {
-                dpx_warning(
-                    b"CMap has higher supplement number than CIDFont: %s\x00" as *const u8
-                        as *const i8,
-                    fontname,
+                warn!(
+                    "CMap has higher supplement number than CIDFont: {}",
+                    CStr::from_ptr(fontname).display(),
                 );
                 warn!("Some chracters may not be displayed or printed.");
             }
@@ -1009,49 +996,29 @@ unsafe extern "C" fn CIDFont_base_open(
     strcpy((*(*font).csi).registry, registry);
     strcpy((*(*font).csi).ordering, ordering);
     (*(*font).csi).supplement = supplement;
-    let mut tmp_0: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut type_0: *mut i8 = 0 as *mut i8;
-    tmp_0 = pdf_lookup_dict(fontdict, b"Subtype\x00" as *const u8 as *const i8);
-    assert!(!tmp_0.is_null() && pdf_obj_typeof(tmp_0) == PdfObjType::NAME);
-    type_0 = pdf_name_value(tmp_0);
-    if streq_ptr(type_0, b"CIDFontType0\x00" as *const u8 as *const i8) {
+    let tmp = pdf_lookup_dict(fontdict, "Subtype")
+        .filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::NAME)
+        .unwrap();
+    let typ = pdf_name_value(&*tmp).to_string_lossy();
+    if typ == "CIDFontType0" {
         (*font).subtype = 1i32
-    } else if streq_ptr(type_0, b"CIDFontType2\x00" as *const u8 as *const i8) {
+    } else if typ == "CIDFontType2" {
         (*font).subtype = 2i32
     } else {
-        _tt_abort(
-            b"Unknown CIDFontType \"%s\"\x00" as *const u8 as *const i8,
-            type_0,
-        );
+        panic!("Unknown CIDFontType \"{}\"", typ);
     }
     if cidoptflags & 1i32 << 1i32 != 0 {
-        if !pdf_lookup_dict(fontdict, b"W\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(fontdict, b"W\x00" as *const u8 as *const i8);
+        if pdf_lookup_dict(fontdict, "W").is_some() {
+            pdf_remove_dict(fontdict, "W");
         }
-        if !pdf_lookup_dict(fontdict, b"W2\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(fontdict, b"W2\x00" as *const u8 as *const i8);
+        if pdf_lookup_dict(fontdict, "W2").is_some() {
+            pdf_remove_dict(fontdict, "W2");
         }
     }
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"BaseFont\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
-    );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontName\x00" as *const u8 as *const i8),
-        pdf_new_name(fontname),
-    );
+    pdf_add_dict(fontdict, "Type", pdf_new_name("Font"));
+    pdf_add_dict(fontdict, "BaseFont", pdf_copy_name(fontname));
+    pdf_add_dict(descriptor, "Type", pdf_new_name("FontDescriptor"));
+    pdf_add_dict(descriptor, "FontName", pdf_copy_name(fontname));
     (*font).fontdict = fontdict;
     (*font).descriptor = descriptor;
     (*opt).embed = 0i32;
@@ -1170,10 +1137,10 @@ pub unsafe extern "C" fn CIDFont_cache_find(
         if strcmp((*(*font).csi).registry, (*cmap_csi).registry) != 0
             || strcmp((*(*font).csi).ordering, (*cmap_csi).ordering) != 0
         {
-            _tt_abort(
-                b"%s: Incompatible CMap for CIDFont \"%s\"\x00" as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                map_name,
+            panic!(
+                "{}: Incompatible CMap for CIDFont \"{}\"",
+                "CIDFont",
+                CStr::from_ptr(map_name).display(),
             );
         }
     }
@@ -1323,30 +1290,27 @@ unsafe extern "C" fn get_cidsysinfo(
         /* Full REGISTRY-ORDERING-SUPPLEMENT */
         p = strchr((*fmap_opt).charcoll, '-' as i32);
         if p.is_null() || *p.offset(1) as i32 == '\u{0}' as i32 {
-            _tt_abort(
-                b"%s: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: %s\x00"
-                    as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                (*fmap_opt).charcoll,
+            panic!(
+                "{}: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: {}",
+                "CIDFont",
+                CStr::from_ptr((*fmap_opt).charcoll).display(),
             );
         }
         p = p.offset(1);
         q = strchr(p, '-' as i32);
         if q.is_null() || *q.offset(1) as i32 == '\u{0}' as i32 {
-            _tt_abort(
-                b"%s: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: %s\x00"
-                    as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                (*fmap_opt).charcoll,
+            panic!(
+                "{}: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: {}",
+                "CIDFont",
+                CStr::from_ptr((*fmap_opt).charcoll).display(),
             );
         }
         q = q.offset(1);
         if libc::isdigit(*q.offset(0) as _) == 0 {
-            _tt_abort(
-                b"%s: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: %s\x00"
-                    as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                (*fmap_opt).charcoll,
+            panic!(
+                "{}: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: {}",
+                "CIDFont",
+                CStr::from_ptr((*fmap_opt).charcoll).display(),
             );
         }
         n = strlen((*fmap_opt).charcoll)
@@ -1390,20 +1354,18 @@ unsafe extern "C" fn get_cidsysinfo(
         if (*csi).supplement > CIDFont_stdcc_def[csi_idx as usize].supplement[pdf_ver as usize]
             && (*fmap_opt).flags & 1i32 << 1i32 != 0
         {
-            dpx_warning(
-                b"%s: Heighest supplement number supported in PDF-1.%d for %s-%s is %d.\x00"
-                    as *const u8 as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
+            warn!(
+                "{}: Heighest supplement number supported in PDF-1.{} for {}-{} is {}.",
+                "CIDFont",
                 pdf_ver,
-                (*csi).registry,
-                (*csi).ordering,
+                CStr::from_ptr((*csi).registry).display(),
+                CStr::from_ptr((*csi).ordering).display(),
                 CIDFont_stdcc_def[csi_idx as usize].supplement[pdf_ver as usize],
             );
-            dpx_warning(
-                b"%s: Some character may not shown without embedded font (--> %s).\x00" as *const u8
-                    as *const i8,
-                b"CIDFont\x00" as *const u8 as *const i8,
-                map_name,
+            warn!(
+                "{}: Some character may not shown without embedded font (--> {}).",
+                "CIDFont",
+                CStr::from_ptr(map_name).display(),
             );
         }
     }

@@ -29,8 +29,10 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_dvipdfmx::always_embed;
-use super::dpx_error::dpx_warning;
 use super::dpx_numbers::tt_get_unsigned_quad;
 use super::dpx_tt_post::{tt_read_post_table, tt_release_post_table};
 use super::dpx_tt_table::{tt_read_head_table, tt_read_os2__table};
@@ -111,11 +113,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         return 0 as *mut pdf_obj;
     }
     descriptor = pdf_new_dict();
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"FontDescriptor\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(descriptor, "Type", pdf_new_name("FontDescriptor"));
     if *embed != 0 && !os2.is_null() {
         /*
           License:
@@ -136,28 +134,25 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             *embed = 1i32
         } else if (*os2).fsType as i32 & 0x4i32 != 0 {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Font \"%s\" permits \"Preview & Print\" embedding only **\n\x00" as *const u8
-                        as *const i8,
-                    fontname,
+                warn!(
+                    "Font \"{}\" permits \"Preview & Print\" embedding only **\n",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 1i32
         } else if always_embed != 0 {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Font \"%s\" may be subject to embedding restrictions **\n\x00" as *const u8
-                        as *const i8,
-                    fontname,
+                warn!(
+                    "Font \"{}\" may be subject to embedding restrictions **\n",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 1i32
         } else {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Embedding of font \"%s\" disabled due to license restrictions\x00"
-                        as *const u8 as *const i8,
-                    fontname,
+                warn!(
+                    "Embedding of font \"{}\" disabled due to license restrictions",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 0i32
@@ -166,7 +161,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     if !os2.is_null() {
         pdf_add_dict(
             descriptor,
-            pdf_new_name(b"Ascent\x00" as *const u8 as *const i8),
+            "Ascent",
             pdf_new_number(
                 (1000.0f64 * (*os2).sTypoAscender as i32 as f64
                     / (*head).unitsPerEm as i32 as f64
@@ -178,7 +173,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         );
         pdf_add_dict(
             descriptor,
-            pdf_new_name(b"Descent\x00" as *const u8 as *const i8),
+            "Descent",
             pdf_new_number(
                 (1000.0f64 * (*os2).sTypoDescender as i32 as f64
                     / (*head).unitsPerEm as i32 as f64
@@ -194,15 +189,11 @@ pub unsafe extern "C" fn tt_get_fontdesc(
                 * ((*os2).usWeightClass as i32 as f64 / 65.0f64)
                 + 50i32 as f64) as i32
         } /* arbitrary */
-        pdf_add_dict(
-            descriptor,
-            pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
-            pdf_new_number(stemv as f64),
-        );
+        pdf_add_dict(descriptor, "StemV", pdf_new_number(stemv as f64));
         if (*os2).version as i32 == 0x2i32 {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"CapHeight\x00" as *const u8 as *const i8),
+                "CapHeight",
                 pdf_new_number(
                     (1000.0f64 * (*os2).sCapHeight as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -215,7 +206,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             /* optional */
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"XHeight\x00" as *const u8 as *const i8),
+                "XHeight",
                 pdf_new_number(
                     (1000.0f64 * (*os2).sxHeight as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -228,7 +219,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         } else {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"CapHeight\x00" as *const u8 as *const i8),
+                "CapHeight",
                 pdf_new_number(
                     (1000.0f64 * (*os2).sTypoAscender as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -243,7 +234,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         if (*os2).xAvgCharWidth as i32 != 0i32 {
             pdf_add_dict(
                 descriptor,
-                pdf_new_name(b"AvgWidth\x00" as *const u8 as *const i8),
+                "AvgWidth",
                 pdf_new_number(
                     (1000.0f64 * (*os2).xAvgCharWidth as i32 as f64
                         / (*head).unitsPerEm as i32 as f64
@@ -301,15 +292,11 @@ pub unsafe extern "C" fn tt_get_fontdesc(
                 * 1i32 as f64,
         ),
     );
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontBBox\x00" as *const u8 as *const i8),
-        bbox,
-    );
+    pdf_add_dict(descriptor, "FontBBox", bbox);
     /* post */
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"ItalicAngle\x00" as *const u8 as *const i8),
+        "ItalicAngle",
         pdf_new_number(
             ((*post).italicAngle as i64 % 0x10000) as f64 / 0x10000i64 as f64
                 + ((*post).italicAngle as i64 / 0x10000) as f64
@@ -338,11 +325,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             flag |= 1i32 << 0i32
         }
     }
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"Flags\x00" as *const u8 as *const i8),
-        pdf_new_number(flag as f64),
-    );
+    pdf_add_dict(descriptor, "Flags", pdf_new_number(flag as f64));
     /* insert panose if you want */
     if type_0 == 0i32 && !os2.is_null() {
         /* cid-keyed font - add panose */
@@ -357,14 +340,10 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         styledict = pdf_new_dict();
         pdf_add_dict(
             styledict,
-            pdf_new_name(b"Panose\x00" as *const u8 as *const i8),
+            "Panose",
             pdf_new_string(panose.as_mut_ptr() as *const libc::c_void, 12i32 as size_t),
         );
-        pdf_add_dict(
-            descriptor,
-            pdf_new_name(b"Style\x00" as *const u8 as *const i8),
-            styledict,
-        );
+        pdf_add_dict(descriptor, "Style", styledict);
     }
     free(head as *mut libc::c_void);
     free(os2 as *mut libc::c_void);

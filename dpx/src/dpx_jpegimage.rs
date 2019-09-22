@@ -223,21 +223,13 @@ pub unsafe extern "C" fn jpeg_include_image(
     /* JPEG image use DCTDecode. */
     stream = pdf_new_stream(0i32);
     stream_dict = pdf_stream_dict(stream);
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Filter\x00" as *const u8 as *const i8),
-        pdf_new_name(b"DCTDecode\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(stream_dict, "Filter", pdf_new_name("DCTDecode"));
     /* XMP Metadata */
     if pdf_get_version() >= 4_u32 {
         if j_info.flags & 1i32 << 4i32 != 0 {
             let mut XMP_stream: *mut pdf_obj = 0 as *mut pdf_obj;
             XMP_stream = JPEG_get_XMP(&mut j_info);
-            pdf_add_dict(
-                stream_dict,
-                pdf_new_name(b"Metadata\x00" as *const u8 as *const i8),
-                pdf_ref_obj(XMP_stream),
-            );
+            pdf_add_dict(stream_dict, "Metadata", pdf_ref_obj(XMP_stream));
             pdf_release_obj(XMP_stream);
         }
     }
@@ -273,11 +265,7 @@ pub unsafe extern "C" fn jpeg_include_image(
                         pdf_stream_length(icc_stream),
                     );
                     if !intent.is_null() {
-                        pdf_add_dict(
-                            stream_dict,
-                            pdf_new_name(b"Intent\x00" as *const u8 as *const i8),
-                            intent,
-                        );
+                        pdf_add_dict(stream_dict, "Intent", intent);
                     }
                 }
             }
@@ -287,17 +275,13 @@ pub unsafe extern "C" fn jpeg_include_image(
     /* No ICC or invalid ICC profile. */
     if colorspace.is_null() {
         match colortype {
-            -1 => colorspace = pdf_new_name(b"DeviceGray\x00" as *const u8 as *const i8),
-            -3 => colorspace = pdf_new_name(b"DeviceRGB\x00" as *const u8 as *const i8),
-            -4 => colorspace = pdf_new_name(b"DeviceCMYK\x00" as *const u8 as *const i8),
+            -1 => colorspace = pdf_new_name("DeviceGray"),
+            -3 => colorspace = pdf_new_name("DeviceRGB"),
+            -4 => colorspace = pdf_new_name("DeviceCMYK"),
             _ => {}
         }
     }
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"ColorSpace\x00" as *const u8 as *const i8),
-        colorspace,
-    );
+    pdf_add_dict(stream_dict, "ColorSpace", colorspace);
     if j_info.flags & 1i32 << 1i32 != 0 && j_info.num_components as i32 == 4i32 {
         let mut decode: *mut pdf_obj = 0 as *mut pdf_obj;
         let mut i: u32 = 0;
@@ -309,11 +293,7 @@ pub unsafe extern "C" fn jpeg_include_image(
             pdf_add_array(decode, pdf_new_number(0.0f64));
             i = i.wrapping_add(1)
         }
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"Decode\x00" as *const u8 as *const i8),
-            decode,
-        );
+        pdf_add_dict(stream_dict, "Decode", decode);
     }
     /* Copy file */
     JPEG_copy_stream(&mut j_info, stream, handle);
@@ -462,16 +442,8 @@ unsafe extern "C" fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     /* I don't know if XMP Metadata should be compressed here.*/
     XMP_stream = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(XMP_stream);
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Metadata\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"XML\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(stream_dict, "Type", pdf_new_name("Metadata"));
+    pdf_add_dict(stream_dict, "Subtype", pdf_new_name("XML"));
     i = 0i32;
     while i < (*j_info).num_appn {
         /* Not sure for the case of multiple segments */

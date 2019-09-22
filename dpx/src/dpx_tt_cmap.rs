@@ -33,7 +33,9 @@ use super::dpx_sfnt::{
     dfont_open, sfnt_close, sfnt_find_table_pos, sfnt_locate_table, sfnt_open,
     sfnt_read_table_directory,
 };
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_agl::agl_get_unicodes;
 use super::dpx_cff::{
@@ -49,7 +51,6 @@ use super::dpx_cmap::{
 };
 use super::dpx_cmap_write::CMap_create_stream;
 use super::dpx_dpxfile::{dpx_open_dfont_file, dpx_open_opentype_file, dpx_open_truetype_file};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::new;
 use super::dpx_numbers::{
     tt_get_signed_pair, tt_get_unsigned_byte, tt_get_unsigned_pair, tt_get_unsigned_quad,
@@ -66,7 +67,6 @@ use super::dpx_unicode::UC_UTF16BE_encode_char;
 use crate::dpx_pdfobj::pdf_obj;
 use crate::mfree;
 use crate::{ttstub_input_close, ttstub_input_seek};
-use bridge::_tt_abort;
 use libc::{free, memcpy, memset, sprintf, strcpy, strlen};
 
 pub type __ssize_t = i64;
@@ -602,7 +602,7 @@ pub unsafe extern "C" fn tt_cmap_read(
         4 => (*cmap).map = read_cmap4(sfont, length) as *mut libc::c_void,
         6 => (*cmap).map = read_cmap6(sfont, length) as *mut libc::c_void,
         12 => {
-            /* dpx_warning("UCS-4 TrueType cmap table..."); */
+            /* warn!("UCS-4 TrueType cmap table..."); */
             (*cmap).map = read_cmap12(sfont, length) as *mut libc::c_void
         }
         _ => {
@@ -1035,12 +1035,10 @@ unsafe extern "C" fn handle_subst_glyphs(
                         }
                         if unicode_count == -1i32 {
                             if !name.is_null() {
-                                dpx_message(
-                                    b"No Unicode mapping available: GID=%u, name=%s\n\x00"
-                                        as *const u8
-                                        as *const i8,
-                                    gid as i32,
-                                    name,
+                                info!(
+                                    "No Unicode mapping available: GID={}, name={}\n",
+                                    gid,
+                                    CStr::from_ptr(name).display(),
                                 );
                             } else {
                                 info!("No Unicode mapping available: GID={}\n", gid);
@@ -1493,9 +1491,9 @@ pub unsafe extern "C" fn otf_create_ToUnicode_stream(
     }
     if verbose > 0i32 {
         info!("\n");
-        dpx_message(
-            b"otf_cmap>> Creating ToUnicode CMap for \"%s\"...\n\x00" as *const u8 as *const i8,
-            font_name,
+        info!(
+            "otf_cmap>> Creating ToUnicode CMap for \"{}\"...\n",
+            CStr::from_ptr(font_name).display()
         );
     }
     handle = dpx_open_truetype_file(font_name);
@@ -1514,9 +1512,9 @@ pub unsafe extern "C" fn otf_create_ToUnicode_stream(
         }
     }
     if sfont.is_null() {
-        _tt_abort(
-            b"Could not open OpenType/TrueType font file \"%s\"\x00" as *const u8 as *const i8,
-            font_name,
+        panic!(
+            "Could not open OpenType/TrueType font file \"{}\"",
+            CStr::from_ptr(font_name).display()
         );
     }
     match (*sfont).type_0 {
@@ -1715,10 +1713,9 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
         sfont = sfnt_open(handle as rust_input_handle_t)
     }
     if sfont.is_null() {
-        _tt_abort(
-            b"Could not open OpenType/TrueType/dfont font file \"%s\"\x00" as *const u8
-                as *const i8,
-            map_name,
+        panic!(
+            "Could not open OpenType/TrueType/dfont font file \"{}\"",
+            CStr::from_ptr(map_name).display()
         );
     }
     match (*sfont).type_0 {
@@ -1731,9 +1728,9 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
         1 | 4 => offset = 0_u32,
         256 => offset = (*sfont).offset,
         _ => {
-            _tt_abort(
-                b"Not a OpenType/TrueType/TTC font?: %s\x00" as *const u8 as *const i8,
-                map_name,
+            panic!(
+                "Not a OpenType/TrueType/TTC font?: {}",
+                CStr::from_ptr(map_name).display(),
             );
         }
     }
@@ -1834,14 +1831,13 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
     }
     if verbose > 0i32 {
         info!("\n");
-        dpx_message(
-            b"otf_cmap>> Unicode charmap for font=\"%s\" layout=\"%s\"\n\x00" as *const u8
-                as *const i8,
-            map_name,
+        info!(
+            "otf_cmap>> Unicode charmap for font=\"{}\" layout=\"{}\"\n",
+            CStr::from_ptr(map_name).display(),
             if !otl_tags.is_null() {
-                otl_tags
+                CStr::from_ptr(otl_tags).to_str().unwrap()
             } else {
-                b"none\x00" as *const u8 as *const i8
+                "none"
             },
         );
     }
@@ -1910,9 +1906,9 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
     if !otl_tags.is_null() {
         gsub_list = otl_gsub_new();
         if otl_gsub_add_feat_list(gsub_list, otl_tags, sfont) < 0i32 {
-            dpx_warning(
-                b"Reading GSUB feature table(s) failed for \"%s\"\x00" as *const u8 as *const i8,
-                otl_tags,
+            warn!(
+                "Reading GSUB feature table(s) failed for \"{}\"",
+                CStr::from_ptr(otl_tags).display(),
             );
         } else {
             otl_gsub_set_chain(gsub_list, otl_tags);

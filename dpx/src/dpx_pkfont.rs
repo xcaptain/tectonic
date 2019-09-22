@@ -30,8 +30,9 @@
 )]
 
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::new;
 use super::dpx_mfileio::work_buffer;
 use super::dpx_pdfdev::pdf_sprint_number;
@@ -44,10 +45,9 @@ use super::dpx_pdffont::{
 };
 use super::dpx_tfm::{tfm_get_design_size, tfm_open};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_new_array, pdf_new_dict, pdf_new_name,
-    pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_array, pdf_new_dict,
+    pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
 };
-use bridge::_tt_abort;
 use libc::{fclose, fgetc, fopen, fread, free, memset, sprintf};
 
 use crate::dpx_numbers::{
@@ -94,9 +94,9 @@ unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi
     }
     design_size = tfm_get_design_size(tfm_id);
     if design_size <= 0.0f64 {
-        dpx_warning(
-            b"DESGIN_SIZE <= 0.0? (TFM=\"%s\")\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "DESGIN_SIZE <= 0.0? (TFM=\"{}\")",
+            CStr::from_ptr(ident).display(),
         );
     } else {
         dpi =
@@ -141,11 +141,10 @@ pub unsafe extern "C" fn pdf_font_open_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_font_set_fontname(font, ident);
     if encoding_id >= 0i32 {
         pdf_encoding_used_by_type3(encoding_id);
-        dpx_warning(
-            b"PK font is found for font \"%s\" but non built-in encoding \"%s\" is specified.\x00"
-                as *const u8 as *const i8,
-            ident,
-            pdf_encoding_get_name(encoding_id),
+        warn!(
+            "PK font is found for font \"{}\" but non built-in encoding \"{}\" is specified.",
+            CStr::from_ptr(ident).display(),
+            CStr::from_ptr(pdf_encoding_get_name(encoding_id)).display(),
         );
         warn!(">> Assuming this is for glyph name assignment.");
     }
@@ -649,9 +648,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     dpi = truedpi(ident, point_size, base_dpi);
     fp = dpx_open_pk_font_at(ident, dpi);
     if fp.is_null() {
-        _tt_abort(
-            b"Could not find/open PK font file: %s (at %udpi)\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not find/open PK font file: {} (at {}dpi)",
+            CStr::from_ptr(ident).display(),
             dpi,
         );
     }
@@ -690,10 +689,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 panic!("Error in reading PK character header.");
             } else {
                 if charavail[(pkh.chrcode & 0xffi32) as usize] != 0 {
-                    dpx_warning(
-                        b"More than two bitmap image for single glyph?: font=\"%s\" code=0x%02x\x00"
-                            as *const u8 as *const i8,
-                        ident,
+                    warn!(
+                        "More than two bitmap image for single glyph?: font=\"{}\" code=0x{:02x}",
+                        CStr::from_ptr(ident).display(),
                         pkh.chrcode,
                     );
                 }
@@ -739,11 +737,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 ) as *mut u8;
                 bytesread = fread(pkt_ptr as *mut libc::c_void, 1, pkh.pkt_len as _, fp) as _;
                 if bytesread != pkh.pkt_len as u64 {
-                    _tt_abort(
-                        b"Only %zu bytes PK packet read. (expected %d bytes)\x00" as *const u8
-                            as *const i8,
-                        bytesread,
-                        pkh.pkt_len,
+                    panic!(
+                        "Only {} bytes PK packet read. (expected {} bytes)",
+                        bytesread, pkh.pkt_len,
                     );
                 }
                 charproc =
@@ -755,11 +751,10 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 if encoding_id >= 0i32 && !enc_vec.is_null() {
                     charname = *enc_vec.offset((pkh.chrcode & 0xffi32) as isize);
                     if charname.is_null() {
-                        dpx_warning(
-                            b"\".notdef\" glyph used in font (code=0x%02x): %s\x00" as *const u8
-                                as *const i8,
+                        warn!(
+                            "\".notdef\" glyph used in font (code=0x{:02x}): {}",
                             pkh.chrcode,
-                            ident,
+                            CStr::from_ptr(ident).display(),
                         );
                         charname = work_buffer.as_mut_ptr();
                         sprintf(
@@ -777,7 +772,11 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                         pkh.chrcode as u8 as i32,
                     );
                 }
-                pdf_add_dict(charprocs, pdf_new_name(charname), pdf_ref_obj(charproc));
+                pdf_add_dict(
+                    charprocs,
+                    CStr::from_ptr(charname).to_str().unwrap(),
+                    pdf_ref_obj(charproc),
+                );
                 pdf_release_obj(charproc);
             }
             charavail[(pkh.chrcode & 0xffi32) as usize] = 1_i8
@@ -806,21 +805,17 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     code = 0i32;
     while code < 256i32 {
         if *usedchars.offset(code as isize) as i32 != 0 && charavail[code as usize] == 0 {
-            dpx_warning(
-                b"Missing glyph code=0x%02x in PK font \"%s\".\x00" as *const u8 as *const i8,
+            warn!(
+                "Missing glyph code=0x{:02x} in PK font \"{}\".",
                 code,
-                ident,
+                CStr::from_ptr(ident).display(),
             );
         }
         code += 1
     }
     /* Now actually fill fontdict. */
     fontdict = pdf_font_get_resource(font);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"CharProcs\x00" as *const u8 as *const i8),
-        pdf_ref_obj(charprocs),
-    );
+    pdf_add_dict(fontdict, "CharProcs", pdf_ref_obj(charprocs));
     pdf_release_obj(charprocs);
     /*
      * Resources:
@@ -832,24 +827,10 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
      */
     procset = pdf_new_dict();
     tmp_array = pdf_new_array();
-    pdf_add_array(
-        tmp_array,
-        pdf_new_name(b"PDF\x00" as *const u8 as *const i8),
-    );
-    pdf_add_array(
-        tmp_array,
-        pdf_new_name(b"ImageB\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        procset,
-        pdf_new_name(b"ProcSet\x00" as *const u8 as *const i8),
-        tmp_array,
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Resources\x00" as *const u8 as *const i8),
-        procset,
-    );
+    pdf_add_array(tmp_array, pdf_new_name("PDF"));
+    pdf_add_array(tmp_array, pdf_new_name("ImageB"));
+    pdf_add_dict(procset, "ProcSet", tmp_array);
+    pdf_add_dict(fontdict, "Resources", procset);
     /* Encoding */
     tmp_array = pdf_new_array();
     prev = -2i32;
@@ -887,7 +868,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                     code as u8 as i32,
                 );
             }
-            pdf_add_array(tmp_array, pdf_new_name(charname_0));
+            pdf_add_array(tmp_array, pdf_copy_name(charname_0));
             prev = code
         }
         code += 1
@@ -902,21 +883,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     if encoding_id < 0i32 || enc_vec.is_null() {
         /* ENABLE_GLYPHENC */
         encoding = pdf_new_dict();
-        pdf_add_dict(
-            encoding,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"Encoding\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            encoding,
-            pdf_new_name(b"Differences\x00" as *const u8 as *const i8),
-            tmp_array,
-        );
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"Encoding\x00" as *const u8 as *const i8),
-            pdf_ref_obj(encoding),
-        );
+        pdf_add_dict(encoding, "Type", pdf_new_name("Encoding"));
+        pdf_add_dict(encoding, "Differences", tmp_array);
+        pdf_add_dict(fontdict, "Encoding", pdf_ref_obj(encoding));
         pdf_release_obj(encoding);
     } else {
         pdf_release_obj(tmp_array);
@@ -928,11 +897,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_add_array(tmp_array, pdf_new_number(bbox.lly));
     pdf_add_array(tmp_array, pdf_new_number(bbox.urx));
     pdf_add_array(tmp_array, pdf_new_number(bbox.ury));
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"FontBBox\x00" as *const u8 as *const i8),
-        tmp_array,
-    );
+    pdf_add_dict(fontdict, "FontBBox", tmp_array);
     /* Widths:
      *  Indirect reference preffered. (See PDF Reference)
      */
@@ -946,11 +911,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
         }
         code += 1
     }
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Widths\x00" as *const u8 as *const i8),
-        pdf_ref_obj(tmp_array),
-    );
+    pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     pdf_release_obj(tmp_array);
     /* FontMatrix */
     tmp_array = pdf_new_array();
@@ -960,20 +921,8 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_add_array(tmp_array, pdf_new_number(0.001f64 * pix2charu));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"FontMatrix\x00" as *const u8 as *const i8),
-        tmp_array,
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"FirstChar\x00" as *const u8 as *const i8),
-        pdf_new_number(firstchar as f64),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"LastChar\x00" as *const u8 as *const i8),
-        pdf_new_number(lastchar as f64),
-    );
+    pdf_add_dict(fontdict, "FontMatrix", tmp_array);
+    pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
+    pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
     0i32
 }

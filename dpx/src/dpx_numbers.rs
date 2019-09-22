@@ -30,8 +30,9 @@
 )]
 
 use crate::ttstub_input_getc;
-use bridge::_tt_abort;
+use crate::DisplayExt;
 use libc::{fgetc, FILE};
+use std::ffi::CStr;
 
 pub type __off_t = i64;
 pub type __off64_t = i64;
@@ -177,10 +178,10 @@ pub unsafe extern "C" fn get_positive_quad(
 ) -> u32 {
     let mut val: i32 = get_signed_quad(file);
     if val < 0i32 {
-        _tt_abort(
-            b"Bad %s: negative %s: %d\x00" as *const u8 as *const i8,
-            type_0,
-            name,
+        panic!(
+            "Bad {}: negative {}: {}",
+            CStr::from_ptr(type_0).display(),
+            CStr::from_ptr(name).display(),
             val,
         );
     }
@@ -365,10 +366,10 @@ pub unsafe extern "C" fn tt_get_positive_quad(
 ) -> u32 {
     let mut val: i32 = tt_get_signed_quad(handle);
     if val < 0i32 {
-        _tt_abort(
-            b"Bad %s: negative %s: %d\x00" as *const u8 as *const i8,
-            type_0,
-            name,
+        panic!(
+            "Bad {}: negative {}: {}",
+            CStr::from_ptr(type_0).display(),
+            CStr::from_ptr(name).display(),
             val,
         );
     }

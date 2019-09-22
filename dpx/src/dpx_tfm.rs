@@ -35,13 +35,13 @@ use super::dpx_numbers::{
 };
 use crate::mfree;
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
-use super::dpx_error::dpx_message;
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::tt_skip_bytes;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_seek};
-use bridge::_tt_abort;
 use libc::{free, strcat, strcmp, strcpy, strlen, strrchr};
 
 pub type __off_t = i64;
@@ -295,12 +295,12 @@ unsafe extern "C" fn tfm_check_size(mut tfm: *mut tfm_font, mut tfm_file_size: o
     /* Removed the warning message caused by EC TFM metric files.
      *
      if (tfm->wlenfile != tfm_file_size / 4) {
-     dpx_warning("TFM file size is %ld bytes but it says it is %ld bytes!",
+     warn!("TFM file size is {} bytes but it says it is {} bytes!",
      tfm_file_size, tfm->wlenfile * 4);
      if (tfm_file_size > tfm->wlenfile * 4) {
-     dpx_warning("Proceeding nervously...");
+     warn!("Proceeding nervously...");
      } else {
-     _tt_abort("Can't proceed...");
+     panic!("Can't proceed...");
      }
      }
     */
@@ -894,18 +894,18 @@ pub unsafe extern "C" fn tfm_open(mut tfm_name: *const i8, mut must_exist: i32) 
     free(ofm_name as *mut libc::c_void);
     if tfm_handle.is_null() {
         if must_exist != 0 {
-            _tt_abort(
-                b"Unable to find TFM file \"%s\".\x00" as *const u8 as *const i8,
-                tfm_name,
+            panic!(
+                "Unable to find TFM file \"{}\".",
+                CStr::from_ptr(tfm_name).display()
             );
         }
         return -1i32;
     }
     if verbose != 0 {
         if format == 1i32 {
-            dpx_message(b"(TFM:%s\x00" as *const u8 as *const i8, tfm_name);
+            info!("(TFM:{}", CStr::from_ptr(tfm_name).display());
         } else if format == 2i32 {
-            dpx_message(b"(OFM:%s\x00" as *const u8 as *const i8, tfm_name);
+            info!("(OFM:{}", CStr::from_ptr(tfm_name).display());
         }
     }
     tfm_file_size = ttstub_input_get_size(tfm_handle) as off_t;

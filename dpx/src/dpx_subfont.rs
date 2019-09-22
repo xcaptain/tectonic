@@ -30,9 +30,11 @@
 )]
 
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::tt_mfgets;
 use crate::{ttstub_input_close, ttstub_input_open, ttstub_input_seek};
@@ -276,9 +278,9 @@ unsafe extern "C" fn scan_sfd_file(
     let mut lpos: i32 = 0i32;
     assert!(!sfd.is_null() && !handle.is_null());
     if verbose > 3i32 {
-        dpx_message(
-            b"\nsubfont>> Scanning SFD file \"%s\"...\n\x00" as *const u8 as *const i8,
-            (*sfd).ident,
+        info!(
+            "\nsubfont>> Scanning SFD file \"{}\"...\n",
+            CStr::from_ptr((*sfd).ident).display()
         );
     }
     ttstub_input_seek(handle as rust_input_handle_t, 0i32 as ssize_t, 0i32);
@@ -316,9 +318,9 @@ unsafe extern "C" fn scan_sfd_file(
             ) as *mut *mut i8
         }
         if verbose > 3i32 {
-            dpx_message(
-                b"subfont>>   id=\"%s\" at line=\"%d\"\n\x00" as *const u8 as *const i8,
-                id,
+            info!(
+                "subfont>>   id=\"{}\" at line=\"{}\"\n",
+                CStr::from_ptr(id).display(),
                 lpos,
             );
         }
@@ -335,10 +337,10 @@ unsafe extern "C" fn scan_sfd_file(
         /* Not loaded yet. We do lazy loading of map definitions. */
     }
     if verbose > 3i32 {
-        dpx_message(
-            b"subfont>> %d entries found in SFD file \"%s\".\n\x00" as *const u8 as *const i8,
+        info!(
+            "subfont>> {} entries found in SFD file \"{}\".\n",
             (*sfd).num_subfonts,
-            (*sfd).ident,
+            CStr::from_ptr((*sfd).ident).display(),
         );
     }
     0i32
@@ -390,9 +392,9 @@ unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
             num_sfd_files = num_sfd_files + 1;
             id = fresh2
         } else {
-            dpx_warning(
-                b"Error occured while reading SFD file \"%s\"\x00" as *const u8 as *const i8,
-                sfd_name,
+            warn!(
+                "Error occured while reading SFD file \"{}\"",
+                CStr::from_ptr(sfd_name).display(),
             );
             clean_sfd_file_(sfd);
             id = -1i32
@@ -448,10 +450,10 @@ pub unsafe extern "C" fn sfd_load_record(
         i += 1
     }
     if i == (*sfd).num_subfonts {
-        dpx_warning(
-            b"Subfont id=\"%s\" not exist in SFD file \"%s\"...\x00" as *const u8 as *const i8,
-            subfont_id,
-            (*sfd).ident,
+        warn!(
+            "Subfont id=\"{}\" not exist in SFD file \"{}\"...",
+            CStr::from_ptr(subfont_id).display(),
+            CStr::from_ptr((*sfd).ident).display(),
         );
         return -1i32;
     } else {
@@ -460,17 +462,17 @@ pub unsafe extern "C" fn sfd_load_record(
         }
     }
     if verbose > 3i32 {
-        dpx_message(
-            b"\nsubfont>> Loading SFD mapping table for <%s,%s>...\x00" as *const u8 as *const i8,
-            (*sfd).ident,
-            subfont_id,
+        info!(
+            "\nsubfont>> Loading SFD mapping table for <{},{}>...",
+            CStr::from_ptr((*sfd).ident).display(),
+            CStr::from_ptr(subfont_id).display(),
         );
     }
     /* reopen */
     handle = ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
     if handle.is_null() {
         return -1i32;
-        /* _tt_abort("Could not open SFD file \"%s\"", sfd_name); */
+        /* panic!("Could not open SFD file \"{}\"", sfd_name); */
     }
     loop
     /* Seek to record for 'sub_name'. */
@@ -516,11 +518,10 @@ pub unsafe extern "C" fn sfd_load_record(
             }
             error = read_sfd_record(&mut *sfd_record.offset(num_sfd_records as isize), p);
             if error != 0 {
-                dpx_warning(
-                    b"Error occured while reading SFD file: file=\"%s\" subfont_id=\"%s\"\x00"
-                        as *const u8 as *const i8,
-                    (*sfd).ident,
-                    subfont_id,
+                warn!(
+                    "Error occured while reading SFD file: file=\"{}\" subfont_id=\"{}\"",
+                    CStr::from_ptr((*sfd).ident).display(),
+                    CStr::from_ptr(subfont_id).display(),
                 );
             } else {
                 let fresh3 = num_sfd_records;
@@ -530,11 +531,10 @@ pub unsafe extern "C" fn sfd_load_record(
         }
     }
     if rec_id < 0i32 {
-        dpx_warning(
-            b"Failed to load subfont mapping table for SFD=\"%s\" subfont_id=\"%s\"\x00"
-                as *const u8 as *const i8,
-            (*sfd).ident,
-            subfont_id,
+        warn!(
+            "Failed to load subfont mapping table for SFD=\"{}\" subfont_id=\"{}\"",
+            CStr::from_ptr((*sfd).ident).display(),
+            CStr::from_ptr(subfont_id).display(),
         );
     }
     *(*sfd).rec_id.offset(i as isize) = rec_id;

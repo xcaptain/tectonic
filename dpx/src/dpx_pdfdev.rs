@@ -29,12 +29,13 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cff::cff_charsets_lookup_cid;
 use super::dpx_cmap::{CMap_cache_get, CMap_decode};
 use super::dpx_dvi::dvi_is_tracking_boxes;
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_fontmap::pdf_lookup_fontmap_record;
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::work_buffer;
@@ -1031,7 +1032,7 @@ unsafe extern "C" fn dev_set_font(mut font_id: i32) -> i32 {
     }
     if (*real_font).used_on_this_page == 0 {
         pdf_doc_add_page_resource(
-            b"Font\x00" as *const u8 as *const i8,
+            "Font",
             (*real_font).short_name.as_mut_ptr(),
             pdf_link_obj((*real_font).resource),
         );
@@ -1171,8 +1172,8 @@ unsafe extern "C" fn handle_multibyte_string(
                         || *p.offset(i.wrapping_add(2i32 as u64) as isize) as i32 & 0xfci32
                             != 0xdci32
                     {
-                        dpx_warning(
-                            b"Invalid surrogate p[%zu]=%02X...\x00" as *const u8 as *const i8,
+                        warn!(
+                            "Invalid surrogate p[{}]={:02X}...",
                             i,
                             *p.offset(i as isize) as i32,
                         );
@@ -1239,10 +1240,7 @@ unsafe extern "C" fn handle_multibyte_string(
             &mut outbytesleft,
         );
         if inbytesleft != 0i32 as u64 {
-            dpx_warning(
-                b"CMap conversion failed. (%zu bytes remains)\x00" as *const u8 as *const i8,
-                inbytesleft,
-            );
+            warn!("CMap conversion failed. ({} bytes remains)", inbytesleft,);
             return -1i32;
         }
         length = (4096i32 as u64).wrapping_sub(outbytesleft);
@@ -1607,13 +1605,13 @@ unsafe extern "C" fn print_fontmap(mut font_name: *const i8, mut mrec: *mut font
         return;
     }
     info!("\n");
-    dpx_message(
-        b"fontmap: %s -> %s\x00" as *const u8 as *const i8,
-        font_name,
-        (*mrec).font_name,
+    info!(
+        "fontmap: {} -> {}",
+        CStr::from_ptr(font_name).display(),
+        CStr::from_ptr((*mrec).font_name).display(),
     );
     if !(*mrec).enc_name.is_null() {
-        dpx_message(b"(%s)\x00" as *const u8 as *const i8, (*mrec).enc_name);
+        info!("({})", CStr::from_ptr((*mrec).enc_name).display());
     }
     if (*mrec).opt.extend != 1.0f64 {
         info!("[extend:{}]", (*mrec).opt.extend);
@@ -1631,10 +1629,7 @@ unsafe extern "C" fn print_fontmap(mut font_name: *const i8, mut mrec: *mut font
         info!("[map:<{:02x}>]", (*mrec).opt.mapc);
     }
     if !(*mrec).opt.charcoll.is_null() {
-        dpx_message(
-            b"[csi:%s]\x00" as *const u8 as *const i8,
-            (*mrec).opt.charcoll,
-        );
+        info!("[csi:{}]", CStr::from_ptr((*mrec).opt.charcoll).display());
     }
     if (*mrec).opt.index != 0 {
         info!("[index:{}]", (*mrec).opt.index);
@@ -2129,11 +2124,7 @@ pub unsafe extern "C" fn pdf_dev_put_image(
     );
     pdf_doc_add_page_content(work_buffer.as_mut_ptr(), len as u32);
     pdf_dev_grestore();
-    pdf_doc_add_page_resource(
-        b"XObject\x00" as *const u8 as *const i8,
-        res_name,
-        pdf_ximage_get_reference(id),
-    );
+    pdf_doc_add_page_resource("XObject", res_name, pdf_ximage_get_reference(id));
     if dvi_is_tracking_boxes() {
         let mut P = pdf_tmatrix::new();
         let mut i: u32 = 0;

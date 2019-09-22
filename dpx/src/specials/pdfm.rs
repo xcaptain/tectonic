@@ -42,7 +42,6 @@ use crate::dpx_cmap::{CMap_cache_find, CMap_cache_get, CMap_decode};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_dpxutil::{ht_append_table, ht_clear_table, ht_init_table, ht_lookup_table};
 use crate::dpx_dvipdfmx::is_xdv;
-use crate::dpx_error::dpx_warning;
 use crate::dpx_fontmap::{
     is_pdfm_mapline, pdf_append_fontmap_record, pdf_clear_fontmap_record, pdf_init_fontmap_record,
     pdf_insert_fontmap_record, pdf_load_fontmap_file, pdf_read_fontmap_line,
@@ -69,9 +68,9 @@ use crate::dpx_pdfdoc::{
 };
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_grestore, pdf_dev_gsave, pdf_dev_transform};
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_file, pdf_foreach_dict,
-    pdf_get_array, pdf_link_obj, pdf_lookup_dict, pdf_merge_dict, pdf_name_value, pdf_new_array,
-    pdf_new_dict, pdf_new_name, pdf_new_stream, pdf_number_value, pdf_obj, pdf_obj_typeof,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_copy_name, pdf_file,
+    pdf_foreach_dict, pdf_get_array, pdf_link_obj, pdf_lookup_dict, pdf_merge_dict, pdf_name_value,
+    pdf_new_array, pdf_new_dict, pdf_new_stream, pdf_number_value, pdf_obj, pdf_obj_typeof,
     pdf_release_obj, pdf_remove_dict, pdf_set_string, pdf_stream_dict, pdf_string_length,
     pdf_string_value, PdfObjType,
 };
@@ -234,7 +233,7 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     while !default_taintkeys[i as usize].is_null() {
         pdf_add_array(
             (*sd).cd.taintkeys,
-            pdf_new_name(default_taintkeys[i as usize]),
+            pdf_copy_name(default_taintkeys[i as usize]),
         );
         i += 1
     }
@@ -294,16 +293,12 @@ unsafe extern "C" fn safeputresdent(
     mut vp: *mut pdf_obj,
     mut dp: *mut libc::c_void,
 ) -> i32 {
-    let mut key: *mut i8 = 0 as *mut i8;
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    key = pdf_name_value(kp);
-    if !pdf_lookup_dict(dp as *mut pdf_obj, key).is_null() {
-        dpx_warning(
-            b"Object \"%s\" already defined in dict! (ignored)\x00" as *const u8 as *const i8,
-            key,
-        );
+    let key = pdf_name_value(&*kp).to_str().unwrap();
+    if pdf_lookup_dict(dp as *mut pdf_obj, key).is_some() {
+        warn!("Object \"{}\" already defined in dict! (ignored)", key);
     } else {
-        pdf_add_dict(dp as *mut pdf_obj, pdf_link_obj(kp), pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
     }
     0i32
 }
@@ -313,14 +308,13 @@ unsafe extern "C" fn safeputresdict(
     mut dp: *mut libc::c_void,
 ) -> i32 {
     let mut key: *mut i8 = 0 as *mut i8;
-    let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    key = pdf_name_value(kp);
-    dict = pdf_lookup_dict(dp as *mut pdf_obj, key);
-    if pdf_obj_typeof(vp) == PdfObjType::INDIRECT {
-        pdf_add_dict(dp as *mut pdf_obj, pdf_new_name(key), pdf_link_obj(vp));
+    let key = pdf_name_value(&*kp).to_str().unwrap();
+    let dict = pdf_lookup_dict(dp as *mut pdf_obj, key);
+    if (*vp).is_indirect() {
+        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
     } else if pdf_obj_typeof(vp) == PdfObjType::DICT {
-        if !dict.is_null() {
+        if let Some(dict) = dict {
             pdf_foreach_dict(
                 vp,
                 Some(
@@ -334,12 +328,11 @@ unsafe extern "C" fn safeputresdict(
                 dict as *mut libc::c_void,
             );
         } else {
-            pdf_add_dict(dp as *mut pdf_obj, pdf_new_name(key), pdf_link_obj(vp));
+            pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
         }
     } else {
-        dpx_warning(
-            b"Invalid type (not DICT) for page/form resource dict entry: key=\"%s\"\x00"
-                as *const u8 as *const i8,
+        warn!(
+            "Invalid type (not DICT) for page/form resource dict entry: key=\"{}\"",
             key,
         );
         return -1i32;
@@ -581,7 +574,7 @@ unsafe extern "C" fn needreencode(
     while i < pdf_array_length((*cd).taintkeys) {
         tk = pdf_get_array((*cd).taintkeys, i as i32);
         assert!(!tk.is_null() && pdf_obj_typeof(tk) == PdfObjType::NAME);
-        if streq_ptr(pdf_name_value(kp), pdf_name_value(tk)) {
+        if pdf_name_value(&*kp) == pdf_name_value(&*tk) {
             r = 1i32;
             break;
         } else {
@@ -1328,7 +1321,7 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
                     return -1i32;
                 } else {
                     if pdf_doc_add_names(
-                        pdf_name_value(category),
+                        pdf_name_value(&*category).as_ptr() as *mut i8,
                         pdf_string_value(key),
                         pdf_string_length(key) as i32,
                         pdf_link_obj(value),
@@ -1359,7 +1352,7 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
                 return -1i32;
             }
             if pdf_doc_add_names(
-                pdf_name_value(category),
+                pdf_name_value(&*category).as_ptr() as *mut i8,
                 pdf_string_value(key),
                 pdf_string_length(key) as i32,
                 value,
@@ -1414,8 +1407,6 @@ unsafe extern "C" fn spc_handler_pdfm_docview(
     let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
     let mut catalog: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut pref_old: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut pref_add: *mut pdf_obj = 0 as *mut pdf_obj;
     dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if dict.is_null() {
         spc_warn(
@@ -1426,11 +1417,11 @@ unsafe extern "C" fn spc_handler_pdfm_docview(
     }
     catalog = pdf_doc_get_dictionary(b"Catalog\x00" as *const u8 as *const i8);
     /* Avoid overriding whole ViewerPreferences */
-    pref_old = pdf_lookup_dict(catalog, b"ViewerPreferences\x00" as *const u8 as *const i8); /* Close all? */
-    pref_add = pdf_lookup_dict(dict, b"ViewerPreferences\x00" as *const u8 as *const i8);
-    if !pref_old.is_null() && !pref_add.is_null() {
+    let pref_old = pdf_lookup_dict(catalog, "ViewerPreferences"); /* Close all? */
+    let pref_add = pdf_lookup_dict(dict, "ViewerPreferences");
+    if let (Some(pref_old), Some(pref_add)) = (pref_old, pref_add) {
         pdf_merge_dict(pref_old, pref_add);
-        pdf_remove_dict(dict, b"ViewerPreferences\x00" as *const u8 as *const i8);
+        pdf_remove_dict(dict, "ViewerPreferences");
     }
     pdf_merge_dict(catalog, dict);
     pdf_release_obj(dict);
@@ -1744,10 +1735,10 @@ unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
             free(ident as *mut libc::c_void);
             return -1i32;
         }
-        if !pdf_lookup_dict(tmp, b"Length\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(tmp, b"Length\x00" as *const u8 as *const i8);
-        } else if !pdf_lookup_dict(tmp, b"Filter\x00" as *const u8 as *const i8).is_null() {
-            pdf_remove_dict(tmp, b"Filter\x00" as *const u8 as *const i8);
+        if pdf_lookup_dict(tmp, "Length").is_some() {
+            pdf_remove_dict(tmp, "Length");
+        } else if pdf_lookup_dict(tmp, "Filter").is_some() {
+            pdf_remove_dict(tmp, "Filter");
         }
         pdf_merge_dict(stream_dict, tmp);
         pdf_release_obj(tmp);

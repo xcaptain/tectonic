@@ -42,14 +42,13 @@ use crate::dpx_pdfobj::{
     pdf_new_number, pdf_new_string, pdf_obj,
 };
 use crate::warn;
-use libc::{free, gmtime, localtime, memcpy, memset, srand, strcpy, strlen, time};
+use chrono::prelude::*;
+use libc::{free, memcpy, memset, srand, strcpy, strlen};
 use md5::{Digest, Md5};
 use rand::prelude::*;
 use sha2::{Sha256, Sha384, Sha512};
 
-pub type __time_t = i64;
 pub type size_t = u64;
-pub type time_t = __time_t;
 
 /* Encryption support
  *
@@ -126,14 +125,17 @@ pub unsafe extern "C" fn pdf_enc_set_verbose(mut level: i32) {
 }
 
 unsafe extern "C" fn pdf_enc_init(mut use_aes: i32, mut encrypt_metadata: i32) {
-    let mut current_time: time_t = 0;
     let p = &mut sec_data;
-    current_time = get_unique_time_if_given();
-    if current_time == -1 {
-        current_time = time(std::ptr::null_mut())
-    }
+    let current_time = match get_unique_time_if_given() {
+        Some(x) => x,
+        None => std::time::SystemTime::now(),
+    };
+    let seconds_since_epoch = current_time
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .unwrap_or_else(|x| x.duration())
+        .as_secs();
     // TODO: libc rand is not used in this module
-    srand(current_time as u32);
+    srand(seconds_since_epoch as _);
     p.setting.use_aes = use_aes;
     p.setting.encrypt_metadata = encrypt_metadata;
 }
@@ -142,23 +144,15 @@ pub unsafe fn pdf_enc_compute_id_string(dviname: Option<&[u8]>, mut pdfname: Opt
     let p = &mut sec_data;
     /* FIXME: This should be placed in main() or somewhere. */
     pdf_enc_init(1i32, 1i32);
-    let mut current_time = get_unique_time_if_given();
-    let bd_time = *(if current_time == -1 as time_t {
-        time(&mut current_time);
-        localtime(&mut current_time)
-    } else {
-        gmtime(&mut current_time)
-    });
+
+    let timeformat = "%Y%m%d%H%M%S";
+    let current_time = match get_unique_time_if_given() {
+        Some(x) => DateTime::<Utc>::from(x).format(timeformat),
+        None => Local::now().format(timeformat),
+    };
+
     let mut md5 = Md5::new();
-    md5.input(&format!(
-        "{:04}{:02}{:02}{:02}{:02}{:02}",
-        bd_time.tm_year + 1900,
-        bd_time.tm_mon + 1,
-        bd_time.tm_mday,
-        bd_time.tm_hour,
-        bd_time.tm_min,
-        bd_time.tm_sec,
-    ));
+    md5.input(&format!("{}", current_time));
     md5.input(&format!(
         "{}-{}, Copyright 2002-2015 by Jin-Hwan Cho, Matthias Franz, and Shunsaku Hirata",
         // TODO: Are these variables?
@@ -817,19 +811,11 @@ pub unsafe extern "C" fn pdf_encrypt_obj() -> *mut pdf_obj {
     let p = &mut sec_data;
     let mut doc_encrypt: *mut pdf_obj = 0 as *mut pdf_obj;
     doc_encrypt = pdf_new_dict();
+    pdf_add_dict(doc_encrypt, "Filter", pdf_new_name("Standard"));
+    pdf_add_dict(doc_encrypt, "V", pdf_new_number(p.V as f64));
     pdf_add_dict(
         doc_encrypt,
-        pdf_new_name(b"Filter\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Standard\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        doc_encrypt,
-        pdf_new_name(b"V\x00" as *const u8 as *const i8),
-        pdf_new_number(p.V as f64),
-    );
-    pdf_add_dict(
-        doc_encrypt,
-        pdf_new_name(b"Length\x00" as *const u8 as *const i8),
+        "Length",
         pdf_new_number((p.key_size * 8i32) as f64),
     );
     if p.V >= 4i32 {
@@ -839,89 +825,53 @@ pub unsafe extern "C" fn pdf_encrypt_obj() -> *mut pdf_obj {
         StdCF = pdf_new_dict();
         pdf_add_dict(
             StdCF,
-            pdf_new_name(b"CFM\x00" as *const u8 as *const i8),
-            pdf_new_name(if p.V == 4i32 {
-                b"AESV2\x00" as *const u8 as *const i8
-            } else {
-                b"AESV3\x00" as *const u8 as *const i8
-            }),
+            "CFM",
+            pdf_new_name(if p.V == 4i32 { "AESV2" } else { "AESV3" }),
         );
-        pdf_add_dict(
-            StdCF,
-            pdf_new_name(b"AuthEvent\x00" as *const u8 as *const i8),
-            pdf_new_name(b"DocOpen\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            StdCF,
-            pdf_new_name(b"Length\x00" as *const u8 as *const i8),
-            pdf_new_number(p.key_size as f64),
-        );
-        pdf_add_dict(
-            CF,
-            pdf_new_name(b"StdCF\x00" as *const u8 as *const i8),
-            StdCF,
-        );
-        pdf_add_dict(
-            doc_encrypt,
-            pdf_new_name(b"CF\x00" as *const u8 as *const i8),
-            CF,
-        );
-        pdf_add_dict(
-            doc_encrypt,
-            pdf_new_name(b"StmF\x00" as *const u8 as *const i8),
-            pdf_new_name(b"StdCF\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            doc_encrypt,
-            pdf_new_name(b"StrF\x00" as *const u8 as *const i8),
-            pdf_new_name(b"StdCF\x00" as *const u8 as *const i8),
-        );
+        pdf_add_dict(StdCF, "AuthEvent", pdf_new_name("DocOpen"));
+        pdf_add_dict(StdCF, "Length", pdf_new_number(p.key_size as f64));
+        pdf_add_dict(CF, "StdCF", StdCF);
+        pdf_add_dict(doc_encrypt, "CF", CF);
+        pdf_add_dict(doc_encrypt, "StmF", pdf_new_name("StdCF"));
+        pdf_add_dict(doc_encrypt, "StrF", pdf_new_name("StdCF"));
     }
-    pdf_add_dict(
-        doc_encrypt,
-        pdf_new_name(b"R\x00" as *const u8 as *const i8),
-        pdf_new_number(p.R as f64),
-    );
+    pdf_add_dict(doc_encrypt, "R", pdf_new_number(p.R as f64));
     if p.V < 5i32 {
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"O\x00" as *const u8 as *const i8),
+            "O",
             pdf_new_string(p.O.as_mut_ptr() as *const libc::c_void, 32i32 as size_t),
         );
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"U\x00" as *const u8 as *const i8),
+            "U",
             pdf_new_string(p.U.as_mut_ptr() as *const libc::c_void, 32i32 as size_t),
         );
     } else if p.V == 5i32 {
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"O\x00" as *const u8 as *const i8),
+            "O",
             pdf_new_string(p.O.as_mut_ptr() as *const libc::c_void, 48i32 as size_t),
         );
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"U\x00" as *const u8 as *const i8),
+            "U",
             pdf_new_string(p.U.as_mut_ptr() as *const libc::c_void, 48i32 as size_t),
         );
     }
-    pdf_add_dict(
-        doc_encrypt,
-        pdf_new_name(b"P\x00" as *const u8 as *const i8),
-        pdf_new_number(p.P as f64),
-    );
+    pdf_add_dict(doc_encrypt, "P", pdf_new_number(p.P as f64));
     if p.V == 5i32 {
         let mut perms: [u8; 16] = [0; 16];
         let mut cipher: *mut u8 = 0 as *mut u8;
         let mut cipher_len: size_t = 0i32 as size_t;
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"OE\x00" as *const u8 as *const i8),
+            "OE",
             pdf_new_string(p.OE.as_mut_ptr() as *const libc::c_void, 32i32 as size_t),
         );
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"UE\x00" as *const u8 as *const i8),
+            "UE",
             pdf_new_string(p.UE.as_mut_ptr() as *const libc::c_void, 32i32 as size_t),
         );
         perms[0] = (p.P & 0xffi32) as u8;
@@ -954,7 +904,7 @@ pub unsafe extern "C" fn pdf_encrypt_obj() -> *mut pdf_obj {
         );
         pdf_add_dict(
             doc_encrypt,
-            pdf_new_name(b"Perms\x00" as *const u8 as *const i8),
+            "Perms",
             pdf_new_string(cipher as *const libc::c_void, cipher_len),
         );
         free(cipher as *mut libc::c_void);
@@ -964,26 +914,14 @@ pub unsafe extern "C" fn pdf_encrypt_obj() -> *mut pdf_obj {
             pdf_doc_get_dictionary(b"Catalog\x00" as *const u8 as *const i8);
         let mut ext: *mut pdf_obj = pdf_new_dict();
         let mut adbe: *mut pdf_obj = pdf_new_dict();
+        pdf_add_dict(adbe, "BaseVersion", pdf_new_name("1.7"));
         pdf_add_dict(
             adbe,
-            pdf_new_name(b"BaseVersion\x00" as *const u8 as *const i8),
-            pdf_new_name(b"1.7\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            adbe,
-            pdf_new_name(b"ExtensionLevel\x00" as *const u8 as *const i8),
+            "ExtensionLevel",
             pdf_new_number((if p.R == 5i32 { 3i32 } else { 8i32 }) as f64),
         );
-        pdf_add_dict(
-            ext,
-            pdf_new_name(b"ADBE\x00" as *const u8 as *const i8),
-            adbe,
-        );
-        pdf_add_dict(
-            catalog,
-            pdf_new_name(b"Extensions\x00" as *const u8 as *const i8),
-            ext,
-        );
+        pdf_add_dict(ext, "ADBE", adbe);
+        pdf_add_dict(catalog, "Extensions", ext);
     }
     doc_encrypt
 }

@@ -29,6 +29,8 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+
 use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::sget_unsigned_pair;
@@ -697,10 +699,10 @@ pub unsafe extern "C" fn iccp_get_rendering_intent(
         | (*p.offset(66) as i32) << 8i32
         | *p.offset(67) as i32;
     match intent >> 16i32 & 0xffi32 {
-        2 => ri = pdf_new_name(b"Saturation\x00" as *const u8 as *const i8),
-        0 => ri = pdf_new_name(b"Perceptual\x00" as *const u8 as *const i8),
-        3 => ri = pdf_new_name(b"AbsoluteColorimetric\x00" as *const u8 as *const i8),
-        1 => ri = pdf_new_name(b"RelativeColorimetric\x00" as *const u8 as *const i8),
+        2 => ri = pdf_new_name("Saturation"),
+        0 => ri = pdf_new_name("Perceptual"),
+        3 => ri = pdf_new_name("AbsoluteColorimetric"),
+        1 => ri = pdf_new_name("RelativeColorimetric"),
         _ => {
             warn!(
                 "Invalid rendering intent type: {}",
@@ -1027,19 +1029,13 @@ unsafe extern "C" fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut 
     }
     info!("\n");
     if icch.creator == 0_u32 {
-        dpx_message(
-            b"pdf_color>> %s:\t(null)\n\x00" as *const u8 as *const i8,
-            b"Creator\x00" as *const u8 as *const i8,
-        );
+        info!("pdf_color>> {}:\t(null)\n", "Creator",);
     } else if libc::isprint((icch.creator >> 24i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator >> 16i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator >> 8i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator & 0xff_u32) as _) == 0
     {
-        dpx_message(
-            b"pdf_color>> %s:\t(invalid)\n\x00" as *const u8 as *const i8,
-            b"Creator\x00" as *const u8 as *const i8,
-        );
+        info!("pdf_color>> {}:\t(invalid)\n", "Creator",);
     } else {
         dpx_message(
             b"pdf_color>> %s:\t%c%c%c%c\n\x00" as *const u8 as *const i8,
@@ -1117,9 +1113,9 @@ pub unsafe extern "C" fn iccp_load_profile(
     iccp_init_iccHeader(&mut icch);
     if iccp_unpack_header(&mut icch, profile, proflen, 1i32) < 0i32 {
         /* check size */
-        dpx_warning(
-            b"Invalid ICC profile header in \"%s\"\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "Invalid ICC profile header in \"{}\"",
+            CStr::from_ptr(ident).display()
         );
         print_iccp_header(&mut icch, 0 as *mut u8);
         return -1i32;
@@ -1196,15 +1192,12 @@ pub unsafe extern "C" fn iccp_load_profile(
     }
     let resource = pdf_new_array();
     let stream = pdf_new_stream(1i32 << 0i32);
-    pdf_add_array(
-        resource,
-        pdf_new_name(b"ICCBased\x00" as *const u8 as *const i8),
-    );
+    pdf_add_array(resource, pdf_new_name("ICCBased"));
     pdf_add_array(resource, pdf_ref_obj(stream));
     let stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(
         stream_dict,
-        pdf_new_name(b"N\x00" as *const u8 as *const i8),
+        "N",
         pdf_new_number(get_num_components_iccbased(cdata) as f64),
     );
     pdf_add_stream(stream, profile, proflen);
@@ -1310,7 +1303,7 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
     (*colorspace).cdata = cdata;
     (*colorspace).resource = resource;
     if verbose != 0 {
-        dpx_message(b"(ColorSpace:%s\x00" as *const u8 as *const i8, ident);
+        info!("(ColorSpace:{}", CStr::from_ptr(ident).display());
         if verbose > 1i32 {
             match subtype {
                 4 => {

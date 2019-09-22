@@ -29,7 +29,6 @@
     unused_mut
 )]
 
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::new;
 use super::dpx_numbers::tt_get_unsigned_byte;
 use super::dpx_pdfximage::{pdf_ximage_init_image_info, pdf_ximage_set_image};
@@ -177,10 +176,7 @@ pub unsafe extern "C" fn bmp_include_image(
             && hdr.bit_count as i32 != 4i32
             && hdr.bit_count as i32 != 8i32
         {
-            dpx_warning(
-                b"Unsupported palette size: %hu\x00" as *const u8 as *const i8,
-                hdr.bit_count as i32,
-            );
+            warn!("Unsupported palette size: {}", hdr.bit_count as i32,);
             return -1i32;
         }
         num_palette = hdr
@@ -196,8 +192,8 @@ pub unsafe extern "C" fn bmp_include_image(
         info.bits_per_component = 8i32;
         info.num_components = 3i32
     } else {
-        dpx_warning(
-            b"Unkown/Unsupported BMP bitCount value: %hu\x00" as *const u8 as *const i8,
+        warn!(
+            "Unkown/Unsupported BMP bitCount value: {}",
             hdr.bit_count as i32,
         );
         return -1i32;
@@ -240,24 +236,14 @@ pub unsafe extern "C" fn bmp_include_image(
         );
         free(palette as *mut libc::c_void);
         colorspace = pdf_new_array();
-        pdf_add_array(
-            colorspace,
-            pdf_new_name(b"Indexed\x00" as *const u8 as *const i8),
-        );
-        pdf_add_array(
-            colorspace,
-            pdf_new_name(b"DeviceRGB\x00" as *const u8 as *const i8),
-        );
+        pdf_add_array(colorspace, pdf_new_name("Indexed"));
+        pdf_add_array(colorspace, pdf_new_name("DeviceRGB"));
         pdf_add_array(colorspace, pdf_new_number((num_palette - 1i32) as f64));
         pdf_add_array(colorspace, lookup);
     } else {
-        colorspace = pdf_new_name(b"DeviceRGB\x00" as *const u8 as *const i8)
+        colorspace = pdf_new_name("DeviceRGB")
     }
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"ColorSpace\x00" as *const u8 as *const i8),
-        colorspace,
-    );
+    pdf_add_dict(stream_dict, "ColorSpace", colorspace);
     /* Raster data of BMP is four-byte aligned. */
     let mut rowbytes: i32 = 0;
     let mut n: i32 = 0;

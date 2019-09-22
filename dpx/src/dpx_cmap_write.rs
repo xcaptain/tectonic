@@ -35,10 +35,9 @@ use super::dpx_cid::{CSI_IDENTITY, CSI_UNICODE};
 use super::dpx_cmap::{CMap_get_CIDSysInfo, CMap_is_valid};
 use super::dpx_mem::new;
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_add_stream, pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_stream,
-    pdf_new_string, pdf_obj, pdf_stream_dict,
+    pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_dict, pdf_new_name, pdf_new_number,
+    pdf_new_stream, pdf_new_string, pdf_obj, pdf_stream_dict,
 };
-use bridge::_tt_abort;
 use libc::{free, memcmp, memset, sprintf, strlen};
 
 pub type size_t = u64;
@@ -228,10 +227,7 @@ unsafe extern "C" fn write_map(
         if count >= 100i32 as u64 || (*wbuf).curptr >= (*wbuf).limptr {
             let mut fmt_buf: [i8; 32] = [0; 32];
             if count > 100i32 as u64 {
-                _tt_abort(
-                    b"Unexpected error....: %zu\x00" as *const u8 as *const i8,
-                    count,
-                );
+                panic!("Unexpected error....: {}", count,);
             }
             sprintf(
                 fmt_buf.as_mut_ptr(),
@@ -411,7 +407,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         csi_dict = pdf_new_dict();
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Registry\x00" as *const u8 as *const i8),
+            "Registry",
             pdf_new_string(
                 (*csi).registry as *const libc::c_void,
                 strlen((*csi).registry) as _,
@@ -419,7 +415,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Ordering\x00" as *const u8 as *const i8),
+            "Ordering",
             pdf_new_string(
                 (*csi).ordering as *const libc::c_void,
                 strlen((*csi).ordering) as _,
@@ -427,30 +423,14 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         );
         pdf_add_dict(
             csi_dict,
-            pdf_new_name(b"Supplement\x00" as *const u8 as *const i8),
+            "Supplement",
             pdf_new_number((*csi).supplement as f64),
         );
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-            pdf_new_name(b"CMap\x00" as *const u8 as *const i8),
-        );
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"CMapName\x00" as *const u8 as *const i8),
-            pdf_new_name((*cmap).name),
-        );
-        pdf_add_dict(
-            stream_dict,
-            pdf_new_name(b"CIDSystemInfo\x00" as *const u8 as *const i8),
-            csi_dict,
-        );
+        pdf_add_dict(stream_dict, "Type", pdf_new_name("CMap"));
+        pdf_add_dict(stream_dict, "CMapName", pdf_copy_name((*cmap).name));
+        pdf_add_dict(stream_dict, "CIDSystemInfo", csi_dict);
         if (*cmap).wmode != 0i32 {
-            pdf_add_dict(
-                stream_dict,
-                pdf_new_name(b"WMode\x00" as *const u8 as *const i8),
-                pdf_new_number((*cmap).wmode as f64),
-            );
+            pdf_add_dict(stream_dict, "WMode", pdf_new_number((*cmap).wmode as f64));
         }
     }
     /* TODO:
@@ -593,10 +573,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
             /* Flush */
             let mut fmt_buf: [i8; 32] = [0; 32];
             if count > 100i32 as u64 {
-                _tt_abort(
-                    b"Unexpected error....: %zu\x00" as *const u8 as *const i8,
-                    count,
-                );
+                panic!("Unexpected error....: {}", count,);
             }
             sprintf(
                 fmt_buf.as_mut_ptr(),

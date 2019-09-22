@@ -34,14 +34,15 @@ use super::dpx_sfnt::{
     sfnt_require_table, sfnt_set_table,
 };
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_agl::{
     agl_chop_suffix, agl_lookup_list, agl_name_convert_unicode, agl_name_is_unicode,
     agl_suffix_to_otltag,
 };
 use super::dpx_dpxfile::{dpx_open_dfont_file, dpx_open_truetype_file};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::new;
 use super::dpx_pdfencoding::{pdf_encoding_get_encoding, pdf_encoding_is_predefined};
 use super::dpx_pdffont::{
@@ -68,7 +69,6 @@ use crate::dpx_pdfobj::{
     PdfObjType,
 };
 use crate::ttstub_input_close;
-use bridge::_tt_abort;
 use libc::{atoi, free, memcpy, memmove, memset, sprintf, strchr, strcpy, strlen, strncpy};
 
 pub type rust_input_handle_t = *mut libc::c_void;
@@ -152,9 +152,9 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         sfont = sfnt_open(handle as rust_input_handle_t)
     }
     if sfont.is_null() {
-        dpx_warning(
-            b"Could not open TrueType font: %s\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "Could not open TrueType font: {}",
+            CStr::from_ptr(ident).display(),
         );
         ttstub_input_close(handle as rust_input_handle_t);
         return -1i32;
@@ -163,10 +163,7 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         let mut offset: u32 = 0;
         offset = ttc_read_offset(sfont, index);
         if offset == 0_u32 {
-            _tt_abort(
-                b"Invalid TTC index in %s.\x00" as *const u8 as *const i8,
-                ident,
-            );
+            panic!("Invalid TTC index in {}.", CStr::from_ptr(ident).display());
         }
         error = sfnt_read_table_directory(sfont, offset)
     } else {
@@ -215,9 +212,9 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         n += 1
     }
     if strlen(fontname.as_mut_ptr()) == 0 {
-        _tt_abort(
-            b"Can\'t find valid fontname for \"%s\".\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Can\'t find valid fontname for \"{}\".",
+            CStr::from_ptr(ident).display()
         );
     }
     pdf_font_set_fontname(font, fontname.as_mut_ptr());
@@ -243,26 +240,17 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
              * only to predefined encodings for this reason. Note that
              * "builtin" encoding means "MacRoman" here.
              */
-            _tt_abort(
-                b"Font file=\"%s\" can\'t be embedded due to liscence restrictions.\x00"
-                    as *const u8 as *const i8,
-                ident,
+            panic!(
+                "Font file=\"{}\" can\'t be embedded due to liscence restrictions.",
+                CStr::from_ptr(ident).display()
             );
             /* ENABLE_NOEMBED */
         }
     }
     sfnt_close(sfont);
     ttstub_input_close(handle as rust_input_handle_t);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Type\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Font\x00" as *const u8 as *const i8),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"TrueType\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(fontdict, "Type", pdf_new_name("Font"));
+    pdf_add_dict(fontdict, "Subtype", pdf_new_name("TrueType"));
     0i32
 }
 const required_table: [NameTable; 12] = [
@@ -391,23 +379,11 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
         code += 1
     }
     if pdf_array_length(tmparray) > 0_u32 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"Widths\x00" as *const u8 as *const i8),
-            pdf_ref_obj(tmparray),
-        );
+        pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmparray));
     }
     pdf_release_obj(tmparray);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"FirstChar\x00" as *const u8 as *const i8),
-        pdf_new_number(firstchar as f64),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"LastChar\x00" as *const u8 as *const i8),
-        pdf_new_number(lastchar as f64),
-    );
+    pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
+    pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
 }
 static mut verbose: i32 = 0i32;
 /*
@@ -467,11 +443,10 @@ unsafe extern "C" fn do_builtin_encoding(
             }
             gid = tt_cmap_lookup(ttcm, code as u32);
             if gid as i32 == 0i32 {
-                dpx_warning(
-                    b"Glyph for character code=0x%02x missing in font font-file=\"%s\".\x00"
-                        as *const u8 as *const i8,
+                warn!(
+                    "Glyph for character code=0x{:02x} missing in font font-file=\"{}\".",
                     code,
-                    pdf_font_get_ident(font),
+                    CStr::from_ptr(pdf_font_get_ident(font)).display(),
                 );
                 idx = 0_u16
             } else {
@@ -574,9 +549,9 @@ unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper)
         return 0i32;
     }
     if verbose > 1i32 {
-        dpx_message(
-            b"\ntrutype>> Try loading OTL GSUB for \"*.*.%s\"...\x00" as *const u8 as *const i8,
-            feat,
+        info!(
+            "\ntrutype>> Try loading OTL GSUB for \"*.*.{}\"...",
+            CStr::from_ptr(feat).display()
         );
     }
     error = otl_gsub_add_feat(
@@ -807,12 +782,11 @@ unsafe extern "C" fn findcomposite(
             gm,
         );
         if error != 0 {
-            dpx_warning(
-                b"Could not resolve glyph \"%s\" (%dth component of glyph \"%s\").\x00" as *const u8
-                    as *const i8,
-                nptrs[i as usize],
+            warn!(
+                "Could not resolve glyph \"{}\" ({}th component of glyph \"{}\").",
+                CStr::from_ptr(nptrs[i as usize]).display(),
                 i,
-                glyphname,
+                CStr::from_ptr(glyphname).display(),
             );
         }
         i += 1
@@ -856,11 +830,10 @@ unsafe extern "C" fn findparanoiac(
             }
             error = selectglyph(idx, (*agln).suffix, gm, &mut idx);
             if error != 0 {
-                dpx_warning(
-                    b"Variant \"%s\" for glyph \"%s\" might not be found.\x00" as *const u8
-                        as *const i8,
-                    (*agln).suffix,
-                    (*agln).name,
+                warn!(
+                    "Variant \"{}\" for glyph \"{}\" might not be found.",
+                    CStr::from_ptr((*agln).suffix).display(),
+                    CStr::from_ptr((*agln).name).display(),
                 );
                 warn!("Using glyph name without suffix instead...");
                 error = 0i32
@@ -871,9 +844,9 @@ unsafe extern "C" fn findparanoiac(
         } else if (*agln).n_components > 1i32 {
             if verbose >= 0i32 {
                 /* give warning */
-                dpx_warning(
-                    b"Glyph \"%s\" looks like a composite glyph...\x00" as *const u8 as *const i8,
-                    (*agln).name,
+                warn!(
+                    "Glyph \"{}\" looks like a composite glyph...",
+                    CStr::from_ptr((*agln).name).display(),
                 );
             }
             error = composeuchar(
@@ -891,11 +864,10 @@ unsafe extern "C" fn findparanoiac(
                     let mut _n: i32 = 0i32;
                     let mut _p: *mut i8 = 0 as *mut i8;
                     let mut _buf: [i8; 256] = [0; 256];
-                    dpx_warning(
-                        b">> Composite glyph glyph-name=\"%s\" found at glyph-id=\"%u\".\x00"
-                            as *const u8 as *const i8,
-                        (*agln).name,
-                        idx as i32,
+                    warn!(
+                        ">> Composite glyph glyph-name=\"{}\" found at glyph-id=\"{}\".",
+                        CStr::from_ptr((*agln).name).display(),
+                        idx,
                     );
                     _p = _buf.as_mut_ptr();
                     _i = 0i32;
@@ -929,9 +901,8 @@ unsafe extern "C" fn findparanoiac(
                     let fresh4 = _n;
                     _n = _n + 1;
                     *_p.offset(fresh4 as isize) = '\u{0}' as i32 as i8;
-                    dpx_warning(b">> Input Unicode seq.=\"%s\" ==> glyph-id=\"%u\" in font-file=\"_please_try_-v_\".\x00"
-                                    as *const u8 as *const i8,
-                                _buf.as_mut_ptr(), idx as i32);
+                    warn!(">> Input Unicode seq.=\"{}\" ==> glyph-id=\"{}\" in font-file=\"_please_try_-v_\".",
+                                CStr::from_ptr(_buf.as_mut_ptr()).display(), idx);
                 }
             }
         } else {
@@ -984,11 +955,10 @@ unsafe extern "C" fn resolve_glyph(
     if error == 0 && !suffix.is_null() {
         error = selectglyph(*gid, suffix, gm, gid);
         if error != 0 {
-            dpx_warning(
-                b"Variant \"%s\" for glyph \"%s\" might not be found.\x00" as *const u8
-                    as *const i8,
-                suffix,
-                name,
+            warn!(
+                "Variant \"{}\" for glyph \"{}\" might not be found.",
+                CStr::from_ptr(suffix).display(),
+                CStr::from_ptr(name).display(),
             );
             warn!("Using glyph name without suffix instead...");
             error = 0i32
@@ -1055,9 +1025,9 @@ unsafe extern "C" fn do_custom_encoding(
     assert!(!font.is_null() && !encoding.is_null() && !usedchars.is_null() && !sfont.is_null());
     error = setup_glyph_mapper(&mut gm, sfont);
     if error != 0 {
-        dpx_warning(
-            b"No post table nor Unicode cmap found in font: %s\x00" as *const u8 as *const i8,
-            pdf_font_get_ident(font),
+        warn!(
+            "No post table nor Unicode cmap found in font: {}",
+            CStr::from_ptr(pdf_font_get_ident(font)).display(),
         );
         warn!(">> I can\'t find glyphs without this!");
         return -1i32;
@@ -1092,9 +1062,8 @@ unsafe extern "C" fn do_custom_encoding(
                 ) as i32
                     != 0
             {
-                dpx_warning(b"Character code=\"0x%02X\" mapped to \".notdef\" glyph used in font font-file=\"%s\"\x00"
-                                as *const u8 as *const i8, code,
-                            pdf_font_get_ident(font));
+                warn!("Character code=\"0x{:02X}\" mapped to \".notdef\" glyph used in font font-file=\"{}\"", code,
+                            CStr::from_ptr(pdf_font_get_ident(font)).display());
                 warn!(">> Maybe incorrect encoding specified?");
                 idx = 0_u16
             } else {
@@ -1108,17 +1077,16 @@ unsafe extern "C" fn do_custom_encoding(
                  * mapped to gid = 0.
                  */
                 if error != 0 {
-                    dpx_warning(
-                        b"Glyph \"%s\" not available in font \"%s\".\x00" as *const u8 as *const i8,
-                        *encoding.offset(code as isize),
-                        pdf_font_get_ident(font),
+                    warn!(
+                        "Glyph \"{}\" not available in font \"{}\".",
+                        CStr::from_ptr(*encoding.offset(code as isize)).display(),
+                        CStr::from_ptr(pdf_font_get_ident(font)).display(),
                     ); /* count returned. */
                 } else if verbose > 1i32 {
-                    dpx_message(
-                        b"truetype>> Glyph glyph-name=\"%s\" found at glyph-id=\"%u\".\n\x00"
-                            as *const u8 as *const i8,
-                        *encoding.offset(code as isize),
-                        gid as i32,
+                    info!(
+                        "truetype>> Glyph glyph-name=\"{}\" found at glyph-id=\"{}\".\n",
+                        CStr::from_ptr(*encoding.offset(code as isize)).display(),
+                        gid,
                     );
                 }
                 idx = tt_find_glyph(glyphs, gid);
@@ -1185,9 +1153,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     if handle.is_null() {
         handle = dpx_open_dfont_file(ident) as *mut rust_input_handle_t;
         if handle.is_null() {
-            _tt_abort(
-                b"Unable to open TrueType/dfont font file: %s\x00" as *const u8 as *const i8,
-                ident,
+            panic!(
+                "Unable to open TrueType/dfont font file: {}",
+                CStr::from_ptr(ident).display(),
             );
         }
         sfont = dfont_open(handle as rust_input_handle_t, index)
@@ -1196,9 +1164,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     }
     if sfont.is_null() {
         ttstub_input_close(handle as rust_input_handle_t);
-        _tt_abort(
-            b"Unable to open TrueType/dfont file: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Unable to open TrueType/dfont file: {}",
+            CStr::from_ptr(ident).display(),
         );
     } else {
         if (*sfont).type_0 != 1i32 << 0i32
@@ -1207,9 +1175,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
         {
             sfnt_close(sfont);
             ttstub_input_close(handle as rust_input_handle_t);
-            _tt_abort(
-                b"Font \"%s\" not a TrueType/dfont font?\x00" as *const u8 as *const i8,
-                ident,
+            panic!(
+                "Font \"{}\" not a TrueType/dfont font?",
+                CStr::from_ptr(ident).display()
             );
         }
     }
@@ -1217,10 +1185,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
         let mut offset: u32 = 0;
         offset = ttc_read_offset(sfont, index);
         if offset == 0_u32 {
-            _tt_abort(
-                b"Invalid TTC index in %s.\x00" as *const u8 as *const i8,
-                ident,
-            );
+            panic!("Invalid TTC index in {}.", CStr::from_ptr(ident).display());
         }
         error = sfnt_read_table_directory(sfont, offset)
     } else {
@@ -1229,10 +1194,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     if error != 0 {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
-        _tt_abort(
-            b"Reading SFND table dir failed for font-file=\"%s\"... Not a TrueType font?\x00"
-                as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Reading SFND table dir failed for font-file=\"{}\"... Not a TrueType font?",
+            CStr::from_ptr(ident).display()
         );
     }
     /*
@@ -1247,9 +1211,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     if error != 0 {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
-        _tt_abort(
-            b"Error occured while creating font subfont for \"%s\"\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Error occured while creating font subfont for \"{}\"",
+            CStr::from_ptr(ident).display()
         );
     }
     /* ENABLE_NOEMBED */
@@ -1261,11 +1225,10 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
         if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err() {
             sfnt_close(sfont);
             ttstub_input_close(handle as rust_input_handle_t);
-            _tt_abort(
-                b"Required TrueType table \"%s\" does not exist in font: %s\x00" as *const u8
-                    as *const i8,
-                table.name,
-                ident,
+            panic!(
+                "Required TrueType table \"{}\" does not exist in font: {}",
+                std::str::from_utf8(table.name).unwrap(),
+                CStr::from_ptr(ident).display(),
             );
         }
     }
@@ -1274,9 +1237,9 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
      */
     fontfile = sfnt_create_FontFile_stream(sfont); /* XXX */
     if fontfile.is_null() {
-        _tt_abort(
-            b"Could not created FontFile stream for \"%s\".\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not created FontFile stream for \"{}\".",
+            CStr::from_ptr(ident).display()
         );
     }
     sfnt_close(sfont);
@@ -1284,11 +1247,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     if verbose > 1i32 {
         info!("[{} bytes]", pdf_stream_length(fontfile));
     }
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontFile2\x00" as *const u8 as *const i8),
-        pdf_ref_obj(fontfile),
-    );
+    pdf_add_dict(descriptor, "FontFile2", pdf_ref_obj(fontfile));
     pdf_release_obj(fontfile);
     0i32
 }

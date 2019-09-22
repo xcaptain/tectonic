@@ -32,8 +32,8 @@
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{tt_get_unsigned_pair, tt_get_unsigned_quad};
 use crate::dpx_pdfobj::{
-    pdf_add_dict, pdf_add_stream, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj,
-    pdf_release_obj, pdf_stream_dict,
+    pdf_add_dict, pdf_add_stream, pdf_new_number, pdf_new_stream, pdf_obj, pdf_release_obj,
+    pdf_stream_dict,
 };
 use crate::dpx_truetype::NameTable;
 use crate::mfree;
@@ -530,10 +530,6 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
         i += 1
     }
     stream_dict = pdf_stream_dict(stream);
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Length1\x00" as *const u8 as *const i8),
-        pdf_new_number(offset as f64),
-    );
+    pdf_add_dict(stream_dict, "Length1", pdf_new_number(offset as f64));
     stream
 }

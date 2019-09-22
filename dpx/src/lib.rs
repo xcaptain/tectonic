@@ -37,6 +37,18 @@ macro_rules! warn(
     };
 );
 
+trait DisplayExt {
+    type Adapter: core::fmt::Display;
+    fn display(self) -> Self::Adapter;
+}
+
+impl<'a> DisplayExt for &'a std::ffi::CStr {
+    type Adapter = std::borrow::Cow<'a, str>;
+    fn display(self) -> Self::Adapter {
+        self.to_string_lossy()
+    }
+}
+
 pub(crate) fn isblank(c: libc::c_int) -> libc::c_int {
     (c == ' ' as _ || c == '\t' as _) as _
 }

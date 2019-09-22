@@ -30,16 +30,18 @@
 )]
 
 use crate::strstartswith;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_dpxutil::xtoi;
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_message;
 use super::dpx_mem::new;
 use crate::dpx_pdfobj::{
-    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_deref_obj, pdf_file, pdf_lookup_dict,
-    pdf_merge_dict, pdf_new_array, pdf_new_boolean, pdf_new_dict, pdf_new_indirect, pdf_new_name,
-    pdf_new_null, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_number_value, pdf_obj,
-    pdf_obj_typeof, pdf_release_obj, pdf_stream_dict, PdfObjType,
+    pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_deref_obj, pdf_file,
+    pdf_lookup_dict, pdf_merge_dict, pdf_name_value, pdf_new_array, pdf_new_boolean, pdf_new_dict,
+    pdf_new_indirect, pdf_new_null, pdf_new_number, pdf_new_stream, pdf_new_string,
+    pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_release_obj, pdf_stream_dict, PdfObjType,
 };
 use crate::specials::spc_lookup_reference;
 use libc::{free, memcmp, memcpy, strchr};
@@ -365,7 +367,7 @@ pub unsafe extern "C" fn parse_pdf_name(
         return 0 as *mut pdf_obj;
     }
     name[len as usize] = '\u{0}' as i32 as i8;
-    pdf_new_name(name.as_mut_ptr())
+    pdf_copy_name(name.as_mut_ptr())
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_pdf_boolean(
@@ -742,7 +744,7 @@ pub unsafe extern "C" fn parse_pdf_dict(
             warn!("Could not find a value in dictionary object.");
             return 0 as *mut pdf_obj;
         }
-        pdf_add_dict(result, key, value);
+        pdf_add_dict(result, pdf_name_value(&*key).to_str().unwrap(), value); // TODO: check
         skip_white(&mut p, endptr);
     }
     if p.offset(2) > endptr
@@ -821,11 +823,8 @@ unsafe extern "C" fn parse_pdf_stream(
         p = p.offset(2)
     }
     /* Stream length */
-    let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut tmp2: *mut pdf_obj = 0 as *mut pdf_obj;
-    tmp = pdf_lookup_dict(dict, b"Length\x00" as *const u8 as *const i8);
-    if !tmp.is_null() {
-        tmp2 = pdf_deref_obj(tmp);
+    if let Some(tmp) = pdf_lookup_dict(dict, "Length") {
+        let tmp2 = pdf_deref_obj(Some(tmp));
         if pdf_obj_typeof(tmp2) != PdfObjType::NUMBER {
             stream_length = -1i32
         } else {
@@ -842,9 +841,8 @@ unsafe extern "C" fn parse_pdf_stream(
      * If Filter is not applied, set STREAM_COMPRESS flag.
      * Should we use filter for ASCIIHexEncode/ASCII85Encode-ed streams?
      */
-    let mut filters: *mut pdf_obj = 0 as *mut pdf_obj;
-    filters = pdf_lookup_dict(dict, b"Filter\x00" as *const u8 as *const i8);
-    if filters.is_null() && stream_length > 10i32 {
+    let mut filters = pdf_lookup_dict(dict, "Filter");
+    if filters.is_none() && stream_length > 10i32 {
         result = pdf_new_stream(1i32 << 0i32)
     } else {
         result = pdf_new_stream(0i32)
@@ -892,9 +890,9 @@ unsafe extern "C" fn parse_pdf_reference(
     if !name.is_null() {
         result = spc_lookup_reference(name);
         if result.is_null() {
-            dpx_warning(
-                b"Could not find the named reference (@%s).\x00" as *const u8 as *const i8,
-                name,
+            warn!(
+                "Could not find the named reference (@{}).",
+                CStr::from_ptr(name).display(),
             );
             dump(save, end);
             *start = save

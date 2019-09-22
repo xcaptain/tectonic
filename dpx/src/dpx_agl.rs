@@ -29,12 +29,14 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
 use crate::{info, warn};
 use crate::{streq_ptr, strstartswith};
+use std::ffi::CStr;
 
 use super::dpx_dpxfile::dpx_tt_open;
 use super::dpx_dpxutil::{ht_append_table, ht_clear_table, ht_init_table, ht_lookup_table};
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_warning;
 use super::dpx_mem::new;
 use super::dpx_mfileio::tt_mfgets;
 use super::dpx_pdfparse::{parse_ident, skip_white};
@@ -800,7 +802,7 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
         return -1i32;
     }
     if verbose != 0 {
-        dpx_message(b"<AGL:%s\x00" as *const u8 as *const i8, filename);
+        info!("<AGL:{}", CStr::from_ptr(filename).display());
     }
     loop {
         p = tt_mfgets(wbuf.as_mut_ptr(), 1024i32, handle);
@@ -826,9 +828,9 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
         name = parse_ident(&mut p, nextptr);
         skip_white(&mut p, endptr);
         if name.is_null() || *p.offset(0) as i32 != ';' as i32 {
-            dpx_warning(
-                b"Invalid AGL entry: %s\x00" as *const u8 as *const i8,
-                wbuf.as_mut_ptr(),
+            warn!(
+                "Invalid AGL entry: {}",
+                CStr::from_ptr(wbuf.as_ptr()).display()
             );
             free(name as *mut libc::c_void);
         } else {
@@ -851,9 +853,9 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                 }
             }
             if n_unicodes == 0i32 {
-                dpx_warning(
-                    b"AGL entry ignored (no mapping): %s\x00" as *const u8 as *const i8,
-                    wbuf.as_mut_ptr(),
+                warn!(
+                    "AGL entry ignored (no mapping): {}",
+                    CStr::from_ptr(wbuf.as_ptr()).display(),
                 );
                 free(name as *mut libc::c_void);
             } else {
@@ -885,17 +887,17 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                 }
                 if verbose > 3i32 {
                     if !(*agln).suffix.is_null() {
-                        dpx_message(
-                            b"agl: %s [%s.%s] -->\x00" as *const u8 as *const i8,
-                            name,
-                            (*agln).name,
-                            (*agln).suffix,
+                        info!(
+                            "agl: {} [{}.{}] -->",
+                            CStr::from_ptr(name).display(),
+                            CStr::from_ptr((*agln).name).display(),
+                            CStr::from_ptr((*agln).suffix).display(),
                         );
                     } else {
-                        dpx_message(
-                            b"agl: %s [%s] -->\x00" as *const u8 as *const i8,
-                            name,
-                            (*agln).name,
+                        info!(
+                            "agl: {} [{}] -->",
+                            CStr::from_ptr(name).display(),
+                            CStr::from_ptr((*agln).name).display(),
                         );
                     }
                     i = 0i32;
@@ -1100,9 +1102,9 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
              * Glyph names starting with a underscore or two subsequent
              * underscore in glyph name not allowed?
              */
-            dpx_warning(
-                b"Invalid glyph name component in \"%s\".\x00" as *const u8 as *const i8,
-                glyphstr,
+            warn!(
+                "Invalid glyph name component in \"{}\".",
+                CStr::from_ptr(glyphstr).display()
             );
             count += 1;
             if !fail_count.is_null() {
@@ -1147,11 +1149,11 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
                 agln0 = agl_normalized_name(name);
                 if !agln0.is_null() {
                     if verbose > 1i32 && !(*agln0).suffix.is_null() {
-                        dpx_warning(
-                            b"agl: fix %s --> %s.%s\x00" as *const u8 as *const i8,
-                            name,
-                            (*agln0).name,
-                            (*agln0).suffix,
+                        warn!(
+                            "agl: fix {} --> {}.{}",
+                            CStr::from_ptr(name).display(),
+                            CStr::from_ptr((*agln0).name).display(),
+                            CStr::from_ptr((*agln0).suffix).display(),
                         );
                     }
                     agln1 = agl_lookup_list((*agln0).name);
@@ -1170,11 +1172,10 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
                 }
             } else {
                 if verbose != 0 {
-                    dpx_warning(
-                        b"No Unicode mapping for glyph name \"%s\" found.\x00" as *const u8
-                            as *const i8,
-                        name,
-                    );
+                    warn!(
+                        "No Unicode mapping for glyph name \"{}\" found.",
+                        CStr::from_ptr(name).display()
+                    )
                 }
                 count += 1
             }
@@ -1214,9 +1215,9 @@ pub unsafe extern "C" fn agl_get_unicodes(
              * Glyph names starting with a underscore or two subsequent
              * underscore in glyph name not allowed?
              */
-            dpx_warning(
-                b"Invalid glyph name component in \"%s\".\x00" as *const u8 as *const i8,
-                glyphstr,
+            warn!(
+                "Invalid glyph name component in \"{}\".",
+                CStr::from_ptr(glyphstr).display()
             );
             return -1i32;
         /* Cannot continue */
@@ -1275,11 +1276,11 @@ pub unsafe extern "C" fn agl_get_unicodes(
                 agln0 = agl_normalized_name(name);
                 if !agln0.is_null() {
                     if verbose > 1i32 && !(*agln0).suffix.is_null() {
-                        dpx_warning(
-                            b"agl: fix %s --> %s.%s\x00" as *const u8 as *const i8,
-                            name,
-                            (*agln0).name,
-                            (*agln0).suffix,
+                        warn!(
+                            "agl: fix {} --> {}.{}",
+                            CStr::from_ptr(name).display(),
+                            CStr::from_ptr((*agln0).name).display(),
+                            CStr::from_ptr((*agln0).suffix).display(),
                         );
                     }
                     agln1 = agl_lookup_list((*agln0).name);
@@ -1300,11 +1301,10 @@ pub unsafe extern "C" fn agl_get_unicodes(
                 }
             } else {
                 if verbose > 1i32 {
-                    dpx_warning(
-                        b"No Unicode mapping for glyph name \"%s\" found.\x00" as *const u8
-                            as *const i8,
-                        name,
-                    );
+                    warn!(
+                        "No Unicode mapping for glyph name \"{}\" found.",
+                        CStr::from_ptr(name).display()
+                    )
                 }
                 free(name as *mut libc::c_void);
                 return -1i32;

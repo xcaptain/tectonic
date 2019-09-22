@@ -31,7 +31,9 @@
 
 use super::dpx_sfnt::{sfnt_close, sfnt_find_table_pos, sfnt_open, sfnt_read_table_directory};
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cff::{
     cff_add_string, cff_charsets_lookup, cff_charsets_lookup_inverse, cff_close,
@@ -47,7 +49,6 @@ use super::dpx_cff_dict::{
 };
 use super::dpx_cs_type2::cs_copy_charstring;
 use super::dpx_dpxfile::dpx_open_opentype_file;
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::work_buffer_u8 as work_buffer;
 use super::dpx_pdfencoding::{pdf_create_ToUnicode_CMap, pdf_encoding_get_encoding};
@@ -65,7 +66,6 @@ use crate::dpx_pdfobj::{
     pdf_ref_obj, pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
-use bridge::_tt_abort;
 use libc::{free, sprintf, strcmp, strlen};
 
 pub type __ssize_t = i64;
@@ -289,10 +289,9 @@ unsafe extern "C" fn add_SimpleMetrics(
                     width = 1000.0f64 * tfm_get_width(tfm_id, code);
                     diff = width - scaling * *widths.offset(code as isize);
                     if diff.abs() > 1.0f64 {
-                        dpx_warning(
-                            b"Glyph width mismatch for TFM and font (%s)\x00" as *const u8
-                                as *const i8,
-                            pdf_font_get_mapname(font),
+                        warn!(
+                            "Glyph width mismatch for TFM and font ({})",
+                            CStr::from_ptr(pdf_font_get_mapname(font)).display(),
                         );
                         warn!(
                             "TFM: {} vs. CFF font: {}",
@@ -312,23 +311,11 @@ unsafe extern "C" fn add_SimpleMetrics(
         }
     }
     if pdf_array_length(tmp_array) > 0_u32 {
-        pdf_add_dict(
-            fontdict,
-            pdf_new_name(b"Widths\x00" as *const u8 as *const i8),
-            pdf_ref_obj(tmp_array),
-        );
+        pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     }
     pdf_release_obj(tmp_array);
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"FirstChar\x00" as *const u8 as *const i8),
-        pdf_new_number(firstchar as f64),
-    );
-    pdf_add_dict(
-        fontdict,
-        pdf_new_name(b"LastChar\x00" as *const u8 as *const i8),
-        pdf_new_number(lastchar as f64),
-    );
+    pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
+    pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
@@ -384,22 +371,22 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
     encoding_id = pdf_font_get_encoding(font);
     handle = dpx_open_opentype_file(ident) as *mut rust_input_handle_t;
     if handle.is_null() {
-        _tt_abort(
-            b"Could not open OpenType font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not open OpenType font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     sfont = sfnt_open(handle as rust_input_handle_t);
     if sfont.is_null() {
-        _tt_abort(
-            b"Could not open OpenType font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not open OpenType font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     if sfnt_read_table_directory(sfont, 0_u32) < 0i32 {
-        _tt_abort(
-            b"Could not read OpenType table directory: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not read OpenType table directory: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     if (*sfont).type_0 != 1i32 << 2i32 || {
@@ -468,14 +455,10 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
             }
             code = code.wrapping_add(1)
         }
-        if pdf_lookup_dict(fontdict, b"ToUnicode\x00" as *const u8 as *const i8).is_null() {
+        if pdf_lookup_dict(fontdict, "ToUnicode").is_none() {
             tounicode = pdf_create_ToUnicode_CMap(fullname, enc_vec, usedchars);
             if !tounicode.is_null() {
-                pdf_add_dict(
-                    fontdict,
-                    pdf_new_name(b"ToUnicode\x00" as *const u8 as *const i8),
-                    pdf_ref_obj(tounicode),
-                );
+                pdf_add_dict(fontdict, "ToUnicode", pdf_ref_obj(tounicode));
                 pdf_release_obj(tounicode);
             }
         }
@@ -544,11 +527,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
             b"StdVW\x00" as *const u8 as *const i8,
             0i32,
         );
-        pdf_add_dict(
-            descriptor,
-            pdf_new_name(b"StemV\x00" as *const u8 as *const i8),
-            pdf_new_number(stemv),
-        );
+        pdf_add_dict(descriptor, "StemV", pdf_new_number(stemv));
     }
     /*
      * Widths
@@ -669,10 +648,10 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                 /* This is new encoding entry. */
                 gid_0 = cff_charsets_lookup(cffont, sid_orig); /* FIXME */
                 if gid_0 as i32 == 0i32 {
-                    dpx_warning(
-                        b"Glyph \"%s\" missing in font \"%s\".\x00" as *const u8 as *const i8,
-                        *enc_vec.offset(code as isize),
-                        fontname,
+                    warn!(
+                        "Glyph \"{}\" missing in font \"{}\".",
+                        CStr::from_ptr(*enc_vec.offset(code as isize)).display(),
+                        CStr::from_ptr(fontname).display(),
                     ); /* Set unused for writing correct encoding */
                     warn!("Maybe incorrect encoding specified.");
                     *usedchars.offset(code as isize) = 0_i8
@@ -688,9 +667,9 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                         strlen(*enc_vec.offset(code as isize)) as i32,
                     );
                     if verbose > 2i32 {
-                        dpx_message(
-                            b"/%s\x00" as *const u8 as *const i8,
-                            *enc_vec.offset(code as isize),
+                        info!(
+                            "/{}",
+                            CStr::from_ptr(*enc_vec.offset(code as isize)).display(),
                         );
                     }
                     size = (*(*cs_idx).offset.offset((gid_0 as i32 + 1i32) as isize))
@@ -983,7 +962,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
      */
     pdf_add_dict(
         descriptor,
-        pdf_new_name(b"CharSet\x00" as *const u8 as *const i8),
+        "CharSet",
         pdf_new_string(
             pdf_stream_dataptr(pdfcharset),
             pdf_stream_length(pdfcharset) as size_t,
@@ -995,16 +974,8 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
      */
     fontfile = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(fontfile);
-    pdf_add_dict(
-        descriptor,
-        pdf_new_name(b"FontFile3\x00" as *const u8 as *const i8),
-        pdf_ref_obj(fontfile),
-    );
-    pdf_add_dict(
-        stream_dict,
-        pdf_new_name(b"Subtype\x00" as *const u8 as *const i8),
-        pdf_new_name(b"Type1C\x00" as *const u8 as *const i8),
-    );
+    pdf_add_dict(descriptor, "FontFile3", pdf_ref_obj(fontfile));
+    pdf_add_dict(stream_dict, "Subtype", pdf_new_name("Type1C"));
     pdf_add_stream(
         fontfile,
         stream_data.as_mut_ptr() as *mut libc::c_void,

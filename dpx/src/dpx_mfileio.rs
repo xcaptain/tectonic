@@ -29,7 +29,7 @@
 
 use crate::{ttstub_input_getc, ttstub_input_ungetc};
 
-use libc::{fgetc, fseek, ftell, rewind, ungetc, FILE};
+use libc::{fseek, ftell, rewind, FILE};
 pub type __off_t = i64;
 pub type __off64_t = i64;
 pub type size_t = u64;
@@ -65,42 +65,6 @@ pub unsafe extern "C" fn file_size(mut file: *mut FILE) -> i32 {
     size = tell_position(file);
     rewind(file);
     size
-}
-/* Unlike fgets, mfgets works with \r, \n, or \r\n end of lines. */
-#[no_mangle]
-pub unsafe extern "C" fn mfgets(
-    mut buffer: *mut i8,
-    mut length: i32,
-    mut file: *mut FILE,
-) -> *mut i8 {
-    let mut ch: i32 = 0i32;
-    let mut i: i32 = 0i32;
-    while i < length - 1i32
-        && {
-            ch = fgetc(file);
-            ch >= 0i32
-        }
-        && ch != '\n' as i32
-        && ch != '\r' as i32
-    {
-        let fresh0 = i;
-        i = i + 1;
-        *buffer.offset(fresh0 as isize) = ch as i8
-    }
-    *buffer.offset(i as isize) = 0_i8;
-    if ch < 0i32 && i == 0i32 {
-        return 0 as *mut i8;
-    }
-    if ch == '\r' as i32
-        && {
-            ch = fgetc(file);
-            ch >= 0i32
-        }
-        && ch != '\n' as i32
-    {
-        ungetc(ch, file);
-    }
-    buffer
 }
 /* Note: this is really just a random array used in other files. */
 #[no_mangle]
