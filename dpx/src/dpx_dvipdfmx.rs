@@ -46,13 +46,15 @@ use super::dpx_pdffont::{
 use super::dpx_pdfparse::skip_white;
 use super::dpx_tt_aux::tt_aux_set_verbose;
 use crate::dpx_pdfparse::parse_unsigned;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cid::CIDFont_set_flags;
 use super::dpx_dpxconf::{paper, paperinfo};
 use super::dpx_dpxfile::{dpx_delete_old_cache, dpx_file_set_verbose};
 use super::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
-use super::dpx_error::{dpx_warning, shut_up};
+use super::dpx_error::shut_up;
 use super::dpx_fontmap::{
     pdf_close_fontmaps, pdf_fontmap_set_verbose, pdf_init_fontmaps, pdf_load_fontmap_file,
 };
@@ -67,7 +69,6 @@ use super::dpx_vf::vf_reset_global_state;
 use crate::specials::{
     spc_exec_at_begin_document, spc_exec_at_end_document, tpic::tpic_set_fill_mode,
 };
-use bridge::_tt_abort;
 use libc::{atof, atoi, free, memcmp, strchr, strcmp, strlen};
 use std::slice::from_raw_parts;
 
@@ -182,10 +183,7 @@ unsafe extern "C" fn read_length(
                 7 => u *= 12.0f64 * 1238.0f64 / 1157.0f64 * 72.0f64 / 72.27f64,
                 8 => u *= 72.0f64 / (72.27f64 * 65536i32 as f64),
                 _ => {
-                    dpx_warning(
-                        b"Unknown unit of measure: %s\x00" as *const u8 as *const i8,
-                        q,
-                    );
+                    warn!("Unknown unit of measure: {}", CStr::from_ptr(q).display(),);
                     error = -1i32
                 }
             }
@@ -228,9 +226,9 @@ unsafe extern "C" fn select_paper(mut paperspec: *const i8) {
         comma = strchr(p, ',' as i32);
         endptr = p.offset(strlen(p) as isize);
         if comma.is_null() {
-            _tt_abort(
-                b"Unrecognized paper format: %s\x00" as *const u8 as *const i8,
-                paperspec,
+            panic!(
+                "Unrecognized paper format: {}",
+                CStr::from_ptr(paperspec).display()
             );
         }
         error = read_length(&mut paper_width, &mut p, comma);
@@ -238,9 +236,9 @@ unsafe extern "C" fn select_paper(mut paperspec: *const i8) {
         error = read_length(&mut paper_height, &mut p, endptr)
     }
     if error != 0 || paper_width <= 0.0f64 || paper_height <= 0.0f64 {
-        _tt_abort(
-            b"Invalid paper size: %s (%.2fx%.2f)\x00" as *const u8 as *const i8,
-            paperspec,
+        panic!(
+            "Invalid paper size: {} ({:.2}x{:.2}",
+            CStr::from_ptr(paperspec).display(),
             paper_width,
             paper_height,
         );
@@ -310,9 +308,9 @@ unsafe extern "C" fn select_pages(
                 p = p.offset(1)
             }
             if *p != 0 {
-                _tt_abort(
-                    b"Bad page range specification: %s\x00" as *const u8 as *const i8,
-                    p,
+                panic!(
+                    "Bad page range specification: {}",
+                    CStr::from_ptr(p).display()
                 );
             }
         }

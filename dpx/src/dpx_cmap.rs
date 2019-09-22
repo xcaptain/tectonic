@@ -31,14 +31,14 @@
 
 use crate::mfree;
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cid::CSI_IDENTITY;
 use super::dpx_cmap_read::{CMap_parse, CMap_parse_check_sig};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use crate::{ttstub_input_close, ttstub_input_open};
-use bridge::_tt_abort;
 use libc::{free, memcmp, memcpy, memset, strcmp, strcpy, strlen};
 
 pub type size_t = u64;
@@ -232,10 +232,10 @@ pub unsafe extern "C" fn CMap_is_valid(mut cmap: *mut CMap) -> bool {
         if strcmp((*csi1).registry, (*csi2).registry) != 0
             || strcmp((*csi1).ordering, (*csi2).ordering) != 0
         {
-            dpx_warning(
-                b"CIDSystemInfo mismatched %s <--> %s\x00" as *const u8 as *const i8,
-                CMap_get_name(cmap),
-                CMap_get_name((*cmap).useCMap),
+            warn!(
+                "CIDSystemInfo mismatched {} <--> {}",
+                CStr::from_ptr(CMap_get_name(cmap)).display(),
+                CStr::from_ptr(CMap_get_name((*cmap).useCMap)).display(),
             );
             return false;
         }
@@ -377,9 +377,9 @@ pub unsafe extern "C" fn CMap_decode_char(
             } else {
                 /* no mapping available in this CMap */
                 warn!("No character mapping available.");
-                dpx_message(
-                    b" CMap name: %s\n\x00" as *const u8 as *const i8,
-                    CMap_get_name(cmap),
+                info!(
+                    " CMap name: {}\n",
+                    CStr::from_ptr(CMap_get_name(cmap)).display()
                 );
                 info!(" input str: ");
                 info!("<");
@@ -530,16 +530,13 @@ pub unsafe extern "C" fn CMap_set_CIDSysInfo(mut cmap: *mut CMap, mut csi: *cons
  */
 #[no_mangle]
 pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut CMap) {
-    let mut i: u32 = 0; /* Maybe if (!ucmap) _tt_abort() is better for this. */
+    let mut i: u32 = 0; /* Maybe if (!ucmap) panic! is better for this. */
     assert!(!cmap.is_null());
     assert!(!ucmap.is_null());
     if cmap == ucmap {
-        _tt_abort(
-            b"%s: Identical CMap object cannot be used for usecmap CMap: 0x%p=0x%p\x00" as *const u8
-                as *const i8,
-            b"CMap\x00" as *const u8 as *const i8,
-            cmap,
-            ucmap,
+        panic!(
+            "{}: Identical CMap object cannot be used for usecmap CMap: 0x{:p}=0x{:p}",
+            "CMap", cmap, ucmap,
         );
     }
     /* Check if ucmap have neccesary information. */
@@ -551,11 +548,11 @@ pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut C
      *  And it is also possible CSI is not defined at that time.
      */
     if streq_ptr((*cmap).name, (*ucmap).name) {
-        _tt_abort(
-            b"%s: CMap refering itself not allowed: CMap %s --> %s\x00" as *const u8 as *const i8,
-            b"CMap\x00" as *const u8 as *const i8,
-            (*cmap).name,
-            (*ucmap).name,
+        panic!(
+            "{}: CMap refering itself not allowed: CMap {} --> {}",
+            "CMap",
+            CStr::from_ptr((*cmap).name).display(),
+            CStr::from_ptr((*ucmap).name).display(),
         );
     }
     if !(*cmap).CSI.is_null()
@@ -565,11 +562,11 @@ pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut C
         if strcmp((*(*cmap).CSI).registry, (*(*ucmap).CSI).registry) != 0
             || strcmp((*(*cmap).CSI).ordering, (*(*ucmap).CSI).ordering) != 0
         {
-            _tt_abort(
-                b"%s: CMap %s required by %s have different CSI.\x00" as *const u8 as *const i8,
-                b"CMap\x00" as *const u8 as *const i8,
-                CMap_get_name(cmap),
-                CMap_get_name(ucmap),
+            panic!(
+                "{}: CMap {} required by {} have different CSI.",
+                "CMap",
+                CStr::from_ptr(CMap_get_name(cmap)).display(),
+                CStr::from_ptr(CMap_get_name(ucmap)).display(),
             );
         }
     }
@@ -1165,7 +1162,7 @@ pub unsafe extern "C" fn CMap_cache_find(mut cmap_name: *const i8) -> i32 {
         return -1i32;
     }
     if __verbose != 0 {
-        dpx_message(b"(CMap:%s\x00" as *const u8 as *const i8, cmap_name);
+        info!("(CMap:{}", CStr::from_ptr(cmap_name).display());
     }
     if (*__cache).num >= (*__cache).max {
         (*__cache).max = ((*__cache).max as u32).wrapping_add(16u32) as i32 as i32;
@@ -1201,10 +1198,10 @@ pub unsafe extern "C" fn CMap_cache_add(mut cmap: *mut CMap) -> i32 {
         cmap_name0 = CMap_get_name(cmap);
         cmap_name1 = CMap_get_name(*(*__cache).cmaps.offset(id as isize));
         if streq_ptr(cmap_name0, cmap_name1) {
-            _tt_abort(
-                b"%s: CMap \"%s\" already defined.\x00" as *const u8 as *const i8,
-                b"CMap\x00" as *const u8 as *const i8,
-                cmap_name0,
+            panic!(
+                "{}: CMap \"{}\" already defined.",
+                "CMap",
+                CStr::from_ptr(cmap_name0).display(),
             );
         }
         id += 1

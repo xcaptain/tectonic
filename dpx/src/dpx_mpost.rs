@@ -29,12 +29,14 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use crate::mfree;
 use crate::warn;
 use crate::{streq_ptr, strstartswith};
 
 use super::dpx_dvipdfmx::translate_origin;
-use super::dpx_error::dpx_warning;
 use super::dpx_fontmap::pdf_lookup_fontmap_record;
 use super::dpx_mem::new;
 use super::dpx_mfileio::file_size;
@@ -70,7 +72,6 @@ use crate::dpx_pdfparse::{
     parse_ident, parse_number, parse_pdf_array, parse_pdf_dict, parse_pdf_name, parse_pdf_string,
     pdfparse_skip_line, skip_white,
 };
-use bridge::_tt_abort;
 use libc::{atof, fread, free, rewind, sprintf, strchr, strcmp, strcpy, strlen, strtod};
 
 pub type __off_t = i64;
@@ -1954,9 +1955,9 @@ unsafe extern "C" fn mp_setfont(mut font_name: *const i8, mut pt_size: f64) -> i
     (*font).tfm_id = tfm_open(font_name, 0i32);
     (*font).font_id = pdf_dev_locate_font(name, (pt_size * dev_unit_dviunit()) as spt_t);
     if (*font).font_id < 0i32 {
-        _tt_abort(
-            b"MPOST: No physical font assigned for \"%s\".\x00" as *const u8 as *const i8,
-            font_name,
+        panic!(
+            "MPOST: No physical font assigned for \"{}\".",
+            CStr::from_ptr(font_name).display()
         );
     }
     0i32
@@ -2949,9 +2950,9 @@ unsafe extern "C" fn do_show() -> i32 {
     strptr = pdf_string_value(text_str) as *mut u8;
     length = pdf_string_length(text_str) as i32;
     if (*font).tfm_id < 0i32 {
-        dpx_warning(
-            b"mpost: TFM not found for \"%s\".\x00" as *const u8 as *const i8,
-            (*font).font_name,
+        warn!(
+            "mpost: TFM not found for \"{}\".",
+            CStr::from_ptr((*font).font_name).display()
         );
         warn!("mpost: Text width not calculated...");
     }
@@ -3696,7 +3697,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
                     error = 1i32
                 }
             } else {
-                dpx_warning(b"Unknown token \"%s\"\x00" as *const u8 as *const i8, token);
+                warn!("Unknown token \"{}\"", CStr::from_ptr(token).display());
                 error = 1i32
             }
         }

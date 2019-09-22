@@ -47,7 +47,7 @@ pub unsafe extern "C" fn shut_up(mut quietness: i32) {
 static mut _dpx_message_handle: rust_output_handle_t =
     0 as *const libc::c_void as *mut libc::c_void;
 static mut _dpx_message_buf: [i8; 1024] = [0; 1024];
-unsafe extern "C" fn _dpx_ensure_output_handle() -> rust_output_handle_t {
+pub unsafe extern "C" fn _dpx_ensure_output_handle() -> rust_output_handle_t {
     _dpx_message_handle = ttstub_output_open_stdout();
     if _dpx_message_handle.is_null() {
         panic!("xdvipdfmx cannot get output logging handle?!");

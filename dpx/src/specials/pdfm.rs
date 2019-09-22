@@ -30,8 +30,10 @@
 )]
 
 use crate::warn;
+use crate::DisplayExt;
 use crate::TTInputFormat;
 use crate::{streq_ptr, strstartswith};
+use std::ffi::CStr;
 
 use super::util::{spc_util_read_blahblah, spc_util_read_dimtrns, spc_util_read_pdfcolor};
 use super::{
@@ -42,7 +44,6 @@ use crate::dpx_cmap::{CMap_cache_find, CMap_cache_get, CMap_decode};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_dpxutil::{ht_append_table, ht_clear_table, ht_init_table, ht_lookup_table};
 use crate::dpx_dvipdfmx::is_xdv;
-use crate::dpx_error::dpx_warning;
 use crate::dpx_fontmap::{
     is_pdfm_mapline, pdf_append_fontmap_record, pdf_clear_fontmap_record, pdf_init_fontmap_record,
     pdf_insert_fontmap_record, pdf_load_fontmap_file, pdf_read_fontmap_line,
@@ -298,10 +299,10 @@ unsafe extern "C" fn safeputresdent(
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
     key = pdf_name_value(kp);
     if !pdf_lookup_dict(dp as *mut pdf_obj, key).is_null() {
-        dpx_warning(
-            b"Object \"%s\" already defined in dict! (ignored)\x00" as *const u8 as *const i8,
-            key,
-        );
+        warn!(
+            "Object \"{}\" already defined in dict! (ignored)",
+            CStr::from_ptr(key).display()
+        )
     } else {
         pdf_add_dict(dp as *mut pdf_obj, pdf_link_obj(kp), pdf_link_obj(vp));
     }
@@ -337,10 +338,9 @@ unsafe extern "C" fn safeputresdict(
             pdf_add_dict(dp as *mut pdf_obj, pdf_copy_name(key), pdf_link_obj(vp));
         }
     } else {
-        dpx_warning(
-            b"Invalid type (not DICT) for page/form resource dict entry: key=\"%s\"\x00"
-                as *const u8 as *const i8,
-            key,
+        warn!(
+            "Invalid type (not DICT) for page/form resource dict entry: key=\"{}\"",
+            CStr::from_ptr(key).display()
         );
         return -1i32;
     }

@@ -29,6 +29,8 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+
 use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::sget_unsigned_pair;
@@ -1027,19 +1029,13 @@ unsafe extern "C" fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut 
     }
     info!("\n");
     if icch.creator == 0_u32 {
-        dpx_message(
-            b"pdf_color>> %s:\t(null)\n\x00" as *const u8 as *const i8,
-            b"Creator\x00" as *const u8 as *const i8,
-        );
+        info!("pdf_color>> {}:\t(null)\n", "Creator",);
     } else if libc::isprint((icch.creator >> 24i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator >> 16i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator >> 8i32 & 0xff_u32) as _) == 0
         || libc::isprint((icch.creator & 0xff_u32) as _) == 0
     {
-        dpx_message(
-            b"pdf_color>> %s:\t(invalid)\n\x00" as *const u8 as *const i8,
-            b"Creator\x00" as *const u8 as *const i8,
-        );
+        info!("pdf_color>> {}:\t(invalid)\n", "Creator",);
     } else {
         dpx_message(
             b"pdf_color>> %s:\t%c%c%c%c\n\x00" as *const u8 as *const i8,
@@ -1117,9 +1113,9 @@ pub unsafe extern "C" fn iccp_load_profile(
     iccp_init_iccHeader(&mut icch);
     if iccp_unpack_header(&mut icch, profile, proflen, 1i32) < 0i32 {
         /* check size */
-        dpx_warning(
-            b"Invalid ICC profile header in \"%s\"\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "Invalid ICC profile header in \"{}\"",
+            CStr::from_ptr(ident).display()
         );
         print_iccp_header(&mut icch, 0 as *mut u8);
         return -1i32;
@@ -1307,7 +1303,7 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
     (*colorspace).cdata = cdata;
     (*colorspace).resource = resource;
     if verbose != 0 {
-        dpx_message(b"(ColorSpace:%s\x00" as *const u8 as *const i8, ident);
+        info!("(ColorSpace:{}", CStr::from_ptr(ident).display());
         if verbose > 1i32 {
             match subtype {
                 4 => {

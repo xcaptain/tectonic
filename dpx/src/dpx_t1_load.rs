@@ -31,12 +31,13 @@
 
 use crate::mfree;
 use crate::warn;
+use crate::DisplayExt;
 use crate::{streq_ptr, strstartswith};
+use std::ffi::CStr;
 
 use super::dpx_cff::{cff_add_string, cff_get_sid, cff_update_string};
 use super::dpx_cff::{cff_close, cff_new_index, cff_set_name};
 use super::dpx_cff_dict::{cff_dict_add, cff_dict_set, cff_new_dict};
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew, xstrdup};
 use super::dpx_pst::pst_get_token;
 use super::dpx_pst_obj::pst_obj;
@@ -1561,9 +1562,9 @@ unsafe extern "C" fn parse_charstrings(
     tok = pst_get_token(start, end); /* .notdef must be at gid = 0 in CFF */
     if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 || pst_getIV(tok) > 64999i32 {
         let mut s: *mut u8 = pst_getSV(tok);
-        dpx_warning(
-            b"Ignores non dict \"/CharStrings %s ...\"\x00" as *const u8 as *const i8,
-            s,
+        warn!(
+            "Ignores non dict \"/CharStrings {} ...\"",
+            CStr::from_ptr(s as *mut i8).display(),
         );
         free(s as *mut libc::c_void);
         if !tok.is_null() {
@@ -1962,9 +1963,9 @@ unsafe extern "C" fn parse_part1(
                 return -1i32;
             }
             if strlen(strval) > 127 {
-                dpx_warning(
-                    b"FontName too long: %s (%zu bytes)\x00" as *const u8 as *const i8,
-                    strval,
+                warn!(
+                    "FontName too long: {} ({} bytes)",
+                    CStr::from_ptr(strval).display(),
                     strlen(strval),
                 );
                 *strval.offset(127) = '\u{0}' as i32 as i8
@@ -2094,7 +2095,7 @@ unsafe extern "C" fn parse_part1(
 }
 #[no_mangle]
 pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
-    let mut sig: [i8; 15] = [0; 15];
+    let mut sig: [u8; 15] = [0; 15];
     let mut i: i32 = 0;
     let mut ch: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
@@ -2122,7 +2123,7 @@ pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
         if ch < 0i32 {
             return false;
         }
-        sig[i as usize] = ch as i8;
+        sig[i as usize] = ch as u8;
         i += 1
     }
     if memcmp(
@@ -2144,10 +2145,10 @@ pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
         4,
     ) == 0
     {
-        sig[14] = '\u{0}' as i32 as i8;
-        dpx_warning(
-            b"Ambiguous PostScript resource type: %s\x00" as *const u8 as *const i8,
-            sig.as_mut_ptr(),
+        sig[14] = 0;
+        warn!(
+            "Ambiguous PostScript resource type: {}",
+            CStr::from_bytes_with_nul(&sig[..]).unwrap().display(),
         );
         return true;
     }
@@ -2259,9 +2260,9 @@ pub unsafe extern "C" fn t1_get_fontname(
             let mut strval: *mut i8 = 0 as *mut i8;
             if parse_svalue(&mut start, end, &mut strval) == 1i32 {
                 if strlen(strval) > 127 {
-                    dpx_warning(
-                        b"FontName \"%s\" too long. (%zu bytes)\x00" as *const u8 as *const i8,
-                        strval,
+                    warn!(
+                        "FontName \"{}\" too long. ({} bytes)",
+                        CStr::from_ptr(strval).display(),
                         strlen(strval),
                     );
                     *strval.offset(127) = '\u{0}' as i32 as i8

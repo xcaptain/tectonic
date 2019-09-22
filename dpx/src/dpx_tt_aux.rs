@@ -29,8 +29,10 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_dvipdfmx::always_embed;
-use super::dpx_error::dpx_warning;
 use super::dpx_numbers::tt_get_unsigned_quad;
 use super::dpx_tt_post::{tt_read_post_table, tt_release_post_table};
 use super::dpx_tt_table::{tt_read_head_table, tt_read_os2__table};
@@ -136,28 +138,25 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             *embed = 1i32
         } else if (*os2).fsType as i32 & 0x4i32 != 0 {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Font \"%s\" permits \"Preview & Print\" embedding only **\n\x00" as *const u8
-                        as *const i8,
-                    fontname,
+                warn!(
+                    "Font \"{}\" permits \"Preview & Print\" embedding only **\n",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 1i32
         } else if always_embed != 0 {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Font \"%s\" may be subject to embedding restrictions **\n\x00" as *const u8
-                        as *const i8,
-                    fontname,
+                warn!(
+                    "Font \"{}\" may be subject to embedding restrictions **\n",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 1i32
         } else {
             if verbose > 0i32 {
-                dpx_warning(
-                    b"Embedding of font \"%s\" disabled due to license restrictions\x00"
-                        as *const u8 as *const i8,
-                    fontname,
+                warn!(
+                    "Embedding of font \"{}\" disabled due to license restrictions",
+                    CStr::from_ptr(fontname).display(),
                 );
             }
             *embed = 0i32

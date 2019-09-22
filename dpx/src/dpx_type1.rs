@@ -31,7 +31,9 @@
 
 use crate::mfree;
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cff::{
     cff_add_string, cff_close, cff_get_seac_sid, cff_glyph_lookup, cff_index_size, cff_new_index,
@@ -41,7 +43,6 @@ use super::dpx_cff::{
 use super::dpx_cff_dict::{
     cff_dict_add, cff_dict_get, cff_dict_known, cff_dict_pack, cff_dict_set, cff_dict_update,
 };
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfencoding::{pdf_create_ToUnicode_CMap, pdf_encoding_get_encoding};
 use super::dpx_pdffont::{
@@ -59,7 +60,6 @@ use crate::dpx_pdfobj::{
     pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
 use crate::{ttstub_input_close, ttstub_input_open};
-use bridge::_tt_abort;
 use libc::{free, memset, sprintf, strlen, strstr};
 
 pub type size_t = u64;
@@ -155,9 +155,9 @@ pub unsafe extern "C" fn pdf_font_open_type1(mut font: *mut pdf_font) -> i32 {
         }
         memset(fontname.as_mut_ptr() as *mut libc::c_void, 0i32, 127 + 1);
         if !is_pfb(handle) || t1_get_fontname(handle, fontname.as_mut_ptr()) < 0i32 {
-            _tt_abort(
-                b"Failed to read Type 1 font \"%s\".\x00" as *const u8 as *const i8,
-                ident,
+            panic!(
+                "Failed to read Type 1 font \"{}\".",
+                CStr::from_ptr(ident).display(),
             );
         }
         ttstub_input_close(handle);
@@ -522,10 +522,9 @@ unsafe extern "C" fn add_metrics(
                                 .offset(cff_glyph_lookup(cffont, *enc_vec.offset(code as isize))
                                     as isize);
                     if diff.abs() > 1.0f64 {
-                        dpx_warning(
-                            b"Glyph width mismatch for TFM and font (%s)\x00" as *const u8
-                                as *const i8,
-                            pdf_font_get_mapname(font),
+                        warn!(
+                            "Glyph width mismatch for TFM and font ({})",
+                            CStr::from_ptr(pdf_font_get_mapname(font)).display(),
                         );
                         warn!(
                             "TFM: {} vs. Type1 font: {}",
@@ -761,9 +760,9 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     }
     handle = ttstub_input_open(ident, TTInputFormat::TYPE1, 0i32);
     if handle.is_null() {
-        _tt_abort(
-            b"Type1: Could not open Type1 font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Type1: Could not open Type1 font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     GIDMap = 0 as *mut u16;
@@ -782,9 +781,9 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     }
     cffont = t1_load_font(enc_vec, 0i32, handle);
     if cffont.is_null() {
-        _tt_abort(
-            b"Could not load Type 1 font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not load Type 1 font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     let cffont = &mut *cffont;
@@ -881,18 +880,18 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
         glyph = *enc_vec.offset(code as isize);
         if !(*usedchars.offset(code as isize) == 0) {
             if streq_ptr(glyph, b".notdef\x00" as *const u8 as *const i8) {
-                dpx_warning(
-                    b"Character mapped to .notdef used in font: %s\x00" as *const u8 as *const i8,
-                    fontname,
+                warn!(
+                    "Character mapped to .notdef used in font: {}",
+                    CStr::from_ptr(fontname).display(),
                 );
                 *usedchars.offset(code as isize) = 0_i8
             } else {
                 gid = cff_glyph_lookup(cffont, glyph) as i32;
                 if gid < 1i32 || gid >= (*cffont.cstrings).count as i32 {
-                    dpx_warning(
-                        b"Glyph \"%s\" missing in font \"%s\".\x00" as *const u8 as *const i8,
-                        glyph,
-                        fontname,
+                    warn!(
+                        "Glyph \"{}\" missing in font \"{}\".",
+                        CStr::from_ptr(glyph).display(),
+                        CStr::from_ptr(fontname).display(),
                     );
                     *usedchars.offset(code as isize) = 0_i8
                 } else {
@@ -950,7 +949,7 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
                         prev = code;
                         num_glyphs = num_glyphs.wrapping_add(1);
                         if verbose > 2i32 {
-                            dpx_message(b"/%s\x00" as *const u8 as *const i8, glyph);
+                            info!("/{}", CStr::from_ptr(glyph).display());
                         }
                         /* CharSet is actually string object. */
                         pdf_add_stream(
@@ -1049,17 +1048,15 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
             bchar_name = t1_get_standard_glyph(gm.seac.bchar as i32);
             bchar_gid = cff_glyph_lookup(cffont, bchar_name) as i32;
             if achar_gid < 0i32 {
-                dpx_warning(
-                    b"Accent char \"%s\" not found. Invalid use of \"seac\" operator.\x00"
-                        as *const u8 as *const i8,
-                    achar_name,
+                warn!(
+                    "Accent char \"{}\" not found. Invalid use of \"seac\" operator.",
+                    CStr::from_ptr(achar_name).display(),
                 );
                 current_block_150 = 1069630499025798221;
             } else if bchar_gid < 0i32 {
-                dpx_warning(
-                    b"Base char \"%s\" not found. Invalid use of \"seac\" operator.\x00"
-                        as *const u8 as *const i8,
-                    bchar_name,
+                warn!(
+                    "Base char \"{}\" not found. Invalid use of \"seac\" operator.",
+                    CStr::from_ptr(bchar_name).display(),
                 );
                 current_block_150 = 1069630499025798221;
             } else {
@@ -1072,7 +1069,7 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
                 }
                 if i == num_glyphs as i32 {
                     if verbose > 2i32 {
-                        dpx_message(b"/%s\x00" as *const u8 as *const i8, achar_name);
+                        info!("/{}", CStr::from_ptr(achar_name).display());
                     }
                     let fresh2 = num_glyphs;
                     num_glyphs = num_glyphs.wrapping_add(1);
@@ -1093,7 +1090,7 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
                 }
                 if i == num_glyphs as i32 {
                     if verbose > 2i32 {
-                        dpx_message(b"/%s\x00" as *const u8 as *const i8, bchar_name);
+                        info!("/{}", CStr::from_ptr(bchar_name).display());
                     }
                     let fresh3 = num_glyphs;
                     num_glyphs = num_glyphs.wrapping_add(1);

@@ -30,10 +30,12 @@
 )]
 
 use crate::strstartswith;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_dpxutil::xtoi;
-use super::dpx_error::{dpx_message, dpx_warning};
+use super::dpx_error::dpx_message;
 use super::dpx_mem::new;
 use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_deref_obj, pdf_file,
@@ -892,9 +894,9 @@ unsafe extern "C" fn parse_pdf_reference(
     if !name.is_null() {
         result = spc_lookup_reference(name);
         if result.is_null() {
-            dpx_warning(
-                b"Could not find the named reference (@%s).\x00" as *const u8 as *const i8,
-                name,
+            warn!(
+                "Could not find the named reference (@{}).",
+                CStr::from_ptr(name).display(),
             );
             dump(save, end);
             *start = save

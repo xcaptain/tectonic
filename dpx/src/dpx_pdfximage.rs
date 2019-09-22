@@ -30,13 +30,14 @@
 )]
 
 use crate::mfree;
+use crate::DisplayExt;
 use crate::{info, warn};
 use crate::{streq_ptr, strstartswith};
+use std::ffi::CStr;
 
 use super::dpx_bmpimage::{bmp_include_image, check_for_bmp};
 use super::dpx_dpxfile::{dpx_delete_temp_file, keep_cache};
 use super::dpx_dpxutil::{max4, min4};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_jpegimage::{check_for_jpeg, jpeg_include_image};
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::{tt_mfgets, work_buffer};
@@ -205,10 +206,9 @@ pub unsafe extern "C" fn pdf_close_images() {
                  * pages are imported from that file.
                  */
                 if _opts.verbose > 1i32 && keep_cache != 1i32 {
-                    dpx_message(
-                        b"pdf_image>> deleting temporary file \"%s\"\n\x00" as *const u8
-                            as *const i8,
-                        (*I).filename,
+                    info!(
+                        "pdf_image>> deleting temporary file \"{}\"\n",
+                        CStr::from_ptr((*I).filename).display()
                     ); /* temporary filename freed here */
                 }
                 dpx_delete_temp_file((*I).filename, 0i32);
@@ -428,14 +428,14 @@ pub unsafe extern "C" fn pdf_ximage_findresource(
      */
     handle = ttstub_input_open(ident, TTInputFormat::PICT, 0i32);
     if handle.is_null() {
-        dpx_warning(
-            b"Error locating image file \"%s\"\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "Error locating image file \"{}\"",
+            CStr::from_ptr(ident).display(),
         );
         return -1i32;
     }
     if _opts.verbose != 0 {
-        dpx_message(b"(Image:%s\x00" as *const u8 as *const i8, ident);
+        info!("(Image:{}", CStr::from_ptr(ident).display());
     }
     format = source_image_type(handle);
     id = load_image(ident, ident, format, handle, options);
@@ -444,9 +444,9 @@ pub unsafe extern "C" fn pdf_ximage_findresource(
         info!(")");
     }
     if id < 0i32 {
-        dpx_warning(
-            b"pdf: image inclusion failed for \"%s\".\x00" as *const u8 as *const i8,
-            ident,
+        warn!(
+            "pdf: image inclusion failed for \"{}\".",
+            CStr::from_ptr(ident).display(),
         );
     }
     id

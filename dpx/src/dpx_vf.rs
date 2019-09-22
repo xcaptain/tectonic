@@ -34,13 +34,14 @@ use super::dpx_numbers::{
 };
 use crate::streq_ptr;
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::dpx_dvi::{
     dpx_dvi_pop, dvi_dirchg, dvi_do_special, dvi_down, dvi_locate_font, dvi_push, dvi_put,
     dvi_right, dvi_rule, dvi_set, dvi_set_font, dvi_vf_finish, dvi_vf_init, dvi_w, dvi_w0, dvi_x,
     dvi_x0, dvi_y, dvi_y0, dvi_z, dvi_z0,
 };
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{sqxfw, tt_skip_bytes};
 use super::dpx_tfm::tfm_open;
@@ -335,9 +336,8 @@ pub unsafe extern "C" fn vf_locate_font(mut tex_name: *const i8, mut ptsize: spt
         return -1i32;
     }
     if verbose as i32 == 1i32 {
-        use std::ffi::CStr;
         let tex_name = CStr::from_ptr(tex_name);
-        eprint!("(VF:{}", tex_name.to_string_lossy());
+        eprint!("(VF:{}", tex_name.display());
     }
     if num_vf_fonts >= max_vf_fonts {
         resize_vf_fonts(max_vf_fonts.wrapping_add(16u32) as i32);
@@ -544,7 +544,7 @@ unsafe extern "C" fn vf_xxx(mut len: i32, mut start: *mut *mut u8, mut end: *mut
         ) == 0
         {
             if verbose != 0 {
-                dpx_warning(b"VF:%s\x00" as *const u8 as *const i8, p.offset(8));
+                warn!("VF:{}", CStr::from_ptr(p.offset(8) as *mut i8).display());
             }
         } else {
             dvi_do_special(buffer as *const libc::c_void, len);

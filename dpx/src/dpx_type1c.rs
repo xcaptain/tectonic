@@ -31,7 +31,9 @@
 
 use super::dpx_sfnt::{sfnt_close, sfnt_find_table_pos, sfnt_open, sfnt_read_table_directory};
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_cff::{
     cff_add_string, cff_charsets_lookup, cff_charsets_lookup_inverse, cff_close,
@@ -47,7 +49,6 @@ use super::dpx_cff_dict::{
 };
 use super::dpx_cs_type2::cs_copy_charstring;
 use super::dpx_dpxfile::dpx_open_opentype_file;
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_mfileio::work_buffer_u8 as work_buffer;
 use super::dpx_pdfencoding::{pdf_create_ToUnicode_CMap, pdf_encoding_get_encoding};
@@ -65,7 +66,6 @@ use crate::dpx_pdfobj::{
     pdf_ref_obj, pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
-use bridge::_tt_abort;
 use libc::{free, sprintf, strcmp, strlen};
 
 pub type __ssize_t = i64;
@@ -289,10 +289,9 @@ unsafe extern "C" fn add_SimpleMetrics(
                     width = 1000.0f64 * tfm_get_width(tfm_id, code);
                     diff = width - scaling * *widths.offset(code as isize);
                     if diff.abs() > 1.0f64 {
-                        dpx_warning(
-                            b"Glyph width mismatch for TFM and font (%s)\x00" as *const u8
-                                as *const i8,
-                            pdf_font_get_mapname(font),
+                        warn!(
+                            "Glyph width mismatch for TFM and font ({})",
+                            CStr::from_ptr(pdf_font_get_mapname(font)).display(),
                         );
                         warn!(
                             "TFM: {} vs. CFF font: {}",
@@ -380,22 +379,22 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
     encoding_id = pdf_font_get_encoding(font);
     handle = dpx_open_opentype_file(ident) as *mut rust_input_handle_t;
     if handle.is_null() {
-        _tt_abort(
-            b"Could not open OpenType font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not open OpenType font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     sfont = sfnt_open(handle as rust_input_handle_t);
     if sfont.is_null() {
-        _tt_abort(
-            b"Could not open OpenType font: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not open OpenType font: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     if sfnt_read_table_directory(sfont, 0_u32) < 0i32 {
-        _tt_abort(
-            b"Could not read OpenType table directory: %s\x00" as *const u8 as *const i8,
-            ident,
+        panic!(
+            "Could not read OpenType table directory: {}",
+            CStr::from_ptr(ident).display(),
         );
     }
     if (*sfont).type_0 != 1i32 << 2i32 || {
@@ -657,10 +656,10 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                 /* This is new encoding entry. */
                 gid_0 = cff_charsets_lookup(cffont, sid_orig); /* FIXME */
                 if gid_0 as i32 == 0i32 {
-                    dpx_warning(
-                        b"Glyph \"%s\" missing in font \"%s\".\x00" as *const u8 as *const i8,
-                        *enc_vec.offset(code as isize),
-                        fontname,
+                    warn!(
+                        "Glyph \"{}\" missing in font \"{}\".",
+                        CStr::from_ptr(*enc_vec.offset(code as isize)).display(),
+                        CStr::from_ptr(fontname).display(),
                     ); /* Set unused for writing correct encoding */
                     warn!("Maybe incorrect encoding specified.");
                     *usedchars.offset(code as isize) = 0_i8
@@ -676,9 +675,9 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                         strlen(*enc_vec.offset(code as isize)) as i32,
                     );
                     if verbose > 2i32 {
-                        dpx_message(
-                            b"/%s\x00" as *const u8 as *const i8,
-                            *enc_vec.offset(code as isize),
+                        info!(
+                            "/{}",
+                            CStr::from_ptr(*enc_vec.offset(code as isize)).display(),
                         );
                     }
                     size = (*(*cs_idx).offset.offset((gid_0 as i32 + 1i32) as isize))

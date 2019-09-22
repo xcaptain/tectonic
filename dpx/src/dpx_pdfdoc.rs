@@ -31,14 +31,15 @@
 
 use crate::mfree;
 use crate::streq_ptr;
+use crate::DisplayExt;
 use crate::{info, warn};
+use std::ffi::CStr;
 
 use super::dpx_dpxutil::{
     ht_append_table, ht_clear_iter, ht_clear_table, ht_init_table, ht_iter_getkey, ht_iter_next,
     ht_lookup_table, ht_set_iter, ht_table_size,
 };
 use super::dpx_dvipdfmx::is_xdv;
-use super::dpx_error::dpx_warning;
 use super::dpx_jpegimage::check_for_jpeg;
 use super::dpx_mem::{new, renew};
 use super::dpx_pdfcolor::{
@@ -76,7 +77,6 @@ use crate::dpx_pdfobj::{
     pdf_string_value, PdfObjType,
 };
 use crate::{ttstub_input_close, ttstub_input_open};
-use bridge::_tt_abort;
 use libc::{free, memcpy, sprintf, strcmp, strcpy, strlen, strncmp, strncpy};
 
 pub type size_t = u64;
@@ -235,7 +235,7 @@ static mut thumb_basename: *mut i8 = 0 as *const i8 as *mut i8;
 pub unsafe extern "C" fn pdf_doc_enable_manual_thumbnails() {
     manual_thumb_enabled = 1_i8;
     // without HAVE_LIBPNG:
-    // dpx_warning("Manual thumbnail is not supported without the libpng library.");
+    // warn!("Manual thumbnail is not supported without the libpng library.");
 }
 unsafe extern "C" fn read_thumbnail(mut thumb_filename: *const i8) -> *mut pdf_obj {
     let mut image_ref: *mut pdf_obj = 0 as *mut pdf_obj; /* Maybe reference */
@@ -252,18 +252,18 @@ unsafe extern "C" fn read_thumbnail(mut thumb_filename: *const i8) -> *mut pdf_o
     handle =
         ttstub_input_open(thumb_filename, TTInputFormat::PICT, 0i32) as *mut rust_input_handle_t;
     if handle.is_null() {
-        dpx_warning(
-            b"Could not open thumbnail file \"%s\"\x00" as *const u8 as *const i8,
-            thumb_filename,
+        warn!(
+            "Could not open thumbnail file \"{}\"",
+            CStr::from_ptr(thumb_filename).display()
         );
         return 0 as *mut pdf_obj;
     }
     if check_for_png(handle as rust_input_handle_t) == 0
         && check_for_jpeg(handle as rust_input_handle_t) == 0
     {
-        dpx_warning(
-            b"Thumbnail \"%s\" not a png/jpeg file!\x00" as *const u8 as *const i8,
-            thumb_filename,
+        warn!(
+            "Thumbnail \"{}\" not a png/jpeg file!",
+            CStr::from_ptr(thumb_filename).display()
         );
         ttstub_input_close(handle as rust_input_handle_t);
         return 0 as *mut pdf_obj;
@@ -271,9 +271,9 @@ unsafe extern "C" fn read_thumbnail(mut thumb_filename: *const i8) -> *mut pdf_o
     ttstub_input_close(handle as rust_input_handle_t);
     xobj_id = pdf_ximage_findresource(thumb_filename, options);
     if xobj_id < 0i32 {
-        dpx_warning(
-            b"Could not read thumbnail file \"%s\".\x00" as *const u8 as *const i8,
-            thumb_filename,
+        warn!(
+            "Could not read thumbnail file \"{}\".",
+            CStr::from_ptr(thumb_filename).display()
         );
         image_ref = 0 as *mut pdf_obj
     } else {
@@ -436,16 +436,10 @@ unsafe extern "C" fn doc_resize_page_entries(mut p: *mut pdf_doc, mut size: u32)
 unsafe extern "C" fn doc_get_page_entry(mut p: *mut pdf_doc, mut page_no: u32) -> *mut pdf_page {
     let mut page: *mut pdf_page = 0 as *mut pdf_page;
     if page_no as u64 > 65535 {
-        _tt_abort(
-            b"Page number %ul too large!\x00" as *const u8 as *const i8,
-            page_no,
-        );
+        panic!("Page number {} too large!", page_no,);
     } else {
         if page_no == 0_u32 {
-            _tt_abort(
-                b"Invalid Page number %ul.\x00" as *const u8 as *const i8,
-                page_no,
-            );
+            panic!("Invalid Page number {}.", page_no,);
         }
     }
     if page_no > (*p).pages.max_entries {
@@ -549,14 +543,14 @@ unsafe extern "C" fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
         value = pdf_lookup_dict(docinfo, keys[i as usize]);
         if !value.is_null() {
             if !(!value.is_null() && pdf_obj_typeof(value) == PdfObjType::STRING) {
-                dpx_warning(
-                    b"\"%s\" in DocInfo dictionary not string type.\x00" as *const u8 as *const i8,
-                    keys[i as usize],
+                warn!(
+                    "\"{}\" in DocInfo dictionary not string type.",
+                    CStr::from_ptr(keys[i as usize]).display()
                 );
                 pdf_remove_dict(docinfo, keys[i as usize]);
-                dpx_warning(
-                    b"\"%s\" removed from DocInfo.\x00" as *const u8 as *const i8,
-                    keys[i as usize],
+                warn!(
+                    "\"{}\" removed from DocInfo.",
+                    CStr::from_ptr(keys[i as usize]).display()
                 );
             } else if pdf_string_length(value) == 0_u32 {
                 /* The hyperref package often uses emtpy strings. */
@@ -641,12 +635,11 @@ pub unsafe extern "C" fn pdf_doc_add_page_resource(
     resources = pdf_doc_get_page_resources(p, category);
     duplicate = pdf_lookup_dict(resources, resource_name);
     if !duplicate.is_null() && pdf_compare_reference(duplicate, resource_ref) != 0 {
-        dpx_warning(
-            b"Conflicting page resource found (page: %d, category: %s, name: %s).\x00" as *const u8
-                as *const i8,
+        warn!(
+            "Conflicting page resource found (page: {}, category: {}, name: {}).",
             pdf_doc_current_page_number(),
-            category,
-            resource_name,
+            CStr::from_ptr(category).display(),
+            CStr::from_ptr(resource_name).display(),
         );
         warn!("Ignoring...");
         pdf_release_obj(resource_ref);
@@ -1800,9 +1793,9 @@ pub unsafe extern "C" fn pdf_doc_add_names(
         i = i.wrapping_add(1)
     }
     if (*(*p).names.offset(i as isize)).category.is_null() {
-        dpx_warning(
-            b"Unknown name dictionary category \"%s\".\x00" as *const u8 as *const i8,
-            category,
+        warn!(
+            "Unknown name dictionary category \"{}\".",
+            CStr::from_ptr(category).display()
         );
         return -1i32;
     }
@@ -1979,9 +1972,9 @@ unsafe extern "C" fn warn_undef_dests(mut dests: *mut ht_table, mut gotos: *mut 
                 keylen as _,
             );
             *dest.offset(keylen as isize) = 0_i8;
-            dpx_warning(
-                b"PDF destination \"%s\" not defined.\x00" as *const u8 as *const i8,
-                dest,
+            warn!(
+                "PDF destination \"{}\" not defined.",
+                CStr::from_ptr(dest).display()
             );
             free(dest as *mut libc::c_void);
         }
@@ -2505,9 +2498,9 @@ pub unsafe extern "C" fn pdf_doc_get_dictionary(mut category: *const i8) -> *mut
         dict = (*currentpage).page_obj
     }
     if dict.is_null() {
-        _tt_abort(
-            b"Document dict. \"%s\" not exist. \x00" as *const u8 as *const i8,
-            category,
+        panic!(
+            "Document dict. \"{}\" not exist. ",
+            CStr::from_ptr(category).display()
         );
     }
     dict
@@ -2545,9 +2538,9 @@ pub unsafe extern "C" fn pdf_doc_get_reference(mut category: *const i8) -> *mut 
         ref_0 = pdf_doc_ref_page((page_no + 1i32) as u32)
     }
     if ref_0.is_null() {
-        _tt_abort(
-            b"Reference to \"%s\" not exist. \x00" as *const u8 as *const i8,
-            category,
+        panic!(
+            "Reference to \"{}\" not exist. ",
+            CStr::from_ptr(category).display()
         );
     }
     ref_0

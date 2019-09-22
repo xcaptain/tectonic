@@ -29,6 +29,9 @@
     unused_mut
 )]
 
+use crate::DisplayExt;
+use std::ffi::CStr;
+
 use super::dpx_sfnt::{
     dfont_open, sfnt_close, sfnt_create_FontFile_stream, sfnt_find_table_pos, sfnt_open,
     sfnt_read_table_directory, sfnt_require_table,
@@ -39,7 +42,6 @@ use crate::{info, warn, FromBEByteSlice};
 use super::dpx_cid::{CIDFont_get_embedding, CIDFont_get_parent_id, CIDFont_is_BaseFont};
 use super::dpx_cmap::{CMap_cache_find, CMap_cache_get, CMap_decode_char};
 use super::dpx_dpxfile::{dpx_open_dfont_file, dpx_open_truetype_file};
-use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::new;
 use super::dpx_pdffont::pdf_font_make_uniqueTag;
 use super::dpx_tt_aux::tt_get_fontdesc;
@@ -59,7 +61,6 @@ use crate::dpx_pdfobj::{
     pdf_release_obj, pdf_stream_length,
 };
 use crate::ttstub_input_close;
-use bridge::_tt_abort;
 use libc::{free, memmove, memset, sprintf, strcat, strcmp, strcpy, strlen, strncpy, strstr};
 
 pub type size_t = u64;
@@ -256,10 +257,10 @@ unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
         i += 1
     }
     if count > 0i32 {
-        dpx_warning(
-            b"Removed %d null character(s) from fontname --> %s\x00" as *const u8 as *const i8,
+        warn!(
+            "Removed {} null character(s) from fontname --> {}",
             count,
-            fontname,
+            CStr::from_ptr(fontname).display(),
         );
     }
     *fontname.offset(len as isize) = '\u{0}' as i32 as i8;
@@ -268,10 +269,10 @@ unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
     while !badstrlist[i as usize].is_null() {
         p = strstr(fontname, badstrlist[i as usize]);
         if !p.is_null() && p > fontname {
-            dpx_warning(
-                b"Removed string \"%s\" from fontname \"%s\".\x00" as *const u8 as *const i8,
-                badstrlist[i as usize],
-                fontname,
+            warn!(
+                "Removed string \"{}\" from fontname \"{}\".",
+                CStr::from_ptr(badstrlist[i as usize]).display(),
+                CStr::from_ptr(fontname).display(),
             );
             *p.offset(0) = '\u{0}' as i32 as i8;
             len = p.wrapping_offset_from(fontname) as i64 as i32;
@@ -478,10 +479,10 @@ unsafe extern "C" fn find_tocode_cmap(
         i += 1
     }
     if cmap_id < 0i32 {
-        dpx_warning(
-            b"Could not find CID-to-Code mapping for \"%s-%s\".\x00" as *const u8 as *const i8,
-            reg,
-            ord,
+        warn!(
+            "Could not find CID-to-Code mapping for \"{}-{}\".",
+            CStr::from_ptr(reg).display(),
+            CStr::from_ptr(ord).display(),
         );
         warn!("I tried to load (one of) the following file(s):");
         i = 0i32;
@@ -490,7 +491,12 @@ unsafe extern "C" fn find_tocode_cmap(
             if append.is_null() {
                 break;
             }
-            dpx_message(b" %s-%s-%s\x00" as *const u8 as *const i8, reg, ord, append);
+            info!(
+                " {}-{}-{}",
+                CStr::from_ptr(reg).display(),
+                CStr::from_ptr(ord).display(),
+                CStr::from_ptr(append).display()
+            );
             i += 1
         }
         warn!("Please check if this file exists.");
@@ -884,9 +890,9 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     if handle.is_null() {
         handle = dpx_open_dfont_file((*font).ident);
         if handle.is_null() {
-            _tt_abort(
-                b"Could not open TTF/dfont file: %s\x00" as *const u8 as *const i8,
-                (*font).ident,
+            panic!(
+                "Could not open TTF/dfont file: {}",
+                CStr::from_ptr((*font).ident).display()
             );
         }
         sfont = dfont_open(handle, (*(*font).options).index)
@@ -894,43 +900,42 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         sfont = sfnt_open(handle)
     }
     if sfont.is_null() {
-        _tt_abort(
-            b"Could not open TTF file: %s\x00" as *const u8 as *const i8,
-            (*font).ident,
+        panic!(
+            "Could not open TTF file: {}",
+            CStr::from_ptr((*font).ident).display()
         );
     }
     match (*sfont).type_0 {
         16 => {
             offset = ttc_read_offset(sfont, (*(*font).options).index);
             if offset == 0_u32 {
-                _tt_abort(
-                    b"Invalid TTC index in %s.\x00" as *const u8 as *const i8,
-                    (*font).ident,
+                panic!(
+                    "Invalid TTC index in {}.",
+                    CStr::from_ptr((*font).ident).display()
                 );
             }
         }
         1 => {
             if (*(*font).options).index > 0i32 {
-                _tt_abort(
-                    b"Found TrueType font file while expecting TTC file (%s).\x00" as *const u8
-                        as *const i8,
-                    (*font).ident,
+                panic!(
+                    "Found TrueType font file while expecting TTC file ({}).",
+                    CStr::from_ptr((*font).ident).display()
                 );
             }
             offset = 0_u32
         }
         256 => offset = (*sfont).offset,
         _ => {
-            _tt_abort(
-                b"Not a TrueType/TTC font (%s)?\x00" as *const u8 as *const i8,
-                (*font).ident,
+            panic!(
+                "Not a TrueType/TTC font ({})?",
+                CStr::from_ptr((*font).ident).display()
             );
         }
     }
     if sfnt_read_table_directory(sfont, offset) < 0i32 {
-        _tt_abort(
-            b"Could not read TrueType table directory (%s).\x00" as *const u8 as *const i8,
-            (*font).ident,
+        panic!(
+            "Could not read TrueType table directory ({}).",
+            CStr::from_ptr((*font).ident).display()
         );
     }
     /*
@@ -975,16 +980,14 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
             i += 1
         }
         if ttcmap.is_null() {
-            dpx_warning(
-                b"No usable TrueType cmap table found for font \"%s\".\x00" as *const u8
-                    as *const i8,
-                (*font).ident,
+            warn!(
+                "No usable TrueType cmap table found for font \"{}\".",
+                CStr::from_ptr((*font).ident).display()
             );
-            dpx_warning(
-                b"CID character collection for this font is set to \"%s-%s\"\x00" as *const u8
-                    as *const i8,
-                (*(*font).csi).registry,
-                (*(*font).csi).ordering,
+            warn!(
+                "CID character collection for this font is set to \"{}-{}\"",
+                CStr::from_ptr((*(*font).csi).registry).display(),
+                CStr::from_ptr((*(*font).csi).ordering).display(),
             );
             panic!("Cannot continue without this...");
         } else {
@@ -1276,9 +1279,9 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
             required_table[i as usize].must_exist,
         ) < 0i32
         {
-            _tt_abort(
-                b"Some required TrueType table (%s) does not exist.\x00" as *const u8 as *const i8,
-                required_table[i as usize].name,
+            panic!(
+                "Some required TrueType table ({}) does not exist.",
+                CStr::from_ptr(required_table[i as usize].name).display()
             );
         }
         i += 1
@@ -1292,9 +1295,9 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         ttstub_input_close(handle);
     }
     if fontfile.is_null() {
-        _tt_abort(
-            b"Could not created FontFile stream for \"%s\".\x00" as *const u8 as *const i8,
-            (*font).ident,
+        panic!(
+            "Could not created FontFile stream for \"{}\".",
+            CStr::from_ptr((*font).ident).display()
         );
     }
     if verbose > 1i32 {
@@ -1381,9 +1384,9 @@ pub unsafe extern "C" fn CIDFont_type2_open(
         16 => offset = ttc_read_offset(sfont, (*opt).index),
         1 => {
             if (*opt).index > 0i32 {
-                _tt_abort(
-                    b"Invalid TTC index (not TTC font): %s\x00" as *const u8 as *const i8,
-                    name,
+                panic!(
+                    "Invalid TTC index (not TTC font): {}",
+                    CStr::from_ptr(name).display()
                 );
             }
             offset = 0_u32
@@ -1432,9 +1435,9 @@ pub unsafe extern "C" fn CIDFont_type2_open(
     strcpy(fontname, shortname);
     free(shortname as *mut libc::c_void);
     if (*opt).embed != 0 && (*opt).style != 0i32 {
-        dpx_warning(
-            b"Embedding disabled due to style option for %s.\x00" as *const u8 as *const i8,
-            name,
+        warn!(
+            "Embedding disabled due to style option for {}.",
+            CStr::from_ptr(name).display()
         );
         (*opt).embed = 0i32
     }
@@ -1463,16 +1466,16 @@ pub unsafe extern "C" fn CIDFont_type2_open(
                 || strcmp((*(*opt).csi).ordering, (*cmap_csi).ordering) != 0
             {
                 warn!("CID character collection mismatched:\n");
-                dpx_message(
-                    b"\tFont: %s-%s-%d\n\x00" as *const u8 as *const i8,
-                    (*(*opt).csi).registry,
-                    (*(*opt).csi).ordering,
+                info!(
+                    "\tFont: {}-{}-{}\n",
+                    CStr::from_ptr((*(*opt).csi).registry).display(),
+                    CStr::from_ptr((*(*opt).csi).ordering).display(),
                     (*(*opt).csi).supplement,
                 );
-                dpx_message(
-                    b"\tCMap: %s-%s-%d\n\x00" as *const u8 as *const i8,
-                    (*cmap_csi).registry,
-                    (*cmap_csi).ordering,
+                info!(
+                    "\tCMap: {}-{}-{}\n",
+                    CStr::from_ptr((*cmap_csi).registry).display(),
+                    CStr::from_ptr((*cmap_csi).ordering).display(),
                     (*cmap_csi).supplement,
                 );
                 panic!("Incompatible CMap specified for this font.");

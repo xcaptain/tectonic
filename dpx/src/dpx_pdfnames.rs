@@ -31,12 +31,13 @@
 
 use crate::mfree;
 use crate::warn;
+use crate::DisplayExt;
+use std::ffi::CStr;
 
 use super::dpx_dpxutil::{
     ht_append_table, ht_clear_iter, ht_clear_table, ht_init_table, ht_iter_getkey, ht_iter_getval,
     ht_iter_next, ht_lookup_table, ht_set_iter,
 };
-use super::dpx_error::dpx_warning;
 use super::dpx_mem::{new, renew};
 use super::qsort;
 use crate::dpx_pdfobj::{
@@ -44,7 +45,6 @@ use crate::dpx_pdfobj::{
     pdf_new_null, pdf_new_string, pdf_new_undefined, pdf_obj, pdf_obj_typeof, pdf_ref_obj,
     pdf_release_obj, pdf_string_length, pdf_string_value, pdf_transfer_label, PdfObjType,
 };
-use bridge::_tt_abort;
 use libc::{free, memcmp};
 
 pub type size_t = u64;
@@ -148,10 +148,9 @@ unsafe extern "C" fn check_objects_defined(mut ht_tab: *mut ht_table) {
                 && pdf_obj_typeof((*value).object) == PdfObjType::UNDEFINED
             {
                 pdf_names_add_object(ht_tab, key as *const libc::c_void, keylen, pdf_new_null());
-                dpx_warning(
-                    b"Object @%s used, but not defined. Replaced by null.\x00" as *const u8
-                        as *const i8,
-                    printable_key(key, keylen),
+                warn!(
+                    "Object @{} used, but not defined. Replaced by null.",
+                    CStr::from_ptr(printable_key(key, keylen)).display(),
                 );
             }
             if !(ht_iter_next(&mut iter) >= 0i32) {
@@ -195,9 +194,9 @@ pub unsafe extern "C" fn pdf_names_add_object(
             pdf_release_obj((*value).object);
             (*value).object = object
         } else {
-            dpx_warning(
-                b"Object @%s already defined.\x00" as *const u8 as *const i8,
-                printable_key(key as *const i8, keylen),
+            warn!(
+                "Object @{} already defined.",
+                CStr::from_ptr(printable_key(key as *const i8, keylen)).display(),
             );
             pdf_release_obj(object);
             return -1i32;
@@ -260,17 +259,17 @@ pub unsafe extern "C" fn pdf_names_close_object(
     if value.is_null()
         || !(*value).object.is_null() && pdf_obj_typeof((*value).object) == PdfObjType::UNDEFINED
     {
-        dpx_warning(
-            b"Cannot close undefined object @%s.\x00" as *const u8 as *const i8,
-            printable_key(key as *const i8, keylen),
+        warn!(
+            "Cannot close undefined object @{}.",
+            CStr::from_ptr(printable_key(key as *const i8, keylen)).display(),
         );
         return -1i32;
     }
     assert!(!(*value).object.is_null());
     if (*value).closed != 0 {
-        dpx_warning(
-            b"Object @%s already closed.\x00" as *const u8 as *const i8,
-            printable_key(key as *const i8, keylen),
+        warn!(
+            "Object @{} already closed.",
+            CStr::from_ptr(printable_key(key as *const i8, keylen)).display(),
         );
         return -1i32;
     }
@@ -358,9 +357,9 @@ unsafe extern "C" fn build_name_tree(
                     pdf_add_array(names, pdf_ref_obj((*cur).value));
                 }
                 PdfObjType::OBJ_INVALID => {
-                    _tt_abort(
-                        b"Invalid object...: %s\x00" as *const u8 as *const i8,
-                        printable_key((*cur).key, (*cur).keylen),
+                    panic!(
+                        "Invalid object...: {}",
+                        CStr::from_ptr(printable_key((*cur).key, (*cur).keylen)).display(),
                     );
                 }
                 _ => {
@@ -436,10 +435,9 @@ unsafe extern "C" fn flat_table(
                     if !(*value).object.is_null()
                         && pdf_obj_typeof((*value).object) == PdfObjType::UNDEFINED
                     {
-                        dpx_warning(
-                            b"Object @%s\" not defined. Replaced by null.\x00" as *const u8
-                                as *const i8,
-                            printable_key(key, keylen),
+                        warn!(
+                            "Object @{}\" not defined. Replaced by null.",
+                            CStr::from_ptr(printable_key(key, keylen)).display(),
                         );
                         let ref mut fresh4 = (*objects.offset(count as isize)).key;
                         *fresh4 = key;
