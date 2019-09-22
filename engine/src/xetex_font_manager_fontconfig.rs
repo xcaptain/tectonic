@@ -1,3 +1,5 @@
+#![cfg(not(target_os = "macos"))]
+
 #![allow(dead_code,
          mutable_transmutes,
          non_camel_case_types,
