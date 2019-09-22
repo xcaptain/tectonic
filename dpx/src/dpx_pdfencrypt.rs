@@ -31,9 +31,8 @@
 
 use std::slice::from_raw_parts;
 
-use crate::warn;
-use super::dpx_dpxcrypt::{AES_cbc_encrypt_tectonic, AES_ecb_encrypt, ARC4_set_key, ARC4};
 use super::dpx_dpxcrypt::ARC4_CONTEXT;
+use super::dpx_dpxcrypt::{AES_cbc_encrypt_tectonic, AES_ecb_encrypt, ARC4_set_key, ARC4};
 use super::dpx_mem::new;
 use super::dpx_pdfdoc::pdf_doc_get_dictionary;
 use super::dpx_pdffont::get_unique_time_if_given;
@@ -42,12 +41,11 @@ use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_get_version, pdf_new_array, pdf_new_dict, pdf_new_name,
     pdf_new_number, pdf_new_string, pdf_obj,
 };
-use libc::{
-    free, gmtime, localtime, memcpy, memset, srand, strcpy, strlen, time,
-};
-use md5::{Md5, Digest};
-use sha2::{Sha256, Sha384, Sha512};
+use crate::warn;
+use libc::{free, gmtime, localtime, memcpy, memset, srand, strcpy, strlen, time};
+use md5::{Digest, Md5};
 use rand::prelude::*;
+use sha2::{Sha256, Sha384, Sha512};
 
 pub type __time_t = i64;
 pub type size_t = u64;
@@ -491,12 +489,7 @@ unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *con
     let mut OE: *mut u8 = 0 as *mut u8;
     let mut iv: [u8; 16] = [0; 16];
     let mut OE_len: size_t = 0;
-    hash = compute_hash_V5(
-        oplain,
-        vsalt.as_mut_ptr(),
-        p.U.as_mut_ptr(),
-        p.R,
-    );
+    hash = compute_hash_V5(oplain, vsalt.as_mut_ptr(), p.U.as_mut_ptr(), p.R);
     memcpy(
         p.O.as_mut_ptr() as *mut libc::c_void,
         hash.as_mut_ptr() as *const libc::c_void,
@@ -512,12 +505,7 @@ unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *con
         ksalt.as_mut_ptr() as *const libc::c_void,
         8,
     );
-    hash = compute_hash_V5(
-        oplain,
-        ksalt.as_mut_ptr(),
-        p.U.as_mut_ptr(),
-        p.R,
-    );
+    hash = compute_hash_V5(oplain, ksalt.as_mut_ptr(), p.U.as_mut_ptr(), p.R);
     memset(iv.as_mut_ptr() as *mut libc::c_void, 0i32, 16);
     AES_cbc_encrypt_tectonic(
         hash.as_mut_ptr(),
@@ -544,12 +532,7 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
     let mut iv: [u8; 16] = [0; 16];
     let mut UE_len: size_t = 0;
     let mut i: i32 = 0;
-    hash = compute_hash_V5(
-        uplain,
-        vsalt.as_mut_ptr(),
-        0 as *const u8,
-        p.R,
-    );
+    hash = compute_hash_V5(uplain, vsalt.as_mut_ptr(), 0 as *const u8, p.R);
     memcpy(
         p.U.as_mut_ptr() as *mut libc::c_void,
         hash.as_mut_ptr() as *const libc::c_void,
@@ -565,12 +548,7 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
         ksalt.as_mut_ptr() as *const libc::c_void,
         8,
     );
-    hash = compute_hash_V5(
-        uplain,
-        ksalt.as_mut_ptr(),
-        0 as *const u8,
-        p.R,
-    );
+    hash = compute_hash_V5(uplain, ksalt.as_mut_ptr(), 0 as *const u8, p.R);
     memset(iv.as_mut_ptr() as *mut libc::c_void, 0i32, 16);
     AES_cbc_encrypt_tectonic(
         hash.as_mut_ptr(),

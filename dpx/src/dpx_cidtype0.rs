@@ -298,8 +298,7 @@ unsafe extern "C" fn add_CIDVMetrics(
     if sfnt_find_table_pos(sfont, b"vhea") > 0_u32 {
         vhea = tt_read_vhea_table(sfont)
     }
-    if !vhea.is_null() && sfnt_find_table_pos(sfont, b"vmtx") > 0_u32
-    {
+    if !vhea.is_null() && sfnt_find_table_pos(sfont, b"vmtx") > 0_u32 {
         sfnt_locate_table(sfont, b"vmtx");
         vmtx = tt_read_longMetrics(
             sfont,

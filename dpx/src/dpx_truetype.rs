@@ -517,12 +517,7 @@ unsafe extern "C" fn do_builtin_encoding(
         info!("[{} glyphs]", (*glyphs).num_glyphs as i32);
     }
     tt_build_finish(glyphs);
-    sfnt_set_table(
-        sfont,
-        b"cmap",
-        cmap_table as *mut libc::c_void,
-        274_u32,
-    );
+    sfnt_set_table(sfont, b"cmap", cmap_table as *mut libc::c_void, 274_u32);
     0i32
 }
 /* WARNING: This modifies glyphname itself */
@@ -1165,12 +1160,7 @@ unsafe extern "C" fn do_custom_encoding(
         info!("[{} glyphs]", (*glyphs).num_glyphs as i32);
     }
     tt_build_finish(glyphs);
-    sfnt_set_table(
-        sfont,
-        b"cmap",
-        cmap_table as *mut libc::c_void,
-        274_u32,
-    );
+    sfnt_set_table(sfont, b"cmap", cmap_table as *mut libc::c_void, 274_u32);
     0i32
 }
 #[no_mangle]
@@ -1268,8 +1258,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
      */
 
     for table in &required_table {
-        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err()
-        {
+        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err() {
             sfnt_close(sfont);
             ttstub_input_close(handle as rust_input_handle_t);
             _tt_abort(

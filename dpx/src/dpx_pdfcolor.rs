@@ -29,9 +29,6 @@
     unused_mut
 )]
 
-use std::slice::from_raw_parts;
-use crate::mfree;
-use crate::{info, warn};
 use super::dpx_error::{dpx_message, dpx_warning};
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::sget_unsigned_pair;
@@ -41,8 +38,11 @@ use crate::dpx_pdfobj::{
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
     pdf_stream_dict,
 };
+use crate::mfree;
+use crate::{info, warn};
 use libc::{free, memcmp, memcpy, memset, sprintf, strcmp, strcpy, strlen};
-use md5::{Md5, Digest};
+use md5::{Digest, Md5};
+use std::slice::from_raw_parts;
 
 pub type size_t = u64;
 
@@ -829,10 +829,7 @@ unsafe extern "C" fn iccp_unpack_header(
     }
     0i32
 }
-unsafe extern "C" fn iccp_get_checksum(
-    profile: *const u8,
-    proflen: usize,
-) -> [u8; 16] {
+unsafe extern "C" fn iccp_get_checksum(profile: *const u8, proflen: usize) -> [u8; 16] {
     let mut md5 = Md5::new();
     md5.input(from_raw_parts(profile.offset(0), 56));
     md5.input(&[0u8; 12]);

@@ -509,8 +509,22 @@ pub unsafe extern "C" fn dvipdfmx_main(
     pdf_font_set_dpi(font_dpi);
     dpx_delete_old_cache(image_cache_life);
     pdf_enc_compute_id_string(
-        if dvi_filename.is_null() { None } else { Some(from_raw_parts(dvi_filename as *const u8, strlen(dvi_filename))) },
-        if pdf_filename.is_null() { None } else { Some(from_raw_parts(pdf_filename as *const u8, strlen(pdf_filename))) },
+        if dvi_filename.is_null() {
+            None
+        } else {
+            Some(from_raw_parts(
+                dvi_filename as *const u8,
+                strlen(dvi_filename),
+            ))
+        },
+        if pdf_filename.is_null() {
+            None
+        } else {
+            Some(from_raw_parts(
+                pdf_filename as *const u8,
+                strlen(pdf_filename),
+            ))
+        },
     );
     let mut ver_major: i32 = 0i32;
     let mut ver_minor: i32 = 0i32;

@@ -1475,9 +1475,7 @@ unsafe extern "C" fn dvi_locate_native_font(
         (*loaded_fonts.offset(cur_id as isize)).descent = (*hhea).descent as i32;
         (*loaded_fonts.offset(cur_id as isize)).unitsPerEm = (*head).unitsPerEm as u32;
         (*loaded_fonts.offset(cur_id as isize)).numGlyphs = (*maxp).numGlyphs as u32;
-        if layout_dir == 1i32
-            && sfnt_find_table_pos(sfont, b"vmtx") > 0_u32
-        {
+        if layout_dir == 1i32 && sfnt_find_table_pos(sfont, b"vmtx") > 0_u32 {
             let mut vhea: *mut tt_vhea_table = tt_read_vhea_table(sfont);
             sfnt_locate_table(sfont, b"vmtx");
             let ref mut fresh19 = (*loaded_fonts.offset(cur_id as isize)).hvmt;

@@ -29,13 +29,13 @@
     unused_mut
 )]
 
-use crate::dpx_truetype::NameTable;
 use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{tt_get_unsigned_pair, tt_get_unsigned_quad};
 use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_add_stream, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj,
     pdf_release_obj, pdf_stream_dict,
 };
+use crate::dpx_truetype::NameTable;
 use crate::mfree;
 use crate::{ttstub_input_read, ttstub_input_seek};
 use libc::{free, memcpy};
@@ -248,12 +248,8 @@ unsafe extern "C" fn sfnt_calc_checksum(mut data: *mut libc::c_void, mut length:
     chksum
 }
 
-unsafe fn find_table_index(
-    td: Option<&sfnt_table_directory>,
-    tag: &[u8; 4],
-) -> i32 {
-    td.and_then(|td| (0..td.num_tables)
-        .find(|&idx| tag == &(*td.tables.offset(idx as isize)).tag))
+unsafe fn find_table_index(td: Option<&sfnt_table_directory>, tag: &[u8; 4]) -> i32 {
+    td.and_then(|td| (0..td.num_tables).find(|&idx| tag == &(*td.tables.offset(idx as isize)).tag))
         .map(|idx| i32::from(idx))
         .unwrap_or(-1)
 }
@@ -371,10 +367,7 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn sfnt_require_table(
-    sfont: &mut sfnt,
-    table: &NameTable,
-) -> Result<(), ()> {
+pub unsafe extern "C" fn sfnt_require_table(sfont: &mut sfnt, table: &NameTable) -> Result<(), ()> {
     let mut td = (*sfont).directory.as_mut().unwrap();
     let idx = find_table_index(Some(td), &table.name);
     if idx < 0 {
