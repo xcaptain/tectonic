@@ -75,7 +75,6 @@ pub struct tt_post_table {
  * as directory separators. */
 /* offset from begenning of the post table */
 unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont: *mut sfnt) -> i32 {
-    let mut i: u16 = 0;
     let mut idx: u16 = 0;
     let mut indices: *mut u16 = 0 as *mut u16;
     let mut maxidx: u16 = 0;
@@ -84,8 +83,7 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
     indices = new(((*post).numberOfGlyphs as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32) as *mut u16;
     maxidx = 257_u16;
-    i = 0_u16;
-    while (i as i32) < (*post).numberOfGlyphs as i32 {
+    for i in 0..(*post).numberOfGlyphs as i32 {
         idx = tt_get_unsigned_pair((*sfont).handle);
         if idx as i32 >= 258i32 {
             if idx as i32 > maxidx as i32 {
@@ -109,7 +107,6 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
             }
         }
         *indices.offset(i as isize) = idx;
-        i = i.wrapping_add(1)
     }
     (*post).count = (maxidx as i32 - 257i32) as u16;
     if ((*post).count as i32) < 1i32 {
@@ -118,8 +115,7 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
         (*post).names = new(((*post).count as u32 as u64)
             .wrapping_mul(::std::mem::size_of::<*mut i8>() as u64)
             as u32) as *mut *mut i8;
-        i = 0_u16;
-        while (i as i32) < (*post).count as i32 {
+        for i in 0..(*post).count as i32 {
             /* read Pascal strings */
             len = tt_get_unsigned_byte((*sfont).handle) as i32;
             if len > 0i32 {
@@ -137,14 +133,12 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
                 let ref mut fresh1 = *(*post).names.offset(i as isize);
                 *fresh1 = 0 as *mut i8
             }
-            i = i.wrapping_add(1)
         }
     }
     (*post).glyphNamePtr = new(((*post).numberOfGlyphs as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<*const i8>() as u64)
         as u32) as *mut *const i8;
-    i = 0_u16;
-    while (i as i32) < (*post).numberOfGlyphs as i32 {
+    for i in 0..(*post).numberOfGlyphs as i32 {
         idx = *indices.offset(i as isize);
         if (idx as i32) < 258i32 {
             let ref mut fresh2 = *(*post).glyphNamePtr.offset(i as isize);
@@ -161,7 +155,6 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
             free(indices as *mut libc::c_void);
             return -1i32;
         }
-        i = i.wrapping_add(1)
     }
     free(indices as *mut libc::c_void);
     0i32
@@ -210,18 +203,15 @@ pub unsafe extern "C" fn tt_lookup_post_table(
     mut post: *mut tt_post_table,
     mut glyphname: *const i8,
 ) -> u16 {
-    let mut gid: u16 = 0;
     assert!(!post.is_null() && !glyphname.is_null());
-    gid = 0_u16;
-    while (gid as i32) < (*post).count as i32 {
+    for gid in 0..(*post).count as u16 {
         if !(*(*post).glyphNamePtr.offset(gid as isize)).is_null()
             && streq_ptr(glyphname, *(*post).glyphNamePtr.offset(gid as isize)) as i32 != 0
         {
             return gid;
         }
-        gid = gid.wrapping_add(1)
     }
-    0_u16
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_get_glyphname(mut post: *mut tt_post_table, mut gid: u16) -> *mut i8 {
@@ -237,16 +227,13 @@ pub unsafe extern "C" fn tt_get_glyphname(mut post: *mut tt_post_table, mut gid:
 /* Number of glyph names in names[] */
 #[no_mangle]
 pub unsafe extern "C" fn tt_release_post_table(mut post: *mut tt_post_table) {
-    let mut i: u16 = 0;
     assert!(!post.is_null());
     if !(*post).glyphNamePtr.is_null() && (*post).Version as u64 != 0x10000 {
         free((*post).glyphNamePtr as *mut libc::c_void);
     }
     if !(*post).names.is_null() {
-        i = 0_u16;
-        while (i as i32) < (*post).count as i32 {
+        for i in 0..(*post).count {
             free(*(*post).names.offset(i as isize) as *mut libc::c_void);
-            i = i.wrapping_add(1)
         }
         free((*post).names as *mut libc::c_void);
     }
