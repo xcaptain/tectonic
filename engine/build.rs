@@ -248,10 +248,6 @@ fn main() {
         .cpp(true)
         .flag("-Wall")
         .file("tectonic/teckit-Engine.cpp")
-        .file("tectonic/xetex-XeTeXFontInst.cpp")
-        .file("tectonic/xetex-XeTeXFontMgr.cpp")
-        .file("tectonic/xetex-XeTeXLayoutInterface.cpp")
-        .file("tectonic/xetex-XeTeXOTMath.cpp")
         .include(".");
 
     dep_state.foreach_include_path(|p| {
@@ -264,19 +260,12 @@ fn main() {
     if cfg!(target_os = "macos") {
         ccfg.define("XETEX_MAC", Some("1"));
         cppcfg.define("XETEX_MAC", Some("1"));
-        cppcfg.file("tectonic/xetex-XeTeXFontInst_Mac.cpp");
-        cppcfg.file("tectonic/xetex-XeTeXFontMgr_Mac.mm");
 
         println!("cargo:rustc-link-lib=framework=Foundation");
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
         println!("cargo:rustc-link-lib=framework=CoreGraphics");
         println!("cargo:rustc-link-lib=framework=CoreText");
         println!("cargo:rustc-link-lib=framework=AppKit");
-    }
-
-    if cfg!(not(target_os = "macos")) {
-        // At the moment we use Fontconfig on both Linux and Windows.
-        cppcfg.file("tectonic/xetex-XeTeXFontMgr_FC.cpp");
     }
 
     if cfg!(target_endian = "big") {

@@ -20,11 +20,6 @@ extern "C" {
     pub type __CFDictionary;
     pub type __CFSet;
     pub type __CTFont;
-    pub type CppStdString;
-    pub type CppStdMapStringToFontPtr;
-    pub type CppStdListOfString;
-    pub type CppStdMapStringToFamilyPtr;
-    pub type CppStdMapFontRefToFontPtr;
     pub type NSString;
     pub type NSArray;
     pub type NSEnumerator;
@@ -41,22 +36,6 @@ extern "C" {
     fn strdup(_: *const libc::c_char) -> *mut libc::c_char;
     #[no_mangle]
     fn xpc_debugger_api_misuse_info() -> *const libc::c_char;
-    #[no_mangle]
-    fn CppStdString_create() -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdString_delete(self_0: *mut CppStdString);
-    #[no_mangle]
-    fn CppStdString_assign_from_const_char_ptr(self_0: *mut CppStdString,
-                                               val: *const libc::c_char);
-    #[no_mangle]
-    fn CppStdString_assign_n_chars(self_0: *mut CppStdString,
-                                   val: *const libc::c_char, count: size_t);
-    #[no_mangle]
-    fn CppStdString_cstr(self_0: *const CppStdString) -> *const libc::c_char;
-    #[no_mangle]
-    fn CppStdListOfString_create() -> *mut CppStdListOfString;
-    #[no_mangle]
-    fn CppStdListOfString_delete(self_0: *mut CppStdListOfString);
     #[no_mangle]
     fn XeTeXFontMgr_addToMaps(self_0: *mut XeTeXFontMgr,
                               platformFont: PlatformFontRef,

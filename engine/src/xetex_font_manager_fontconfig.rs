@@ -10,7 +10,9 @@
 #![feature(const_raw_ptr_to_usize_cast,
            extern_types,
            ptr_wrapping_offset_from)]
-extern crate libc;
+           
+use crate::xetex_layout_interface::collection_types::*;
+
 extern "C" {
     pub type _FcPattern;
     pub type _FcConfig;
@@ -59,11 +61,6 @@ extern "C" {
     pub type FT_Size_InternalRec_;
     pub type FT_Slot_InternalRec_;
     pub type FT_SubGlyphRec_;
-    pub type CppStdString;
-    pub type CppStdMapStringToFontPtr;
-    pub type CppStdListOfString;
-    pub type CppStdMapStringToFamilyPtr;
-    pub type CppStdMapFontRefToFontPtr;
     pub type UConverter;
     #[no_mangle]
     fn FcConfigGetCurrent() -> *mut FcConfig;
@@ -249,54 +246,6 @@ extern "C" {
  * also used in xetex-XeTeXFontMgr_FC.cpp and xetex-ext.c.  */
     #[no_mangle]
     static mut gFreeTypeLibrary: FT_Library;
-    #[no_mangle]
-    fn CppStdString_create() -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdString_delete(self_0: *mut CppStdString);
-    #[no_mangle]
-    fn CppStdString_equal_const_char_ptr(lhs: *mut CppStdString,
-                                         rhs: *const libc::c_char) -> bool;
-    #[no_mangle]
-    fn CppStdString_const_char_ptr_equal_const_char_ptr(lhs:
-                                                            *const libc::c_char,
-                                                        rhs:
-                                                            *const libc::c_char)
-     -> bool;
-    #[no_mangle]
-    fn CppStdString_assign_from_const_char_ptr(self_0: *mut CppStdString,
-                                               val: *const libc::c_char);
-    #[no_mangle]
-    fn CppStdString_assign_n_chars(self_0: *mut CppStdString,
-                                   val: *const libc::c_char, count: size_t);
-    #[no_mangle]
-    fn CppStdString_append_const_char_ptr(self_0: *mut CppStdString,
-                                          val: *const libc::c_char);
-    #[no_mangle]
-    fn CppStdListOfString_create() -> *mut CppStdListOfString;
-    #[no_mangle]
-    fn CppStdListOfString_delete(self_0: *mut CppStdListOfString);
-    #[no_mangle]
-    fn CppStdListOfString_size(self_0: *const CppStdListOfString) -> size_t;
-    #[no_mangle]
-    fn CppStdListOfString_assign(dest: *mut CppStdListOfString,
-                                 src: *mut CppStdListOfString);
-    #[no_mangle]
-    fn CppStdListOfString_contains_const_char_ptr(self_0:
-                                                      *const CppStdListOfString,
-                                                  val: *const libc::c_char)
-     -> bool;
-    #[no_mangle]
-    fn CppStdListOfString_append_copy_CppStdString(list:
-                                                       *mut CppStdListOfString,
-                                                   val: *mut CppStdString);
-    #[no_mangle]
-    fn CppStdListOfString_front_const_char_ptr(self_0:
-                                                   *const CppStdListOfString)
-     -> *const libc::c_char;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_contains(self_0:
-                                              *const CppStdMapFontRefToFontPtr,
-                                          val: PlatformFontRef) -> bool;
     #[no_mangle]
     fn XeTeXFontMgr_base_ctor(self_0: *mut XeTeXFontMgr);
     #[no_mangle]
@@ -2131,10 +2080,10 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(mut self_0:
             }
             i = i.wrapping_add(1)
         }
-        if CppStdListOfString_size(familyNames) > 0i32 as libc::c_ulong {
+        if CppStdListOfString_size(familyNames) > 0 {
             CppStdListOfString_assign((*names).m_familyNames, familyNames);
         }
-        if CppStdListOfString_size(subFamilyNames) > 0i32 as libc::c_ulong {
+        if CppStdListOfString_size(subFamilyNames) > 0 {
             CppStdListOfString_assign((*names).m_styleNames, subFamilyNames);
         }
         CppStdListOfString_delete(subFamilyNames);
@@ -2183,12 +2132,12 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(mut self_0:
             XeTeXFontMgr_appendToList(self_0, (*names).m_styleNames, name);
         }
         if CppStdListOfString_size((*names).m_fullNames) ==
-               0i32 as libc::c_ulong {
+               0 {
             let mut fullName: *mut CppStdString = CppStdString_create();
             CppStdString_append_const_char_ptr(fullName,
                                                CppStdListOfString_front_const_char_ptr((*names).m_familyNames));
             if CppStdListOfString_size((*names).m_styleNames) >
-                   0i32 as libc::c_ulong {
+                   0 {
                 CppStdString_append_const_char_ptr(fullName,
                                                    b" \x00" as *const u8 as
                                                        *const libc::c_char);
@@ -2240,7 +2189,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_cacheFamilyMembers(mut self_0:
                                                             mut familyNames:
                                                                 *const CppStdListOfString) {
     let mut real_self: *mut XeTeXFontMgr_FC = self_0 as *mut XeTeXFontMgr_FC;
-    if CppStdListOfString_size(familyNames) == 0i32 as libc::c_ulong {
+    if CppStdListOfString_size(familyNames) == 0 {
         return
     }
     let mut f: libc::c_int = 0i32;
@@ -2290,7 +2239,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_searchForHostPlatformFonts(mut self_0:
         hyph =
             hyph_pos.wrapping_offset_from(name) as libc::c_long as
                 libc::c_int;
-        CppStdString_assign_n_chars(famName, name, hyph as size_t);
+        CppStdString_assign_n_chars(famName, name, hyph as libc::size_t);
     } else { hyph = 0i32 }
     let mut found: bool = 0i32 != 0;
     loop  {

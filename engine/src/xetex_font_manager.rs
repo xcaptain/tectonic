@@ -11,16 +11,17 @@
 
 #[cfg(not(target_os = "macos"))]
 #[path = "xetex_font_manager_fontconfig.rs"]
-mod imp;
+pub mod imp;
 
 #[cfg(target_os = "macos")]
 #[path = "xetex_font_manager_coretext.rs"]
-mod imp;
+pub mod imp;
 
+use crate::core_memory::xmalloc;
+
+use crate::xetex_layout_interface::collection_types::*;
 
 extern "C" {
-    #[cfg(not(target_os = "macos"))]
-    pub type _FcPattern;
     #[cfg(target_os = "macos")]
     pub type __CTFontDescriptor;
     /* ************************************************************************/
@@ -71,11 +72,6 @@ extern "C" {
     pub type hb_face_t;
     pub type hb_font_t;
     pub type XeTeXFont_rec;
-    pub type CppStdString;
-    pub type CppStdMapStringToFontPtr;
-    pub type CppStdListOfString;
-    pub type CppStdMapStringToFamilyPtr;
-    pub type CppStdMapFontRefToFontPtr;
     #[no_mangle]
     fn tan(_: libc::c_double) -> libc::c_double;
     #[no_mangle]
@@ -97,8 +93,6 @@ extern "C" {
     /* The internal, C/C++ interface: */
     #[no_mangle]
     fn _tt_abort(format: *const libc::c_char, _: ...) -> !;
-    #[no_mangle]
-    fn xmalloc(size: size_t) -> *mut libc::c_void;
     #[no_mangle]
     fn hb_font_get_face(font: *mut hb_font_t) -> *mut hb_face_t;
     #[no_mangle]
@@ -128,161 +122,6 @@ extern "C" {
     #[no_mangle]
     fn Fix2D(f: Fixed) -> libc::c_double;
     #[no_mangle]
-    fn CppStdString_create() -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdString_delete(self_0: *mut CppStdString);
-    #[no_mangle]
-    fn CppStdString_equal_const_char_ptr(lhs: *mut CppStdString,
-                                         rhs: *const libc::c_char) -> bool;
-    #[no_mangle]
-    fn CppStdString_clone(self_0: *mut CppStdString) -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdString_assign_from_const_char_ptr(self_0: *mut CppStdString,
-                                               val: *const libc::c_char);
-    #[no_mangle]
-    fn CppStdString_assign_n_chars(self_0: *mut CppStdString,
-                                   val: *const libc::c_char, count: size_t);
-    #[no_mangle]
-    fn CppStdString_append_const_char_ptr(self_0: *mut CppStdString,
-                                          val: *const libc::c_char);
-    #[no_mangle]
-    fn CppStdListOfString_size(self_0: *const CppStdListOfString) -> size_t;
-    #[no_mangle]
-    fn CppStdListOfString_prepend_copy_const_char_ptr(self_0:
-                                                          *const CppStdListOfString,
-                                                      val:
-                                                          *const libc::c_char);
-    #[no_mangle]
-    fn CppStdListOfString_append_copy_const_char_ptr(self_0:
-                                                         *const CppStdListOfString,
-                                                     val:
-                                                         *const libc::c_char);
-    #[no_mangle]
-    fn CppStdListOfString_begin(self_0: *mut CppStdListOfString)
-     -> CppStdListOfString_Iter;
-    #[no_mangle]
-    fn CppStdListOfString_end(self_0: *mut CppStdListOfString)
-     -> CppStdListOfString_Iter;
-    #[no_mangle]
-    fn CppStdListOfString_Iter_inc(iter: *mut CppStdListOfString_Iter);
-    #[no_mangle]
-    fn CppStdListOfString_erase(self_0: *mut CppStdListOfString,
-                                item: CppStdListOfString_Iter);
-    #[no_mangle]
-    fn CppStdListOfString_Iter_deref(self_0: CppStdListOfString_Iter)
-     -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdString_clone_from_iter(self_0: CppStdListOfString_Iter)
-     -> *mut CppStdString;
-    #[no_mangle]
-    fn CppStdListOfString_Iter_neq(lhs: CppStdListOfString_Iter,
-                                   rhs: CppStdListOfString_Iter) -> bool;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_create() -> *mut CppStdMapStringToFontPtr;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_delete(self_0: *mut CppStdMapStringToFontPtr);
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_find(self_0: *mut CppStdMapStringToFontPtr,
-                                     val: *mut CppStdString)
-     -> CppStdMapStringToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_find_const_char_ptr(self_0:
-                                                        *mut CppStdMapStringToFontPtr,
-                                                    val: *const libc::c_char)
-     -> CppStdMapStringToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_put(self_0: *mut CppStdMapStringToFontPtr,
-                                    val: *mut CppStdString,
-                                    val2: *mut XeTeXFontMgrFont);
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_begin(self_0: *mut CppStdMapStringToFontPtr)
-     -> CppStdMapStringToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_end(self_0: *mut CppStdMapStringToFontPtr)
-     -> CppStdMapStringToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_Iter_eq(lhs: CppStdMapStringToFontPtr_Iter,
-                                        rhs: CppStdMapStringToFontPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_Iter_neq(lhs: CppStdMapStringToFontPtr_Iter,
-                                         rhs: CppStdMapStringToFontPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_Iter_second(self_0:
-                                                CppStdMapStringToFontPtr_Iter)
-     -> *mut XeTeXFontMgrFont;
-    #[no_mangle]
-    fn CppStdMapStringToFontPtr_Iter_inc(iter:
-                                             *mut CppStdMapStringToFontPtr_Iter);
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_create() -> *mut CppStdMapStringToFamilyPtr;
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_delete(self_0:
-                                             *mut CppStdMapStringToFamilyPtr);
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_Iter_second(self_0:
-                                                  CppStdMapStringToFamilyPtr_Iter)
-     -> *mut XeTeXFontMgrFamily;
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_Iter_eq(lhs:
-                                              CppStdMapStringToFamilyPtr_Iter,
-                                          rhs:
-                                              CppStdMapStringToFamilyPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_Iter_neq(lhs:
-                                               CppStdMapStringToFamilyPtr_Iter,
-                                           rhs:
-                                               CppStdMapStringToFamilyPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_find(self_0:
-                                           *mut CppStdMapStringToFamilyPtr,
-                                       val: *mut CppStdString)
-     -> CppStdMapStringToFamilyPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_put(self_0: *mut CppStdMapStringToFamilyPtr,
-                                      val: *mut CppStdString,
-                                      val2: *mut XeTeXFontMgrFamily);
-    #[no_mangle]
-    fn CppStdMapStringToFamilyPtr_end(self_0: *mut CppStdMapStringToFamilyPtr)
-     -> CppStdMapStringToFamilyPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_create() -> *mut CppStdMapFontRefToFontPtr;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_delete(self_0:
-                                            *mut CppStdMapFontRefToFontPtr);
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_find(self_0: *mut CppStdMapFontRefToFontPtr,
-                                      val: PlatformFontRef)
-     -> CppStdMapFontRefToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_put(self_0: *mut CppStdMapFontRefToFontPtr,
-                                     val: PlatformFontRef,
-                                     val2: *mut XeTeXFontMgrFont);
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_end(self_0: *mut CppStdMapFontRefToFontPtr)
-     -> CppStdMapFontRefToFontPtr_Iter;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_Iter_eq(lhs: CppStdMapFontRefToFontPtr_Iter,
-                                         rhs: CppStdMapFontRefToFontPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_Iter_neq(lhs: CppStdMapFontRefToFontPtr_Iter,
-                                          rhs: CppStdMapFontRefToFontPtr_Iter)
-     -> bool;
-    #[no_mangle]
-    fn CppStdMapFontRefToFontPtr_Iter_second(self_0:
-                                                 CppStdMapFontRefToFontPtr_Iter)
-     -> *mut XeTeXFontMgrFont;
-    #[no_mangle]
-    fn CppStdString_last(self_0: *const CppStdString) -> libc::c_char;
-    #[no_mangle]
-    fn CppStdString_length(self_0: *const CppStdString) -> libc::c_int;
-    #[no_mangle]
-    fn CppStdString_cstr(self_0: *const CppStdString) -> *const libc::c_char;
-    #[no_mangle]
     #[cfg(not(target_os = "macos"))]
     fn XeTeXFontMgr_FC_create() -> *mut XeTeXFontMgr_FC;
     #[no_mangle]
@@ -295,13 +134,14 @@ extern "C" {
                                     tag: FT_Sfnt_Tag) -> *mut libc::c_void;
 }
 pub type size_t = usize;
+pub type int16_t = i16;
 pub type int32_t = i32;
 pub type uint16_t = u16;
 pub type uint32_t = u32;
-pub type ssize_t = isize
+pub type ssize_t = isize;
 
 #[cfg(not(target_os = "macos"))]
-pub type FcPattern = _FcPattern;
+use imp::{FcPattern};
 
 #[cfg(not(target_os = "macos"))]
 #[derive ( Copy , Clone )]
@@ -1616,11 +1456,7 @@ pub struct XeTeXFontMgrFont {
     pub isBold: bool,
     pub isItalic: bool,
 }
-#[derive ( Copy , Clone )]
-#[repr(C)]
-pub struct CppStdListOfString_Iter {
-    pub dummy: *mut libc::c_void,
-}
+
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct XeTeXFontMgrNameCollection {
@@ -1629,21 +1465,6 @@ pub struct XeTeXFontMgrNameCollection {
     pub m_fullNames: *mut CppStdListOfString,
     pub m_psName: *mut CppStdString,
     pub m_subFamily: *mut CppStdString,
-}
-#[derive ( Copy , Clone )]
-#[repr(C)]
-pub struct CppStdMapStringToFontPtr_Iter {
-    pub dummy: *mut libc::c_void,
-}
-#[derive ( Copy , Clone )]
-#[repr(C)]
-pub struct CppStdMapStringToFamilyPtr_Iter {
-    pub dummy: *mut libc::c_void,
-}
-#[derive ( Copy , Clone )]
-#[repr(C)]
-pub struct CppStdMapFontRefToFontPtr_Iter {
-    pub dummy: *mut libc::c_void,
 }
 #[derive ( Copy , Clone )]
 #[repr(C)]
@@ -2735,18 +2556,18 @@ pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(mut self_0: *mut XeTeXFontMgr,
                                  thisFont);
     CppStdMapFontRefToFontPtr_put((*self_0).m_platformRefToFont, platformFont,
                                   thisFont);
-    if CppStdListOfString_size((*names).m_fullNames) > 0i32 as libc::c_ulong {
+    if CppStdListOfString_size((*names).m_fullNames) > 0 {
         (*thisFont).m_fullName =
             CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_fullNames))
     }
-    if CppStdListOfString_size((*names).m_familyNames) > 0i32 as libc::c_ulong
+    if CppStdListOfString_size((*names).m_familyNames) > 0
        {
         (*thisFont).m_familyName =
             CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_familyNames))
     } else {
         (*thisFont).m_familyName = CppStdString_clone((*names).m_psName)
     }
-    if CppStdListOfString_size((*names).m_styleNames) > 0i32 as libc::c_ulong
+    if CppStdListOfString_size((*names).m_styleNames) > 0
        {
         (*thisFont).m_styleName =
             CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_styleNames))

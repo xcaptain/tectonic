@@ -6,7 +6,9 @@
          unused_assignments,
          unused_mut)]
 #![feature(const_raw_ptr_to_usize_cast, extern_types, label_break_value)]
-extern crate libc;
+
+use crate::core_memory::xmalloc;
+
 extern "C" {
     pub type FT_LibraryRec_;
     pub type FT_DriverRec_;
@@ -19,8 +21,6 @@ extern "C" {
     pub type XeTeXLayoutEngine_rec;
     #[no_mangle]
     fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn xmalloc(size: size_t) -> *mut libc::c_void;
     #[no_mangle]
     #[cfg(not(target_os = "macos"))]
     fn __assert_fail(__assertion: *const libc::c_char,

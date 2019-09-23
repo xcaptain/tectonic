@@ -7,6 +7,8 @@
          unused_mut)]
 #![feature(const_raw_ptr_to_usize_cast, extern_types)]
 
+use crate::core_memory::xmalloc;
+
 #[cfg(not(target_os = "macos"))]
 mod imp {
     
@@ -61,8 +63,6 @@ extern "C" {
 */
     #[no_mangle]
     fn xstrdup(s: *const libc::c_char) -> *mut libc::c_char;
-    #[no_mangle]
-    fn xmalloc(size: size_t) -> *mut libc::c_void;
     #[no_mangle]
     fn tolower(_: libc::c_int) -> libc::c_int;
     #[no_mangle]
@@ -2436,7 +2436,7 @@ pub unsafe extern "C" fn XeTeXFontInst_initialize(mut self_0:
                                                       *const libc::c_char,
                                                   mut index: libc::c_int,
                                                   mut status:
-                                                      *mut libc::c_int) {
+                                                      *mut libc::c_int) {                                                      
     let mut postTable: *mut TT_Postscript = 0 as *mut TT_Postscript;
     let mut os2Table: *mut TT_OS2 = 0 as *mut TT_OS2;
     let mut error: FT_Error = 0;
@@ -2459,11 +2459,11 @@ pub unsafe extern "C" fn XeTeXFontInst_initialize(mut self_0:
     }
     if handle.is_null() { *status = 1i32; return }
     let mut sz: size_t = ttstub_input_get_size(handle);
-    (*self_0).m_backingData = xmalloc(sz) as *mut FT_Byte;
+    (*self_0).m_backingData = xmalloc(sz as _) as *mut FT_Byte;
     let mut r: ssize_t =
         ttstub_input_read(handle,
                           (*self_0).m_backingData as *mut libc::c_char, sz);
-    if r < 0i32 as libc::c_long || r as size_t != sz {
+    if r < 0 || r as size_t != sz {
         _tt_abort(b"failed to read font file\x00" as *const u8 as
                       *const libc::c_char);
     }
@@ -2494,12 +2494,12 @@ pub unsafe extern "C" fn XeTeXFontInst_initialize(mut self_0:
         free(afm as *mut libc::c_void);
         if !afm_handle.is_null() {
             sz = ttstub_input_get_size(afm_handle);
-            (*self_0).m_backingData2 = xmalloc(sz) as *mut FT_Byte;
+            (*self_0).m_backingData2 = xmalloc(sz as _) as *mut FT_Byte;
             r =
                 ttstub_input_read(afm_handle,
                                   (*self_0).m_backingData2 as
                                       *mut libc::c_char, sz);
-            if r < 0i32 as libc::c_long || r as size_t != sz {
+            if r < 0 || r as size_t != sz {
                 _tt_abort(b"failed to read AFM file\x00" as *const u8 as
                               *const libc::c_char);
             }
