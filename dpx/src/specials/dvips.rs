@@ -537,7 +537,6 @@ pub unsafe extern "C" fn spc_dvips_at_end_page() -> i32 {
 pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i32) -> bool {
     let mut p: *const i8 = 0 as *const i8;
     let mut endptr: *const i8 = 0 as *const i8;
-    let mut i: size_t = 0;
     p = buf;
     endptr = p.offset(len as isize);
     skip_white(&mut p, endptr);
@@ -545,10 +544,8 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
         return false;
     }
     len = endptr.wrapping_offset_from(p) as i64 as i32;
-    i = 0i32 as size_t;
-    while i
-        < (::std::mem::size_of::<[spc_handler; 10]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+    for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
+        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
         if len as usize >= strlen(dvips_handlers[i as usize].key)
             && memcmp(
@@ -559,7 +556,6 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
         {
             return true;
         }
-        i = i.wrapping_add(1)
     }
     false
 }
@@ -571,7 +567,6 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
 ) -> i32 {
     let mut key: *const i8 = 0 as *const i8;
     let mut keylen: i32 = 0;
-    let mut i: size_t = 0;
     assert!(!handle.is_null() && !spe.is_null() && !args.is_null());
     skip_white(&mut (*args).curptr, (*args).endptr);
     key = (*args).curptr;
@@ -602,10 +597,8 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
         spc_warn(spe, b"Not ps: special???\x00" as *const u8 as *const i8);
         return -1i32;
     }
-    i = 0i32 as size_t;
-    while i
-        < (::std::mem::size_of::<[spc_handler; 10]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+    for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
+        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
         if keylen as usize == strlen(dvips_handlers[i as usize].key)
             && strncmp(key, dvips_handlers[i as usize].key, keylen as usize) == 0
@@ -616,7 +609,6 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
             (*handle).exec = dvips_handlers[i as usize].exec;
             return 0i32;
         }
-        i = i.wrapping_add(1)
     }
     -1i32
 }

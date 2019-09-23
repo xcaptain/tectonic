@@ -196,7 +196,6 @@ pub struct tt_longMetrics {
 */
 #[no_mangle]
 pub unsafe extern "C" fn tt_pack_head_table(mut table: *mut tt_head_table) -> *mut i8 {
-    let mut i: i32 = 0;
     let mut p: *mut i8 = 0 as *mut i8;
     let mut data: *mut i8 = 0 as *mut i8;
     if table.is_null() {
@@ -218,19 +217,15 @@ pub unsafe extern "C" fn tt_pack_head_table(mut table: *mut tt_head_table) -> *m
         .offset(put_big_endian(p as *mut libc::c_void, (*table).magicNumber as i32, 4i32) as isize);
     p = p.offset(put_big_endian(p as *mut libc::c_void, (*table).flags as i32, 2i32) as isize);
     p = p.offset(put_big_endian(p as *mut libc::c_void, (*table).unitsPerEm as i32, 2i32) as isize);
-    i = 0i32;
-    while i < 8i32 {
+    for i in 0..8 {
         let fresh0 = p;
         p = p.offset(1);
-        *fresh0 = (*table).created[i as usize] as i8;
-        i += 1
+        *fresh0 = (*table).created[i] as i8;
     }
-    i = 0i32;
-    while i < 8i32 {
+    for i in 0..8 {
         let fresh1 = p;
         p = p.offset(1);
-        *fresh1 = (*table).modified[i as usize] as i8;
-        i += 1
+        *fresh1 = (*table).modified[i] as i8;
     }
     p = p.offset(put_big_endian(p as *mut libc::c_void, (*table).xMin as i32, 2i32) as isize);
     p = p.offset(put_big_endian(p as *mut libc::c_void, (*table).yMin as i32, 2i32) as isize);
@@ -259,7 +254,6 @@ pub unsafe extern "C" fn tt_pack_head_table(mut table: *mut tt_head_table) -> *m
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_read_head_table(mut sfont: *mut sfnt) -> *mut tt_head_table {
-    let mut i: i32 = 0;
     let mut table: *mut tt_head_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_head_table>() as u64)
         as u32) as *mut tt_head_table;
@@ -270,15 +264,11 @@ pub unsafe extern "C" fn tt_read_head_table(mut sfont: *mut sfnt) -> *mut tt_hea
     (*table).magicNumber = tt_get_unsigned_quad((*sfont).handle);
     (*table).flags = tt_get_unsigned_pair((*sfont).handle);
     (*table).unitsPerEm = tt_get_unsigned_pair((*sfont).handle);
-    i = 0i32;
-    while i < 8i32 {
-        (*table).created[i as usize] = tt_get_unsigned_byte((*sfont).handle);
-        i += 1
+    for i in 0..8 {
+        (*table).created[i] = tt_get_unsigned_byte((*sfont).handle);
     }
-    i = 0i32;
-    while i < 8i32 {
-        (*table).modified[i as usize] = tt_get_unsigned_byte((*sfont).handle);
-        i += 1
+    for i in 0..8 {
+        (*table).modified[i] = tt_get_unsigned_byte((*sfont).handle);
     }
     (*table).xMin = tt_get_signed_pair((*sfont).handle);
     (*table).yMin = tt_get_signed_pair((*sfont).handle);
@@ -377,7 +367,6 @@ pub unsafe extern "C" fn tt_read_maxp_table(mut sfont: *mut sfnt) -> *mut tt_max
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_pack_hhea_table(mut table: *mut tt_hhea_table) -> *mut i8 {
-    let mut i: i32 = 0;
     let mut p: *mut i8 = 0 as *mut i8;
     let mut data: *mut i8 = 0 as *mut i8;
     data = new((36u64 as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
@@ -411,14 +400,10 @@ pub unsafe extern "C" fn tt_pack_hhea_table(mut table: *mut tt_hhea_table) -> *m
     );
     p = p
         .offset(put_big_endian(p as *mut libc::c_void, (*table).caretOffset as i32, 2i32) as isize);
-    i = 0i32;
-    while i < 4i32 {
-        p = p.offset(put_big_endian(
-            p as *mut libc::c_void,
-            (*table).reserved[i as usize] as i32,
-            2i32,
-        ) as isize);
-        i += 1
+    for i in 0..4 {
+        p = p.offset(
+            put_big_endian(p as *mut libc::c_void, (*table).reserved[i] as i32, 2i32) as isize,
+        );
     }
     p = p.offset(put_big_endian(
         p as *mut libc::c_void,
@@ -434,7 +419,6 @@ pub unsafe extern "C" fn tt_pack_hhea_table(mut table: *mut tt_hhea_table) -> *m
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_read_hhea_table(mut sfont: *mut sfnt) -> *mut tt_hhea_table {
-    let mut i: i32 = 0;
     let mut len: u32 = 0;
     let mut table: *mut tt_hhea_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_hhea_table>() as u64)
@@ -451,10 +435,8 @@ pub unsafe extern "C" fn tt_read_hhea_table(mut sfont: *mut sfnt) -> *mut tt_hhe
     (*table).caretSlopeRise = tt_get_signed_pair((*sfont).handle);
     (*table).caretSlopeRun = tt_get_signed_pair((*sfont).handle);
     (*table).caretOffset = tt_get_signed_pair((*sfont).handle);
-    i = 0i32;
-    while i < 4i32 {
-        (*table).reserved[i as usize] = tt_get_signed_pair((*sfont).handle);
-        i += 1
+    for i in 0..4 {
+        (*table).reserved[i] = tt_get_signed_pair((*sfont).handle);
     }
     (*table).metricDataFormat = tt_get_signed_pair((*sfont).handle);
     if (*table).metricDataFormat as i32 != 0i32 {
@@ -470,7 +452,6 @@ pub unsafe extern "C" fn tt_read_hhea_table(mut sfont: *mut sfnt) -> *mut tt_hhe
 /* vhea */
 #[no_mangle]
 pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhea_table {
-    let mut i: i32 = 0; /* ushort ? */
     let mut len: u32 = 0;
     let mut table: *mut tt_vhea_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_vhea_table>() as u64)
@@ -487,10 +468,8 @@ pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhe
     (*table).caretSlopeRise = tt_get_signed_pair((*sfont).handle);
     (*table).caretSlopeRun = tt_get_signed_pair((*sfont).handle);
     (*table).caretOffset = tt_get_signed_pair((*sfont).handle);
-    i = 0i32;
-    while i < 4i32 {
-        (*table).reserved[i as usize] = tt_get_signed_pair((*sfont).handle);
-        i += 1
+    for i in 0..4 {
+        (*table).reserved[i] = tt_get_signed_pair((*sfont).handle);
     }
     (*table).metricDataFormat = tt_get_signed_pair((*sfont).handle);
     (*table).numOfLongVerMetrics = tt_get_unsigned_pair((*sfont).handle);
@@ -504,7 +483,6 @@ pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhe
 pub unsafe extern "C" fn tt_read_VORG_table(mut sfont: *mut sfnt) -> *mut tt_VORG_table {
     let mut vorg: *mut tt_VORG_table = 0 as *mut tt_VORG_table;
     let mut offset: u32 = 0;
-    let mut i: u16 = 0;
     offset = sfnt_find_table_pos(sfont, b"VORG\x00" as *const u8 as *const i8);
     if offset > 0_u32 {
         vorg = new((1_u64).wrapping_mul(::std::mem::size_of::<tt_VORG_table>() as u64) as u32)
@@ -524,13 +502,11 @@ pub unsafe extern "C" fn tt_read_VORG_table(mut sfont: *mut sfnt) -> *mut tt_VOR
          * The vertOriginYMetrics array must be sorted in increasing
          * glyphIndex order.
          */
-        i = 0_u16;
-        while (i as i32) < (*vorg).numVertOriginYMetrics as i32 {
+        for i in 0..(*vorg).numVertOriginYMetrics {
             (*(*vorg).vertOriginYMetrics.offset(i as isize)).glyphIndex =
                 tt_get_unsigned_pair((*sfont).handle);
             (*(*vorg).vertOriginYMetrics.offset(i as isize)).vertOriginY =
                 tt_get_signed_pair((*sfont).handle);
-            i = i.wrapping_add(1)
         }
     } else {
         vorg = 0 as *mut tt_VORG_table
@@ -557,8 +533,7 @@ pub unsafe extern "C" fn tt_read_longMetrics(
         (numGlyphs as u32 as u64).wrapping_mul(::std::mem::size_of::<tt_longMetrics>() as u64)
             as u32,
     ) as *mut tt_longMetrics;
-    gid = 0_u16;
-    while (gid as i32) < numGlyphs as i32 {
+    for i in 0..numGlyphs {
         if (gid as i32) < numLongMetrics as i32 {
             last_adv = tt_get_unsigned_pair((*sfont).handle)
         }
@@ -567,7 +542,6 @@ pub unsafe extern "C" fn tt_read_longMetrics(
         }
         (*m.offset(gid as isize)).advance = last_adv;
         (*m.offset(gid as isize)).sideBearing = last_esb;
-        gid = gid.wrapping_add(1)
     }
     m
 }
@@ -597,19 +571,15 @@ pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2
         (*table).yStrikeoutSize = tt_get_signed_pair((*sfont).handle);
         (*table).yStrikeoutPosition = tt_get_signed_pair((*sfont).handle);
         (*table).sFamilyClass = tt_get_signed_pair((*sfont).handle);
-        i = 0i32;
-        while i < 10i32 {
-            (*table).panose[i as usize] = tt_get_unsigned_byte((*sfont).handle);
-            i += 1
+        for i in 0..10 {
+            (*table).panose[i] = tt_get_unsigned_byte((*sfont).handle);
         }
         (*table).ulUnicodeRange1 = tt_get_unsigned_quad((*sfont).handle);
         (*table).ulUnicodeRange2 = tt_get_unsigned_quad((*sfont).handle);
         (*table).ulUnicodeRange3 = tt_get_unsigned_quad((*sfont).handle);
         (*table).ulUnicodeRange4 = tt_get_unsigned_quad((*sfont).handle);
-        i = 0i32;
-        while i < 4i32 {
-            (*table).achVendID[i as usize] = tt_get_signed_byte((*sfont).handle);
-            i += 1
+        for i in 0..4 {
+            (*table).achVendID[i] = tt_get_signed_byte((*sfont).handle);
         }
         (*table).fsSelection = tt_get_unsigned_pair((*sfont).handle);
         (*table).usFirstCharIndex = tt_get_unsigned_pair((*sfont).handle);
@@ -648,10 +618,8 @@ pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2
         (*table).fsType = 0_i16; /* Installable Embedding */
         (*table).fsSelection = 0_u16; /* All undefined */
         (*table).sFamilyClass = 0_i16; /* No Classification */
-        i = 0i32;
-        while i < 10i32 {
-            (*table).panose[i as usize] = 0_u8;
-            i += 1
+        for i in 0..10 {
+            (*table).panose[i] = 0_u8;
             /* All Any */
         }
     }

@@ -524,7 +524,6 @@ pub unsafe extern "C" fn Type0Font_cache_find(
 /* ******************************* CACHE ********************************/
 #[no_mangle]
 pub unsafe extern "C" fn Type0Font_cache_close() {
-    let mut font_id: i32 = 0;
     /*
      * This need to be fixed.
      *
@@ -532,19 +531,15 @@ pub unsafe extern "C" fn Type0Font_cache_close() {
      * ToUnicode support want descendant CIDFont's CSI and fontname.
      */
     if !__cache.fonts.is_null() {
-        font_id = 0i32;
-        while font_id < __cache.count {
+        for font_id in 0..__cache.count {
             Type0Font_dofont(&mut *__cache.fonts.offset(font_id as isize));
-            font_id += 1
         }
     }
     CIDFont_cache_close();
     if !__cache.fonts.is_null() {
-        font_id = 0i32;
-        while font_id < __cache.count {
+        for font_id in 0..__cache.count {
             Type0Font_flush(&mut *__cache.fonts.offset(font_id as isize));
             Type0Font_clean(&mut *__cache.fonts.offset(font_id as isize));
-            font_id += 1
         }
         free(__cache.fonts as *mut libc::c_void);
     }
@@ -556,7 +551,6 @@ pub unsafe extern "C" fn Type0Font_cache_close() {
 unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
     let mut stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut buf: [i8; 32] = [0; 32];
-    let mut i: i32 = 0;
     let mut n: i32 = 0;
     stream = pdf_new_stream(1i32 << 0i32);
     pdf_add_stream(stream,
@@ -578,8 +572,7 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
         b"\n100 beginbfrange\n\x00" as *const u8 as *const i8 as *const libc::c_void,
         strlen(b"\n100 beginbfrange\n\x00" as *const u8 as *const i8) as i32,
     );
-    i = 0i32;
-    while i < 0x64i32 {
+    for i in 0..0x64 {
         n = sprintf(
             buf.as_mut_ptr(),
             b"<%02X00> <%02XFF> <%02X00>\n\x00" as *const u8 as *const i8,
@@ -588,7 +581,6 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
             i,
         );
         pdf_add_stream(stream, buf.as_mut_ptr() as *const libc::c_void, n);
-        i += 1
     }
     pdf_add_stream(
         stream,
@@ -600,8 +592,7 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
         b"\n100 beginbfrange\n\x00" as *const u8 as *const i8 as *const libc::c_void,
         strlen(b"\n100 beginbfrange\n\x00" as *const u8 as *const i8) as i32,
     );
-    i = 0x64i32;
-    while i < 0xc8i32 {
+    for i in 0x64..0xc8 {
         n = sprintf(
             buf.as_mut_ptr(),
             b"<%02X00> <%02XFF> <%02X00>\n\x00" as *const u8 as *const i8,
@@ -610,7 +601,6 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
             i,
         );
         pdf_add_stream(stream, buf.as_mut_ptr() as *const libc::c_void, n);
-        i += 1
     }
     pdf_add_stream(
         stream,
@@ -622,8 +612,7 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
         b"\n48 beginbfrange\n\x00" as *const u8 as *const i8 as *const libc::c_void,
         strlen(b"\n48 beginbfrange\n\x00" as *const u8 as *const i8) as i32,
     );
-    i = 0xc8i32;
-    while i <= 0xd7i32 {
+    for i in 0xc8..=0xd7 {
         n = sprintf(
             buf.as_mut_ptr(),
             b"<%02X00> <%02XFF> <%02X00>\n\x00" as *const u8 as *const i8,
@@ -632,10 +621,8 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
             i,
         );
         pdf_add_stream(stream, buf.as_mut_ptr() as *const libc::c_void, n);
-        i += 1
     }
-    i = 0xe0i32;
-    while i <= 0xffi32 {
+    for i in 0xe0..=0xff {
         n = sprintf(
             buf.as_mut_ptr(),
             b"<%02X00> <%02XFF> <%02X00>\n\x00" as *const u8 as *const i8,
@@ -644,7 +631,6 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
             i,
         );
         pdf_add_stream(stream, buf.as_mut_ptr() as *const libc::c_void, n);
-        i += 1
     }
     pdf_add_stream(
         stream,
