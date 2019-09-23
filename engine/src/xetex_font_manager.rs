@@ -10,7 +10,10 @@
            ptr_wrapping_offset_from)]
 extern crate libc;
 extern "C" {
+    #[cfg(not(target_os = "macos"))]
     pub type _FcPattern;
+    #[cfg(target_os = "macos")]
+    pub type __CTFontDescriptor;
     /* ************************************************************************/
   /* ************************************************************************/
   /*                                                                       */
@@ -271,24 +274,27 @@ extern "C" {
     #[no_mangle]
     fn CppStdString_cstr(self_0: *const CppStdString) -> *const libc::c_char;
     #[no_mangle]
+    #[cfg(not(target_os = "macos"))]
     fn XeTeXFontMgr_FC_create() -> *mut XeTeXFontMgr_FC;
     #[no_mangle]
+    #[cfg(target_os = "macos")]
+    fn XeTeXFontMgr_Mac_create() -> *mut XeTeXFontMgr_Mac;
     fn XeTeXFontInst_getHbFont(self_0: *const XeTeXFontInst)
      -> *mut hb_font_t;
     #[no_mangle]
     fn XeTeXFontInst_getFontTableFT(self_0: *const XeTeXFontInst,
                                     tag: FT_Sfnt_Tag) -> *mut libc::c_void;
 }
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type size_t = libc::c_ulong;
+pub type size_t = usize;
+pub type int32_t = i32;
+pub type uint16_t = u16;
+pub type uint32_t = u32;
+pub type ssize_t = isize
+
+#[cfg(not(target_os = "macos"))]
 pub type FcPattern = _FcPattern;
+
+#[cfg(not(target_os = "macos"))]
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct _FcFontSet {
@@ -296,6 +302,8 @@ pub struct _FcFontSet {
     pub sfont: libc::c_int,
     pub fonts: *mut *mut FcPattern,
 }
+
+#[cfg(not(target_os = "macos"))]
 pub type FcFontSet = _FcFontSet;
 /* ***************************************************************************
  *
@@ -1520,9 +1528,15 @@ pub const FT_SFNT_HEAD: FT_Sfnt_Tag_ = 0;
 pub type FT_Sfnt_Tag = FT_Sfnt_Tag_;
 pub type hb_bool_t = libc::c_int;
 pub type hb_ot_name_id_t = libc::c_uint;
-pub type scaled_t = int32_t;
-pub type Fixed = scaled_t;
+pub type Fixed = i32;
+#[cfg(not(target_os = "macos"))]
 pub type PlatformFontRef = *mut FcPattern;
+
+#[cfg(target_os = "macos")]
+pub type PlatformFontRef = CTFontDescriptorRef;
+#[cfg(target_os = "macos")]
+pub type CTFontDescriptorRef = *const __CTFontDescriptor;
+
 pub type XeTeXFont = *mut XeTeXFont_rec;
 /* ***************************************************************************\
  Part of the XeTeX typesetting system
@@ -1654,12 +1668,21 @@ pub struct XeTeXFontMgr {
     pub m_psNameToFont: *mut CppStdMapStringToFontPtr,
     // maps PS name (as used in .xdv) to font record
 }
+
+#[cfg(not(target_os = "macos"))]
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct XeTeXFontMgr_FC {
     pub super_: XeTeXFontMgr,
     pub allFonts: *mut FcFontSet,
     pub cachedAll: bool,
+}
+
+#[cfg(target_os = "macos")]
+#[derive ( Copy , Clone )]
+#[repr(C)]
+pub struct XeTeXFontMgr_Mac {
+    pub super_: XeTeXFontMgr,
 }
 /* ***************************************************************************\
  Part of the XeTeX typesetting system
@@ -1835,12 +1858,25 @@ unsafe extern "C" fn my_fmax(mut x: libc::c_double, mut y: libc::c_double)
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_GetFontManager() -> *mut XeTeXFontMgr {
-    if XeTeXFontMgr_sFontManager.is_null() {
-        XeTeXFontMgr_sFontManager =
-            &mut (*(XeTeXFontMgr_FC_create as
-                        unsafe extern "C" fn()
-                            -> *mut XeTeXFontMgr_FC)()).super_;
-        XeTeXFontMgr_initialize(XeTeXFontMgr_sFontManager);
+    #[cfg(not(target_os = "macos"))]
+    {
+        if XeTeXFontMgr_sFontManager.is_null() {
+            XeTeXFontMgr_sFontManager =
+                &mut (*(XeTeXFontMgr_FC_create as
+                           unsafe extern "C" fn()
+                                -> *mut XeTeXFontMgr_FC)()).super_;
+            XeTeXFontMgr_initialize(XeTeXFontMgr_sFontManager);
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if XeTeXFontMgr_sFontManager.is_null() {
+            XeTeXFontMgr_sFontManager =
+                &mut (*(XeTeXFontMgr_Mac_create as
+                            unsafe extern "C" fn()
+                                -> *mut XeTeXFontMgr_Mac)()).super_;
+            XeTeXFontMgr_initialize(XeTeXFontMgr_sFontManager);
+        }
     }
     return XeTeXFontMgr_sFontManager;
 }
@@ -2619,7 +2655,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(mut self_0:
             (*theFont).slant =
                 (1000i32 as libc::c_double *
                      tan(Fix2D(-(*postTable).italicAngle as Fixed) *
-                             3.14159265358979323846f64 / 180.0f64)) as
+                             std::f64::consts::PI / 180.0f64)) as
                     libc::c_int as int16_t
         }
         deleteFont(font);

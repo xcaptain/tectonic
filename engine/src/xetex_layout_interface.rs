@@ -11,6 +11,7 @@
            ptr_wrapping_offset_from)]
 extern crate libc;
 extern "C" {
+    #[cfg(not(target_os = "macos"))]
     pub type _FcPattern;
     /* ************************************************************************/
   /* ************************************************************************/
@@ -63,6 +64,10 @@ extern "C" {
     pub type hb_font_t;
     pub type hb_buffer_t;
     pub type hb_shape_plan_t;
+    #[cfg(target_os = "macos")]
+    pub type __CTFontDescriptor;
+    #[cfg(target_os = "macos")]
+    pub type __CTFont;
     pub type XeTeXFont_rec;
     pub type gr_face;
     pub type gr_font;
@@ -112,15 +117,22 @@ extern "C" {
     #[no_mangle]
     fn xcalloc(nelem: size_t, elsize: size_t) -> *mut libc::c_void;
     #[no_mangle]
+    #[cfg(not(target_os = "macos"))]
     fn FcPatternGetInteger(p: *const FcPattern, object: *const libc::c_char,
                            n: libc::c_int, i: *mut libc::c_int) -> FcResult;
     #[no_mangle]
+    #[cfg(not(target_os = "macos"))]
     fn FcPatternGetString(p: *const FcPattern, object: *const libc::c_char,
                           n: libc::c_int, s: *mut *mut FcChar8) -> FcResult;
     #[no_mangle]
+    #[cfg(not(target_os = "macos"))]
     fn __assert_fail(__assertion: *const libc::c_char,
                      __file: *const libc::c_char, __line: libc::c_uint,
                      __function: *const libc::c_char) -> !;
+    #[no_mangle]
+    #[cfg(target_os = "macos")]
+    fn __assert_rtn(_: *const libc::c_char, _: *const libc::c_char,
+                    _: libc::c_int, _: *const libc::c_char) -> !;
     #[no_mangle]
     fn hb_tag_from_string(str: *const libc::c_char, len: libc::c_int)
      -> hb_tag_t;
@@ -477,6 +489,12 @@ public:
                             pointSize: libc::c_float,
                             status: *mut libc::c_int) -> *mut XeTeXFontInst;
     #[no_mangle]
+    #[cfg(target_os = "macos")]
+    fn XeTeXFontInst_Mac_create(descriptor: CTFontDescriptorRef,
+                                pointSize: libc::c_float,
+                                status: *mut libc::c_int)
+     -> *mut XeTeXFontInst_Mac;
+    #[no_mangle]
     fn XeTeXFontInst_unitsToPoints(self_0: *const XeTeXFontInst,
                                    units: libc::c_float) -> libc::c_float;
     #[no_mangle]
@@ -529,28 +547,21 @@ public:
     fn CppStdMapGlyphIdToInt_put(self_0: *mut CppStdMapGlyphIdToInt,
                                  key: GlyphId, val: libc::c_int);
 }
-pub type __int8_t = libc::c_schar;
-pub type __uint8_t = libc::c_uchar;
-pub type __int16_t = libc::c_short;
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type int8_t = __int8_t;
-pub type int16_t = __int16_t;
-pub type int32_t = __int32_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type size_t = libc::c_ulong;
+pub type size_t = usize;
+pub type int8_t = i8;
+pub type int16_t = i16;
+pub type int32_t = i32;
+pub type uint8_t = u8;
+pub type uint16_t = u16;
+pub type uint32_t = u32;
+
+
 pub type UChar32 = int32_t;
+#[cfg(not(target_os = "macos"))]
 pub type FcChar8 = libc::c_uchar;
+#[cfg(not(target_os = "macos"))]
 pub type _FcResult = libc::c_uint;
-pub const FcResultOutOfMemory: _FcResult = 4;
-pub const FcResultNoId: _FcResult = 3;
-pub const FcResultTypeMismatch: _FcResult = 2;
-pub const FcResultNoMatch: _FcResult = 1;
-pub const FcResultMatch: _FcResult = 0;
-pub type FcResult = _FcResult;
+#[cfg(not(target_os = "macos"))]
 pub type FcPattern = _FcPattern;
 /* ***************************************************************************
  *
@@ -1891,10 +1902,13 @@ pub type hb_unicode_decompose_compatibility_func_t
     Option<unsafe extern "C" fn(_: *mut hb_unicode_funcs_t, _: hb_codepoint_t,
                                 _: *mut hb_codepoint_t, _: *mut libc::c_void)
                -> libc::c_uint>;
-pub type scaled_t = int32_t;
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
-pub type Fixed = scaled_t;
+pub type Fixed = i32;
+#[cfg(target_os = "macos")]
+pub type CTFontDescriptorRef = *const __CTFontDescriptor;
+#[cfg(target_os = "macos")]
+pub type CTFontRef = *const __CTFont;
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct FloatPoint {
@@ -1909,7 +1923,10 @@ pub struct GlyphBBox {
     pub xMax: libc::c_float,
     pub yMax: libc::c_float,
 }
+#[cfg(not(target_os = "macos"))]
 pub type PlatformFontRef = *mut FcPattern;
+#[cfg(target_os = "macos")]
+pub type PlatformFontRef = CTFontDescriptorRef;
 pub type XeTeXFont = *mut XeTeXFont_rec;
 #[derive ( Copy , Clone )]
 #[repr(C)]
@@ -1973,6 +1990,14 @@ pub struct CppStdMapU32ToGlyphBBox_Iter {
     pub unused: *mut libc::c_void,
 }
 pub type ProtrusionFactor = CppStdMapGlyphIdToInt;
+#[cfg(target_os = "macos")]
+#[derive ( Copy , Clone )]
+#[repr(C)]
+pub struct XeTeXFontInst_Mac {
+    pub super_: XeTeXFontInst,
+    pub m_descriptor: CTFontDescriptorRef,
+    pub m_fontRef: CTFontRef,
+}
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct XeTeXFontMgr {
@@ -2212,11 +2237,22 @@ pub unsafe extern "C" fn getProtrusionFactor(mut side: libc::c_int)
             container = rightProt
         }
         _ => {
+            #[cfg(not(target_os = "macos"))]
+            {
             __assert_fail(b"0\x00" as *const u8 as *const libc::c_char,
                           b"xetex-XeTeXLayoutInterface.c\x00" as *const u8 as
                               *const libc::c_char, 175i32 as libc::c_uint,
                           (*::std::mem::transmute::<&[u8; 43],
                                                     &[libc::c_char; 43]>(b"ProtrusionFactor *getProtrusionFactor(int)\x00")).as_ptr());
+            }
+            #[cfg(target_os = "macos")]
+            {
+                __assert_rtn((*::std::mem::transmute::<&[u8; 20],
+                                                       &[libc::c_char; 20]>(b"getProtrusionFactor\x00")).as_ptr(),
+                             b"xetex-XeTeXLayoutInterface.c\x00" as *const u8
+                                 as *const libc::c_char, 175i32,
+                             b"0\x00" as *const u8 as *const libc::c_char);
+            }
         }
     }
     return container;
@@ -2255,6 +2291,9 @@ pub unsafe extern "C" fn destroy_font_manager() { XeTeXFontMgr_Destroy(); }
 pub unsafe extern "C" fn createFont(mut fontRef: PlatformFontRef,
                                     mut pointSize: Fixed) -> XeTeXFont {
     let mut status: libc::c_int = 0i32;
+    let mut font: *mut XeTeXFontInst;
+    #[cfg(not(target_os = "macos"))]
+    {
     let mut pathname: *mut FcChar8 = 0 as *mut FcChar8;
     FcPatternGetString(fontRef as *const FcPattern,
                        b"file\x00" as *const u8 as *const libc::c_char, 0i32,
@@ -2263,9 +2302,28 @@ pub unsafe extern "C" fn createFont(mut fontRef: PlatformFontRef,
     FcPatternGetInteger(fontRef as *const FcPattern,
                         b"index\x00" as *const u8 as *const libc::c_char,
                         0i32, &mut index);
-    let mut font: *mut XeTeXFontInst =
+    font =
         XeTeXFontInst_create(pathname as *const libc::c_char, index,
                              Fix2D(pointSize) as libc::c_float, &mut status);
+    }
+    #[cfg(target_os = "macos")]
+    {
+    font =
+        &mut (*(XeTeXFontInst_Mac_create as
+                    unsafe extern "C" fn(_: CTFontDescriptorRef,
+                                         _: libc::c_float,
+                                         _: *mut libc::c_int)
+                        ->
+                            *mut XeTeXFontInst_Mac)(fontRef,
+                                                    (Fix2D as
+                                                         unsafe extern "C" fn(_:
+                                                                                  Fixed)
+                                                             ->
+                                                                 libc::c_double)(pointSize)
+                                                        as libc::c_float,
+                                                    &mut status)).super_;
+
+    }
     if status != 0i32 { XeTeXFontInst_delete(font); return 0 as XeTeXFont }
     return font as XeTeXFont;
 }
@@ -2338,7 +2396,7 @@ pub unsafe extern "C" fn getFontTablePtr(mut font: XeTeXFont,
 pub unsafe extern "C" fn getSlant(mut font: XeTeXFont) -> Fixed {
     let mut italAngle: libc::c_float =
         XeTeXFontInst_getItalicAngle(font as *mut XeTeXFontInst);
-    return D2Fix(tan(-italAngle as libc::c_double * 3.14159265358979323846f64
+    return D2Fix(tan(-italAngle as libc::c_double * std::f64::consts::PI
                          / 180.0f64));
 }
 unsafe extern "C" fn getLargerScriptListTable(mut font: XeTeXFont,

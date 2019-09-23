@@ -815,15 +815,11 @@ extern "C" {
     fn FT_Get_Advance(face: FT_Face, gindex: FT_UInt, load_flags: FT_Int32,
                       padvance: *mut FT_Fixed) -> FT_Error;
 }
-pub type __uint16_t = libc::c_ushort;
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type __ssize_t = libc::c_long;
-pub type int32_t = __int32_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type size_t = libc::c_ulong;
-pub type ssize_t = __ssize_t;
+pub type size_t = usize;
+pub type int32_t = i32;
+pub type uint16_t = u16;
+pub type uint32_t = u32;
+pub type ssize_t = isize;
 /* The weird enum values are historical and could be rationalized. But it is
  * good to write them explicitly since they must be kept in sync with
  * `src/engines/mod.rs`.
@@ -1850,10 +1846,10 @@ pub type hb_font_get_glyph_func_t
 pub type hb_font_get_glyph_v_kerning_func_t
     =
     hb_font_get_glyph_kerning_func_t;
-pub type scaled_t = int32_t;
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
-pub type Fixed = scaled_t;
+
+pub type Fixed = i32;
 #[derive ( Copy , Clone )]
 #[repr(C)]
 pub struct GlyphBBox {

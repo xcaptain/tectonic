@@ -22,6 +22,7 @@ extern "C" {
     #[no_mangle]
     fn xmalloc(size: size_t) -> *mut libc::c_void;
     #[no_mangle]
+    #[cfg(not(target_os = "macos"))]
     fn __assert_fail(__assertion: *const libc::c_char,
                      __file: *const libc::c_char, __line: libc::c_uint,
                      __function: *const libc::c_char) -> !;
@@ -66,6 +67,9 @@ extern "C" {
                                      italics_correction: *mut hb_position_t)
      -> libc::c_uint;
     #[no_mangle]
+    #[cfg(target_os = "macos")]
+    fn __assert_rtn(_: *const libc::c_char, _: *const libc::c_char,
+                    _: libc::c_int, _: *const libc::c_char) -> !;
     fn getFont(engine: XeTeXLayoutEngine) -> XeTeXFont;
     #[no_mangle]
     fn getGlyphHeightDepth(engine: XeTeXLayoutEngine, glyphID: uint32_t,
@@ -91,11 +95,9 @@ extern "C" {
     fn XeTeXFontInst_pointsToUnits(self_0: *const XeTeXFontInst,
                                    points: libc::c_float) -> libc::c_float;
 }
-pub type __int32_t = libc::c_int;
-pub type __uint32_t = libc::c_uint;
-pub type int32_t = __int32_t;
-pub type uint32_t = __uint32_t;
-pub type size_t = libc::c_ulong;
+pub type size_t = usize;
+pub type int32_t = i32;
+pub type uint32_t = u32;
 /* ***************************************************************************
  *
  * ftsystem.h
@@ -1477,9 +1479,8 @@ pub struct hb_ot_math_glyph_part_t {
 /* harfbuzz */
 /* Endianness foo */
 /* our typedefs */
-pub type scaled_t = int32_t;
-/* Macs provide Fixed and FixedPoint */
-pub type Fixed = scaled_t;
+
+pub type Fixed = i32;
 pub type XeTeXFont = *mut XeTeXFont_rec;
 pub type XeTeXLayoutEngine = *mut XeTeXLayoutEngine_rec;
 #[derive ( Copy , Clone )]
@@ -1907,11 +1908,22 @@ pub unsafe extern "C" fn get_ot_math_kern(mut f: libc::c_int,
                               corr_height_bot as libc::c_int);
             if kern + skern < rval { rval = kern + skern }
         } else {
+            #[cfg(not(target_os = "macos"))]
+            {
             __assert_fail(b"0\x00" as *const u8 as *const libc::c_char,
                           b"xetex-XeTeXOTMath.c\x00" as *const u8 as
                               *const libc::c_char, 371i32 as libc::c_uint,
                           (*::std::mem::transmute::<&[u8; 51],
                                                     &[libc::c_char; 51]>(b"int get_ot_math_kern(int, int, int, int, int, int)\x00")).as_ptr());
+            }
+            #[cfg(target_os = "macos")]
+            {
+                __assert_rtn((*::std::mem::transmute::<&[u8; 17],
+                                                       &[libc::c_char; 17]>(b"get_ot_math_kern\x00")).as_ptr(),
+                             b"xetex-XeTeXOTMath.c\x00" as *const u8 as
+                                 *const libc::c_char, 371i32,
+                             b"0\x00" as *const u8 as *const libc::c_char);
+            }
             // we should not reach here
         }
         return D2Fix(XeTeXFontInst_unitsToPoints(font, rval as libc::c_float)
