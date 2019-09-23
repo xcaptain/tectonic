@@ -315,8 +315,7 @@ unsafe extern "C" fn pdf_path__next_pe<'a>(
 }
 unsafe extern "C" fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> i32 {
     let mut n = 0;
-    let mut i = 0;
-    while i < pa.len() {
+    for i in 0..pa.len() {
         let pe = &mut pa.path[i];
         n = if pe.typ != PeType::TERMINATE {
             pe.typ.n_pts()
@@ -331,7 +330,6 @@ unsafe extern "C" fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> 
             }
             pdf_coord__transform(&mut pe.p[n], M);
         }
-        i += 1
     }
     0i32
 }
@@ -782,7 +780,6 @@ impl pdf_gstate {
 }
 
 unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
-    let mut i: i32 = 0;
     gs1.cp = gs2.cp;
     gs1.matrix = gs2.matrix;
     /* TODO:
@@ -792,10 +789,8 @@ unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
      */
     gs1.path = gs2.path.clone(); /* Initial state */
     gs1.linedash.num_dash = gs2.linedash.num_dash;
-    i = 0i32;
-    while i < gs2.linedash.num_dash {
+    for i in 0..gs2.linedash.num_dash {
         gs1.linedash.pattern[i as usize] = gs2.linedash.pattern[i as usize];
-        i += 1
     }
     gs1.linedash.offset = gs2.linedash.offset;
     gs1.linecap = gs2.linecap;
@@ -1099,17 +1094,14 @@ pub unsafe extern "C" fn pdf_dev_setdash(
     let gs = gss.top();
     let mut len: i32 = 0i32;
     let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
-    let mut i: i32 = 0;
     gs.linedash.num_dash = count;
     gs.linedash.offset = offset;
     pdf_doc_add_page_content(b" [\x00" as *const u8 as *const i8, 2_u32);
-    i = 0i32;
-    while i < count {
+    for i in 0..count {
         *buf.offset(0) = ' ' as i32 as i8;
         len = pdf_sprint_length(buf.offset(1), *pattern.offset(i as isize));
         pdf_doc_add_page_content(buf, (len + 1i32) as u32);
         gs.linedash.pattern[i as usize] = *pattern.offset(i as isize);
-        i += 1
     }
     pdf_doc_add_page_content(b"] \x00" as *const u8 as *const i8, 2_u32);
     len = pdf_sprint_length(buf, offset);

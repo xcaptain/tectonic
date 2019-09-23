@@ -88,13 +88,10 @@ unsafe extern "C" fn init_sfd_file_(mut sfd: *mut sfd_file_) {
     (*sfd).max_subfonts = (*sfd).num_subfonts;
 }
 unsafe extern "C" fn clean_sfd_file_(mut sfd: *mut sfd_file_) {
-    let mut i: i32 = 0;
     free((*sfd).ident as *mut libc::c_void);
     if !(*sfd).sub_id.is_null() {
-        i = 0i32;
-        while i < (*sfd).num_subfonts {
+        for i in 0..(*sfd).num_subfonts {
             free(*(*sfd).sub_id.offset(i as isize) as *mut libc::c_void);
-            i += 1
         }
         free((*sfd).sub_id as *mut libc::c_void);
     }
@@ -170,7 +167,6 @@ unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8
     let mut q: *const i8 = 0 as *const i8;
     let mut r: *mut i8 = 0 as *mut i8;
     let mut repos: i32 = 0i32;
-    let mut c: i32 = 0;
     let mut v1: i32 = 0i32;
     let mut v2: i32 = 0i32;
     let mut curpos: i32 = 0i32;
@@ -243,8 +239,7 @@ unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8
                             v1, v2);
                 return -1i32;
             }
-            c = v1;
-            while c <= v2 {
+            for c in v1..=v2 {
                 if (*rec).vector[curpos as usize] as i32 != 0i32 {
                     warn!(
                         "Subfont mapping for slot=\"0x{:02x}\" already defined...",
@@ -256,7 +251,6 @@ unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8
                 let fresh0 = curpos;
                 curpos = curpos + 1;
                 (*rec).vector[fresh0 as usize] = c as u16;
-                c += 1
             }
         }
         p = q;
@@ -330,10 +324,8 @@ unsafe extern "C" fn scan_sfd_file(
     }
     (*sfd).rec_id = new(((*sfd).num_subfonts as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<i32>() as u64) as u32) as *mut i32;
-    n = 0i32;
-    while n < (*sfd).num_subfonts {
+    for n in 0..(*sfd).num_subfonts {
         *(*sfd).rec_id.offset(n as isize) = -1i32;
-        n += 1
         /* Not loaded yet. We do lazy loading of map definitions. */
     }
     if verbose > 3i32 {
@@ -350,16 +342,12 @@ unsafe extern "C" fn scan_sfd_file(
  */
 unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
     let mut id: i32 = -1i32;
-    let mut i: i32 = 0;
     let mut error: i32 = -1i32;
     /* Check if we already opened SFD file */
-    i = 0i32;
-    while i < num_sfd_files {
+    for i in 0..num_sfd_files {
         if streq_ptr((*sfd_files.offset(i as isize)).ident, sfd_name) {
             id = i;
             break;
-        } else {
-            i += 1
         }
     }
     if id < 0i32 {
@@ -509,11 +497,8 @@ pub unsafe extern "C" fn sfd_load_record(
                 .as_mut_ptr()
                 .is_null()
             {
-                let mut __i: i32 = 0;
-                __i = 0i32;
-                while __i < 256i32 {
+                for __i in 0..256 {
                     (*sfd_record.offset(num_sfd_records as isize)).vector[__i as usize] = 0_u16;
-                    __i += 1
                 }
             }
             error = read_sfd_record(&mut *sfd_record.offset(num_sfd_records as isize), p);
@@ -540,12 +525,10 @@ pub unsafe extern "C" fn sfd_load_record(
     *(*sfd).rec_id.offset(i as isize) = rec_id;
     ttstub_input_close(handle as rust_input_handle_t);
     if verbose > 3i32 {
-        let mut __i_0: i32 = 0;
         if rec_id >= 0i32 {
             info!(" at id=\"{}\"", rec_id);
             info!("\nsubfont>> Content of mapping table:");
-            __i_0 = 0i32;
-            while __i_0 < 256i32 {
+            for __i_0 in 0..256 {
                 if __i_0 % 16i32 == 0i32 {
                     info!("\nsubfont>>  ");
                 }
@@ -553,7 +536,6 @@ pub unsafe extern "C" fn sfd_load_record(
                     " {:04x}",
                     (*sfd_record.offset(rec_id as isize)).vector[__i_0 as usize] as i32,
                 );
-                __i_0 += 1
             }
         }
         info!("\n");
@@ -570,15 +552,12 @@ pub unsafe extern "C" fn lookup_sfd_record(mut rec_id: i32, mut c: u8) -> u16 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn release_sfd_record() {
-    let mut i: i32 = 0;
     if !sfd_record.is_null() {
         free(sfd_record as *mut libc::c_void);
     }
     if !sfd_files.is_null() {
-        i = 0i32;
-        while i < num_sfd_files {
+        for i in 0..num_sfd_files {
             clean_sfd_file_(&mut *sfd_files.offset(i as isize));
-            i += 1
         }
         free(sfd_files as *mut libc::c_void);
     }

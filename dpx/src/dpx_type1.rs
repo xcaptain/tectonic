@@ -124,9 +124,8 @@ unsafe extern "C" fn is_basefont(mut name: *const i8) -> bool {
         b"Times-BoldItalic\x00" as *const u8 as *const i8,
         b"ZapfDingbats\x00" as *const u8 as *const i8,
     ];
-    let mut i: i32 = 0;
     for i in 0..14 {
-        if streq_ptr(name, basefonts[i as usize]) {
+        if streq_ptr(name, basefonts[i]) {
             return true;
         }
     }
@@ -416,7 +415,6 @@ unsafe extern "C" fn add_metrics(
     let mut firstchar: i32 = 0;
     let mut lastchar: i32 = 0;
     let mut val: f64 = 0.;
-    let mut i: i32 = 0;
     let mut tfm_id: i32 = 0;
     let mut usedchars: *mut i8 = 0 as *mut i8;
     let mut scaling: f64 = 0.;

@@ -391,7 +391,7 @@ unsafe extern "C" fn read_header(mut handle: rust_input_handle_t, hdr: &mut hdr_
             }
             let p = &mut p[2..];
             hdr.bit_count = u16::from_le_byte_slice(&p[..2]);
-            let p = &mut p[2..];
+            //let p = &mut p[2..];
             hdr.compression = 0i32;
             hdr.psize = 3i32
         }
@@ -414,7 +414,7 @@ unsafe extern "C" fn read_header(mut handle: rust_input_handle_t, hdr: &mut hdr_
             hdr.x_pix_per_meter = u32::from_le_byte_slice(&p[..4]);
             let p = &mut p[4..];
             hdr.y_pix_per_meter = u32::from_le_byte_slice(&p[..4]);
-            let p = &mut p[4..];
+            //let p = &mut p[4..];
             hdr.psize = 4i32
         }
         _ => {

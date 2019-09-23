@@ -92,7 +92,6 @@ unsafe extern "C" fn parse_uc_coverage(
             }
             44 => *pp = (*pp).offset(1),
             64 => {
-                let mut cvalues: *mut pdf_obj = 0 as *mut pdf_obj;
                 let mut i: i32 = 0;
                 let mut size: i32 = 0;
                 *pp = (*pp).offset(1);
@@ -594,7 +593,6 @@ pub unsafe extern "C" fn otl_conf_find_opt(
     mut conf: *mut pdf_obj,
     mut opt_tag: *const i8,
 ) -> *mut pdf_obj {
-    let mut options: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!conf.is_null());
     if let Some(options) = pdf_lookup_dict(conf, "option").filter(|_| !opt_tag.is_null()) {
         pdf_lookup_dict(options, CStr::from_ptr(opt_tag).to_bytes()).unwrap_or(0 as *mut pdf_obj)

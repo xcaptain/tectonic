@@ -499,7 +499,6 @@ unsafe extern "C" fn otl_gsub_read_alternate(
     mut sfont: *mut sfnt,
 ) -> i32 {
     let mut len: i32 = 0;
-    let mut i: u16 = 0;
     let mut offset: u32 = 0;
     let mut cov_offset: Offset = 0;
     let mut altset_offsets: clt_number_list = clt_number_list {
@@ -536,8 +535,7 @@ unsafe extern "C" fn otl_gsub_read_alternate(
     (*data).AlternateSet = new(((*data).AlternateSetCount as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<otl_gsub_altset>() as u64)
         as u32) as *mut otl_gsub_altset;
-    i = 0_u16;
-    while (i as i32) < (*data).AlternateSetCount as i32 {
+    for i in 0..(*data).AlternateSetCount as i32 {
         let mut altset: *mut otl_gsub_altset = 0 as *mut otl_gsub_altset;
         let mut altset_offset: u32 = 0;
         altset = &mut *(*data).AlternateSet.offset(i as isize) as *mut otl_gsub_altset;
@@ -556,7 +554,6 @@ unsafe extern "C" fn otl_gsub_read_alternate(
                 *(*altset).Alternate.offset(j as isize) = tt_get_unsigned_pair((*sfont).handle);
                 len += 2i32;
             }
-            i = i.wrapping_add(1)
         }
     }
     clt_release_number_list(&mut altset_offsets);
@@ -573,8 +570,6 @@ unsafe extern "C" fn otl_gsub_read_ligature(
     mut sfont: *mut sfnt,
 ) -> i32 {
     let mut len: i32 = 0;
-    let mut i: u16 = 0;
-    let mut j: u16 = 0;
     let mut offset: u32 = 0;
     let mut cov_offset: Offset = 0;
     let mut ligset_offsets: clt_number_list = clt_number_list {
@@ -611,8 +606,7 @@ unsafe extern "C" fn otl_gsub_read_ligature(
     (*data).LigatureSet = new(((*data).LigSetCount as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<otl_gsub_ligset>() as u64)
         as u32) as *mut otl_gsub_ligset;
-    i = 0_u16;
-    while (i as i32) < (*data).LigSetCount as i32 {
+    for i in 0..(*data).LigSetCount as i32 {
         let mut ligset_tab: clt_number_list = clt_number_list {
             count: 0,
             value: 0 as *mut u16,
@@ -632,8 +626,7 @@ unsafe extern "C" fn otl_gsub_read_ligature(
             (*ligset).Ligature = new((ligset_tab.count as u32 as u64)
                 .wrapping_mul(::std::mem::size_of::<otl_gsub_ligtab>() as u64)
                 as u32) as *mut otl_gsub_ligtab;
-            j = 0_u16;
-            while (j as i32) < ligset_tab.count as i32 {
+            for j in 0..ligset_tab.count as i32 {
                 ttstub_input_seek(
                     (*sfont).handle,
                     ligset_offset.wrapping_add(*ligset_tab.value.offset(j as isize) as u32)
@@ -664,11 +657,9 @@ unsafe extern "C" fn otl_gsub_read_ligature(
                         count = count.wrapping_add(1)
                     }
                     len += 4i32 + count as i32 * 2i32;
-                    j = j.wrapping_add(1)
                 }
             }
             clt_release_number_list(&mut ligset_tab);
-            i = i.wrapping_add(1)
         }
     }
     clt_release_number_list(&mut ligset_offsets);
@@ -965,7 +956,6 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
                     value: 0 as *mut u16,
                 },
             };
-            let mut i: i32 = 0;
             if verbose > 0i32 {
                 dpx_message(
                     b" %c%c%c%c\x00" as *const u8 as *const i8,
@@ -983,8 +973,7 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
             if feature_table.FeatureParams as i32 != 0i32 {
                 panic!("unrecognized FeatureParams");
             }
-            i = 0i32;
-            while i < feature_table.LookupListIndex.count as i32 {
+            for i in 0..feature_table.LookupListIndex.count as i32 {
                 let mut lookup_table: clt_lookup_table = clt_lookup_table {
                     LookupType: 0,
                     LookupFlag: 0,
@@ -1149,7 +1138,6 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
                     num_subtabs = (num_subtabs as i32 + n_st) as u16;
                     clt_release_lookup_table(&mut lookup_table);
                 }
-                i += 1
             }
             clt_release_feature_table(&mut feature_table);
         }

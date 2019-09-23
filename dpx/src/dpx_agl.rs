@@ -207,7 +207,6 @@ unsafe extern "C" fn skip_capital(mut p: *mut *const i8, mut endptr: *const i8) 
 }
 unsafe extern "C" fn skip_modifier(mut p: *mut *const i8, mut endptr: *const i8) -> size_t {
     let mut slen: size_t = 0i32 as size_t;
-    let mut len: size_t = 0;
     let mut i: u32 = 0;
     let len = endptr.wrapping_offset_from(*p) as usize;
     i = 0;

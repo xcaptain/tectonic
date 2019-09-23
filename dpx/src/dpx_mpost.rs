@@ -2814,7 +2814,6 @@ unsafe extern "C" fn do_findfont() -> i32 {
 unsafe extern "C" fn do_scalefont() -> i32 {
     let mut error: i32 = 0i32;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut font_scale: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut scale: f64 = 0.;
     error = pop_get_numbers(&mut scale, 1i32);
     if error != 0 {

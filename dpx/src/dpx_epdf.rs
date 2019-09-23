@@ -200,9 +200,10 @@ unsafe extern "C" fn pdf_get_page_obj(
     pdf_release_obj(trailer);
     markinfo = pdf_deref_obj(pdf_lookup_dict(catalog, "MarkInfo"));
     if !markinfo.is_null() {
-        if let Some(tmp) = pdf_lookup_dict(markinfo, "Marked").filter(|tmp| {
-            pdf_obj_typeof(*tmp) == PdfObjType::BOOLEAN && pdf_boolean_value(*tmp) as i32 != 0
-        }) {
+        if pdf_lookup_dict(markinfo, "Marked")
+            .filter(|tmp| (&**tmp).is_boolean() && pdf_boolean_value(*tmp) as i32 != 0)
+            .is_some()
+        {
             warn!("PDF file is tagged... Ignoring tags.");
         }
         pdf_release_obj(markinfo);

@@ -138,7 +138,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     pdf_dev_put_image(form_id, &mut ti, (*spe).x_user, (*spe).y_user);
     0i32
 }
-unsafe extern "C" fn spc_handler_null(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     (*args).curptr = (*args).endptr;
     0i32
 }
