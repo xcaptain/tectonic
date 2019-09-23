@@ -8,7 +8,16 @@
 #![feature(const_raw_ptr_to_usize_cast,
            extern_types,
            ptr_wrapping_offset_from)]
-extern crate libc;
+
+#[cfg(not(target_os = "macos"))]
+#[path = "xetex_font_manager_fontconfig.rs"]
+mod imp;
+
+#[cfg(target_os = "macos")]
+#[path = "xetex_font_manager_coretext.rs"]
+mod imp;
+
+
 extern "C" {
     #[cfg(not(target_os = "macos"))]
     pub type _FcPattern;

@@ -6,6 +6,16 @@
          unused_assignments,
          unused_mut)]
 #![feature(const_raw_ptr_to_usize_cast, extern_types)]
+
+#[cfg(not(target_os = "macos"))]
+mod imp {
+    
+}
+
+#[cfg(target_os = "macos")]
+#[path = "xetex_font_info_coretext.rs"]
+mod imp;
+
 extern crate libc;
 extern "C" {
     pub type FT_LibraryRec_;
