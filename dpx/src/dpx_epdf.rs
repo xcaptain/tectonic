@@ -153,16 +153,13 @@ pub const OP_UNKNOWN: C2RustUnnamed_0 = 16;
  * displayed or printed. The value must be a multiple of 90. Default value: 0.
  */
 unsafe extern "C" fn rect_equal(mut rect1: *mut pdf_obj, mut rect2: *mut pdf_obj) -> i32 {
-    let mut i: i32 = 0;
     if rect1.is_null() || rect2.is_null() {
         return 0i32;
     }
-    i = 0i32;
-    while i < 4i32 {
+    for i in 0..4 {
         if pdf_number_value(pdf_get_array(rect1, i)) != pdf_number_value(pdf_get_array(rect2, i)) {
             return 0i32;
         }
-        i += 1
     }
     1i32
 }

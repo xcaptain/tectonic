@@ -1191,7 +1191,6 @@ pub unsafe extern "C" fn agl_get_unicodes(
         let mut name: *mut i8 = 0 as *mut i8;
         let mut delim: *const i8 = 0 as *const i8;
         let mut sub_len: i32 = 0;
-        let mut i: i32 = 0;
         let mut agln0: *mut agl_name = 0 as *mut agl_name;
         let mut agln1: *mut agl_name = 0 as *mut agl_name;
         delim = strchr(p, '_' as i32);
@@ -1277,12 +1276,10 @@ pub unsafe extern "C" fn agl_get_unicodes(
                     free(name as *mut libc::c_void);
                     return -1i32;
                 }
-                i = 0i32;
-                while i < (*agln1).n_components {
+                for i in 0..(*agln1).n_components {
                     let fresh4 = count;
                     count = count + 1;
                     *unicodes.offset(fresh4 as isize) = (*agln1).unicodes[i as usize];
-                    i += 1
                 }
             } else {
                 if verbose > 1i32 {

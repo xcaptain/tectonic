@@ -321,7 +321,6 @@ pub unsafe extern "C" fn pdf_color_to_string(
     mut buffer: *mut i8,
     mut mask: i8,
 ) -> i32 {
-    let mut i: i32 = 0;
     let mut len: i32 = 0i32;
     if pdf_color_type(color) == -2i32 {
         len = sprintf(
@@ -335,14 +334,12 @@ pub unsafe extern "C" fn pdf_color_to_string(
             'C' as i32 | mask as i32,
         )
     } else {
-        i = 0i32;
-        while i < color.num_components {
+        for i in 0..color.num_components {
             len += sprintf(
                 buffer.offset(len as isize),
                 b" %g\x00" as *const u8 as *const i8,
                 (color.values[i as usize] / 0.001f64 + 0.5f64).floor() * 0.001f64,
             );
-            i += 1
         }
     }
     len
@@ -1344,13 +1341,10 @@ pub unsafe extern "C" fn pdf_init_colors() {
 /* returns colorspace ID */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_close_colors() {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while i < cspc_cache.count {
+    for i in 0..cspc_cache.count {
         let colorspace = &mut *cspc_cache.colorspaces.offset(i as isize);
         pdf_flush_colorspace(colorspace);
         pdf_clean_colorspace_struct(colorspace);
-        i = i.wrapping_add(1)
     }
     cspc_cache.colorspaces =
         mfree(cspc_cache.colorspaces as *mut libc::c_void) as *mut pdf_colorspace;

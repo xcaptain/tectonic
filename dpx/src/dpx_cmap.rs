@@ -530,7 +530,7 @@ pub unsafe extern "C" fn CMap_set_CIDSysInfo(mut cmap: *mut CMap, mut csi: *cons
  */
 #[no_mangle]
 pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut CMap) {
-    let mut i: u32 = 0; /* Maybe if (!ucmap) panic! is better for this. */
+    /* Maybe if (!ucmap) panic! is better for this. */
     assert!(!cmap.is_null());
     assert!(!ucmap.is_null());
     if cmap == ucmap {
@@ -571,11 +571,9 @@ pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut C
         }
     }
     /* We must copy codespaceranges. */
-    i = 0_u32;
-    while i < (*ucmap).codespace.num {
+    for i in 0..(*ucmap).codespace.num {
         let mut csr: *mut rangeDef = (*ucmap).codespace.ranges.offset(i as isize);
         CMap_add_codespacerange(cmap, (*csr).codeLo, (*csr).codeHi, (*csr).dim);
-        i = i.wrapping_add(1)
     }
     (*cmap).useCMap = ucmap;
 }
@@ -585,11 +583,9 @@ unsafe extern "C" fn CMap_match_codespace(
     mut c: *const u8,
     mut dim: size_t,
 ) -> i32 {
-    let mut i: u32 = 0;
     let mut pos: u32 = 0;
     assert!(!cmap.is_null());
-    i = 0_u32;
-    while i < (*cmap).codespace.num {
+    for i in 0..(*cmap).codespace.num {
         let mut csr: *mut rangeDef = (*cmap).codespace.ranges.offset(i as isize);
         if !((*csr).dim != dim) {
             pos = 0_u32;
@@ -605,7 +601,6 @@ unsafe extern "C" fn CMap_match_codespace(
                 return 0i32;
             }
         }
-        i = i.wrapping_add(1)
         /* Valid */
     }
     return -1i32;
@@ -622,10 +617,8 @@ pub unsafe extern "C" fn CMap_add_codespacerange(
     mut dim: size_t,
 ) -> i32 {
     let mut csr: *mut rangeDef = 0 as *mut rangeDef;
-    let mut i: u32 = 0;
     assert!(!cmap.is_null() && dim > 0i32 as u64);
-    i = 0_u32;
-    while i < (*cmap).codespace.num {
+    for i in 0..(*cmap).codespace.num {
         let mut j: size_t = 0;
         let mut overlap: bool = true;
         csr = (*cmap).codespace.ranges.offset(i as isize);
@@ -646,7 +639,6 @@ pub unsafe extern "C" fn CMap_add_codespacerange(
             warn!("Overlapping codespace found. (ingored)");
             return -1i32;
         }
-        i = i.wrapping_add(1)
     }
     if dim < (*cmap).profile.minBytesIn {
         (*cmap).profile.minBytesIn = dim
@@ -844,7 +836,6 @@ pub unsafe extern "C" fn CMap_add_cidrange(
     mut srcdim: size_t,
     mut base: CID,
 ) -> i32 {
-    let mut i: size_t = 0;
     let mut c: size_t = 0;
     let mut v: size_t = 0;
     let mut cur: *mut mapDef = 0 as *mut mapDef;
@@ -870,10 +861,8 @@ pub unsafe extern "C" fn CMap_add_cidrange(
         return -1i32;
     }
     v = 0i32 as size_t;
-    i = 0i32 as size_t;
-    while i < srcdim.wrapping_sub(1i32 as u64) {
+    for i in 0..srcdim.wrapping_sub(1i32 as u64) {
         v = (v << 8i32).wrapping_add(*srclo.offset(i as isize) as u64);
-        i = i.wrapping_add(1)
     }
     *(*cmap).reverseMap.offset(base as isize) = v as i32;
     c = *srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as size_t;
@@ -900,29 +889,23 @@ pub unsafe extern "C" fn CMap_add_cidrange(
     0i32
 }
 unsafe extern "C" fn mapDef_release(mut t: *mut mapDef) {
-    let mut c: i32 = 0;
     assert!(!t.is_null());
-    c = 0i32;
-    while c < 256i32 {
+    for c in 0..256 {
         if (*t.offset(c as isize)).flag & 1i32 << 4i32 != 0 {
             mapDef_release((*t.offset(c as isize)).next);
         }
-        c += 1
     }
     free(t as *mut libc::c_void);
 }
 unsafe extern "C" fn mapDef_new() -> *mut mapDef {
     let mut t: *mut mapDef = 0 as *mut mapDef;
-    let mut c: i32 = 0;
     t = new((256_u64).wrapping_mul(::std::mem::size_of::<mapDef>() as u64) as u32) as *mut mapDef;
-    c = 0i32;
-    while c < 256i32 {
+    for c in 0..256 {
         (*t.offset(c as isize)).flag = 0i32 | 0i32;
         let ref mut fresh4 = (*t.offset(c as isize)).code;
         *fresh4 = 0 as *mut u8;
         let ref mut fresh5 = (*t.offset(c as isize)).next;
         *fresh5 = 0 as *mut mapDef;
-        c += 1
     }
     t
 }
@@ -950,11 +933,9 @@ unsafe extern "C" fn locate_tbl(
     mut code: *const u8,
     mut dim: i32,
 ) -> i32 {
-    let mut i: i32 = 0;
     let mut c: i32 = 0;
     assert!(!cur.is_null() && !(*cur).is_null());
-    i = 0i32;
-    while i < dim - 1i32 {
+    for i in 0..(dim - 1) {
         c = *code.offset(i as isize) as i32;
         if if (*(*cur).offset(c as isize)).flag & 0xfi32 != 0i32 {
             1i32
@@ -972,7 +953,6 @@ unsafe extern "C" fn locate_tbl(
         }
         (*(*cur).offset(c as isize)).flag |= 1i32 << 4i32;
         *cur = (*(*cur).offset(c as isize)).next;
-        i += 1
     }
     0i32
 }

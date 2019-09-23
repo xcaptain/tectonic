@@ -285,30 +285,22 @@ unsafe extern "C" fn do_arcfour_setkey(
     mut key: *const u8,
     mut keylen: u32,
 ) {
-    let mut i: i32 = 0;
-    let mut j: i32 = 0;
     let mut karr: [u8; 256] = [0; 256];
     (*ctx).idx_j = 0i32;
     (*ctx).idx_i = (*ctx).idx_j;
-    i = 0i32;
-    while i < 256i32 {
-        (*ctx).sbox[i as usize] = i as u8;
-        i += 1
+    for i in 0..256 {
+        (*ctx).sbox[i] = i as u8;
     }
-    i = 0i32;
-    while i < 256i32 {
-        karr[i as usize] = *key.offset((i as u32).wrapping_rem(keylen) as isize);
-        i += 1
+    for i in 0..256 {
+        karr[i] = *key.offset((i as u32).wrapping_rem(keylen) as isize);
     }
-    j = 0i32;
-    i = j;
-    while i < 256i32 {
+    let mut j = 0;
+    for i in j..256 {
         let mut t: i32 = 0;
-        j = (j + (*ctx).sbox[i as usize] as i32 + karr[i as usize] as i32) % 256i32;
-        t = (*ctx).sbox[i as usize] as i32;
-        (*ctx).sbox[i as usize] = (*ctx).sbox[j as usize];
-        (*ctx).sbox[j as usize] = t as u8;
-        i += 1
+        j = (j + (*ctx).sbox[i] as usize + karr[i] as usize) % 256;
+        t = (*ctx).sbox[i] as i32;
+        (*ctx).sbox[i] = (*ctx).sbox[j];
+        (*ctx).sbox[j] = t as u8;
     }
     memset(karr.as_mut_ptr() as *mut libc::c_void, 0i32, 256);
 }
@@ -398,7 +390,6 @@ pub unsafe extern "C" fn AES_cbc_encrypt_tectonic(
     let mut outptr: *mut u8 = 0 as *mut u8;
     let mut block: [u8; 16] = [0; 16];
     let mut len: size_t = 0;
-    let mut i: size_t = 0;
     let mut padbytes: i32 = 0;
     ctx = &mut aes;
     if !iv.is_null() {
@@ -408,10 +399,8 @@ pub unsafe extern "C" fn AES_cbc_encrypt_tectonic(
             16,
         );
     } else {
-        i = 0i32 as size_t;
-        while i < 16i32 as u64 {
-            (*ctx).iv[i as usize] = (rand() % 256i32) as u8;
-            i = i.wrapping_add(1)
+        for i in 0..16 {
+            (*ctx).iv[i] = (rand() % 256i32) as u8;
         }
     }
     /* 16 bytes aligned.
@@ -450,11 +439,9 @@ pub unsafe extern "C" fn AES_cbc_encrypt_tectonic(
     }
     len = plain_len;
     while len >= 16i32 as u64 {
-        i = 0i32 as size_t;
-        while i < 16i32 as u64 {
+        for i in 0..16i32 as u64 {
             block[i as usize] =
                 (*inptr.offset(i as isize) as i32 ^ (*ctx).iv[i as usize] as i32) as u8;
-            i = i.wrapping_add(1)
         }
         rijndaelEncrypt(
             (*ctx).rk.as_mut_ptr(),
@@ -472,16 +459,12 @@ pub unsafe extern "C" fn AES_cbc_encrypt_tectonic(
         len = (len as u64).wrapping_sub(16i32 as u64) as size_t as size_t
     }
     if len > 0i32 as u64 || padding != 0 {
-        i = 0i32 as size_t;
-        while i < len {
+        for i in 0..len {
             block[i as usize] =
                 (*inptr.offset(i as isize) as i32 ^ (*ctx).iv[i as usize] as i32) as u8;
-            i = i.wrapping_add(1)
         }
-        i = len;
-        while i < 16i32 as u64 {
+        for i in len..16 {
             block[i as usize] = (padbytes ^ (*ctx).iv[i as usize] as i32) as u8;
-            i = i.wrapping_add(1)
         }
         rijndaelEncrypt(
             (*ctx).rk.as_mut_ptr(),

@@ -243,8 +243,7 @@ unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
         0 as *const i8,
     ];
     count = 0i32;
-    i = 0i32;
-    while i < len {
+    for i in 0..len {
         if *fontname.offset(i as isize) as i32 == 0i32 {
             memmove(
                 fontname.offset(i as isize) as *mut libc::c_void,
@@ -254,7 +253,6 @@ unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
             count += 1;
             len -= 1
         }
-        i += 1
     }
     if count > 0i32 {
         warn!(
@@ -485,9 +483,8 @@ unsafe extern "C" fn find_tocode_cmap(
             CStr::from_ptr(ord).display(),
         );
         warn!("I tried to load (one of) the following file(s):");
-        i = 0i32;
-        while i < 5i32 {
-            append = known_encodings[select as usize].pdfnames[i as usize];
+        for i in 0..5 {
+            append = known_encodings[select as usize].pdfnames[i];
             if append.is_null() {
                 break;
             }
@@ -497,7 +494,6 @@ unsafe extern "C" fn find_tocode_cmap(
                 CStr::from_ptr(ord).display(),
                 CStr::from_ptr(append).display()
             );
-            i += 1
         }
         warn!("Please check if this file exists.");
         panic!("Cannot continue...");
@@ -515,7 +511,6 @@ unsafe extern "C" fn add_TTCIDHMetrics(
     mut cidtogidmap: *mut u8,
     mut last_cid: u16,
 ) {
-    let mut cid: i32 = 0;
     let mut start: i32 = 0i32;
     let mut prev: i32 = 0i32;
     let mut w_array: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -535,8 +530,7 @@ unsafe extern "C" fn add_TTCIDHMetrics(
             .floor()
             * 1i32 as f64
     }
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         let mut idx: u16 = 0;
         let mut gid: u16 = 0;
         let mut width: f64 = 0.;
@@ -580,7 +574,6 @@ unsafe extern "C" fn add_TTCIDHMetrics(
                 }
             }
         }
-        cid += 1
     }
     if !an_array.is_null() {
         pdf_add_array(w_array, pdf_new_number(start as f64));
@@ -601,7 +594,6 @@ unsafe extern "C" fn add_TTCIDVMetrics(
 ) {
     let mut w2_array: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut an_array: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut cid: i32 = 0;
     let mut defaultVertOriginY: f64 = 0.;
     let mut defaultAdvanceHeight: f64 = 0.;
     let mut empty: i32 = 1i32;
@@ -617,8 +609,7 @@ unsafe extern "C" fn add_TTCIDVMetrics(
             .floor()
             * 1i32 as f64;
     w2_array = pdf_new_array();
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         let mut idx: u16 = 0;
         let mut vertOriginX: f64 = 0.;
         let mut vertOriginY: f64 = 0.;
@@ -663,7 +654,6 @@ unsafe extern "C" fn add_TTCIDVMetrics(
                 }
             }
         }
-        cid += 1
     }
     if defaultVertOriginY != 880i32 as f64 || defaultAdvanceHeight != 1000i32 as f64 {
         an_array = pdf_new_array();
@@ -754,21 +744,16 @@ unsafe extern "C" fn fix_CJK_symbols(mut code: u16) -> u16 {
             init
         },
     ];
-    let mut i: u32 = 0;
     alt_code = code;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[C2RustUnnamed_2; 10]>() as u64)
-            .wrapping_div(::std::mem::size_of::<C2RustUnnamed_2>() as u64)
+    for i in 0..(::std::mem::size_of::<[C2RustUnnamed_2; 10]>() as u64)
+        .wrapping_div(::std::mem::size_of::<C2RustUnnamed_2>() as u64) as usize
     {
-        if CJK_Uni_symbols[i as usize].alt1 as i32 == code as i32 {
-            alt_code = CJK_Uni_symbols[i as usize].alt2;
+        if CJK_Uni_symbols[i].alt1 as i32 == code as i32 {
+            alt_code = CJK_Uni_symbols[i].alt2;
             break;
-        } else if CJK_Uni_symbols[i as usize].alt2 as i32 == code as i32 {
-            alt_code = CJK_Uni_symbols[i as usize].alt1;
+        } else if CJK_Uni_symbols[i].alt2 as i32 == code as i32 {
+            alt_code = CJK_Uni_symbols[i].alt1;
             break;
-        } else {
-            i = i.wrapping_add(1)
         }
     }
     alt_code
@@ -831,7 +816,6 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
     let mut cmap: *mut CMap = 0 as *mut CMap;
     let mut ttcmap: *mut tt_cmap = 0 as *mut tt_cmap;
     let mut offset: u32 = 0_u32;
-    let mut cid: CID = 0;
     let mut last_cid: CID = 0;
     let mut cidtogidmap: *mut u8 = 0 as *mut u8;
     let mut num_glyphs: u16 = 0;
@@ -963,17 +947,15 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
          * This part contains a bug. It may choose SJIS encoding TrueType cmap
          * table for Adobe-GB1.
          */
-        i = 0i32;
-        while i <= 9i32 {
+        for i in 0..=9 {
             ttcmap = tt_cmap_read(
                 sfont,
-                known_encodings[i as usize].platform,
-                known_encodings[i as usize].encoding,
+                known_encodings[i].platform,
+                known_encodings[i].encoding,
             );
             if !ttcmap.is_null() {
                 break;
             }
-            i += 1
         }
         if ttcmap.is_null() {
             warn!(
@@ -1050,13 +1032,11 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         i -= 1
     }
     if last_cid as i32 > 0i32 {
-        i = 0i32;
-        while i < 8i32 {
+        for i in 0..8 {
             if c >> i & 1i32 != 0 {
                 break;
             }
             last_cid = last_cid.wrapping_sub(1);
-            i += 1
         }
     }
     if last_cid as u32 >= 0xffffu32 {
@@ -1073,8 +1053,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
      */
     if !h_used_chars.is_null() {
         used_chars = h_used_chars;
-        cid = 1i32 as CID;
-        while cid as i32 <= last_cid as i32 {
+        for cid in 1..=last_cid as CID {
             let mut code: i32 = 0;
             let mut gid: u16 = 0;
             if !(*h_used_chars.offset((cid as i32 / 8i32) as isize) as i32
@@ -1110,7 +1089,6 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
                 /* !NO_GHOSTSCRIPT_BUG */
                 num_glyphs = num_glyphs.wrapping_add(1)
             }
-            cid = cid.wrapping_add(1)
         }
     }
     /*
@@ -1161,8 +1139,7 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
                 );
             }
         }
-        cid = 1i32 as CID;
-        while cid as i32 <= last_cid as i32 {
+        for cid in 1..=last_cid as CID {
             let mut code_0: i32 = 0;
             let mut gid_0: u16 = 0;
             if !(*v_used_chars.offset((cid as i32 / 8i32) as isize) as i32
@@ -1217,7 +1194,6 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
                     num_glyphs = num_glyphs.wrapping_add(1)
                 }
             }
-            cid = cid.wrapping_add(1)
         }
         if !gsub_list.is_null() {
             otl_gsub_release(gsub_list);
