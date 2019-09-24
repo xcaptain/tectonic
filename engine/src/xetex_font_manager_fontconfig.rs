@@ -11,6 +11,8 @@
            extern_types,
            ptr_wrapping_offset_from)]
 
+use std::ffi::CString;
+use std::ptr::NonNull;
 use crate::xetex_layout_interface::collection_types::*;
 
 extern "C" {
@@ -1716,77 +1718,7 @@ shall not be used in advertising or otherwise to promote the sale,
 use or other dealings in this Software without prior written
 authorization from the copyright holders.
 \****************************************************************************/
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XeTeXFontMgrOpSizeRec {
-    pub designSize: libc::c_uint,
-    pub subFamilyID: libc::c_uint,
-    pub nameCode: libc::c_uint,
-    pub minSize: libc::c_uint,
-    pub maxSize: libc::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XeTeXFontMgrFamily {
-    pub styles: *mut CppStdMapStringToFontPtr,
-    pub minWeight: uint16_t,
-    pub maxWeight: uint16_t,
-    pub minWidth: uint16_t,
-    pub maxWidth: uint16_t,
-    pub minSlant: int16_t,
-    pub maxSlant: int16_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XeTeXFontMgrFont {
-    pub m_fullName: *mut CppStdString,
-    pub m_psName: *mut CppStdString,
-    pub m_familyName: *mut CppStdString,
-    pub m_styleName: *mut CppStdString,
-    pub parent: *mut XeTeXFontMgrFamily,
-    pub fontRef: PlatformFontRef,
-    pub opSizeInfo: XeTeXFontMgrOpSizeRec,
-    pub weight: uint16_t,
-    pub width: uint16_t,
-    pub slant: int16_t,
-    pub isReg: bool,
-    pub isBold: bool,
-    pub isItalic: bool,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XeTeXFontMgrNameCollection {
-    pub m_familyNames: *mut CppStdListOfString,
-    pub m_styleNames: *mut CppStdListOfString,
-    pub m_fullNames: *mut CppStdListOfString,
-    pub m_psName: *mut CppStdString,
-    pub m_subFamily: *mut CppStdString,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XeTeXFontMgr {
-    pub m_subdtor: Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr) -> ()>,
-    pub m_memfnInitialize: Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr) -> ()>,
-    pub m_memfnTerminate: Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr) -> ()>,
-    pub m_memfnGetPlatformFontDesc: Option<
-        unsafe extern "C" fn(_: *const XeTeXFontMgr, _: PlatformFontRef) -> *mut libc::c_char,
-    >,
-    pub m_memfnGetOpSizeRecAndStyleFlags:
-        Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr, _: *mut XeTeXFontMgrFont) -> ()>,
-    pub m_memfnSearchForHostPlatformFonts:
-        Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr, _: *const libc::c_char) -> ()>,
-    pub m_memfnReadNames: Option<
-        unsafe extern "C" fn(
-            _: *mut XeTeXFontMgr,
-            _: PlatformFontRef,
-        ) -> *mut XeTeXFontMgrNameCollection,
-    >,
-    pub m_nameToFont: *mut CppStdMapStringToFontPtr,
-    pub m_nameToFamily: *mut CppStdMapStringToFamilyPtr,
-    pub m_platformRefToFont: *mut CppStdMapFontRefToFontPtr,
-    pub m_psNameToFont: *mut CppStdMapStringToFontPtr,
-    // maps PS name (as used in .xdv) to font record
-}
+use super::{XeTeXFontMgrOpSizeRec, XeTeXFontMgrFamily, XeTeXFontMgrFont, XeTeXFontMgrNameCollection, XeTeXFontMgr};
 /* ***************************************************************************\
  Part of the XeTeX typesetting system
  Copyright (c) 1994-2008 by SIL International
@@ -2113,10 +2045,10 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
             i = i.wrapping_add(1)
         }
         if CppStdListOfString_size(familyNames) > 0 {
-            CppStdListOfString_assign((*names).m_familyNames, familyNames);
+            *(*names).m_familyNames = (*familyNames).clone();
         }
         if CppStdListOfString_size(subFamilyNames) > 0 {
-            CppStdListOfString_assign((*names).m_styleNames, subFamilyNames);
+            *(*names).m_styleNames = (*subFamilyNames).clone();
         }
         CppStdListOfString_delete(subFamilyNames);
         CppStdListOfString_delete(familyNames);
@@ -2169,7 +2101,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
             }
             XeTeXFontMgr_appendToList(self_0, (*names).m_styleNames, name);
         }
-        if CppStdListOfString_size((*names).m_fullNames) == 0 {
+        if (*(*names).m_fullNames).is_empty() {
             let mut fullName: *mut CppStdString = CppStdString_create();
             CppStdString_append_const_char_ptr(
                 fullName,
@@ -2240,7 +2172,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_cacheFamilyMembers(
     mut familyNames: *const CppStdListOfString,
 ) {
     let mut real_self: *mut XeTeXFontMgr_FC = self_0 as *mut XeTeXFontMgr_FC;
-    if CppStdListOfString_size(familyNames) == 0 {
+    if (*familyNames).is_empty() {
         return;
     }
     let mut f: libc::c_int = 0i32;

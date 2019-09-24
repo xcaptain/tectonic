@@ -9,7 +9,10 @@
 #![feature(const_raw_ptr_to_usize_cast,
            extern_types,
            ptr_wrapping_offset_from)]
-extern crate libc;
+
+use std::ffi::CString;
+use std::ptr::NonNull;
+
 extern "C" {
     pub type NSAutoreleasePool;
     pub type __CFAllocator;
@@ -314,7 +317,7 @@ pub struct XeTeXFontMgrOpSizeRec {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XeTeXFontMgrFamily {
-    pub styles: *mut CppStdMapStringToFontPtr,
+    pub styles: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
     pub minWeight: uint16_t,
     pub maxWeight: uint16_t,
     pub minWidth: uint16_t,
@@ -367,10 +370,10 @@ pub struct XeTeXFontMgr {
             _: PlatformFontRef,
         ) -> *mut XeTeXFontMgrNameCollection,
     >,
-    pub m_nameToFont: *mut CppStdMapStringToFontPtr,
-    pub m_nameToFamily: *mut CppStdMapStringToFamilyPtr,
-    pub m_platformRefToFont: *mut CppStdMapFontRefToFontPtr,
-    pub m_psNameToFont: *mut CppStdMapStringToFontPtr,
+    pub m_nameToFont: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
+    pub m_nameToFamily: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFamily>>,
+    pub m_platformRefToFont: *mut CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
+    pub m_psNameToFont: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

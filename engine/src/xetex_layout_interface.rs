@@ -547,22 +547,14 @@ extern "C" {
 
 pub mod collection_types {
     use super::size_t;
-    use super::GlyphBBox;
-    use super::GlyphId;
-    use super::PlatformFontRef;
-    use super::XeTeXFontMgrFamily;
-    use super::XeTeXFontMgrFont;
+    use super::{GlyphBBox, GlyphId, PlatformFontRef, XeTeXFontMgrFamily, XeTeXFontMgrFont};
     use core::ptr::NonNull;
     use std::collections::{BTreeMap, LinkedList};
     use std::ffi::CString;
 
     pub type CppStdString = CString;
     pub type CppStdListOfString = LinkedList<CString>;
-    pub type CppStdMapGlyphIdToInt = BTreeMap<GlyphId, libc::c_int>;
-    pub type CppStdMapU32ToGlyphBBox = BTreeMap<u32, GlyphBBox>;
-    pub type CppStdMapFontRefToFontPtr = BTreeMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>;
-    pub type CppStdMapStringToFontPtr = BTreeMap<CString, NonNull<XeTeXFontMgrFont>>;
-    pub type CppStdMapStringToFamilyPtr = BTreeMap<CString, NonNull<XeTeXFontMgrFamily>>;
+    pub type CppStdMap<K, V> = BTreeMap<K, V>;
 
     #[derive(Copy, Clone)]
     #[repr(C)]
@@ -616,11 +608,6 @@ pub mod collection_types {
             val: *const libc::c_char,
         );
         #[no_mangle]
-        pub fn CppStdListOfString_assign(
-            dest: *mut CppStdListOfString,
-            src: *mut CppStdListOfString,
-        );
-        #[no_mangle]
         pub fn CppStdListOfString_begin(self_0: *mut CppStdListOfString)
             -> CppStdListOfString_Iter;
         #[no_mangle]
@@ -628,10 +615,6 @@ pub mod collection_types {
             self_0: *const CppStdListOfString,
             val: *const libc::c_char,
         ) -> bool;
-        #[no_mangle]
-        pub fn CppStdListOfString_create() -> *mut CppStdListOfString;
-        #[no_mangle]
-        pub fn CppStdListOfString_delete(self_0: *mut CppStdListOfString);
         #[no_mangle]
         pub fn CppStdListOfString_end(self_0: *mut CppStdListOfString) -> CppStdListOfString_Iter;
         #[no_mangle]
@@ -666,28 +649,18 @@ pub mod collection_types {
         ) -> *mut XeTeXFontMgrFont;
         #[no_mangle]
         pub fn CppStdMapFontRefToFontPtr_contains(
-            self_0: *const CppStdMapFontRefToFontPtr,
+            self_0: *const CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
             val: PlatformFontRef,
         ) -> bool;
         #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_create() -> *mut CppStdMapFontRefToFontPtr;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_delete(self_0: *mut CppStdMapFontRefToFontPtr);
-        #[no_mangle]
         pub fn CppStdMapFontRefToFontPtr_end(
-            self_0: *mut CppStdMapFontRefToFontPtr,
+            self_0: *mut CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapFontRefToFontPtr_Iter;
         #[no_mangle]
         pub fn CppStdMapFontRefToFontPtr_find(
-            self_0: *mut CppStdMapFontRefToFontPtr,
+            self_0: *mut CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
             val: PlatformFontRef,
         ) -> CppStdMapFontRefToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_put(
-            self_0: *mut CppStdMapFontRefToFontPtr,
-            val: PlatformFontRef,
-            val2: *mut XeTeXFontMgrFont,
-        );
         #[no_mangle]
         pub fn CppStdMapGlyphIdToInt_Iter_eq(
             lhs: CppStdMapGlyphIdToInt_Iter,
@@ -697,22 +670,16 @@ pub mod collection_types {
         pub fn CppStdMapGlyphIdToInt_Iter_second(self_0: CppStdMapGlyphIdToInt_Iter)
             -> libc::c_int;
         #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_create() -> *mut CppStdMapGlyphIdToInt;
+        pub fn CppStdMapGlyphIdToInt_create() -> *mut CppStdMap<GlyphId, libc::c_int>;
         #[no_mangle]
         pub fn CppStdMapGlyphIdToInt_end(
-            self_0: *mut CppStdMapGlyphIdToInt,
+            self_0: *mut CppStdMap<GlyphId, libc::c_int>,
         ) -> CppStdMapGlyphIdToInt_Iter;
         #[no_mangle]
         pub fn CppStdMapGlyphIdToInt_find(
-            self_0: *mut CppStdMapGlyphIdToInt,
+            self_0: *mut CppStdMap<GlyphId, libc::c_int>,
             id: GlyphId,
         ) -> CppStdMapGlyphIdToInt_Iter;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_put(
-            self_0: *mut CppStdMapGlyphIdToInt,
-            key: GlyphId,
-            val: libc::c_int,
-        );
         #[no_mangle]
         pub fn CppStdMapStringToFamilyPtr_Iter_eq(
             lhs: CppStdMapStringToFamilyPtr_Iter,
@@ -728,24 +695,14 @@ pub mod collection_types {
             self_0: CppStdMapStringToFamilyPtr_Iter,
         ) -> *mut XeTeXFontMgrFamily;
         #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_create() -> *mut CppStdMapStringToFamilyPtr;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_delete(self_0: *mut CppStdMapStringToFamilyPtr);
-        #[no_mangle]
         pub fn CppStdMapStringToFamilyPtr_end(
-            self_0: *mut CppStdMapStringToFamilyPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFamily>>,
         ) -> CppStdMapStringToFamilyPtr_Iter;
         #[no_mangle]
         pub fn CppStdMapStringToFamilyPtr_find(
-            self_0: *mut CppStdMapStringToFamilyPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFamily>>,
             val: *mut CppStdString,
         ) -> CppStdMapStringToFamilyPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_put(
-            self_0: *mut CppStdMapStringToFamilyPtr,
-            val: *mut CppStdString,
-            val2: *mut XeTeXFontMgrFamily,
-        );
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_Iter_eq(
             lhs: CppStdMapStringToFontPtr_Iter,
@@ -764,32 +721,26 @@ pub mod collection_types {
         ) -> *mut XeTeXFontMgrFont;
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_begin(
-            self_0: *mut CppStdMapStringToFontPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapStringToFontPtr_Iter;
         #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_create() -> *mut CppStdMapStringToFontPtr;
+        pub fn CppStdMapStringToFontPtr_create() -> *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>;
         #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_delete(self_0: *mut CppStdMapStringToFontPtr);
+        pub fn CppStdMapStringToFontPtr_delete(self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>);
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_end(
-            self_0: *mut CppStdMapStringToFontPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapStringToFontPtr_Iter;
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_find(
-            self_0: *mut CppStdMapStringToFontPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
             val: *mut CppStdString,
         ) -> CppStdMapStringToFontPtr_Iter;
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_find_const_char_ptr(
-            self_0: *mut CppStdMapStringToFontPtr,
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
             val: *const libc::c_char,
         ) -> CppStdMapStringToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_put(
-            self_0: *mut CppStdMapStringToFontPtr,
-            val: *mut CppStdString,
-            val2: *mut XeTeXFontMgrFont,
-        );
         #[no_mangle]
         pub fn CppStdMapU32ToGlyphBBox_Iter_eq(
             lhs: CppStdMapU32ToGlyphBBox_Iter,
@@ -800,22 +751,14 @@ pub mod collection_types {
             self_0: CppStdMapU32ToGlyphBBox_Iter,
         ) -> GlyphBBox;
         #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_create() -> *mut CppStdMapU32ToGlyphBBox;
-        #[no_mangle]
         pub fn CppStdMapU32ToGlyphBBox_end(
-            self_0: *mut CppStdMapU32ToGlyphBBox,
+            self_0: *mut CppStdMap<u32, GlyphBBox>,
         ) -> CppStdMapU32ToGlyphBBox_Iter;
         #[no_mangle]
         pub fn CppStdMapU32ToGlyphBBox_find(
-            self_0: *mut CppStdMapU32ToGlyphBBox,
+            self_0: *mut CppStdMap<u32, GlyphBBox>,
             key: u32,
         ) -> CppStdMapU32ToGlyphBBox_Iter;
-        #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_put(
-            self_0: *mut CppStdMapU32ToGlyphBBox,
-            key: u32,
-            val: GlyphBBox,
-        );
         #[no_mangle]
         pub fn CppStdString_append_const_char_ptr(
             self_0: *mut CppStdString,
@@ -842,23 +785,49 @@ pub mod collection_types {
             rhs: *const libc::c_char,
         ) -> bool;
         #[no_mangle]
-        pub fn CppStdString_create() -> *mut CppStdString;
-        #[no_mangle]
-        pub fn CppStdString_cstr(self_0: *const CppStdString) -> *const libc::c_char;
-        #[no_mangle]
-        pub fn CppStdString_delete(self_0: *mut CppStdString);
-        #[no_mangle]
         pub fn CppStdString_equal_const_char_ptr(
             lhs: *mut CppStdString,
             rhs: *const libc::c_char,
         ) -> bool;
         #[no_mangle]
         pub fn CppStdString_last(self_0: *const CppStdString) -> libc::c_char;
-        #[no_mangle]
-        pub fn CppStdString_length(self_0: *const CppStdString) -> libc::c_int;
 
     }
 
+    pub fn CppStdString_create() -> *mut CppStdString {
+        Box::into_raw(Box::new(CString::default()))
+    }
+    
+    pub unsafe fn CppStdString_delete(self_0: *mut CppStdString) {
+        let _ : Box<CppStdString> = Box::from_raw(self_0);
+    }
+    pub unsafe fn CppStdString_length(self_0: *const CppStdString) -> libc::size_t {
+        self_0.as_ref().unwrap().to_bytes().len() as _
+    }
+    pub unsafe fn CppStdString_cstr(self_0: *const CppStdString) -> *const libc::c_char {
+        let v = self_0.as_ref().unwrap();
+        v.as_ptr()
+    }
+    
+    pub fn CppStdListOfString_create() -> *mut CppStdListOfString {
+        Box::into_raw(Box::new(CppStdListOfString::default()))
+    }
+
+    pub unsafe fn CppStdListOfString_delete(self_0: *mut CppStdListOfString) {
+        let _ : Box<CppStdListOfString> = Box::from_raw(self_0);
+    }
+
+    pub fn CppStdMap_create<K: Ord, V>() -> *mut CppStdMap<K, V> {
+        Box::into_raw(Box::new(CppStdMap::default()))
+    }
+    
+    pub unsafe fn CppStdMap_put<K: Ord, V>(self_0: *mut CppStdMap<K, V>, key: K, val: V) {
+        (*self_0).insert(key, val);
+    }
+    
+    pub unsafe fn CppStdMap_delete<K: Ord, V>(self_0: *mut CppStdMap<K, V>) {
+        let _ : Box<CppStdMap<K, V>> = Box::from_raw(self_0);    
+    }
 }
 
 use self::collection_types::*;
@@ -2298,7 +2267,7 @@ pub const gr_breakWord: gr_break_weight = 15;
 pub const gr_breakWhitespace: gr_break_weight = 10;
 pub const gr_breakNone: gr_break_weight = 0;
 
-pub type ProtrusionFactor = CppStdMapGlyphIdToInt;
+pub type ProtrusionFactor = CppStdMap<GlyphId, libc::c_int>;
 #[cfg(target_os = "macos")]
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -2347,7 +2316,7 @@ authorization from the copyright holders.
  * particular reason for it to be here, but it was a tiny file with a weird
  * name so I wanted to get rid of it. The functions are invoked from the C
  * code. */
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
 pub struct GlyphId {
     pub fontNum: libc::c_int,
@@ -2392,11 +2361,11 @@ unsafe extern "C" fn XeTeXFontInst_getFilename(
     return (*self_0).m_filename;
 }
 #[no_mangle]
-pub unsafe extern "C" fn getGlyphBBoxCache() -> *mut CppStdMapU32ToGlyphBBox {
-    static mut cache: *mut CppStdMapU32ToGlyphBBox =
-        0 as *const CppStdMapU32ToGlyphBBox as *mut CppStdMapU32ToGlyphBBox;
+pub unsafe extern "C" fn getGlyphBBoxCache() -> *mut CppStdMap<u32, GlyphBBox> {
+    static mut cache: *mut CppStdMap<u32, GlyphBBox> =
+        0 as *const CppStdMap<u32, GlyphBBox> as *mut CppStdMap<u32, GlyphBBox>;
     if cache.is_null() {
-        cache = CppStdMapU32ToGlyphBBox_create()
+        cache = CppStdMap_create()
     }
     return cache;
 }
@@ -2406,14 +2375,14 @@ pub unsafe extern "C" fn getCachedGlyphBBox(
     mut glyphID: uint16_t,
     mut bbox: *mut GlyphBBox,
 ) -> libc::c_int {
-    let mut sGlyphBoxes: *mut CppStdMapU32ToGlyphBBox = getGlyphBBoxCache();
+    let mut sGlyphBoxes: *mut CppStdMap<u32, GlyphBBox> = getGlyphBBoxCache();
     let mut key: uint32_t = ((fontID as uint32_t) << 16i32).wrapping_add(glyphID as libc::c_uint);
-    let mut i: CppStdMapU32ToGlyphBBox_Iter = CppStdMapU32ToGlyphBBox_find(sGlyphBoxes, key);
-    if CppStdMapU32ToGlyphBBox_Iter_eq(i, CppStdMapU32ToGlyphBBox_end(sGlyphBoxes)) {
-        return 0i32;
+    if let Some(v) = (*sGlyphBoxes).get(&key) {
+        *bbox = v.clone();
+        1
+    } else {
+        0
     }
-    *bbox = CppStdMapU32ToGlyphBBox_Iter_second(i);
-    return 1i32;
 }
 #[no_mangle]
 pub unsafe extern "C" fn cacheGlyphBBox(
@@ -2421,9 +2390,9 @@ pub unsafe extern "C" fn cacheGlyphBBox(
     mut glyphID: uint16_t,
     mut bbox: *const GlyphBBox,
 ) {
-    let mut sGlyphBoxes: *mut CppStdMapU32ToGlyphBBox = getGlyphBBoxCache();
+    let mut sGlyphBoxes: *mut CppStdMap<u32, GlyphBBox> = getGlyphBBoxCache();
     let mut key: uint32_t = ((fontID as uint32_t) << 16i32).wrapping_add(glyphID as libc::c_uint);
-    CppStdMapU32ToGlyphBBox_put(sGlyphBoxes, key, *bbox);
+    CppStdMap_put(sGlyphBoxes, key, *bbox);
 }
 #[inline]
 unsafe extern "C" fn GlyphId_create(mut fontNum: libc::c_int, mut code: libc::c_uint) -> GlyphId {
@@ -2494,7 +2463,7 @@ pub unsafe extern "C" fn set_cp_code(
 ) {
     let mut id: GlyphId = GlyphId_create(fontNum, code);
     let mut container: *mut ProtrusionFactor = getProtrusionFactor(side);
-    CppStdMapGlyphIdToInt_put(container, id, value);
+    CppStdMap_put(container, id, value);
 }
 #[no_mangle]
 pub unsafe extern "C" fn get_cp_code(
