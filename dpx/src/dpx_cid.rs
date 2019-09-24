@@ -533,13 +533,11 @@ pub unsafe extern "C" fn CIDFont_attach_parent(
 }
 #[no_mangle]
 pub unsafe extern "C" fn CIDFont_is_ACCFont(mut font: *mut CIDFont) -> bool {
-    let mut i: i32 = 0;
     assert!(!font.is_null());
     if (*font).csi.is_null() {
         panic!("{}: CIDSystemInfo undefined.", "CIDFont",);
     }
-    i = 1i32;
-    while i <= 4i32 {
+    for i in 1..=4 {
         if streq_ptr(
             (*(*font).csi).registry,
             CIDFont_stdcc_def[i as usize].registry,
@@ -553,7 +551,6 @@ pub unsafe extern "C" fn CIDFont_is_ACCFont(mut font: *mut CIDFont) -> bool {
         {
             return true;
         }
-        i += 1
     }
     false
 }
@@ -1190,10 +1187,8 @@ pub unsafe extern "C" fn CIDFont_cache_find(
 /* FIXME */
 #[no_mangle]
 pub unsafe extern "C" fn CIDFont_cache_close() {
-    let mut font_id: i32 = 0;
     if !__cache.is_null() {
-        font_id = 0i32;
-        while font_id < (*__cache).num {
+        for font_id in 0..(*__cache).num {
             let mut font: *mut CIDFont = 0 as *mut CIDFont;
             font = *(*__cache).fonts.offset(font_id as isize);
             if __verbose != 0 {
@@ -1206,7 +1201,6 @@ pub unsafe extern "C" fn CIDFont_cache_close() {
             if __verbose != 0 {
                 info!(")");
             }
-            font_id += 1
         }
         free((*__cache).fonts as *mut libc::c_void);
         __cache = mfree(__cache as *mut libc::c_void) as *mut FontCache

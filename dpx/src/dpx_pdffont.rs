@@ -176,7 +176,6 @@ pub unsafe extern "C" fn pdf_font_set_deterministic_unique_tags(mut value: i32) 
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_font_make_uniqueTag(mut tag: *mut i8) {
-    let mut i: i32 = 0;
     let mut ch: i8 = 0;
     if unique_tags_deterministic != 0 {
         snprintf(
@@ -202,11 +201,9 @@ pub unsafe extern "C" fn pdf_font_make_uniqueTag(mut tag: *mut i8) {
         srand(seconds_since_epoch as _);
         unique_tag_state = 0i32
     }
-    i = 0i32;
-    while i < 6i32 {
+    for i in 0..6 {
         ch = (rand() % 26i32) as i8;
         *tag.offset(i as isize) = (ch as i32 + 'A' as i32) as i8;
-        i += 1
     }
     *tag.offset(6) = '\u{0}' as i32 as i8;
 }

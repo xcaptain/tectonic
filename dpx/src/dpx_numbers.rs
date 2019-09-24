@@ -92,45 +92,33 @@ pub unsafe extern "C" fn get_signed_pair(mut file: *mut FILE) -> i16 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn get_unsigned_triple(mut file: *mut FILE) -> u32 {
-    let mut i: i32 = 0;
     let mut triple: u32 = 0_u32;
-    i = 0i32;
-    while i < 3i32 {
+    for _ in 0..3 {
         triple = triple << 8i32 | get_unsigned_byte(file) as u32;
-        i += 1
     }
     triple
 }
 #[no_mangle]
 pub unsafe extern "C" fn get_signed_triple(mut file: *mut FILE) -> i32 {
-    let mut i: i32 = 0;
     let mut triple: i32 = get_signed_byte(file) as i32;
-    i = 0i32;
-    while i < 2i32 {
+    for _ in 0..2 {
         triple = triple << 8i32 | get_unsigned_byte(file) as i32;
-        i += 1
     }
     triple
 }
 #[no_mangle]
 pub unsafe extern "C" fn get_signed_quad(mut file: *mut FILE) -> i32 {
-    let mut i: i32 = 0;
     let mut quad: i32 = get_signed_byte(file) as i32;
-    i = 0i32;
-    while i < 3i32 {
+    for _ in 0..3 {
         quad = quad << 8i32 | get_unsigned_byte(file) as i32;
-        i += 1
     }
     quad
 }
 #[no_mangle]
 pub unsafe extern "C" fn get_unsigned_quad(mut file: *mut FILE) -> u32 {
-    let mut i: i32 = 0;
     let mut quad = 0u32;
-    i = 0i32;
-    while i < 4i32 {
+    for _ in 0..4 {
         quad = quad << 8i32 | get_unsigned_byte(file) as u32;
-        i += 1
     }
     quad
 }
@@ -287,23 +275,17 @@ pub unsafe extern "C" fn tt_get_signed_pair(mut handle: rust_input_handle_t) -> 
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_get_unsigned_quad(mut handle: rust_input_handle_t) -> u32 {
-    let mut i: i32 = 0;
     let mut quad: u32 = 0_u32;
-    i = 0i32;
-    while i < 4i32 {
+    for _ in 0..4 {
         quad = quad << 8i32 | tt_get_unsigned_byte(handle) as u32;
-        i += 1
     }
     quad
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_get_signed_quad(mut handle: rust_input_handle_t) -> i32 {
-    let mut i: i32 = 0;
     let mut quad: i32 = tt_get_signed_byte(handle) as i32;
-    i = 0i32;
-    while i < 3i32 {
+    for _ in 0..3 {
         quad = quad << 8i32 | tt_get_unsigned_byte(handle) as i32;
-        i += 1
     }
     quad
 }

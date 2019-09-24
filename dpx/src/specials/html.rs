@@ -450,9 +450,6 @@ unsafe extern "C" fn spc_html__anchor_open(
     mut attr: *mut pdf_obj,
     mut sd: *mut spc_html_,
 ) -> i32 {
-    let mut href: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut name: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut error: i32 = 0i32;
     if (*sd).pending_type >= 0i32 || !(*sd).link_dict.is_null() {
         spc_warn(
             spe,

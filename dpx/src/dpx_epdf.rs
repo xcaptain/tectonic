@@ -153,16 +153,13 @@ pub const OP_UNKNOWN: C2RustUnnamed_0 = 16;
  * displayed or printed. The value must be a multiple of 90. Default value: 0.
  */
 unsafe extern "C" fn rect_equal(mut rect1: *mut pdf_obj, mut rect2: *mut pdf_obj) -> i32 {
-    let mut i: i32 = 0;
     if rect1.is_null() || rect2.is_null() {
         return 0i32;
     }
-    i = 0i32;
-    while i < 4i32 {
+    for i in 0..4 {
         if pdf_number_value(pdf_get_array(rect1, i)) != pdf_number_value(pdf_get_array(rect2, i)) {
             return 0i32;
         }
-        i += 1
     }
     1i32
 }
@@ -200,9 +197,10 @@ unsafe extern "C" fn pdf_get_page_obj(
     pdf_release_obj(trailer);
     markinfo = pdf_deref_obj(pdf_lookup_dict(catalog, "MarkInfo"));
     if !markinfo.is_null() {
-        if let Some(tmp) = pdf_lookup_dict(markinfo, "Marked").filter(|tmp| {
-            pdf_obj_typeof(*tmp) == PdfObjType::BOOLEAN && pdf_boolean_value(*tmp) as i32 != 0
-        }) {
+        if pdf_lookup_dict(markinfo, "Marked")
+            .filter(|tmp| (&**tmp).is_boolean() && pdf_boolean_value(*tmp) as i32 != 0)
+            .is_some()
+        {
             warn!("PDF file is tagged... Ignoring tags.");
         }
         pdf_release_obj(markinfo);

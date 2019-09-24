@@ -45,7 +45,7 @@ pub type size_t = u64;
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
 
-unsafe extern "C" fn spc_handler_null(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     (*args).curptr = (*args).endptr;
     0i32
 }

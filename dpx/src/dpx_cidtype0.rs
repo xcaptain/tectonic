@@ -183,7 +183,6 @@ unsafe extern "C" fn add_CIDHMetrics(
 ) {
     let mut w_array: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut an_array: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut cid: i32 = 0;
     let mut start: i32 = 0i32;
     let mut prev: i32 = 0i32;
     let mut defaultAdvanceWidth: f64 = 0.;
@@ -199,8 +198,7 @@ unsafe extern "C" fn add_CIDHMetrics(
      *  c [w_1 w_2 ... w_n]
      */
     w_array = pdf_new_array();
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         let mut gid: u16 = 0;
         let mut advanceWidth: f64 = 0.;
         gid = (if !CIDToGIDMap.is_null() {
@@ -238,7 +236,6 @@ unsafe extern "C" fn add_CIDHMetrics(
                 prev = cid
             }
         }
-        cid += 1
     }
     if !an_array.is_null() {
         pdf_add_array(w_array, pdf_new_number(start as f64));
@@ -267,7 +264,6 @@ unsafe extern "C" fn add_CIDVMetrics(
 ) {
     let mut w2_array: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut an_array: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut cid: i32 = 0;
     let mut vorg: *mut tt_VORG_table = 0 as *mut tt_VORG_table;
     let mut vhea: *mut tt_vhea_table = 0 as *mut tt_vhea_table;
     let mut vmtx: *mut tt_longMetrics = 0 as *mut tt_longMetrics;
@@ -324,8 +320,7 @@ unsafe extern "C" fn add_CIDVMetrics(
         defaultAdvanceHeight = 1000i32 as f64
     }
     w2_array = pdf_new_array();
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         let mut i: u16 = 0;
         let mut gid: u16 = 0;
         let mut advanceHeight: f64 = 0.;
@@ -387,7 +382,6 @@ unsafe extern "C" fn add_CIDVMetrics(
                 empty = 0i32
             }
         }
-        cid += 1
     }
     if defaultVertOriginY != 880i32 as f64 || defaultAdvanceHeight != 1000i32 as f64 {
         an_array = pdf_new_array();
@@ -744,7 +738,6 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
     let mut data: *mut u8 = 0 as *mut u8;
     let mut num_glyphs: u16 = 0i32 as u16;
     let mut gid: u16 = 0;
-    let mut cid: i32 = 0;
     let mut cs_count: u16 = 0;
     let mut last_cid: u16 = 0i32 as u16;
     let mut fd: i32 = 0;
@@ -807,8 +800,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
         let ref mut fresh0 = *used_chars.offset((0i32 / 8i32) as isize);
         *fresh0 = (*fresh0 as i32 | 1i32 << 7i32 - 0i32 % 8i32) as i8;
         /* .notdef */
-        cid = 0i32;
-        while cid <= 65535i32 {
+        for cid in 0..=65535 {
             if *used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 != 0 {
                 gid = cff_charsets_lookup(cffont, cid as u16);
                 if cid != 0i32 && gid as i32 == 0i32 {
@@ -828,7 +820,6 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
                     num_glyphs = num_glyphs.wrapping_add(1)
                 }
             }
-            cid += 1
         }
         add_CIDMetrics(
             info.sfont,
@@ -900,8 +891,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
     prev_fd = -1i32;
     gid = 0i32 as u16;
     data = new((65536_u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         let mut gid_org: u16 = 0;
         if !(*used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 == 0) {
             gid_org = ((*CIDToGIDMap.offset((2i32 * cid) as isize) as i32) << 8i32
@@ -963,7 +953,6 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
             }
             gid = gid.wrapping_add(1)
         }
-        cid += 1
     }
     if gid as i32 != num_glyphs as i32 {
         panic!("Unexpeced error: ?????");
@@ -985,8 +974,7 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
         cff_release_index((*cffont).gsubr);
     }
     (*cffont).gsubr = cff_new_index(0i32 as u16);
-    fd = 0i32;
-    while fd < (*cffont).num_fds as i32 {
+    for fd in 0..(*cffont).num_fds as i32 {
         if !(*cffont).subrs.is_null() && !(*(*cffont).subrs.offset(fd as isize)).is_null() {
             cff_release_index(*(*cffont).subrs.offset(fd as isize));
             let ref mut fresh2 = *(*cffont).subrs.offset(fd as isize);
@@ -999,7 +987,6 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
             );
             /* no Subrs */
         }
-        fd += 1
     }
     destlen = write_fontfile(font, cffont);
     CIDFontInfo_close(&mut info);
@@ -1289,8 +1276,6 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     let mut num_glyphs: u16 = 0;
     let mut gid: u16 = 0;
     let mut last_cid: u16 = 0;
-    let mut i: i32 = 0;
-    let mut cid: i32 = 0;
     let mut used_chars: *mut i8 = 0 as *mut i8;
     let mut default_width: f64 = 0.;
     let mut nominal_width: f64 = 0.;
@@ -1365,20 +1350,15 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     let ref mut fresh3 = *used_chars.offset((0i32 / 8i32) as isize);
     *fresh3 = (*fresh3 as i32 | 1i32 << 7i32 - 0i32 % 8i32) as i8;
     /* .notdef */
-    i = 0i32;
-    while i < (cffont.num_glyphs as i32 + 7i32) / 8i32 {
+    for i in 0..(cffont.num_glyphs as i32 + 7i32) / 8i32 {
         let mut c: i32 = 0;
-        let mut j: i32 = 0;
         c = *used_chars.offset(i as isize) as i32;
-        j = 7i32;
-        while j >= 0i32 {
+        for j in (0..7).rev() {
             if c & 1i32 << j != 0 {
                 num_glyphs = num_glyphs.wrapping_add(1);
                 last_cid = ((i + 1i32) * 8i32 - j - 1i32) as u16
             }
-            j -= 1
         }
-        i += 1
     }
     let mut fdselect: *mut cff_fdselect = 0 as *mut cff_fdselect;
     fdselect = new((1_u64).wrapping_mul(::std::mem::size_of::<cff_fdselect>() as u64) as u32)
@@ -1400,15 +1380,13 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
         .wrapping_mul(::std::mem::size_of::<s_SID>() as u64)
         as u32) as *mut s_SID;
     gid = 0i32 as u16;
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         if *used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 != 0 {
             if gid as i32 > 0i32 {
                 *(*charset).data.glyphs.offset((gid as i32 - 1i32) as isize) = cid as s_SID
             }
             gid = gid.wrapping_add(1)
         }
-        cid += 1
     }
     /* cff_release_charsets(cffont->charsets); */
     cffont.charsets = charset; /* FIXME: Skip XXXXXX+ */
@@ -1509,8 +1487,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     charstring_len = 0i32;
     gid = 0i32 as u16;
     data = new((65536_u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         if !(*used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 == 0) {
             size = (*(*idx).offset.offset((cid + 1i32) as isize))
                 .wrapping_sub(*(*idx).offset.offset(cid as isize)) as i32;
@@ -1546,7 +1523,6 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
             );
             gid = gid.wrapping_add(1)
         }
-        cid += 1
     }
     if gid as i32 != num_glyphs as i32 {
         panic!("Unexpeced error: ?????");
@@ -1612,13 +1588,11 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
         0i32,
         (2 * (last_cid + 1)) as _,
     );
-    cid = 0i32;
-    while cid <= last_cid as i32 {
+    for cid in 0..=last_cid as i32 {
         if *used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 != 0 {
             *CIDToGIDMap.offset((2i32 * cid) as isize) = (cid >> 8i32 & 0xffi32) as u8;
             *CIDToGIDMap.offset((2i32 * cid + 1i32) as isize) = (cid & 0xffi32) as u8
         }
-        cid += 1
     }
     add_CIDMetrics(
         info.sfont,
@@ -1646,7 +1620,6 @@ unsafe extern "C" fn load_base_CMap(
     let mut cmap_id: i32 = -1i32;
     let mut cmap: *mut CMap = 0 as *mut CMap;
     let mut cmap_name: *mut i8 = 0 as *mut i8;
-    let mut gid: u16 = 0;
     let mut range_min: [u8; 4] = [0; 4];
     let mut range_max: [u8; 4] = [0x7f, 0xff, 0xff, 0xff];
     cmap_name = new((strlen(font_name)
@@ -1683,8 +1656,7 @@ unsafe extern "C" fn load_base_CMap(
     );
     CMap_set_CIDSysInfo(cmap, &mut CSI_IDENTITY);
     free(cmap_name as *mut libc::c_void);
-    gid = 1i32 as u16;
-    while (gid as i32) < cffont.num_glyphs as i32 {
+    for gid in 1..cffont.num_glyphs as u16 {
         let mut ucv: i32 = 0;
         let mut sid: s_SID = 0;
         let mut glyph: *mut i8 = 0 as *mut i8;
@@ -1733,7 +1705,6 @@ unsafe extern "C" fn load_base_CMap(
             free(suffix as *mut libc::c_void);
             free(glyph as *mut libc::c_void);
         }
-        gid = gid.wrapping_add(1)
     }
     cmap_id = CMap_cache_add(cmap);
     cmap_id
@@ -1782,7 +1753,6 @@ unsafe extern "C" fn create_ToUnicode_stream(
 ) -> *mut pdf_obj {
     let mut stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut cmap: *mut CMap = 0 as *mut CMap;
-    let mut cid: CID = 0;
     let mut gid: u16 = 0;
     let mut glyph_count: i32 = 0;
     let mut total_fail_count: i32 = 0;
@@ -1817,8 +1787,7 @@ unsafe extern "C" fn create_ToUnicode_stream(
     glyph_count = total_fail_count;
     p = wbuf.as_mut_ptr();
     endptr = wbuf.as_mut_ptr().offset(1024);
-    cid = 1i32 as CID;
-    while (cid as i32) < cffont.num_glyphs as i32 {
+    for cid in 1..cffont.num_glyphs as CID {
         /* Skip .notdef */
         if *used_glyphs.offset((cid as i32 / 8i32) as isize) as i32
             & 1i32 << 7i32 - cid as i32 % 8i32
@@ -1850,7 +1819,6 @@ unsafe extern "C" fn create_ToUnicode_stream(
                 glyph_count += 1
             }
         }
-        cid = cid.wrapping_add(1)
     }
     if total_fail_count != 0i32 && total_fail_count >= glyph_count / 10i32 {
         warn!(
@@ -2117,10 +2085,8 @@ unsafe extern "C" fn add_metrics(
 ) {
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut val: f64 = 0.;
-    let mut cid: u16 = 0;
     let mut gid: u16 = 0;
     let mut used_chars: *mut i8 = 0 as *mut i8;
-    let mut i: i32 = 0;
     let mut parent_id: i32 = 0;
     /*
      * The original FontBBox of the font is preserved, instead
@@ -2132,8 +2098,7 @@ unsafe extern "C" fn add_metrics(
         panic!("No FontBBox?");
     }
     tmp = pdf_new_array();
-    i = 0i32;
-    while i < 4i32 {
+    for i in 0..4 {
         val = cff_dict_get(
             (*cffont).topdict,
             b"FontBBox\x00" as *const u8 as *const i8,
@@ -2143,7 +2108,6 @@ unsafe extern "C" fn add_metrics(
             tmp,
             pdf_new_number((val / 1.0f64 + 0.5f64).floor() * 1.0f64),
         );
-        i += 1
     }
     pdf_add_dict((*font).descriptor, "FontBBox", tmp);
     parent_id = CIDFont_get_parent_id(font, 0i32);
@@ -2163,8 +2127,7 @@ unsafe extern "C" fn add_metrics(
      * and to use "CID_start [ w0 w1 ...]".
      */
     tmp = pdf_new_array();
-    cid = 0i32 as u16;
-    while cid as i32 <= last_cid as i32 {
+    for cid in 0..=last_cid as u16 {
         if *used_chars.offset((cid as i32 / 8i32) as isize) as i32
             & 1i32 << 7i32 - cid as i32 % 8i32
             != 0
@@ -2183,7 +2146,6 @@ unsafe extern "C" fn add_metrics(
                 );
             }
         }
-        cid = cid.wrapping_add(1)
     }
     pdf_add_dict((*font).fontdict, "DW", pdf_new_number(default_width));
     if pdf_array_length(tmp) > 0_u32 {
@@ -2199,12 +2161,10 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
     let mut nominalwidth: f64 = 0.;
     let mut num_glyphs: i32 = 0i32;
     let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
-    let mut i: i32 = 0;
     let mut offset: i32 = 0;
     let mut used_chars: *mut i8 = 0 as *mut i8;
     let mut last_cid: u16 = 0;
     let mut gid: u16 = 0;
-    let mut cid: u16 = 0;
     let mut CIDToGIDMap: *mut u8 = 0 as *mut u8;
     assert!(!font.is_null());
     if (*font).indirect.is_null() {
@@ -2296,20 +2256,15 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
     let ref mut fresh6 = *used_chars.offset((0i32 / 8i32) as isize);
     *fresh6 = (*fresh6 as i32 | 1i32 << 7i32 - 0i32 % 8i32) as i8;
     /* .notdef */
-    i = 0i32; /* FIXME: Skip XXXXXX+ */
-    while i < (cffont.num_glyphs as i32 + 7i32) / 8i32 {
+    for i in 0..(cffont.num_glyphs as i32 + 7i32) / 8i32 {
         let mut c: i32 = 0;
-        let mut j: i32 = 0;
         c = *used_chars.offset(i as isize) as i32;
-        j = 7i32;
-        while j >= 0i32 {
+        for j in (0..7).rev() {
             if c & 1i32 << j != 0 {
                 num_glyphs += 1;
                 last_cid = ((i + 1i32) * 8i32 - j - 1i32) as u16
             }
-            j -= 1
         }
-        i += 1
     }
     let mut fdselect: *mut cff_fdselect = 0 as *mut cff_fdselect;
     fdselect = new((1_u64).wrapping_mul(::std::mem::size_of::<cff_fdselect>() as u64) as u32)
@@ -2338,8 +2293,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
         .wrapping_mul(::std::mem::size_of::<s_SID>() as u64)
         as u32) as *mut s_SID;
     gid = 0i32 as u16;
-    cid = 0i32 as u16;
-    while cid as i32 <= last_cid as i32 {
+    for cid in 0..=last_cid as u16 {
         if *used_chars.offset((cid as i32 / 8i32) as isize) as i32
             & 1i32 << 7i32 - cid as i32 % 8i32
             != 0
@@ -2352,7 +2306,6 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
             *CIDToGIDMap.offset((2i32 * cid as i32 + 1i32) as isize) = (gid as i32 & 0xffi32) as u8;
             gid = gid.wrapping_add(1)
         }
-        cid = cid.wrapping_add(1)
     }
     cff_release_charsets(cffont.charsets);
     cffont.charsets = charset;
@@ -2465,8 +2418,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
     (*cstring).data = 0 as *mut u8;
     *(*cstring).offset.offset(0) = 1i32 as l_offset;
     gid = 0i32 as u16;
-    cid = 0i32 as u16;
-    while cid as i32 <= last_cid as i32 {
+    for cid in 0..=last_cid as u16 {
         if !(*used_chars.offset((cid as i32 / 8i32) as isize) as i32
             & 1i32 << 7i32 - cid as i32 % 8i32
             == 0)
@@ -2508,19 +2460,16 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
             }
             gid = gid.wrapping_add(1)
         }
-        cid = cid.wrapping_add(1)
     }
     cff_release_index(cffont.cstrings);
     cffont.cstrings = cstring;
     max_count = 0i32;
     dw = -1i32;
-    i = 0i32;
-    while i <= 1000i32 {
+    for i in 0..=1000 {
         if w_stat[i as usize] > max_count {
             dw = i;
             max_count = w_stat[i as usize]
         }
-        i += 1
     }
     if dw >= 0i32 {
         add_metrics(font, cffont, CIDToGIDMap, widths, dw as f64, last_cid);

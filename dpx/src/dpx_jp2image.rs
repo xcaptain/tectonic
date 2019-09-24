@@ -114,7 +114,7 @@ unsafe extern "C" fn check_ftyp_data(mut fp: *mut FILE, mut size: u32) -> i32 {
     }
     supported
 }
-unsafe extern "C" fn read_res__data(info: &mut ximage_info, mut fp: *mut FILE, mut size: u32) {
+unsafe extern "C" fn read_res__data(info: &mut ximage_info, mut fp: *mut FILE, mut _size: u32) {
     let mut VR_N: u32 = 0;
     let mut VR_D: u32 = 0;
     let mut HR_N: u32 = 0;
@@ -172,7 +172,7 @@ unsafe extern "C" fn scan_res_(info: &mut ximage_info, mut fp: *mut FILE, mut si
  * does not write Channel Definition box so transparency will be ignored.
  */
 unsafe extern "C" fn scan_cdef(
-    info: &mut ximage_info,
+    _info: &mut ximage_info,
     mut smask: *mut i32,
     mut fp: *mut FILE,
     mut size: u32,

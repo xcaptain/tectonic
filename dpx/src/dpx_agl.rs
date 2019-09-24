@@ -207,7 +207,6 @@ unsafe extern "C" fn skip_capital(mut p: *mut *const i8, mut endptr: *const i8) 
 }
 unsafe extern "C" fn skip_modifier(mut p: *mut *const i8, mut endptr: *const i8) -> size_t {
     let mut slen: size_t = 0i32 as size_t;
-    let mut len: size_t = 0;
     let mut i: u32 = 0;
     let len = endptr.wrapping_offset_from(*p) as usize;
     i = 0;
@@ -1192,7 +1191,6 @@ pub unsafe extern "C" fn agl_get_unicodes(
         let mut name: *mut i8 = 0 as *mut i8;
         let mut delim: *const i8 = 0 as *const i8;
         let mut sub_len: i32 = 0;
-        let mut i: i32 = 0;
         let mut agln0: *mut agl_name = 0 as *mut agl_name;
         let mut agln1: *mut agl_name = 0 as *mut agl_name;
         delim = strchr(p, '_' as i32);
@@ -1278,12 +1276,10 @@ pub unsafe extern "C" fn agl_get_unicodes(
                     free(name as *mut libc::c_void);
                     return -1i32;
                 }
-                i = 0i32;
-                while i < (*agln1).n_components {
+                for i in 0..(*agln1).n_components {
                     let fresh4 = count;
                     count = count + 1;
                     *unicodes.offset(fresh4 as isize) = (*agln1).unicodes[i as usize];
-                    i += 1
                 }
             } else {
                 if verbose > 1i32 {

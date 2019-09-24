@@ -202,7 +202,7 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
         spot_color_name: None,
         values: [0.; 4],
     };
-    let (sc, fc) = pdf_color_get_current();
+    let (_sc, fc) = pdf_color_get_current();
     pdf_color_brighten_color(&mut new_fc, fc, g);
     pdf_dev_set_color(&mut new_fc, 0x20_i8, 0i32);
     0i32

@@ -168,7 +168,6 @@ unsafe extern "C" fn pdf_flush_encoding(mut encoding: *mut pdf_encoding) {
     };
 }
 unsafe extern "C" fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) {
-    let mut code: i32 = 0;
     assert!(!encoding.is_null());
     if !(*encoding).resource.is_null() {
         panic!("Object not flushed.");
@@ -178,11 +177,9 @@ unsafe extern "C" fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) 
     free((*encoding).enc_name as *mut libc::c_void);
     (*encoding).ident = 0 as *mut i8;
     (*encoding).enc_name = 0 as *mut i8;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         (*encoding).glyphs[code as usize] =
             mfree((*encoding).glyphs[code as usize] as *mut libc::c_void) as *mut i8;
-        code += 1
     }
     (*encoding).ident = 0 as *mut i8;
     (*encoding).enc_name = 0 as *mut i8;
@@ -191,10 +188,8 @@ unsafe extern "C" fn is_similar_charset(
     mut enc_vec: *mut *mut i8,
     mut enc_vec2: *mut *const i8,
 ) -> bool {
-    let mut code: i32 = 0;
     let mut same: i32 = 0i32;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if !(!(*enc_vec.offset(code as isize)).is_null()
             && strcmp(
                 *enc_vec.offset(code as isize),
@@ -208,7 +203,6 @@ unsafe extern "C" fn is_similar_charset(
             /* is 64 a good level? */
             return true;
         }
-        code += 1
     }
     false
 }
@@ -222,7 +216,6 @@ unsafe extern "C" fn make_encoding_differences(
     mut is_used: *const i8,
 ) -> *mut pdf_obj {
     let mut differences: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut code: i32 = 0;
     let mut count: i32 = 0i32;
     let mut skipping: i32 = 1i32;
     assert!(!enc_vec.is_null());
@@ -231,8 +224,7 @@ unsafe extern "C" fn make_encoding_differences(
      *  If is_used is given, write only used entries.
      */
     differences = pdf_new_array();
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         /* We skip NULL (= ".notdef"). Any character code mapped to ".notdef"
          * glyph should not be used in the document.
          */
@@ -259,7 +251,6 @@ unsafe extern "C" fn make_encoding_differences(
         } else {
             skipping = 1i32
         }
-        code += 1
     }
     /*
      * No difference found. Some PDF viewers can't handle differences without
@@ -279,7 +270,6 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
     let mut p: *const i8 = 0 as *const i8;
     let mut endptr: *const i8 = 0 as *const i8;
     let mut enc_vec: [*const i8; 256] = [0 as *const i8; 256];
-    let mut code: i32 = 0;
     let mut fsize: i32 = 0;
     let mut enc_id: i32 = 0;
     if filename.is_null() {
@@ -325,10 +315,8 @@ unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
         pdf_release_obj(enc_name);
         return -1i32;
     }
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         enc_vec[code as usize] = pdf_name_value(&*pdf_get_array(encoding_array, code)).as_ptr();
-        code += 1
     }
     enc_id = pdf_encoding_new_encoding(
         if !enc_name.is_null() {
@@ -413,7 +401,6 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
     mut flags: i32,
 ) -> i32 {
     let mut enc_id: i32 = 0;
-    let mut code: i32 = 0;
     let mut encoding: *mut pdf_encoding = 0 as *mut pdf_encoding;
     enc_id = enc_cache.count;
     let fresh0 = enc_cache.count;
@@ -437,8 +424,7 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
             as *mut i8;
     strcpy((*encoding).enc_name, enc_name);
     (*encoding).flags = flags;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if !(*encoding_vec.offset(code as isize)).is_null()
             && strcmp(
                 *encoding_vec.offset(code as isize),
@@ -454,7 +440,6 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
                 *encoding_vec.offset(code as isize),
             );
         }
-        code += 1
     }
     if baseenc_name.is_null()
         && flags & 1i32 << 0i32 == 0
@@ -490,9 +475,7 @@ unsafe extern "C" fn pdf_encoding_new_encoding(
  */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_encoding_complete() {
-    let mut enc_id: i32 = 0;
-    enc_id = 0i32;
-    while enc_id < enc_cache.count {
+    for enc_id in 0..enc_cache.count {
         if pdf_encoding_is_predefined(enc_id) == 0 {
             let mut encoding: *mut pdf_encoding =
                 &mut *enc_cache.encodings.offset(enc_id as isize) as *mut pdf_encoding;
@@ -520,22 +503,18 @@ pub unsafe extern "C" fn pdf_encoding_complete() {
                 (*encoding).is_used.as_mut_ptr(),
             )
         }
-        enc_id += 1
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_close_encodings() {
-    let mut enc_id: i32 = 0;
     if !enc_cache.encodings.is_null() {
-        enc_id = 0i32;
-        while enc_id < enc_cache.count {
+        for enc_id in 0..enc_cache.count {
             let mut encoding: *mut pdf_encoding = 0 as *mut pdf_encoding;
             encoding = &mut *enc_cache.encodings.offset(enc_id as isize) as *mut pdf_encoding;
             if !encoding.is_null() {
                 pdf_flush_encoding(encoding);
                 pdf_clean_encoding_struct(encoding);
             }
-            enc_id += 1
         }
         free(enc_cache.encodings as *mut libc::c_void);
     }
@@ -545,11 +524,9 @@ pub unsafe extern "C" fn pdf_close_encodings() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_encoding_findresource(mut enc_name: *const i8) -> i32 {
-    let mut enc_id: i32 = 0;
     let mut encoding: *mut pdf_encoding = 0 as *mut pdf_encoding;
     assert!(!enc_name.is_null());
-    enc_id = 0i32;
-    while enc_id < enc_cache.count {
+    for enc_id in 0..enc_cache.count {
         encoding = &mut *enc_cache.encodings.offset(enc_id as isize) as *mut pdf_encoding;
         if !(*encoding).ident.is_null() && streq_ptr(enc_name, (*encoding).ident) as i32 != 0 {
             return enc_id;
@@ -560,7 +537,6 @@ pub unsafe extern "C" fn pdf_encoding_findresource(mut enc_name: *const i8) -> i
                 return enc_id;
             }
         }
-        enc_id += 1
     }
     load_encoding_file(enc_name)
 }
@@ -622,7 +598,6 @@ static mut range_max: [u8; 1] = [0xffu32 as u8];
 #[no_mangle]
 pub unsafe extern "C" fn pdf_encoding_add_usedchars(mut encoding_id: i32, mut is_used: *const i8) {
     let mut encoding: *mut pdf_encoding = 0 as *mut pdf_encoding;
-    let mut code: i32 = 0;
     if encoding_id < 0i32 || encoding_id >= enc_cache.count {
         panic!("Invalid encoding id: {}", encoding_id);
     }
@@ -630,12 +605,10 @@ pub unsafe extern "C" fn pdf_encoding_add_usedchars(mut encoding_id: i32, mut is
         return;
     }
     encoding = &mut *enc_cache.encodings.offset(encoding_id as isize) as *mut pdf_encoding;
-    code = 0i32;
-    while code <= 0xffi32 {
+    for code in 0..=0xff {
         (*encoding).is_used[code as usize] = ((*encoding).is_used[code as usize] as i32
             | *is_used.offset(code as isize) as i32)
             as i8;
-        code += 1
     }
 }
 #[no_mangle]
@@ -663,7 +636,6 @@ pub unsafe extern "C" fn pdf_create_ToUnicode_CMap(
 ) -> *mut pdf_obj {
     let mut stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut cmap: *mut CMap = 0 as *mut CMap;
-    let mut code: i32 = 0;
     let mut all_predef: i32 = 0;
     let mut cmap_name: *mut i8 = 0 as *mut i8;
     let mut p: *mut u8 = 0 as *mut u8;
@@ -690,8 +662,7 @@ pub unsafe extern "C" fn pdf_create_ToUnicode_CMap(
         1i32 as size_t,
     );
     all_predef = 1i32;
-    code = 0i32;
-    while code <= 0xffi32 {
+    for code in 0..=0xff {
         if !(!is_used.is_null() && *is_used.offset(code as isize) == 0) {
             if !(*enc_vec.offset(code as isize)).is_null() {
                 let mut len: i32 = 0;
@@ -723,7 +694,6 @@ pub unsafe extern "C" fn pdf_create_ToUnicode_CMap(
                 }
             }
         }
-        code += 1
     }
     stream = if all_predef != 0 {
         0 as *mut pdf_obj

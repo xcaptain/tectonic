@@ -574,10 +574,8 @@ unsafe extern "C" fn do_othersubr0(mut cd: *mut t1_chardesc) {
         cur = (*cur).next
     }
     flex = cur;
-    let mut i: u32 = 0;
     cur = (*cur).next;
-    i = 1_u32;
-    while i < 7_u32 {
+    for i in 1..7 {
         if cur.is_null() || (*cur).type_0 != -2i32 || (*cur).num_args != 2i32 {
             status = -1i32;
             return;
@@ -598,7 +596,6 @@ unsafe extern "C" fn do_othersubr0(mut cd: *mut t1_chardesc) {
         next = (*cur).next;
         free(cur as *mut libc::c_void);
         cur = next;
-        i = i.wrapping_add(1)
     }
     if !cur.is_null() {
         status = -1i32;
@@ -675,10 +672,8 @@ unsafe extern "C" fn do_othersubr13(mut cd: *mut t1_chardesc) {
         status = -1i32;
         return;
     }
-    n = 0i32;
-    while n < 96i32 {
+    for n in 0..96 {
         stemgroups[n as usize].num_stems = 0i32;
-        n += 1
     }
     ps_stack_top -= 1;
     num_hgroups = ps_arg_stack[ps_stack_top as usize] as i32;
@@ -744,21 +739,17 @@ unsafe extern "C" fn do_othersubr13(mut cd: *mut t1_chardesc) {
         status = -2i32;
         return;
     }
-    n = 0i32;
-    while n
-        < (if num_hgroups > num_vgroups {
-            num_hgroups
-        } else {
-            num_vgroups
-        })
-    {
+    for n in 0..(if num_hgroups > num_vgroups {
+        num_hgroups
+    } else {
+        num_vgroups
+    }) {
         add_charpath(
             cd,
             20i32,
             stemgroups[n as usize].stems.as_mut_ptr(),
             stemgroups[n as usize].num_stems,
         );
-        n += 1
     }
     (*cd).flags |= 1i32 << 1i32;
 }
@@ -973,9 +964,7 @@ unsafe extern "C" fn put_numbers(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
 ) {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < argn {
+    for i in 0..argn {
         let mut value: f64 = 0.;
         let mut ivalue: i32 = 0;
         value = *argv.offset(i as isize);
@@ -1063,7 +1052,6 @@ unsafe extern "C" fn put_numbers(
                 panic!("Unexpected error.");
             }
         }
-        i += 1
     }
 }
 unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
@@ -1120,7 +1108,6 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
 /* Type 1 */
 unsafe extern "C" fn get_longint(mut data: *mut *mut u8, mut endptr: *mut u8) {
     let mut result: i32 = 0i32;
-    let mut i: u32 = 0;
     *data = (*data).offset(1);
     if endptr < (*data).offset(4) {
         status = -1i32;
@@ -1131,11 +1118,9 @@ unsafe extern "C" fn get_longint(mut data: *mut *mut u8, mut endptr: *mut u8) {
         result = (result as i64 - 0x100) as i32
     }
     *data = (*data).offset(1);
-    i = 1_u32;
-    while i < 4_u32 {
+    for _ in 1..4 {
         result = result * 256i32 + **data as i32;
         *data = (*data).offset(1);
-        i = i.wrapping_add(1)
     }
     if cs_stack_top + 1i32 > 48i32 {
         status = -2i32;
@@ -1229,7 +1214,6 @@ unsafe extern "C" fn t1char_build_charpath(
  *  useless. We will only do very simple charstring compression.
  */
 unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
-    let mut i: u32 = 0;
     let mut cur: *mut t1_cpath = 0 as *mut t1_cpath;
     let mut prev: *mut t1_cpath = 0 as *mut t1_cpath;
     let mut next: *mut t1_cpath = 0 as *mut t1_cpath;
@@ -1393,8 +1377,7 @@ unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
                 }
             }
             8 => {
-                i = 0_u32;
-                while i < 3_u32 {
+                for i in 0..3 {
                     x += (*cur).args[(2_u32).wrapping_mul(i) as usize];
                     y += (*cur).args[(2_u32).wrapping_mul(i).wrapping_add(1_u32) as usize];
                     if (*cd).bbox.llx > x {
@@ -1409,7 +1392,6 @@ unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
                     if (*cd).bbox.ury < y {
                         (*cd).bbox.ury = y
                     }
-                    i = i.wrapping_add(1)
                 }
                 if !prev.is_null() && !cur.is_null() && (*prev).num_args + (*cur).num_args < 48i32 {
                     if (*prev).type_0 == 8i32 {
@@ -1547,8 +1529,7 @@ unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
                 }
             }
             35 => {
-                i = 0_u32;
-                while i < 6_u32 {
+                for i in 0..6 {
                     x += (*cur).args[(2_u32).wrapping_mul(i) as usize];
                     y += (*cur).args[(2i32 * 1i32 + 1i32) as usize];
                     if (*cd).bbox.llx > x {
@@ -1563,7 +1544,6 @@ unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
                     if (*cd).bbox.ury < y {
                         (*cd).bbox.ury = y
                     }
-                    i = i.wrapping_add(1)
                 }
                 if (*cur).args[12] == 50.0f64 {
                     if (*cur).args[1] == 0.0f64
@@ -1773,8 +1753,7 @@ unsafe extern "C" fn t1char_encode_charpath(
     }
     reset = 1i32;
     if (*cd).num_stems - num_hstems > 0i32 {
-        i = num_hstems;
-        while i < (*cd).num_stems {
+        for i in num_hstems..(*cd).num_stems {
             num_vstems += 1;
             stem[0] = if reset != 0 {
                 (*cd).stems[i as usize].pos
@@ -1801,7 +1780,6 @@ unsafe extern "C" fn t1char_encode_charpath(
                 }) as u8;
                 reset = 1i32
             }
-            i += 1
         }
         if reset == 0i32 {
             if dst.offset(1) >= endptr {
@@ -1864,20 +1842,17 @@ unsafe extern "C" fn t1char_encode_charpath(
             20 => {
                 let mut cntrmask: [u8; 12] = [0; 12];
                 let mut stem_idx_0: i32 = 0;
-                let mut i_0: i32 = 0;
                 memset(
                     cntrmask.as_mut_ptr() as *mut libc::c_void,
                     0i32,
                     (((*cd).num_stems + 7i32) / 8i32) as _,
                 );
-                i_0 = 0i32;
-                while i_0 < (*curr).num_args {
+                for i_0 in 0..(*curr).num_args {
                     stem_idx_0 = get_stem(cd, (*curr).args[i_0 as usize] as i32);
                     assert!(stem_idx_0 < (*cd).num_stems);
                     cntrmask[(stem_idx_0 / 8i32) as usize] =
                         (cntrmask[(stem_idx_0 / 8i32) as usize] as i32
                             | 1i32 << 7i32 - stem_idx_0 % 8i32) as u8;
-                    i_0 += 1
                 }
                 if dst.offset((((*cd).num_stems + 7i32) / 8i32 + 1i32) as isize) >= endptr {
                     panic!("Buffer overflow.");

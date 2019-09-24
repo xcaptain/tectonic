@@ -554,7 +554,6 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     prev = 0_u16;
     for i in 0..(*g).num_glyphs as i32 {
         let mut gap: i32 = 0;
-        let mut j: i32 = 0;
         gap = (*(*g).gd.offset(i as isize)).gid as i32 - prev as i32 - 1i32;
         for j in 1..=gap {
             if prev as i32 + j == (*hhea).numOfLongHorMetrics as i32 - 1i32 {
@@ -694,7 +693,6 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     /* temp */
     let mut location: *mut u32 = 0 as *mut u32;
     let mut offset: u32 = 0;
-    let mut i: u32 = 0;
     let mut w_stat: *mut u16 = 0 as *mut u16;
     assert!(!g.is_null());
     if sfont.is_null() || (*sfont).handle.is_null() {

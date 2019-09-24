@@ -66,7 +66,7 @@ unsafe extern "C" fn spc_handler_color_push(mut spe: *mut spc_env, mut args: *mu
     }
     error
 }
-unsafe extern "C" fn spc_handler_color_pop(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_color_pop(mut _spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     pdf_color_pop();
     0i32
 }

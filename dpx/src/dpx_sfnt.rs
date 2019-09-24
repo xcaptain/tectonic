@@ -141,8 +141,7 @@ pub unsafe extern "C" fn dfont_open(mut handle: rust_input_handle_t, mut index: 
     if index > types_num as i32 {
         panic!("Invalid index {} for dfont.", index);
     }
-    i = 0_u16;
-    while i as i32 <= types_num as i32 {
+    for i in 0..=types_num as i32 {
         tt_get_unsigned_pair((*sfont).handle);
         tt_get_unsigned_pair((*sfont).handle);
         res_pos = tt_get_unsigned_quad((*sfont).handle);
@@ -150,7 +149,6 @@ pub unsafe extern "C" fn dfont_open(mut handle: rust_input_handle_t, mut index: 
         if i as i32 == index {
             break;
         }
-        i = i.wrapping_add(1)
     }
     ttstub_input_seek((*sfont).handle, 0i32 as ssize_t, 0i32);
     (*sfont).type_0 = 1i32 << 8i32;
@@ -161,13 +159,10 @@ pub unsafe extern "C" fn dfont_open(mut handle: rust_input_handle_t, mut index: 
     sfont
 }
 unsafe extern "C" fn release_directory(mut td: *mut sfnt_table_directory) {
-    let mut i: u32 = 0;
     if !td.is_null() {
         if !(*td).tables.is_null() {
-            i = 0_u32;
-            while i < (*td).num_tables as u32 {
+            for i in 0..(*td).num_tables as u32 {
                 free((*(*td).tables.offset(i as isize)).data as *mut libc::c_void);
-                i = i.wrapping_add(1)
             }
             free((*td).tables as *mut libc::c_void);
         }
@@ -251,12 +246,10 @@ unsafe extern "C" fn find_table_index(
     mut td: *mut sfnt_table_directory,
     mut tag: *const i8,
 ) -> i32 {
-    let mut idx: i32 = 0;
     if td.is_null() {
         return -1i32;
     }
-    idx = 0i32;
-    while idx < (*td).num_tables as i32 {
+    for idx in 0..(*td).num_tables as i32 {
         if memcmp(
             (*(*td).tables.offset(idx as isize)).tag.as_mut_ptr() as *const libc::c_void,
             tag as *const libc::c_void,
@@ -265,7 +258,6 @@ unsafe extern "C" fn find_table_index(
         {
             return idx;
         }
-        idx += 1
     }
     -1i32
 }
@@ -345,7 +337,6 @@ pub unsafe extern "C" fn sfnt_locate_table(mut sfont: *mut sfnt, mut tag: *const
 #[no_mangle]
 pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut offset: u32) -> i32 {
     let mut td: *mut sfnt_table_directory = 0 as *mut sfnt_table_directory;
-    let mut i: u32 = 0;
     let mut u_tag: u32 = 0;
     assert!(!sfont.is_null());
     if !(*sfont).directory.is_null() {
@@ -368,8 +359,7 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
     (*td).tables = new(((*td).num_tables as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<sfnt_table>() as u64) as u32)
         as *mut sfnt_table;
-    i = 0_u32;
-    while i < (*td).num_tables as u32 {
+    for i in 0..(*td).num_tables as u32 {
         u_tag = tt_get_unsigned_quad((*sfont).handle);
         convert_tag((*(*td).tables.offset(i as isize)).tag.as_mut_ptr(), u_tag);
         (*(*td).tables.offset(i as isize)).check_sum = tt_get_unsigned_quad((*sfont).handle);
@@ -380,7 +370,6 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
         *fresh1 = 0 as *mut i8;
         //fprintf(stderr, "[%4s:%x]", td->tables[i].tag, td->tables[i].offset);
         *(*td).flags.offset(i as isize) = 0_i8;
-        i = i.wrapping_add(1)
     }
     (*td).num_kept_tables = 0_u16;
     0i32
@@ -439,7 +428,6 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
     let mut offset: i32 = 0;
     let mut nb_read: i32 = 0;
     let mut length: i32 = 0;
-    let mut i: i32 = 0;
     let mut sr: i32 = 0;
     let mut p: *mut i8 = 0 as *mut i8;
     assert!(!sfont.is_null() && !(*sfont).directory.is_null());
@@ -468,8 +456,7 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
      * Compute start of actual tables (after headers).
      */
     offset = 12i32 + 16i32 * (*td).num_kept_tables as i32;
-    i = 0i32;
-    while i < (*td).num_tables as i32 {
+    for i in 0..(*td).num_tables as i32 {
         /* This table must exist in FontFile */
         if *(*td).flags.offset(i as isize) as i32 & 1i32 << 0i32 != 0 {
             if offset % 4i32 != 0i32 {
@@ -497,11 +484,9 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
             offset = (offset as u32).wrapping_add((*(*td).tables.offset(i as isize)).length) as i32
                 as i32
         }
-        i += 1
     }
     offset = 12i32 + 16i32 * (*td).num_kept_tables as i32;
-    i = 0i32;
-    while i < (*td).num_tables as i32 {
+    for i in 0..(*td).num_tables as i32 {
         if *(*td).flags.offset(i as isize) as i32 & 1i32 << 0i32 != 0 {
             if offset % 4i32 != 0i32 {
                 length = 4i32 - offset % 4i32;
@@ -553,7 +538,6 @@ pub unsafe extern "C" fn sfnt_create_FontFile_stream(mut sfont: *mut sfnt) -> *m
             offset = (offset as u32).wrapping_add((*(*td).tables.offset(i as isize)).length) as i32
                 as i32
         }
-        i += 1
     }
     stream_dict = pdf_stream_dict(stream);
     pdf_add_dict(stream_dict, "Length1", pdf_new_number(offset as f64));

@@ -137,7 +137,6 @@ unsafe extern "C" fn write_map(
     mut stream: *mut pdf_obj,
 ) -> i32 {
     let mut c: size_t = 0;
-    let mut i: size_t = 0;
     let mut block_length: size_t = 0;
     let mut mtab1: *mut mapDef = 0 as *mut mapDef;
     /* Must be greater than 1 */
@@ -174,14 +173,12 @@ unsafe extern "C" fn write_map(
                         let fresh0 = (*wbuf).curptr;
                         (*wbuf).curptr = (*wbuf).curptr.offset(1);
                         *fresh0 = '<' as i32 as i8;
-                        i = 0i32 as size_t;
-                        while i <= depth {
+                        for i in 0..=depth {
                             sputx(
                                 *codestr.offset(i as isize),
                                 &mut (*wbuf).curptr,
                                 (*wbuf).limptr,
                             );
-                            i = i.wrapping_add(1)
                         }
                         let fresh1 = (*wbuf).curptr;
                         (*wbuf).curptr = (*wbuf).curptr.offset(1);
@@ -192,14 +189,12 @@ unsafe extern "C" fn write_map(
                         let fresh3 = (*wbuf).curptr;
                         (*wbuf).curptr = (*wbuf).curptr.offset(1);
                         *fresh3 = '<' as i32 as i8;
-                        i = 0i32 as size_t;
-                        while i < (*mtab.offset(c as isize)).len {
+                        for i in 0..(*mtab.offset(c as isize)).len {
                             sputx(
                                 *(*mtab.offset(c as isize)).code.offset(i as isize),
                                 &mut (*wbuf).curptr,
                                 (*wbuf).limptr,
                             );
-                            i = i.wrapping_add(1)
                         }
                         let fresh4 = (*wbuf).curptr;
                         (*wbuf).curptr = (*wbuf).curptr.offset(1);
@@ -290,21 +285,17 @@ unsafe extern "C" fn write_map(
             fmt_buf_0.as_mut_ptr() as *const libc::c_void,
             strlen(fmt_buf_0.as_mut_ptr()) as i32,
         );
-        i = 0i32 as size_t;
-        while i < num_blocks {
-            let mut j: size_t = 0;
+        for i in 0..num_blocks {
             c = blocks[i as usize].start as size_t;
             let fresh6 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
             *fresh6 = '<' as i32 as i8;
-            j = 0i32 as size_t;
-            while j < depth {
+            for j in 0..depth {
                 sputx(
                     *codestr.offset(j as isize),
                     &mut (*wbuf).curptr,
                     (*wbuf).limptr,
                 );
-                j = j.wrapping_add(1)
             }
             sputx(c as u8, &mut (*wbuf).curptr, (*wbuf).limptr);
             let fresh7 = (*wbuf).curptr;
@@ -316,14 +307,12 @@ unsafe extern "C" fn write_map(
             let fresh9 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
             *fresh9 = '<' as i32 as i8;
-            j = 0i32 as size_t;
-            while j < depth {
+            for j in 0..depth {
                 sputx(
                     *codestr.offset(j as isize),
                     &mut (*wbuf).curptr,
                     (*wbuf).limptr,
                 );
-                j = j.wrapping_add(1)
             }
             sputx(
                 c.wrapping_add(blocks[i as usize].count as u64) as u8,
@@ -339,14 +328,12 @@ unsafe extern "C" fn write_map(
             let fresh12 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
             *fresh12 = '<' as i32 as i8;
-            j = 0i32 as size_t;
-            while j < (*mtab.offset(c as isize)).len {
+            for j in 0..(*mtab.offset(c as isize)).len {
                 sputx(
                     *(*mtab.offset(c as isize)).code.offset(j as isize),
                     &mut (*wbuf).curptr,
                     (*wbuf).limptr,
                 );
-                j = j.wrapping_add(1)
             }
             let fresh13 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
@@ -354,7 +341,6 @@ unsafe extern "C" fn write_map(
             let fresh14 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
             *fresh14 = '\n' as i32 as i8;
-            i = i.wrapping_add(1)
         }
         pdf_add_stream(
             stream,
@@ -382,8 +368,6 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
     };
     let mut ranges: *mut rangeDef = 0 as *mut rangeDef;
     let mut codestr: *mut u8 = 0 as *mut u8;
-    let mut i: size_t = 0;
-    let mut j: size_t = 0;
     let mut count: size_t = 0i32 as size_t;
     if cmap.is_null() || !CMap_is_valid(cmap) {
         warn!("Invalid CMap");
@@ -508,19 +492,16 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         b"%d begincodespacerange\n\x00" as *const u8 as *const i8,
         (*cmap).codespace.num,
     ) as isize);
-    i = 0i32 as size_t;
-    while i < (*cmap).codespace.num as u64 {
+    for i in 0..(*cmap).codespace.num as u64 {
         let fresh15 = wbuf.curptr;
         wbuf.curptr = wbuf.curptr.offset(1);
         *fresh15 = '<' as i32 as i8;
-        j = 0i32 as size_t;
-        while j < (*ranges.offset(i as isize)).dim {
+        for j in 0..(*ranges.offset(i as isize)).dim {
             sputx(
                 *(*ranges.offset(i as isize)).codeLo.offset(j as isize),
                 &mut wbuf.curptr,
                 wbuf.limptr,
             );
-            j = j.wrapping_add(1)
         }
         let fresh16 = wbuf.curptr;
         wbuf.curptr = wbuf.curptr.offset(1);
@@ -531,14 +512,12 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         let fresh18 = wbuf.curptr;
         wbuf.curptr = wbuf.curptr.offset(1);
         *fresh18 = '<' as i32 as i8;
-        j = 0i32 as size_t;
-        while j < (*ranges.offset(i as isize)).dim {
+        for j in 0..(*ranges.offset(i as isize)).dim {
             sputx(
                 *(*ranges.offset(i as isize)).codeHi.offset(j as isize),
                 &mut wbuf.curptr,
                 wbuf.limptr,
             );
-            j = j.wrapping_add(1)
         }
         let fresh19 = wbuf.curptr;
         wbuf.curptr = wbuf.curptr.offset(1);
@@ -546,7 +525,6 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         let fresh20 = wbuf.curptr;
         wbuf.curptr = wbuf.curptr.offset(1);
         *fresh20 = '\n' as i32 as i8;
-        i = i.wrapping_add(1)
     }
     pdf_add_stream(
         stream,

@@ -339,7 +339,7 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
     error
 }
 unsafe extern "C" fn spc_handler_ps_trickscmd(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     warn!("PSTricks commands are disallowed in Tectonic");
@@ -347,7 +347,7 @@ unsafe extern "C" fn spc_handler_ps_trickscmd(
     -1i32
 }
 unsafe extern "C" fn spc_handler_ps_tricksobj(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     warn!("PSTricks commands are disallowed in Tectonic");

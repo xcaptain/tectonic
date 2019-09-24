@@ -186,8 +186,6 @@ unsafe extern "C" fn compute_owner_password(
     mut opasswd: *const i8,
     mut upasswd: *const i8,
 ) {
-    let mut i: i32 = 0;
-    let mut j: i32 = 0;
     let mut padded: [u8; 32] = [0; 32];
     let mut arc4: ARC4_CONTEXT = ARC4_CONTEXT {
         idx_i: 0,
@@ -206,8 +204,7 @@ unsafe extern "C" fn compute_owner_password(
     md5.input(&padded);
     let mut hash = md5.result();
     if p.R >= 3i32 {
-        i = 0i32;
-        while i < 50i32 {
+        for _ in 0..50 {
             /*
              * NOTE: We truncate each MD5 hash as in the following step.
              *       Otherwise Adobe Reader won't decrypt the PDF file.
@@ -215,7 +212,6 @@ unsafe extern "C" fn compute_owner_password(
             let mut md5 = Md5::new();
             md5.input(&hash[..p.key_size as usize]);
             hash = md5.result();
-            i += 1
         }
     }
     ARC4_set_key(&mut arc4, p.key_size as u32, hash.as_mut_ptr());
@@ -225,21 +221,17 @@ unsafe extern "C" fn compute_owner_password(
     let mut key: [u8; 16] = [0; 16];
     ARC4(&mut arc4, 32_u32, padded.as_mut_ptr(), tmp1.as_mut_ptr());
     if p.R >= 3i32 {
-        i = 1i32;
-        while i <= 19i32 {
+        for i in 1..=19 {
             memcpy(
                 tmp2.as_mut_ptr() as *mut libc::c_void,
                 tmp1.as_mut_ptr() as *const libc::c_void,
                 32,
             );
-            j = 0i32;
-            while j < p.key_size {
-                key[j as usize] = (hash[j as usize] as i32 ^ i) as u8;
-                j += 1
+            for j in 0..p.key_size as usize {
+                key[j] = (hash[j] as i32 ^ i) as u8;
             }
             ARC4_set_key(&mut arc4, p.key_size as u32, key.as_mut_ptr());
             ARC4(&mut arc4, 32_u32, tmp2.as_mut_ptr(), tmp1.as_mut_ptr());
-            i += 1
         }
     }
     memcpy(
@@ -250,7 +242,6 @@ unsafe extern "C" fn compute_owner_password(
 }
 
 unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const i8) {
-    let mut i: i32 = 0;
     let mut padded: [u8; 32] = [0; 32];
     passwd_padding(passwd, padded.as_mut_ptr());
     let mut md5 = Md5::new();
@@ -265,8 +256,7 @@ unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const 
     md5.input(&p.ID);
     let mut hash = md5.result();
     if p.R >= 3i32 {
-        i = 0i32;
-        while i < 50i32 {
+        for _ in 0..50 {
             /*
              * NOTE: We truncate each MD5 hash as in the following step.
              *       Otherwise Adobe Reader won't decrypt the PDF file.
@@ -274,7 +264,6 @@ unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const 
             let mut md5 = Md5::new();
             md5.input(&hash.as_slice()[..p.key_size as usize]);
             hash = md5.result();
-            i += 1
         }
     }
     memcpy(
@@ -285,8 +274,6 @@ unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const 
 }
 
 unsafe extern "C" fn compute_user_password(p: &mut pdf_sec, mut uplain: *const i8) {
-    let mut i: i32 = 0;
-    let mut j: i32 = 0;
     let mut arc4: ARC4_CONTEXT = ARC4_CONTEXT {
         idx_i: 0,
         idx_j: 0,
@@ -313,22 +300,18 @@ unsafe extern "C" fn compute_user_password(p: &mut pdf_sec, mut uplain: *const i
             let mut hash = md5.result();
             ARC4_set_key(&mut arc4, p.key_size as u32, p.key.as_mut_ptr());
             ARC4(&mut arc4, 16_u32, hash.as_mut_ptr(), tmp1.as_mut_ptr());
-            i = 1i32;
-            while i <= 19i32 {
+            for i in 1..=19i32 {
                 let mut key: [u8; 16] = [0; 16];
                 memcpy(
                     tmp2.as_mut_ptr() as *mut libc::c_void,
                     tmp1.as_mut_ptr() as *const libc::c_void,
                     16,
                 );
-                j = 0i32;
-                while j < p.key_size {
-                    key[j as usize] = (p.key[j as usize] as i32 ^ i) as u8;
-                    j += 1
+                for j in 0..p.key_size as usize {
+                    key[j] = (p.key[j] as i32 ^ i) as u8;
                 }
                 ARC4_set_key(&mut arc4, p.key_size as u32, key.as_mut_ptr());
                 ARC4(&mut arc4, 16_u32, tmp2.as_mut_ptr(), tmp1.as_mut_ptr());
-                i += 1
             }
             memcpy(
                 upasswd.as_mut_ptr() as *mut libc::c_void,
@@ -382,7 +365,6 @@ unsafe extern "C" fn compute_hash_V5(
         let mut E: *mut u8 = 0 as *mut u8;
         let mut K1_len: size_t = 0;
         let mut E_len: size_t = 0;
-        let mut i: i32 = 0;
         let mut c: i32 = 0;
         let mut E_mod3: i32 = 0i32;
         K1_len = strlen(passwd)
@@ -410,14 +392,12 @@ unsafe extern "C" fn compute_hash_V5(
         }
         Kr = new((K1_len.wrapping_mul(64i32 as u64) as u32 as u64)
             .wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
-        i = 0i32;
-        while i < 64i32 {
+        for i in 0..64 {
             memcpy(
                 Kr.offset((i as u64).wrapping_mul(K1_len) as isize) as *mut libc::c_void,
                 K1.as_mut_ptr() as *const libc::c_void,
                 K1_len as _,
             );
-            i += 1
         }
         AES_cbc_encrypt_tectonic(
             K.as_mut_ptr(),
@@ -430,10 +410,8 @@ unsafe extern "C" fn compute_hash_V5(
             &mut E_len,
         );
         free(Kr as *mut libc::c_void);
-        i = 0i32;
-        while i < 16i32 {
+        for i in 0..16 {
             E_mod3 += *E.offset(i as isize) as i32;
-            i += 1
         }
         E_mod3 %= 3i32;
         match E_mod3 {
@@ -525,7 +503,6 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
     let mut UE: *mut u8 = 0 as *mut u8;
     let mut iv: [u8; 16] = [0; 16];
     let mut UE_len: size_t = 0;
-    let mut i: i32 = 0;
     hash = compute_hash_V5(uplain, vsalt.as_mut_ptr(), 0 as *const u8, p.R);
     memcpy(
         p.U.as_mut_ptr() as *mut libc::c_void,
@@ -608,16 +585,13 @@ unsafe extern "C" fn preproc_password(
     memset(outbuf as *mut libc::c_void, 0i32, 128);
     match V {
         1 | 2 | 3 | 4 => {
-            let mut i: size_t = 0;
             /* Need to be converted to PDFDocEncoding - UNIMPLEMENTED */
-            i = 0i32 as size_t;
-            while (i as usize) < strlen(passwd) {
+            for i in 0..strlen(passwd) {
                 if (*passwd.offset(i as isize) as i32) < 0x20i32
                     || *passwd.offset(i as isize) as i32 > 0x7ei32
                 {
                     warn!("Non-ASCII-printable character found in password.");
                 }
-                i = i.wrapping_add(1)
             }
             memcpy(
                 outbuf as *mut libc::c_void,

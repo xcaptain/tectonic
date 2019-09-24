@@ -125,7 +125,7 @@ pub unsafe extern "C" fn spc_set_verbose(mut level: i32) {
     verbose = level;
 }
 #[no_mangle]
-pub unsafe extern "C" fn spc_warn(mut spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
+pub unsafe extern "C" fn spc_warn(mut _spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
     let mut ap: ::std::ffi::VaListImpl;
     static mut buf: [u8; 1024] = [0; 1024];
     ap = args.clone();
@@ -141,24 +141,24 @@ pub unsafe extern "C" fn spc_warn(mut spe: *mut spc_env, mut fmt: *const i8, mut
  * call dvi_xxx.
  */
 #[no_mangle]
-pub unsafe extern "C" fn spc_begin_annot(mut spe: *mut spc_env, mut dict: *mut pdf_obj) -> i32 {
+pub unsafe extern "C" fn spc_begin_annot(mut _spe: *mut spc_env, mut dict: *mut pdf_obj) -> i32 {
     pdf_doc_begin_annot(dict); /* Tell dvi interpreter to handle line-break. */
     dvi_tag_depth();
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn spc_end_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_end_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_untag_depth();
     pdf_doc_end_annot();
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn spc_resume_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_resume_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_link_annot(1i32);
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn spc_suspend_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_suspend_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_link_annot(0i32);
     0i32
 }

@@ -533,7 +533,7 @@ pub unsafe extern "C" fn tt_read_longMetrics(
         (numGlyphs as u32 as u64).wrapping_mul(::std::mem::size_of::<tt_longMetrics>() as u64)
             as u32,
     ) as *mut tt_longMetrics;
-    for i in 0..numGlyphs {
+    for _ in 0..numGlyphs {
         if (gid as i32) < numLongMetrics as i32 {
             last_adv = tt_get_unsigned_pair((*sfont).handle)
         }
@@ -550,7 +550,6 @@ pub unsafe extern "C" fn tt_read_longMetrics(
 #[no_mangle]
 pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2__table {
     let mut table: *mut tt_os2__table = 0 as *mut tt_os2__table;
-    let mut i: i32 = 0;
     table = new((1_u64).wrapping_mul(::std::mem::size_of::<tt_os2__table>() as u64) as u32)
         as *mut tt_os2__table;
     if sfnt_find_table_pos(sfont, b"OS/2\x00" as *const u8 as *const i8) > 0_u32 {

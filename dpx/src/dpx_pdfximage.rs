@@ -192,9 +192,7 @@ pub unsafe extern "C" fn pdf_init_images() {
 pub unsafe extern "C" fn pdf_close_images() {
     let mut ic: *mut ic_ = &mut _ic;
     if !(*ic).ximages.is_null() {
-        let mut i: i32 = 0;
-        i = 0i32;
-        while i < (*ic).count {
+        for i in 0..(*ic).count {
             let mut I: *mut pdf_ximage = (*ic).ximages.offset(i as isize);
             if (*I).attr.tempfile != 0 {
                 /*
@@ -215,7 +213,6 @@ pub unsafe extern "C" fn pdf_close_images() {
                 (*I).filename = 0 as *mut i8
             }
             pdf_clean_ximage_struct(I);
-            i += 1
         }
         (*ic).ximages = mfree((*ic).ximages as *mut libc::c_void) as *mut pdf_ximage;
         (*ic).capacity = 0i32;
@@ -396,15 +393,13 @@ pub unsafe extern "C" fn pdf_ximage_findresource(
     mut options: load_options,
 ) -> i32 {
     let mut ic: *mut ic_ = &mut _ic;
-    let mut id: i32 = -1i32;
     let mut I: *mut pdf_ximage = 0 as *mut pdf_ximage;
     let mut format: i32 = 0;
     let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
     /* "I don't understand why there is comparision against I->attr.dict here...
      * I->attr.dict and options.dict are simply pointers to PDF dictionaries."
      */
-    id = 0i32;
-    while id < (*ic).count {
+    for id in 0..(*ic).count {
         I = &mut *(*ic).ximages.offset(id as isize) as *mut pdf_ximage;
         if !(*I).ident.is_null() && streq_ptr(ident, (*I).ident) as i32 != 0 {
             if (*I).attr.page_no == options.page_no
@@ -414,7 +409,6 @@ pub unsafe extern "C" fn pdf_ximage_findresource(
                 return id;
             }
         }
-        id += 1
     }
     /* This happens if we've already inserted the image into the PDF output.
      * In my one test case, it seems to just work to plunge along merrily
@@ -438,7 +432,7 @@ pub unsafe extern "C" fn pdf_ximage_findresource(
         info!("(Image:{}", CStr::from_ptr(ident).display());
     }
     format = source_image_type(handle);
-    id = load_image(ident, ident, format, handle, options);
+    let id = load_image(ident, ident, format, handle, options);
     ttstub_input_close(handle);
     if _opts.verbose != 0 {
         info!(")");

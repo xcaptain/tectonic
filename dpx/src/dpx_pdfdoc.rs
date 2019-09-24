@@ -386,13 +386,13 @@ unsafe extern "C" fn pdf_doc_close_catalog(mut p: *mut pdf_doc) {
  */
 unsafe extern "C" fn doc_resize_page_entries(mut p: *mut pdf_doc, mut size: u32) {
     if size > (*p).pages.max_entries {
-        let mut i: u32 = 0; /* global bop */
+        /* global bop */
         (*p).pages.entries = renew(
             (*p).pages.entries as *mut libc::c_void,
             (size as u64).wrapping_mul(::std::mem::size_of::<pdf_page>() as u64) as u32,
         ) as *mut pdf_page; /* background */
-        i = (*p).pages.max_entries; /* page body  */
-        while i < size {
+        /* page body  */
+        for i in (*p).pages.max_entries..size {
             let ref mut fresh0 = (*(*p).pages.entries.offset(i as isize)).page_obj; /* global eop */
             *fresh0 = 0 as *mut pdf_obj;
             let ref mut fresh1 = (*(*p).pages.entries.offset(i as isize)).page_ref;
@@ -416,7 +416,6 @@ unsafe extern "C" fn doc_resize_page_entries(mut p: *mut pdf_doc, mut size: u32)
             *fresh9 = 0 as *mut pdf_obj;
             let ref mut fresh10 = (*(*p).pages.entries.offset(i as isize)).beads;
             *fresh10 = 0 as *mut pdf_obj;
-            i = i.wrapping_add(1)
         }
         (*p).pages.max_entries = size
     };
@@ -523,7 +522,6 @@ unsafe extern "C" fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
         "CreationDate",
         "ModDate",
     ];
-    let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
     for key in KEYS.iter() {
         if let Some(value) = pdf_lookup_dict(docinfo, *key) {
             if !(pdf_obj_typeof(value) == PdfObjType::STRING) {
@@ -565,7 +563,6 @@ unsafe extern "C" fn pdf_doc_get_page_resources(
     mut p: *mut pdf_doc,
     category: &str,
 ) -> *mut pdf_obj {
-    let mut resources: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut currentpage: *mut pdf_page = 0 as *mut pdf_page;
     let mut res_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     if p.is_null() {
@@ -721,7 +718,6 @@ unsafe extern "C" fn build_page_tree(
     let mut self_0: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut self_ref: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut kids: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut i: i32 = 0;
     self_0 = pdf_new_dict();
     /*
      * This is a slight kludge which allow the subtree dictionary
@@ -741,8 +737,7 @@ unsafe extern "C" fn build_page_tree(
     }
     kids = pdf_new_array();
     if num_pages > 0i32 && num_pages <= 4i32 {
-        i = 0i32;
-        while i < num_pages {
+        for i in 0..num_pages {
             let mut page: *mut pdf_page = 0 as *mut pdf_page;
             page = firstpage.offset(i as isize);
             if (*page).page_ref.is_null() {
@@ -750,11 +745,9 @@ unsafe extern "C" fn build_page_tree(
             }
             pdf_add_array(kids, pdf_link_obj((*page).page_ref));
             doc_flush_page(p, page, pdf_link_obj(self_ref));
-            i += 1
         }
     } else if num_pages > 0i32 {
-        i = 0i32;
-        while i < 4i32 {
+        for i in 0..4 {
             let mut start: i32 = 0;
             let mut end: i32 = 0;
             start = i * num_pages / 4i32;
@@ -778,7 +771,6 @@ unsafe extern "C" fn build_page_tree(
                 pdf_add_array(kids, pdf_link_obj((*page_0).page_ref));
                 doc_flush_page(p, page_0, pdf_link_obj(self_ref));
             }
-            i += 1
         }
     }
     pdf_add_dict(self_0, "Kids", kids);
@@ -809,12 +801,10 @@ unsafe extern "C" fn pdf_doc_init_page_tree(
 unsafe extern "C" fn pdf_doc_close_page_tree(mut p: *mut pdf_doc) {
     let mut page_tree_root: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut mediabox: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut page_no: u32 = 0;
     /*
      * Do consistency check on forward references to pages.
      */
-    page_no = (*p).pages.num_entries.wrapping_add(1_u32);
-    while page_no <= (*p).pages.max_entries {
+    for page_no in (*p).pages.num_entries.wrapping_add(1_u32)..=(*p).pages.max_entries {
         let mut page: *mut pdf_page = 0 as *mut pdf_page;
         page = doc_get_page_entry(p, page_no);
         if !(*page).page_obj.is_null() {
@@ -841,7 +831,6 @@ unsafe extern "C" fn pdf_doc_close_page_tree(mut p: *mut pdf_doc) {
             pdf_release_obj((*page).resources);
             (*page).resources = 0 as *mut pdf_obj
         }
-        page_no = page_no.wrapping_add(1)
     }
     /*
      * Connect page tree to root node.
@@ -1634,17 +1623,14 @@ static mut name_dict_categories: [*const i8; 10] = [
     b"Renditions\x00" as *const u8 as *const i8,
 ];
 unsafe extern "C" fn pdf_doc_init_names(mut p: *mut pdf_doc, mut check_gotos: i32) {
-    let mut i: u32 = 0;
     (*p).root.names = 0 as *mut pdf_obj;
     (*p).names = new(((::std::mem::size_of::<[*const i8; 10]>() as u64)
         .wrapping_div(::std::mem::size_of::<*const i8>() as u64)
         .wrapping_add(1i32 as u64) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<name_dict>() as u64) as u32)
         as *mut name_dict;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[*const i8; 10]>() as u64)
-            .wrapping_div(::std::mem::size_of::<*const i8>() as u64)
+    for i in 0..(::std::mem::size_of::<[*const i8; 10]>() as u64)
+        .wrapping_div(::std::mem::size_of::<*const i8>() as u64)
     {
         let ref mut fresh13 = (*(*p).names.offset(i as isize)).category;
         *fresh13 = name_dict_categories[i as usize];
@@ -1658,7 +1644,6 @@ unsafe extern "C" fn pdf_doc_init_names(mut p: *mut pdf_doc, mut check_gotos: i3
         } else {
             pdf_new_name_tree()
         };
-        i = i.wrapping_add(1)
         /*
          * We need a non-null entry for PDF destinations in order to find
          * broken links even if no destination is defined in the DVI file.
@@ -2057,15 +2042,11 @@ unsafe extern "C" fn find_bead(
     mut bead_id: *const i8,
 ) -> *mut pdf_bead {
     let mut bead: *mut pdf_bead = 0 as *mut pdf_bead;
-    let mut i: u32 = 0;
     bead = 0 as *mut pdf_bead;
-    i = 0_u32;
-    while i < (*article).num_beads {
+    for i in 0..(*article).num_beads {
         if streq_ptr((*(*article).beads.offset(i as isize)).id, bead_id) {
             bead = &mut *(*article).beads.offset(i as isize) as *mut pdf_bead;
             break;
-        } else {
-            i = i.wrapping_add(1)
         }
     }
     bead
@@ -2080,18 +2061,14 @@ pub unsafe extern "C" fn pdf_doc_add_bead(
     let mut p: *mut pdf_doc = &mut pdoc;
     let mut article: *mut pdf_article = 0 as *mut pdf_article;
     let mut bead: *mut pdf_bead = 0 as *mut pdf_bead;
-    let mut i: u32 = 0;
     if article_id.is_null() {
         panic!("No article identifier specified.");
     }
     article = 0 as *mut pdf_article;
-    i = 0_u32;
-    while i < (*p).articles.num_entries {
+    for i in 0..(*p).articles.num_entries {
         if streq_ptr((*(*p).articles.entries.offset(i as isize)).id, article_id) {
             article = &mut *(*p).articles.entries.offset(i as isize) as *mut pdf_article;
             break;
-        } else {
-            i = i.wrapping_add(1)
         }
     }
     if article.is_null() {
@@ -2110,12 +2087,10 @@ pub unsafe extern "C" fn pdf_doc_add_bead(
                 ((*article).max_beads as u64).wrapping_mul(::std::mem::size_of::<pdf_bead>() as u64)
                     as u32,
             ) as *mut pdf_bead;
-            i = (*article).num_beads;
-            while i < (*article).max_beads {
+            for i in (*article).num_beads..(*article).max_beads {
                 let ref mut fresh18 = (*(*article).beads.offset(i as isize)).id;
                 *fresh18 = 0 as *mut i8;
                 (*(*article).beads.offset(i as isize)).page_no = -1i32;
-                i = i.wrapping_add(1)
             }
         }
         bead = &mut *(*article).beads.offset((*article).num_beads as isize) as *mut pdf_bead;
@@ -2146,7 +2121,6 @@ unsafe extern "C" fn make_article(
     let mut first: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut prev: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut last: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut i: i32 = 0;
     let mut n: i32 = 0;
     if article.is_null() {
         return 0 as *mut pdf_obj;
@@ -2165,8 +2139,7 @@ unsafe extern "C" fn make_article(
     } else {
         (*article).num_beads
     }) as i32;
-    i = 0i32;
-    while i < n {
+    for i in 0..n {
         let mut bead: *mut pdf_bead = 0 as *mut pdf_bead;
         bead = if !bead_ids.is_null() {
             find_bead(article, *bead_ids.offset(i as isize))
@@ -2215,7 +2188,6 @@ unsafe extern "C" fn make_article(
             pdf_add_array((*page).beads, pdf_ref_obj(last));
             prev = last
         }
-        i += 1
     }
     if !first.is_null() && !last.is_null() {
         pdf_add_dict(last, "N", pdf_ref_obj(first));
@@ -2245,11 +2217,8 @@ unsafe extern "C" fn clean_article(mut article: *mut pdf_article) {
         return;
     }
     if !(*article).beads.is_null() {
-        let mut i: u32 = 0;
-        i = 0_u32;
-        while i < (*article).num_beads {
+        for i in 0..(*article).num_beads {
             free((*(*article).beads.offset(i as isize)).id as *mut libc::c_void);
-            i = i.wrapping_add(1)
         }
         (*article).beads = mfree((*article).beads as *mut libc::c_void) as *mut pdf_bead
     }
@@ -2258,9 +2227,7 @@ unsafe extern "C" fn clean_article(mut article: *mut pdf_article) {
     (*article).max_beads = 0_u32;
 }
 unsafe extern "C" fn pdf_doc_close_articles(mut p: *mut pdf_doc) {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while i < (*p).articles.num_entries {
+    for i in 0..(*p).articles.num_entries {
         let mut article: *mut pdf_article = 0 as *mut pdf_article;
         article = &mut *(*p).articles.entries.offset(i as isize) as *mut pdf_article;
         if !(*article).beads.is_null() {
@@ -2273,7 +2240,6 @@ unsafe extern "C" fn pdf_doc_close_articles(mut p: *mut pdf_doc) {
             pdf_release_obj(art_dict);
         }
         clean_article(article);
-        i = i.wrapping_add(1)
     }
     (*p).articles.entries = mfree((*p).articles.entries as *mut libc::c_void) as *mut pdf_article;
     (*p).articles.num_entries = 0_u32;

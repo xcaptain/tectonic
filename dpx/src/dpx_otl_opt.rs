@@ -53,18 +53,14 @@ pub struct bt_node {
 }
 unsafe extern "C" fn match_expr(mut expr: *mut bt_node, mut key: *const i8) -> i32 {
     let mut retval: i32 = 1i32;
-    let mut i: i32 = 0;
     if !expr.is_null() {
         if (*expr).left.is_null() && (*expr).right.is_null() {
-            i = 0i32;
-            while i < 4i32 {
+            for i in 0..4 {
                 if (*expr).data[i as usize] as i32 != '?' as i32
                     && (*expr).data[i as usize] as i32 != *key.offset(i as isize) as i32
                 {
                     retval = 0i32;
                     break;
-                } else {
-                    i += 1
                 }
             }
         } else {
@@ -183,9 +179,7 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
             }
             _ => {
                 if (*pp).offset(4) <= endptr {
-                    let mut i: i32 = 0;
-                    i = 0i32;
-                    while i < 4i32 {
+                    for i in 0..4 {
                         if **pp as i32 == ' ' as i32
                             || **pp as i32 == '?' as i32
                             || libc::isalpha(**pp as _) != 0
@@ -203,7 +197,6 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
                             return 0 as *mut bt_node;
                         }
                         *pp = (*pp).offset(1);
-                        i += 1
                     }
                 } else {
                     warn!("Syntax error: {}\n", CStr::from_ptr(*pp).display());

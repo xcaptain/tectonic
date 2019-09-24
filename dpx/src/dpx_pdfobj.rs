@@ -1923,7 +1923,7 @@ unsafe extern "C" fn apply_filter_TIFF2_1_2_4(
         inbits = outbits;
         k = j * rowbytes;
         l = k;
-        for i in 0..width {
+        for _ in 0..width {
             for c in 0..num_comp as libc::c_int {
                 let mut cur: u8 = 0;
                 let mut sub: i8 = 0;

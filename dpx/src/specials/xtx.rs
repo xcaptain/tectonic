@@ -180,16 +180,16 @@ unsafe extern "C" fn spc_handler_xtx_rotate(mut spe: *mut spc_env, mut args: *mu
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_handler_xtx_gsave(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_dev_gsave();
     0i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_handler_xtx_grestore(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_dev_grestore();
     /*
@@ -207,8 +207,8 @@ pub unsafe extern "C" fn spc_handler_xtx_grestore(
  * This should be handled before processing pages!
  */
 unsafe extern "C" fn spc_handler_xtx_papersize(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     0i32
 }
@@ -344,7 +344,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapfile(
 }
 static mut overlay_name: [i8; 256] = [0; 256];
 unsafe extern "C" fn spc_handler_xtx_initoverlay(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
@@ -361,7 +361,7 @@ unsafe extern "C" fn spc_handler_xtx_initoverlay(
     0i32
 }
 unsafe extern "C" fn spc_handler_xtx_clipoverlay(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);

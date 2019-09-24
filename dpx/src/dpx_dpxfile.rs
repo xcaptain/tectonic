@@ -155,7 +155,6 @@ unsafe extern "C" fn check_stream_is_type1(mut handle: rust_input_handle_t) -> b
     false
 }
 unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> bool {
-    let mut i: i32 = 0;
     let mut n: i32 = 0;
     let mut pos = 0_u32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
@@ -168,14 +167,12 @@ unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> b
         0i32,
     );
     n = tt_get_unsigned_pair(handle) as i32;
-    i = 0i32;
-    while i <= n {
+    for _ in 0..=n {
         if tt_get_unsigned_quad(handle) as u64 == 0x73666e74 {
             /* "sfnt" */
             return true;
         }
         tt_get_unsigned_quad(handle);
-        i += 1
     }
     false
 }

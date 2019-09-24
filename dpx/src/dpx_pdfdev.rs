@@ -330,13 +330,10 @@ unsafe extern "C" fn p_itoa(mut value: i32, mut buf: *mut i8) -> u32 {
         }
     }
     /* Reverse the digits */
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while i < ndigits.wrapping_div(2_u32) {
+    for i in 0..ndigits.wrapping_div(2_u32) {
         let mut tmp: i8 = *p.offset(i as isize);
         *p.offset(i as isize) = *p.offset(ndigits.wrapping_sub(i).wrapping_sub(1_u32) as isize);
         *p.offset(ndigits.wrapping_sub(i).wrapping_sub(1_u32) as isize) = tmp;
-        i = i.wrapping_add(1)
     }
     *p.offset(ndigits as isize) = '\u{0}' as i32 as i8;
     return if sign != 0 {
@@ -999,7 +996,6 @@ unsafe extern "C" fn dev_set_font(mut font_id: i32) -> i32 {
     let mut real_font: *mut dev_font = 0 as *mut dev_font;
     let mut font_scale: f64 = 0.;
     let mut len: i32 = 0;
-    let mut vert_dir: i32 = 0;
     /* text_mode() must come before text_state.is_mb is changed. */
     text_mode(); /* Caller should check font_id. */
     font = &mut *dev_fonts.offset(font_id as isize) as *mut dev_font; /* space not necessary. */
@@ -1115,8 +1111,7 @@ unsafe extern "C" fn handle_multibyte_string(
         /* Convert freetype glyph indexes to CID. */
         let mut inbuf: *const u8 = p;
         let mut outbuf: *mut u8 = sbuf0.as_mut_ptr();
-        i = 0i32 as size_t;
-        while i < length {
+        for _ in (0..length).step_by(2) {
             let mut gid: u32 = 0;
             let fresh34 = inbuf;
             inbuf = inbuf.offset(1);
@@ -1131,7 +1126,6 @@ unsafe extern "C" fn handle_multibyte_string(
             let fresh37 = outbuf;
             outbuf = outbuf.offset(1);
             *fresh37 = (gid & 0xff_u32) as u8;
-            i = (i as u64).wrapping_add(2i32 as u64) as size_t as size_t
         }
         p = sbuf0.as_mut_ptr();
         length = outbuf.wrapping_offset_from(sbuf0.as_mut_ptr()) as i64 as size_t
@@ -1143,8 +1137,7 @@ unsafe extern "C" fn handle_multibyte_string(
                 warn!("Too long string...");
                 return -1i32;
             }
-            i = 0i32 as size_t;
-            while i < length {
+            for i in 0..length {
                 sbuf1[i.wrapping_mul(4i32 as u64) as usize] = (*font).ucs_group as u8;
                 sbuf1[i.wrapping_mul(4i32 as u64).wrapping_add(1i32 as u64) as usize] =
                     (*font).ucs_plane as u8;
@@ -1152,7 +1145,6 @@ unsafe extern "C" fn handle_multibyte_string(
                     '\u{0}' as i32 as u8;
                 sbuf1[i.wrapping_mul(4i32 as u64).wrapping_add(3i32 as u64) as usize] =
                     *p.offset(i as isize);
-                i = i.wrapping_add(1)
             }
             length = (length as u64).wrapping_mul(4i32 as u64) as size_t as size_t
         } else if ctype == 2i32 {
@@ -1206,12 +1198,10 @@ unsafe extern "C" fn handle_multibyte_string(
             warn!("Too long string...");
             return -1i32;
         }
-        i = 0i32 as size_t;
-        while i < length {
+        for i in 0..length {
             sbuf1[i.wrapping_mul(2i32 as u64) as usize] = ((*font).mapc & 0xffi32) as u8;
             sbuf1[i.wrapping_mul(2i32 as u64).wrapping_add(1i32 as u64) as usize] =
                 *p.offset(i as isize);
-            i = i.wrapping_add(1)
         }
         length = (length as u64).wrapping_mul(2i32 as u64) as size_t as size_t;
         p = sbuf1.as_mut_ptr()
@@ -1309,7 +1299,6 @@ pub unsafe extern "C" fn pdf_dev_set_string(
     let mut real_font: *mut dev_font = 0 as *mut dev_font;
     let mut str_ptr: *const u8 = 0 as *const u8;
     let mut length: size_t = 0;
-    let mut i: size_t = 0;
     let mut len: size_t = 0i32 as size_t;
     let mut kern: spt_t = 0;
     let mut delh: spt_t = 0;
@@ -1344,23 +1333,19 @@ pub unsafe extern "C" fn pdf_dev_set_string(
             panic!("Error in converting input string...");
         }
         if !(*real_font).used_chars.is_null() {
-            i = 0i32 as size_t;
-            while i < length {
+            for i in (0..length).step_by(2) {
                 let mut cid: u16 = ((*str_ptr.offset(i as isize) as i32) << 8i32
                     | *str_ptr.offset(i.wrapping_add(1i32 as u64) as isize) as i32)
                     as u16;
                 let ref mut fresh38 = *(*real_font).used_chars.offset((cid as i32 / 8i32) as isize);
                 *fresh38 = (*fresh38 as i32 | 1i32 << 7i32 - cid as i32 % 8i32) as i8;
-                i = (i as u64).wrapping_add(2i32 as u64) as size_t as size_t
             }
         }
     } else if !(*real_font).used_chars.is_null() {
-        i = 0i32 as size_t;
-        while i < length {
+        for i in 0..length {
             *(*real_font)
                 .used_chars
                 .offset(*str_ptr.offset(i as isize) as isize) = 1_i8;
-            i = i.wrapping_add(1)
         }
     }
     if num_dev_coords > 0i32 {
@@ -1462,8 +1447,7 @@ pub unsafe extern "C" fn pdf_dev_set_string(
         if (4096i32 as u64).wrapping_sub(len) < (2i32 as u64).wrapping_mul(length) {
             panic!("Buffer overflow...");
         }
-        i = 0i32 as size_t;
-        while i < length {
+        for i in 0..length {
             let mut first: i32 = 0;
             let mut second: i32 = 0;
             first = *str_ptr.offset(i as isize) as i32 >> 4i32 & 0xfi32;
@@ -1482,7 +1466,6 @@ pub unsafe extern "C" fn pdf_dev_set_string(
             } else {
                 second + '0' as i32
             }) as i8;
-            i = i.wrapping_add(1)
         }
     } else {
         len = (len as u64).wrapping_add(pdfobj_escape_str(
@@ -1534,9 +1517,7 @@ pub unsafe extern "C" fn pdf_init_device(
 #[no_mangle]
 pub unsafe extern "C" fn pdf_close_device() {
     if !dev_fonts.is_null() {
-        let mut i: i32 = 0;
-        i = 0i32;
-        while i < num_dev_fonts {
+        for i in 0..num_dev_fonts {
             free((*dev_fonts.offset(i as isize)).tex_name as *mut libc::c_void);
             pdf_release_obj((*dev_fonts.offset(i as isize)).resource);
             let ref mut fresh43 = (*dev_fonts.offset(i as isize)).tex_name;
@@ -1545,7 +1526,6 @@ pub unsafe extern "C" fn pdf_close_device() {
             *fresh44 = 0 as *mut pdf_obj;
             let ref mut fresh45 = (*dev_fonts.offset(i as isize)).cff_charsets;
             *fresh45 = 0 as *mut cff_charsets;
-            i += 1
         }
         free(dev_fonts as *mut libc::c_void);
     }
@@ -1559,11 +1539,8 @@ pub unsafe extern "C" fn pdf_close_device() {
  */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_reset_fonts(mut newpage: i32) {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < num_dev_fonts {
+    for i in 0..num_dev_fonts {
         (*dev_fonts.offset(i as isize)).used_on_this_page = 0i32;
-        i += 1
     }
     text_state.font_id = -1i32;
     text_state.matrix.slant = 0.0f64;
@@ -1989,7 +1966,6 @@ pub unsafe extern "C" fn pdf_dev_get_dirmode() -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_set_dirmode(mut text_dir: i32) {
     let mut font: *mut dev_font = 0 as *mut dev_font;
-    let mut vert_dir: i32 = 0;
     font = if text_state.font_id < 0i32 {
         0 as *mut dev_font
     } else {
@@ -2127,7 +2103,6 @@ pub unsafe extern "C" fn pdf_dev_put_image(
     pdf_doc_add_page_resource("XObject", res_name, pdf_ximage_get_reference(id));
     if dvi_is_tracking_boxes() {
         let mut P = pdf_tmatrix::new();
-        let mut i: u32 = 0;
         let mut rect = pdf_rect::new();
         let mut corner: [pdf_coord; 4] = [pdf_coord::zero(); 4];
         pdf_dev_set_rect(
@@ -2152,34 +2127,30 @@ pub unsafe extern "C" fn pdf_dev_put_image(
         P.d = p.matrix.d;
         P.e = p.matrix.e;
         P.f = p.matrix.f;
-        i = 0_u32;
-        while i < 4_u32 {
-            corner[i as usize].x -= rect.llx;
-            corner[i as usize].y -= rect.lly;
+        for i in 0..4 {
+            corner[i].x -= rect.llx;
+            corner[i].y -= rect.lly;
             pdf_dev_transform(&mut *corner.as_mut_ptr().offset(i as isize), Some(&P));
-            corner[i as usize].x += rect.llx;
-            corner[i as usize].y += rect.lly;
-            i = i.wrapping_add(1)
+            corner[i].x += rect.llx;
+            corner[i].y += rect.lly;
         }
         rect.llx = corner[0].x;
         rect.lly = corner[0].y;
         rect.urx = corner[0].x;
         rect.ury = corner[0].y;
-        i = 0_u32;
-        while i < 4_u32 {
-            if corner[i as usize].x < rect.llx {
-                rect.llx = corner[i as usize].x
+        for i in 0..4 {
+            if corner[i].x < rect.llx {
+                rect.llx = corner[i].x
             }
-            if corner[i as usize].x > rect.urx {
-                rect.urx = corner[i as usize].x
+            if corner[i].x > rect.urx {
+                rect.urx = corner[i].x
             }
-            if corner[i as usize].y < rect.lly {
-                rect.lly = corner[i as usize].y
+            if corner[i].y < rect.lly {
+                rect.lly = corner[i].y
             }
-            if corner[i as usize].y > rect.ury {
-                rect.ury = corner[i as usize].y
+            if corner[i].y > rect.ury {
+                rect.ury = corner[i].y
             }
-            i = i.wrapping_add(1)
         }
         pdf_doc_expand_box(&mut rect);
     }
@@ -2207,21 +2178,18 @@ pub unsafe extern "C" fn transform_info_clear(info: &mut transform_info) {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_begin_actualtext(mut unicodes: *mut u16, mut count: i32) {
     let mut len: i32 = 0;
-    let mut i: i32 = 0;
     let mut pdf_doc_enc: i32 = 1i32;
     /* check whether we can use PDFDocEncoding for this string
     (we punt on the 0x80..0xA0 range that does not directly correspond to unicode)  */
-    i = 0i32; /* if using PDFDocEncoding, we only care about the low 8 bits,
-              so start with the second byte of our pair */
-    while i < count {
+    /* if using PDFDocEncoding, we only care about the low 8 bits,
+    so start with the second byte of our pair */
+    for i in 0..count {
         if *unicodes.offset(i as isize) as i32 > 0xffi32
             || *unicodes.offset(i as isize) as i32 > 0x7fi32
                 && (*unicodes.offset(i as isize) as i32) < 0xa1i32
         {
             pdf_doc_enc = 0i32;
             break;
-        } else {
-            i += 1
         }
     }
     graphics_mode();
@@ -2243,9 +2211,8 @@ pub unsafe extern "C" fn pdf_dev_begin_actualtext(mut unicodes: *mut u16, mut co
             break;
         }
         let mut s: [u8; 2] = (*unicodes).to_be_bytes();
-        i = pdf_doc_enc;
         len = 0i32;
-        while i < 2i32 {
+        for i in pdf_doc_enc..2 {
             let mut c: u8 = s[i as usize];
             if c as i32 == '(' as i32 || c as i32 == ')' as i32 || c as i32 == '\\' as i32 {
                 len += sprintf(
@@ -2266,7 +2233,6 @@ pub unsafe extern "C" fn pdf_dev_begin_actualtext(mut unicodes: *mut u16, mut co
                     c as i32,
                 )
             }
-            i += 1
         }
         pdf_doc_add_page_content(work_buffer.as_mut_ptr(), len as u32);
         unicodes = unicodes.offset(1)
