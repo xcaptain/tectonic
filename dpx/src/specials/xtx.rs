@@ -29,6 +29,8 @@
     unused_mut
 )]
 
+use std::ffi::CStr;
+
 use super::spc_warn;
 use super::util::{spc_util_read_colorspec, spc_util_read_numbers};
 use crate::dpx_dpxutil::parse_c_ident;
@@ -38,9 +40,11 @@ use crate::dpx_fontmap::{
     pdf_remove_fontmap_record,
 };
 use crate::dpx_mem::{new, xrealloc};
-use crate::dpx_mfileio::work_buffer;
+use crate::dpx_mfileio::work_buffer_u8 as work_buffer;
 use crate::dpx_pdfdev::{pdf_dev_reset_color, pdf_dev_reset_fonts};
-use crate::dpx_pdfdoc::{pdf_doc_add_page_content, pdf_doc_set_bgcolor};
+use crate::dpx_pdfdoc::{
+    pdf_doc_add_page_content, pdf_doc_add_page_content_ptr, pdf_doc_set_bgcolor,
+};
 use crate::dpx_pdfdraw::{
     pdf_dev_concat, pdf_dev_get_fixed_point, pdf_dev_grestore, pdf_dev_gsave,
     pdf_dev_set_fixed_point,
@@ -381,7 +385,7 @@ unsafe extern "C" fn spc_handler_xtx_clipoverlay(
             strlen(b"all\x00" as *const u8 as *const i8),
         ) != 0i32
     {
-        pdf_doc_add_page_content(b" 0 0 m W n\x00" as *const u8 as *const i8, 10_u32);
+        pdf_doc_add_page_content(b" 0 0 m W n");
     }
     (*args).curptr = (*args).endptr;
     0i32
@@ -403,18 +407,19 @@ unsafe extern "C" fn spc_handler_xtx_renderingmode(
         return -1i32;
     }
     sprintf(
-        work_buffer.as_mut_ptr(),
+        work_buffer.as_mut_ptr() as *mut i8,
         b" %d Tr\x00" as *const u8 as *const i8,
         value as i32,
     );
     pdf_doc_add_page_content(
-        work_buffer.as_mut_ptr(),
-        strlen(work_buffer.as_mut_ptr()) as u32,
+        CStr::from_bytes_with_nul(&work_buffer[..])
+            .unwrap()
+            .to_bytes(),
     );
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
-        pdf_doc_add_page_content(b" \x00" as *const u8 as *const i8, 1_u32);
-        pdf_doc_add_page_content(
+        pdf_doc_add_page_content(b" ");
+        pdf_doc_add_page_content_ptr(
             (*args).curptr,
             (*args).endptr.wrapping_offset_from((*args).curptr) as i64 as u32,
         );

@@ -3231,10 +3231,10 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
         }
         42 => {
             /* fill rule not supported yet */
-            pdf_dev_flushpath('S' as i32 as i8, 0i32);
+            pdf_dev_flushpath(b'S', 0);
         }
         41 => {
-            pdf_dev_flushpath('f' as i32 as i8, 0i32);
+            pdf_dev_flushpath(b'f', 0);
         }
         44 => error = pdf_dev_clip(),
         45 => error = pdf_dev_eoclip(),
@@ -3329,8 +3329,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             if error == 0 {
                 let mut pattern: *mut pdf_obj = 0 as *mut pdf_obj;
                 let mut dash: *mut pdf_obj = 0 as *mut pdf_obj;
-                let mut i: i32 = 0;
-                let mut num_dashes: i32 = 0;
+                let mut num_dashes = 0_usize;
                 let mut dash_values: [f64; 16] = [0.; 16];
                 let mut offset: f64 = 0.;
                 offset = values[0];
@@ -3344,15 +3343,15 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
                     pdf_release_obj(pattern);
                     error = 1i32
                 } else {
-                    num_dashes = pdf_array_length(pattern) as i32;
-                    if num_dashes > 16i32 {
+                    num_dashes = pdf_array_length(pattern) as usize;
+                    if num_dashes > 16 {
                         warn!("Too many dashes...");
                         pdf_release_obj(pattern);
                         error = 1i32
                     } else {
-                        i = 0i32;
+                        let mut i = 0;
                         while i < num_dashes && error == 0 {
-                            dash = pdf_get_array(pattern, i);
+                            dash = pdf_get_array(pattern, i as i32);
                             if !(!dash.is_null() && pdf_obj_typeof(dash) == PdfObjType::NUMBER) {
                                 error = 1i32
                             } else {
@@ -3362,7 +3361,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
                         }
                         pdf_release_obj(pattern);
                         if error == 0 {
-                            error = pdf_dev_setdash(num_dashes, dash_values.as_mut_ptr(), offset)
+                            error = pdf_dev_setdash(&dash_values[..num_dashes], offset)
                         }
                     }
                 }

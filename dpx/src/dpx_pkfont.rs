@@ -34,7 +34,7 @@ use crate::DisplayExt;
 use std::ffi::CStr;
 
 use super::dpx_mem::new;
-use super::dpx_mfileio::work_buffer;
+use super::dpx_mfileio::work_buffer_u8 as work_buffer;
 use super::dpx_pdfdev::pdf_sprint_number;
 use super::dpx_pdfencoding::{
     pdf_encoding_get_encoding, pdf_encoding_get_name, pdf_encoding_used_by_type3,
@@ -520,7 +520,7 @@ unsafe extern "C" fn create_pk_CharProc_stream(
     let mut lly: i32 = 0;
     let mut urx: i32 = 0;
     let mut ury: i32 = 0;
-    let mut len: i32 = 0;
+    let mut len = 0_usize;
     llx = -(*pkh).bm_hoff;
     lly = ((*pkh).bm_voff as u32).wrapping_sub((*pkh).bm_ht) as i32;
     urx = (*pkh).bm_wd.wrapping_sub((*pkh).bm_hoff as u32) as i32;
@@ -535,16 +535,20 @@ unsafe extern "C" fn create_pk_CharProc_stream(
      * width in the font's Widths array. The format string of sprint() must be
      * consistent with write_number() in pdfobj.c.
      */
-    len = pdf_sprint_number(work_buffer.as_mut_ptr(), chrwid);
+    len = pdf_sprint_number(&mut work_buffer[..], chrwid);
     len += sprintf(
-        work_buffer.as_mut_ptr().offset(len as isize),
+        work_buffer.as_mut_ptr().offset(len as isize) as *mut i8,
         b" 0 %d %d %d %d d1\n\x00" as *const u8 as *const i8,
         llx,
         lly,
         urx,
         ury,
+    ) as usize;
+    pdf_add_stream(
+        stream,
+        work_buffer.as_mut_ptr() as *const libc::c_void,
+        len as i32,
     );
-    pdf_add_stream(stream, work_buffer.as_mut_ptr() as *const libc::c_void, len);
     /*
      * Acrobat dislike transformation [0 0 0 0 dx dy].
      * PDF Reference, 4th ed., p.147, says,
@@ -558,21 +562,29 @@ unsafe extern "C" fn create_pk_CharProc_stream(
         /* Otherwise we embed an empty stream :-( */
         /* Scale and translate origin to lower left corner for raster data */
         len = sprintf(
-            work_buffer.as_mut_ptr(),
+            work_buffer.as_mut_ptr() as *mut i8,
             b"q\n%u 0 0 %u %d %d cm\n\x00" as *const u8 as *const i8,
             (*pkh).bm_wd,
             (*pkh).bm_ht,
             llx,
             lly,
+        ) as usize;
+        pdf_add_stream(
+            stream,
+            work_buffer.as_mut_ptr() as *const libc::c_void,
+            len as i32,
         );
-        pdf_add_stream(stream, work_buffer.as_mut_ptr() as *const libc::c_void, len);
         len = sprintf(
-            work_buffer.as_mut_ptr(),
+            work_buffer.as_mut_ptr() as *mut i8,
             b"BI\n/W %u\n/H %u\n/IM true\n/BPC 1\nID \x00" as *const u8 as *const i8,
             (*pkh).bm_wd,
             (*pkh).bm_ht,
+        ) as usize;
+        pdf_add_stream(
+            stream,
+            work_buffer.as_mut_ptr() as *const libc::c_void,
+            len as i32,
         );
-        pdf_add_stream(stream, work_buffer.as_mut_ptr() as *const libc::c_void, len);
         /* Add bitmap data */
         if (*pkh).dyn_f == 14i32 {
             /* bitmap */
@@ -597,10 +609,14 @@ unsafe extern "C" fn create_pk_CharProc_stream(
             );
         }
         len = sprintf(
-            work_buffer.as_mut_ptr(),
+            work_buffer.as_mut_ptr() as *mut i8,
             b"\nEI\nQ\x00" as *const u8 as *const i8,
+        ) as usize;
+        pdf_add_stream(
+            stream,
+            work_buffer.as_mut_ptr() as *const libc::c_void,
+            len as i32,
         );
-        pdf_add_stream(stream, work_buffer.as_mut_ptr() as *const libc::c_void, len);
     }
     stream
 }
@@ -753,7 +769,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                             pkh.chrcode,
                             CStr::from_ptr(ident).display(),
                         );
-                        charname = work_buffer.as_mut_ptr();
+                        charname = work_buffer.as_mut_ptr() as *mut i8;
                         sprintf(
                             charname,
                             b"x%02X\x00" as *const u8 as *const i8,
@@ -762,7 +778,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                     }
                 } else {
                     /* ENABLE_GLYPHENC */
-                    charname = work_buffer.as_mut_ptr(); /* _FIXME_ */
+                    charname = work_buffer.as_mut_ptr() as *mut i8; /* _FIXME_ */
                     sprintf(
                         charname,
                         b"x%02X\x00" as *const u8 as *const i8,
@@ -846,7 +862,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
             if encoding_id >= 0i32 && !enc_vec.is_null() {
                 charname_0 = *enc_vec.offset(code as u8 as isize);
                 if charname_0.is_null() {
-                    charname_0 = work_buffer.as_mut_ptr();
+                    charname_0 = work_buffer.as_mut_ptr() as *mut i8;
                     sprintf(
                         charname_0,
                         b"x%02X\x00" as *const u8 as *const i8,
@@ -855,7 +871,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 }
             } else {
                 /* ENABLE_GLYPHENC */
-                charname_0 = work_buffer.as_mut_ptr();
+                charname_0 = work_buffer.as_mut_ptr() as *mut i8;
                 sprintf(
                     charname_0,
                     b"x%02X\x00" as *const u8 as *const i8,

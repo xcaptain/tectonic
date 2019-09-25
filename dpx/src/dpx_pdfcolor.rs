@@ -318,13 +318,13 @@ pub unsafe extern "C" fn pdf_color_is_white(color: &pdf_color) -> bool {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_color_to_string(
     color: &pdf_color,
-    mut buffer: *mut i8,
+    mut buffer: *mut u8,
     mut mask: i8,
-) -> i32 {
+) -> usize {
     let mut len: i32 = 0i32;
     if pdf_color_type(color) == -2i32 {
         len = sprintf(
-            buffer,
+            buffer as *mut i8,
             b" /%s %c%c %g %c%c\x00" as *const u8 as *const i8,
             color.spot_color_name.as_ref().unwrap().as_ptr(),
             'C' as i32 | mask as i32,
@@ -336,13 +336,13 @@ pub unsafe extern "C" fn pdf_color_to_string(
     } else {
         for i in 0..color.num_components {
             len += sprintf(
-                buffer.offset(len as isize),
+                buffer.offset(len as isize) as *mut i8,
                 b" %g\x00" as *const u8 as *const i8,
                 (color.values[i as usize] / 0.001f64 + 0.5f64).floor() * 0.001f64,
             );
         }
     }
-    len
+    len as usize
 }
 /*
  * This routine is not a real color matching.

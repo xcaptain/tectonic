@@ -2582,15 +2582,35 @@ pub unsafe extern "C" fn pdf_doc_end_page() {
     doc_fill_page_background(p);
     pdf_doc_finish_page(p);
 }
-#[no_mangle]
-pub unsafe extern "C" fn pdf_doc_add_page_content(mut buffer: *const i8, mut length: u32) {
+
+pub unsafe fn pdf_doc_add_page_content(buffer: &[u8]) {
+    let mut p: *mut pdf_doc = &mut pdoc;
+    let mut currentpage: *mut pdf_page = 0 as *mut pdf_page;
+    if !(*p).pending_forms.is_null() {
+        pdf_add_stream(
+            (*(*p).pending_forms).form.contents,
+            buffer.as_ptr() as *const libc::c_void,
+            buffer.len() as i32,
+        );
+    } else {
+        currentpage =
+            &mut *(*p).pages.entries.offset((*p).pages.num_entries as isize) as *mut pdf_page;
+        pdf_add_stream(
+            (*currentpage).contents,
+            buffer.as_ptr() as *const libc::c_void,
+            buffer.len() as i32,
+        );
+    };
+}
+
+pub unsafe fn pdf_doc_add_page_content_ptr(buffer: *const i8, len: u32) {
     let mut p: *mut pdf_doc = &mut pdoc;
     let mut currentpage: *mut pdf_page = 0 as *mut pdf_page;
     if !(*p).pending_forms.is_null() {
         pdf_add_stream(
             (*(*p).pending_forms).form.contents,
             buffer as *const libc::c_void,
-            length as i32,
+            len as i32,
         );
     } else {
         currentpage =
@@ -2598,7 +2618,7 @@ pub unsafe extern "C" fn pdf_doc_add_page_content(mut buffer: *const i8, mut len
         pdf_add_stream(
             (*currentpage).contents,
             buffer as *const libc::c_void,
-            length as i32,
+            len as i32,
         );
     };
 }

@@ -251,7 +251,7 @@ static mut pdf_output_handle: rust_output_handle_t = 0 as *const libc::c_void as
 static mut pdf_output_file_position: i32 = 0i32;
 static mut pdf_output_line_position: i32 = 0i32;
 static mut compression_saved: i32 = 0i32;
-static mut format_buffer: [i8; 4096] = [0; 4096];
+static mut format_buffer: [u8; 4096] = [0; 4096];
 static mut output_xref: *mut xref_entry = 0 as *const xref_entry as *mut xref_entry;
 static mut pdf_max_ind_objects: u32 = 0;
 static mut next_label: u32 = 0;
@@ -401,7 +401,7 @@ unsafe extern "C" fn dump_xref_table() {
         5i32,
     );
     length = sprintf(
-        format_buffer.as_mut_ptr(),
+        format_buffer.as_mut_ptr() as *mut i8,
         b"%d %u\n\x00" as *const u8 as *const i8,
         0i32,
         next_label,
@@ -425,7 +425,7 @@ unsafe extern "C" fn dump_xref_table() {
             );
         }
         length = sprintf(
-            format_buffer.as_mut_ptr(),
+            format_buffer.as_mut_ptr() as *mut i8,
             b"%010u %05hu %c \n\x00" as *const u8 as *const i8,
             (*output_xref.offset(i as isize)).field2,
             (*output_xref.offset(i as isize)).field3 as i32,
@@ -539,7 +539,7 @@ pub unsafe extern "C" fn pdf_out_flush() {
             10i32,
         );
         length = sprintf(
-            format_buffer.as_mut_ptr(),
+            format_buffer.as_mut_ptr() as *mut i8,
             b"%u\n\x00" as *const u8 as *const i8,
             startxref,
         );
@@ -761,7 +761,7 @@ unsafe extern "C" fn write_indirect(
     let mut length: i32 = 0;
     assert!((*indirect).pf.is_null());
     length = sprintf(
-        format_buffer.as_mut_ptr(),
+        format_buffer.as_mut_ptr() as *mut i8,
         b"%u %hu R\x00" as *const u8 as *const i8,
         (*indirect).label,
         (*indirect).generation as i32,
@@ -859,7 +859,7 @@ unsafe extern "C" fn release_number(mut data: *mut pdf_number) {
 }
 unsafe extern "C" fn write_number(mut number: *mut pdf_number, mut handle: rust_output_handle_t) {
     let mut count: i32 = 0;
-    count = pdf_sprint_number(format_buffer.as_mut_ptr(), (*number).value);
+    count = pdf_sprint_number(&mut format_buffer[..], (*number).value) as i32;
     pdf_out(
         handle,
         format_buffer.as_mut_ptr() as *const libc::c_void,
@@ -3019,7 +3019,7 @@ unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, mut handle: rust_ou
         (*object).generation,
     );
     length = sprintf(
-        format_buffer.as_mut_ptr(),
+        format_buffer.as_mut_ptr() as *mut i8,
         b"%u %hu obj\n\x00" as *const u8 as *const i8,
         (*object).label,
         (*object).generation as i32,
@@ -3091,7 +3091,7 @@ unsafe extern "C" fn release_objstm(objstm: *mut pdf_obj) {
         let fresh17 = val;
         val = val.offset(1);
         let mut length: i32 = sprintf(
-            format_buffer.as_mut_ptr(),
+            format_buffer.as_mut_ptr() as *mut i8,
             b"%d \x00" as *const u8 as *const i8,
             *fresh17,
         );

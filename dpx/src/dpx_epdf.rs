@@ -880,7 +880,7 @@ pub unsafe extern "C" fn pdf_copy_clip(
         pdf_close(pf);
         return -1i32;
     }
-    pdf_doc_add_page_content(b" \x00" as *const u8 as *const i8, 1_u32);
+    pdf_doc_add_page_content(b" ");
     save_path = xmalloc((pdf_stream_length(contents) + 1i32) as size_t) as *mut i8;
     strncpy(
         save_path,
@@ -1137,7 +1137,7 @@ pub unsafe extern "C" fn pdf_copy_clip(
                     current_block_157 = 6328367678128271922;
                 }
                 11 => {
-                    pdf_doc_add_page_content(b" n\x00" as *const u8 as *const i8, 2_u32);
+                    pdf_doc_add_page_content(b" n");
                     current_block_157 = 6328367678128271922;
                 }
                 12 => {
@@ -1194,7 +1194,7 @@ pub unsafe extern "C" fn pdf_copy_clip(
             }
             match current_block_157 {
                 17294711039657812359 => {
-                    pdf_dev_flushpath('W' as i32 as i8, 0i32);
+                    pdf_dev_flushpath(b'W', 0);
                 }
                 _ => {}
             }
