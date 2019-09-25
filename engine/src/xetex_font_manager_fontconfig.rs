@@ -11,9 +11,9 @@
            extern_types,
            ptr_wrapping_offset_from)]
 
+use crate::xetex_layout_interface::collection_types::*;
 use std::ffi::CString;
 use std::ptr::NonNull;
-use crate::xetex_layout_interface::collection_types::*;
 
 extern "C" {
     pub type _FcPattern;
@@ -1718,7 +1718,10 @@ shall not be used in advertising or otherwise to promote the sale,
 use or other dealings in this Software without prior written
 authorization from the copyright holders.
 \****************************************************************************/
-use super::{XeTeXFontMgrOpSizeRec, XeTeXFontMgrFamily, XeTeXFontMgrFont, XeTeXFontMgrNameCollection, XeTeXFontMgr};
+use super::{
+    XeTeXFontMgr, XeTeXFontMgrFamily, XeTeXFontMgrFont, XeTeXFontMgrNameCollection,
+    XeTeXFontMgrOpSizeRec,
+};
 /* ***************************************************************************\
  Part of the XeTeX typesetting system
  Copyright (c) 1994-2008 by SIL International

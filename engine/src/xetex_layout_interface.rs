@@ -549,11 +549,11 @@ pub mod collection_types {
     use super::size_t;
     use super::{GlyphBBox, GlyphId, PlatformFontRef, XeTeXFontMgrFamily, XeTeXFontMgrFont};
     use core::ptr::NonNull;
-    use std::collections::{BTreeMap, LinkedList};
+    use std::collections::{BTreeMap, VecDeque, LinkedList};
     use std::ffi::CString;
 
     pub type CppStdString = CString;
-    pub type CppStdListOfString = LinkedList<CString>;
+    pub type CppStdListOfString = VecDeque<CString>;
     pub type CppStdMap<K, V> = BTreeMap<K, V>;
 
     #[derive(Copy, Clone)]
@@ -588,10 +588,6 @@ pub mod collection_types {
     }
 
     extern "C" {
-        #[no_mangle]
-        pub fn CppStdListOfString_Iter_deref(self_0: CppStdListOfString_Iter) -> *mut CppStdString;
-        #[no_mangle]
-        pub fn CppStdListOfString_Iter_inc(iter: *mut CppStdListOfString_Iter);
         #[no_mangle]
         pub fn CppStdListOfString_Iter_neq(
             lhs: CppStdListOfString_Iter,
@@ -724,9 +720,12 @@ pub mod collection_types {
             self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapStringToFontPtr_Iter;
         #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_create() -> *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>;
+        pub fn CppStdMapStringToFontPtr_create(
+        ) -> *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>;
         #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_delete(self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>);
+        pub fn CppStdMapStringToFontPtr_delete(
+            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
+        );
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_end(
             self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
@@ -776,8 +775,6 @@ pub mod collection_types {
             count: size_t,
         );
         #[no_mangle]
-        pub fn CppStdString_clone(self_0: *mut CppStdString) -> *mut CppStdString;
-        #[no_mangle]
         pub fn CppStdString_clone_from_iter(self_0: CppStdListOfString_Iter) -> *mut CppStdString;
         #[no_mangle]
         pub fn CppStdString_const_char_ptr_equal_const_char_ptr(
@@ -789,17 +786,14 @@ pub mod collection_types {
             lhs: *mut CppStdString,
             rhs: *const libc::c_char,
         ) -> bool;
-        #[no_mangle]
-        pub fn CppStdString_last(self_0: *const CppStdString) -> libc::c_char;
-
     }
 
     pub fn CppStdString_create() -> *mut CppStdString {
         Box::into_raw(Box::new(CString::default()))
     }
-    
+
     pub unsafe fn CppStdString_delete(self_0: *mut CppStdString) {
-        let _ : Box<CppStdString> = Box::from_raw(self_0);
+        let _: Box<CppStdString> = Box::from_raw(self_0);
     }
     pub unsafe fn CppStdString_length(self_0: *const CppStdString) -> libc::size_t {
         self_0.as_ref().unwrap().to_bytes().len() as _
@@ -808,25 +802,51 @@ pub mod collection_types {
         let v = self_0.as_ref().unwrap();
         v.as_ptr()
     }
-    
+
     pub fn CppStdListOfString_create() -> *mut CppStdListOfString {
         Box::into_raw(Box::new(CppStdListOfString::default()))
     }
 
     pub unsafe fn CppStdListOfString_delete(self_0: *mut CppStdListOfString) {
-        let _ : Box<CppStdListOfString> = Box::from_raw(self_0);
+        let _: Box<CppStdListOfString> = Box::from_raw(self_0);
     }
 
     pub fn CppStdMap_create<K: Ord, V>() -> *mut CppStdMap<K, V> {
         Box::into_raw(Box::new(CppStdMap::default()))
     }
-    
+
     pub unsafe fn CppStdMap_put<K: Ord, V>(self_0: *mut CppStdMap<K, V>, key: K, val: V) {
         (*self_0).insert(key, val);
     }
-    
+
+    pub unsafe fn CppStdMap_put_with_string_key<V>(
+        self_0: *mut CppStdMap<CString, V>,
+        key: *const libc::c_char,
+        val: V,
+    ) {
+        use std::ffi::CStr;
+        let key = CStr::from_ptr(key);
+        match (*self_0).get_mut(key) {
+            Some(v) => {
+                *v = val;
+            }
+            None => {
+                (*self_0).insert(key.to_owned(), val);
+            }
+        }
+    }
+
     pub unsafe fn CppStdMap_delete<K: Ord, V>(self_0: *mut CppStdMap<K, V>) {
-        let _ : Box<CppStdMap<K, V>> = Box::from_raw(self_0);    
+        let _: Box<CppStdMap<K, V>> = Box::from_raw(self_0);
+    }
+
+    pub unsafe fn CppStdString_last(self_0: *const CppStdString) -> libc::c_char {
+        let val = &*self_0;
+        *val.to_bytes().last().expect("must not be empty") as libc::c_char
+    }
+    pub unsafe fn CppStdString_clone(self_0: *mut CppStdString) -> *mut CppStdString {
+        let v: Box<CppStdString> = Box::new((*self_0).clone());
+        Box::into_raw(v)
     }
 }
 
