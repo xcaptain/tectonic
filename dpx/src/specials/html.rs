@@ -751,16 +751,15 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         let mut a: i32 = (100.0f64 * alpha).round() as i32;
         if a != 0i32 {
             let res_name = format!("_Tps_a{:03}_", a);
-            let res_name_c = CString::new(res_name.as_str()).unwrap().into_raw();
+            let res_name_c = CString::new(res_name.as_str()).unwrap();
             if check_resourcestatus("ExtGState", &res_name) == 0 {
                 dict = create_xgstate((0.01f64 * a as f64 / 0.01f64).round() * 0.01f64, 0i32);
-                pdf_doc_add_page_resource("ExtGState", res_name_c, pdf_ref_obj(dict));
+                pdf_doc_add_page_resource("ExtGState", res_name_c.as_ptr(), pdf_ref_obj(dict));
                 pdf_release_obj(dict);
             }
-            pdf_doc_add_page_content(b" /\x00" as *const u8 as *const i8, 2_u32);
-            pdf_doc_add_page_content(res_name_c, res_name.len() as u32);
-            pdf_doc_add_page_content(b" gs\x00" as *const u8 as *const i8, 3_u32);
-            let _ = CString::from_raw(res_name_c);
+            pdf_doc_add_page_content(b" /");
+            pdf_doc_add_page_content(res_name_c.to_bytes());
+            pdf_doc_add_page_content(b" gs");
         }
         /* ENABLE_HTML_SVG_OPACITY */
         pdf_ximage_scale_image(id, &mut M1, &mut r, &mut ti); /* op: */
@@ -781,9 +780,9 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         pdf_dev_concat(&mut M);
         pdf_dev_rectclip(r.llx, r.lly, r.urx - r.llx, r.ury - r.lly);
         let res_name = pdf_ximage_get_resname(id);
-        pdf_doc_add_page_content(b" /\x00" as *const u8 as *const i8, 2_u32);
-        pdf_doc_add_page_content(res_name, strlen(res_name) as u32);
-        pdf_doc_add_page_content(b" Do\x00" as *const u8 as *const i8, 3_u32);
+        pdf_doc_add_page_content(b" /");
+        pdf_doc_add_page_content(CStr::from_ptr(res_name).to_bytes());
+        pdf_doc_add_page_content(b" Do");
         pdf_dev_grestore();
         pdf_doc_add_page_resource("XObject", res_name, pdf_ximage_get_reference(id));
         /* ENABLE_HTML_SVG_XXX */

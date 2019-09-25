@@ -49,7 +49,7 @@ use crate::dpx_fontmap::{
     pdf_remove_fontmap_record,
 };
 use crate::dpx_mem::new;
-use crate::dpx_mfileio::work_buffer;
+use crate::dpx_mfileio::work_buffer_u8 as work_buffer;
 use crate::dpx_pdfcolor::{
     pdf_color_copycolor, pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set,
 };
@@ -62,10 +62,10 @@ use crate::dpx_pdfdev::{
 };
 use crate::dpx_pdfdoc::{
     pdf_doc_add_annot, pdf_doc_add_bead, pdf_doc_add_names, pdf_doc_add_page_content,
-    pdf_doc_begin_article, pdf_doc_begin_grabbing, pdf_doc_bookmarks_add, pdf_doc_bookmarks_depth,
-    pdf_doc_bookmarks_down, pdf_doc_bookmarks_up, pdf_doc_current_page_number,
-    pdf_doc_end_grabbing, pdf_doc_get_dictionary, pdf_doc_set_bgcolor, pdf_doc_set_bop_content,
-    pdf_doc_set_eop_content,
+    pdf_doc_add_page_content_ptr, pdf_doc_begin_article, pdf_doc_begin_grabbing,
+    pdf_doc_bookmarks_add, pdf_doc_bookmarks_depth, pdf_doc_bookmarks_down, pdf_doc_bookmarks_up,
+    pdf_doc_current_page_number, pdf_doc_end_grabbing, pdf_doc_get_dictionary, pdf_doc_set_bgcolor,
+    pdf_doc_set_bop_content, pdf_doc_set_eop_content,
 };
 use crate::dpx_pdfdraw::{pdf_dev_concat, pdf_dev_grestore, pdf_dev_gsave, pdf_dev_transform};
 use crate::dpx_pdfobj::{
@@ -1483,26 +1483,26 @@ unsafe extern "C" fn spc_handler_pdfm_content(
             e: (*spe).x_user,
             f: (*spe).y_user,
         };
-        work_buffer[len] = b' ' as i8;
+        work_buffer[len] = b' ';
         len += 1;
-        work_buffer[len] = b'q' as i8;
+        work_buffer[len] = b'q';
         len += 1;
-        work_buffer[len] = b' ' as i8;
+        work_buffer[len] = b' ';
         len += 1;
         len += pdf_sprint_matrix(&mut work_buffer[len..], &mut M) as usize;
-        work_buffer[len] = b' ' as i8;
+        work_buffer[len] = b' ';
         len += 1;
-        work_buffer[len] = b'c' as i8;
+        work_buffer[len] = b'c';
         len += 1;
-        work_buffer[len] = b'm' as i8;
+        work_buffer[len] = b'm';
         len += 1;
-        work_buffer[len] = b' ' as i8;
+        work_buffer[len] = b' ';
         len += 1;
         /* op: Q */
-        pdf_doc_add_page_content(work_buffer.as_mut_ptr(), len as u32); /* op: q cm */
+        pdf_doc_add_page_content(&work_buffer[..len]); /* op: q cm */
         len = (*args).endptr.wrapping_offset_from((*args).curptr) as usize; /* op: ANY */
-        pdf_doc_add_page_content((*args).curptr, len as u32); /* op: */
-        pdf_doc_add_page_content(b" Q\x00" as *const u8 as *const i8, 2_u32);
+        pdf_doc_add_page_content_ptr((*args).curptr, len as u32); /* op: */
+        pdf_doc_add_page_content(b" Q");
         /* op: ANY */
     } /* op: */
     (*args).curptr = (*args).endptr; /* op: ANY */
@@ -1543,8 +1543,8 @@ unsafe extern "C" fn spc_handler_pdfm_literal(
             M.f = (*spe).y_user;
             pdf_dev_concat(&mut M);
         }
-        pdf_doc_add_page_content(b" \x00" as *const u8 as *const i8, 1_u32);
-        pdf_doc_add_page_content(
+        pdf_doc_add_page_content(b" ");
+        pdf_doc_add_page_content_ptr(
             (*args).curptr,
             (*args).endptr.wrapping_offset_from((*args).curptr) as i64 as i32 as u32,
         );
@@ -1589,8 +1589,8 @@ unsafe extern "C" fn spc_handler_pdfm_econtent(
 unsafe extern "C" fn spc_handler_pdfm_code(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
-        pdf_doc_add_page_content(b" \x00" as *const u8 as *const i8, 1_u32);
-        pdf_doc_add_page_content(
+        pdf_doc_add_page_content(b" ");
+        pdf_doc_add_page_content_ptr(
             (*args).curptr,
             (*args).endptr.wrapping_offset_from((*args).curptr) as i64 as i32 as u32,
         );
@@ -1686,7 +1686,7 @@ unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
             loop {
                 nb_read = ttstub_input_read(
                     handle as rust_input_handle_t,
-                    work_buffer.as_mut_ptr(),
+                    work_buffer.as_mut_ptr() as *mut i8,
                     1024i32 as size_t,
                 );
                 if !(nb_read > 0i32 as i64) {

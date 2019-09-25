@@ -220,7 +220,7 @@ impl PeType {
     }
 }
 
-static mut fmt_buf: [i8; 1024] = [0; 1024];
+static mut fmt_buf: [u8; 1024] = [0; 1024];
 
 fn clear_a_path(p: &mut pdf_path) {
     p.path = vec![];
@@ -562,14 +562,14 @@ unsafe extern "C" fn INVERTIBLE_MATRIX(M: &pdf_tmatrix) -> i32 {
  *  various drawing styles, which might inherite
  *  current graphcs state parameter.
  */
-unsafe extern "C" fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, opchr: i8) -> i32 {
+unsafe extern "C" fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, opchr: u8) -> i32 {
     let buf = &mut fmt_buf;
     let mut len = 0;
     let mut isclip: i32 = 0i32;
     let mut wd: f64 = 0.;
     let mut ht: f64 = 0.;
     assert!(b"fFsSbBW ".contains(&(opchr as u8)));
-    isclip = if opchr == b'W' as i8 || opchr == b' ' as i8 {
+    isclip = if opchr == b'W' || opchr == b' ' {
         1i32
     } else {
         0i32
@@ -582,74 +582,74 @@ unsafe extern "C" fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, o
         return -1i32;
     } /* op: q cm n re Q */
     graphics_mode();
-    buf[len] = b' ' as i8;
+    buf[len] = b' ';
     len += 1;
     if isclip == 0 {
-        buf[len] = b'q' as i8;
+        buf[len] = b'q';
         len += 1;
         if let Some(m) = M {
-            buf[len] = b' ' as i8;
+            buf[len] = b' ';
             len += 1;
-            len += pdf_sprint_matrix(&mut buf[len..], m) as usize;
-            buf[len] = b' ' as i8;
+            len += pdf_sprint_matrix(&mut buf[len..], m);
+            buf[len] = b' ';
             len += 1;
-            buf[len] = b'c' as i8;
+            buf[len] = b'c';
             len += 1;
-            buf[len] = b'm' as i8;
+            buf[len] = b'm';
             len += 1;
         }
-        buf[len] = b' ' as i8;
+        buf[len] = b' ';
         len += 1;
     }
-    buf[len] = b'n' as i8;
+    buf[len] = b'n';
     len += 1;
     let p = pdf_coord::new(r.llx, r.lly);
     wd = r.urx - r.llx;
     ht = r.ury - r.lly;
-    buf[len] = b' ' as i8;
+    buf[len] = b' ';
     len += 1;
-    len += pdf_sprint_coord(buf[len..].as_mut_ptr(), &p) as usize;
-    buf[len] = b' ' as i8;
+    len += pdf_sprint_coord(&mut buf[len..], &p);
+    buf[len] = b' ';
     len += 1;
-    len += pdf_sprint_length(buf[len..].as_mut_ptr(), wd) as usize;
-    buf[len] = b' ' as i8;
+    len += pdf_sprint_length(&mut buf[len..], wd);
+    buf[len] = b' ';
     len += 1;
-    len += pdf_sprint_length(buf[len..].as_mut_ptr(), ht) as usize;
-    buf[len] = b' ' as i8;
+    len += pdf_sprint_length(&mut buf[len..], ht);
+    buf[len] = b' ';
     len += 1;
-    buf[len] = b'r' as i8;
+    buf[len] = b'r';
     len += 1;
-    buf[len] = b'e' as i8;
+    buf[len] = b'e';
     len += 1;
-    if opchr != b' ' as i8 {
-        buf[len] = b' ' as i8;
+    if opchr != b' ' {
+        buf[len] = b' ';
         len += 1;
         buf[len] = opchr;
         len += 1;
-        buf[len] = b' ' as i8;
+        buf[len] = b' ';
         len += 1;
-        buf[len] = (if isclip != 0 { b'n' } else { b'Q' }) as i8;
+        buf[len] = if isclip != 0 { b'n' } else { b'Q' };
         len += 1;
     }
-    pdf_doc_add_page_content(buf.as_mut_ptr(), len as u32);
+    pdf_doc_add_page_content(&buf[..len]);
     0i32
 }
 static mut path_added: i32 = 0i32;
 /* FIXME */
 unsafe extern "C" fn pdf_dev__flushpath(
     pa: &mut pdf_path,
-    mut opchr: i8,
+    mut opchr: u8,
     mut rule: i32,
     mut ignore_rule: i32,
 ) -> i32 {
-    let mut b: *mut i8 = fmt_buf.as_mut_ptr(); /* height... */
-    let mut b_len: i32 = 1024i32; /* op: re */
+    let mut b = &mut fmt_buf; /* height... */
+    let mut b_len = 1024; /* op: re */
     let mut r = pdf_rect::new(); /* op: m l c v y h */
     let mut n_seg: i32 = 0; /* default to 1 in PDF */
-    let mut len: i32 = 0i32;
+    let mut len = 0_usize;
     let mut isrect: i32 = 0;
-    assert!(b"fFsSbBW ".contains(&(opchr as u8)));
-    let isclip = if opchr == b'W' as i8 { true } else { false };
+    assert!(b"fFsSbBW ".contains(&opchr));
+    let isclip = if opchr == b'W' { true } else { false };
     if
     /*pa.num_paths <= 0_u32 &&*/
     path_added == 0i32 {
@@ -665,21 +665,17 @@ unsafe extern "C" fn pdf_dev__flushpath(
         r.lly = pe.p[0].y;
         r.urx = pe1.p[0].x - pe.p[0].x;
         r.ury = pe1.p[0].y - pe.p[0].y;
-        let fresh28 = len;
-        len = len + 1;
-        *b.offset(fresh28 as isize) = ' ' as i32 as i8;
-        len += pdf_sprint_rect(b.offset(len as isize), &r);
-        let fresh29 = len;
-        len = len + 1;
-        *b.offset(fresh29 as isize) = ' ' as i32 as i8;
-        let fresh30 = len;
-        len = len + 1;
-        *b.offset(fresh30 as isize) = 'r' as i32 as i8;
-        let fresh31 = len;
-        len = len + 1;
-        *b.offset(fresh31 as isize) = 'e' as i32 as i8;
-        pdf_doc_add_page_content(b, len as u32);
-        len = 0i32
+        b[len] = b' ';
+        len += 1;
+        len += pdf_sprint_rect(&mut b[len..], &r);
+        b[len] = b' ';
+        len += 1;
+        b[len] = b'r';
+        len += 1;
+        b[len] = b'e';
+        len += 1;
+        pdf_doc_add_page_content(&b[..len]);
+        len = 0;
     } else {
         for pe in pa.path.iter_mut() {
             /* op: f F s S b B W f* F* s* S* b* B* W* */
@@ -690,53 +686,45 @@ unsafe extern "C" fn pdf_dev__flushpath(
             };
             for (_j, pt) in (0..n_pts).zip(pe.p.iter_mut()) {
                 /* op: m l c v y h */
-                let fresh32 = len;
-                len = len + 1;
-                *b.offset(fresh32 as isize) = ' ' as i32 as i8;
-                len += pdf_sprint_coord(b.offset(len as isize), &mut *pt);
+                b[len] = b' ';
+                len += 1;
+                len += pdf_sprint_coord(&mut b[len..], &mut *pt);
             }
-            let fresh33 = len;
-            len = len + 1;
-            *b.offset(fresh33 as isize) = ' ' as i32 as i8;
-            let fresh34 = len;
-            len = len + 1;
-            *b.offset(fresh34 as isize) = if
+            b[len] = b' ';
+            len += 1;
+            b[len] = if
             /* !pe.is_null() &&*/
             pe.typ != PeType::TERMINATE {
-                pe.typ.opchr()
+                pe.typ.opchr() as u8
             } else {
-                b' ' as i8
+                b' '
             };
-            if len + 128i32 > b_len {
-                pdf_doc_add_page_content(b, len as u32);
-                len = 0i32
+            len += 1;
+            if len + 128 > b_len {
+                pdf_doc_add_page_content(&b[..len]);
+                len = 0
             }
         }
-        if len > 0i32 {
-            pdf_doc_add_page_content(b, len as u32);
-            len = 0i32
+        if len > 0 {
+            pdf_doc_add_page_content(&b[..len]);
+            len = 0;
         }
     }
-    let fresh35 = len;
-    len = len + 1;
-    *b.offset(fresh35 as isize) = ' ' as i32 as i8;
-    let fresh36 = len;
-    len = len + 1;
-    *b.offset(fresh36 as isize) = opchr;
+    b[len] = b' ';
+    len += 1;
+    b[len] = opchr;
+    len += 1;
     if rule == 1i32 {
-        let fresh37 = len;
-        len = len + 1;
-        *b.offset(fresh37 as isize) = '*' as i32 as i8
+        b[len] = b'*';
+        len += 1;
     }
     if isclip {
-        let fresh38 = len;
-        len = len + 1;
-        *b.offset(fresh38 as isize) = ' ' as i32 as i8;
-        let fresh39 = len;
-        len = len + 1;
-        *b.offset(fresh39 as isize) = 'n' as i32 as i8
+        b[len] = b' ';
+        len += 1;
+        b[len] = b'n';
+        len += 1;
     }
-    pdf_doc_add_page_content(b, len as u32);
+    pdf_doc_add_page_content(&b[..len]);
     0i32
 }
 
@@ -782,8 +770,8 @@ unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
      */
     gs1.path = gs2.path.clone(); /* Initial state */
     gs1.linedash.num_dash = gs2.linedash.num_dash;
-    for i in 0..gs2.linedash.num_dash {
-        gs1.linedash.pattern[i as usize] = gs2.linedash.pattern[i as usize];
+    for i in 0..gs2.linedash.num_dash as usize {
+        gs1.linedash.pattern[i] = gs2.linedash.pattern[i];
     }
     gs1.linedash.offset = gs2.linedash.offset;
     gs1.linecap = gs2.linecap;
@@ -822,7 +810,7 @@ pub unsafe extern "C" fn pdf_dev_gsave() -> i32 {
     copy_a_gstate(&mut gs1, gs0);
     stack.push(gs1);
 
-    pdf_doc_add_page_content(b" q\x00" as *const u8 as *const i8, 2_u32);
+    pdf_doc_add_page_content(b" q");
     0i32
 }
 #[no_mangle]
@@ -834,7 +822,7 @@ pub unsafe extern "C" fn pdf_dev_grestore() -> i32 {
         return -1i32;
     }
     let _gs = stack.pop();
-    pdf_doc_add_page_content(b" Q\x00" as *const u8 as *const i8, 2_u32);
+    pdf_doc_add_page_content(b" Q");
     pdf_dev_reset_fonts(0i32);
     0i32
 }
@@ -872,7 +860,7 @@ pub unsafe extern "C" fn pdf_dev_grestore_to(mut depth: usize) {
         warn!("Closing pending transformations at end of page/XObject.");
     }
     while gss.len() > depth + 1 {
-        pdf_doc_add_page_content(b" Q\x00" as *const u8 as *const i8, 2_u32);
+        pdf_doc_add_page_content(b" Q");
         let _gs = gss.pop();
     }
     pdf_dev_reset_fonts(0i32);
@@ -900,7 +888,6 @@ pub unsafe extern "C" fn pdf_dev_currentmatrix(M: &mut pdf_tmatrix) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut force: i32) {
     let mut stack = unsafe { &mut gs_stack };
-    let mut len: i32 = 0;
     let mut gs = stack.top();
     let current = if mask as i32 != 0 {
         &mut gs.fillcolor
@@ -915,32 +902,27 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
         return;
     } /* op: RG K G rg k g etc. */
     graphics_mode(); /* Init to avoid compiler warning */
-    len = pdf_color_to_string(color, fmt_buf.as_mut_ptr(), mask);
-    let fresh40 = len;
-    len = len + 1;
-    fmt_buf[fresh40 as usize] = ' ' as i32 as i8;
+    let mut len = pdf_color_to_string(color, fmt_buf.as_mut_ptr(), mask);
+    fmt_buf[len] = b' ';
+    len += 1;
     match pdf_color_type(color) {
         -3 => {
-            let fresh41 = len;
-            len = len + 1;
-            fmt_buf[fresh41 as usize] = ('R' as i32 | mask as i32) as i8;
-            let fresh42 = len;
-            len = len + 1;
-            fmt_buf[fresh42 as usize] = ('G' as i32 | mask as i32) as i8
+            fmt_buf[len] = b'R' | mask as u8;
+            len += 1;
+            fmt_buf[len] = b'G' | mask as u8;
+            len += 1;
         }
         -4 => {
-            let fresh43 = len;
-            len = len + 1;
-            fmt_buf[fresh43 as usize] = ('K' as i32 | mask as i32) as i8
+            fmt_buf[len] = b'K' | mask as u8;
+            len += 1;
         }
         -1 => {
-            let fresh44 = len;
-            len = len + 1;
-            fmt_buf[fresh44 as usize] = ('G' as i32 | mask as i32) as i8
+            fmt_buf[len] = b'G' | mask as u8;
+            len += 1;
         }
         _ => {}
     }
-    pdf_doc_add_page_content(fmt_buf.as_mut_ptr(), len as u32);
+    pdf_doc_add_page_content(&fmt_buf[..len]);
     pdf_color_copycolor(current, color);
 }
 #[no_mangle]
@@ -968,16 +950,16 @@ pub unsafe extern "C" fn pdf_dev_concat(M: &pdf_tmatrix) -> i32 {
         || M.e.abs() > 2.5e-16f64
         || M.f.abs() > 2.5e-16f64
     {
-        buf[len] = b' ' as i8;
+        buf[len] = b' ';
         len += 1;
-        len += pdf_sprint_matrix(&mut buf[len..], M) as usize;
-        buf[len] = b' ' as i8;
+        len += pdf_sprint_matrix(&mut buf[len..], M);
+        buf[len] = b' ';
         len += 1;
-        buf[len] = b'c' as i8;
+        buf[len] = b'c';
         len += 1;
-        buf[len] = b'm' as i8;
+        buf[len] = b'm';
         len += 1;
-        pdf_doc_add_page_content(buf.as_mut_ptr(), len as u32);
+        pdf_doc_add_page_content(&buf[..len]);
         let pdf_tmatrix {
             a: _tmp_a,
             b: _tmp_b,
@@ -1011,20 +993,18 @@ pub unsafe extern "C" fn pdf_dev_concat(M: &pdf_tmatrix) -> i32 {
 pub unsafe extern "C" fn pdf_dev_setmiterlimit(mut mlimit: f64) -> i32 {
     let mut gss = unsafe { &mut gs_stack }; /* op: M */
     let gs = gss.top(); /* op: J */
-    let mut len: i32 = 0i32; /* op: j */
-    let mut buf: *mut i8 = fmt_buf.as_mut_ptr(); /* op: w */
+    let mut len = 0_usize; /* op: j */
+    let mut buf = &mut fmt_buf; /* op: w */
     if gs.miterlimit != mlimit {
-        let fresh49 = len; /* op: */
-        len = len + 1; /* op: */
-        *buf.offset(fresh49 as isize) = ' ' as i32 as i8; /* op: */
-        len += pdf_sprint_length(buf.offset(len as isize), mlimit); /* op: */
-        let fresh50 = len; /* op: d */
-        len = len + 1;
-        *buf.offset(fresh50 as isize) = ' ' as i32 as i8;
-        let fresh51 = len;
-        len = len + 1;
-        *buf.offset(fresh51 as isize) = 'M' as i32 as i8;
-        pdf_doc_add_page_content(buf, len as u32);
+        buf[len] = b' '; /* op: */
+        len += 1;
+        len += pdf_sprint_length(&mut buf[len..], mlimit); /* op: */
+        /* op: d */
+        buf[len] = b' ';
+        len += 1;
+        buf[len] = b'M';
+        len += 1;
+        pdf_doc_add_page_content(&buf[..len]);
         gs.miterlimit = mlimit
     }
     0i32
@@ -1033,11 +1013,14 @@ pub unsafe extern "C" fn pdf_dev_setmiterlimit(mut mlimit: f64) -> i32 {
 pub unsafe extern "C" fn pdf_dev_setlinecap(mut capstyle: i32) -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
-    let mut len: i32 = 0i32;
-    let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
+    let mut buf = &mut fmt_buf;
     if gs.linecap != capstyle {
-        len = sprintf(buf, b" %d J\x00" as *const u8 as *const i8, capstyle);
-        pdf_doc_add_page_content(buf, len as u32);
+        let len = sprintf(
+            buf.as_mut_ptr() as *mut i8,
+            b" %d J\x00" as *const u8 as *const i8,
+            capstyle,
+        ) as usize;
+        pdf_doc_add_page_content(&buf[..len]);
         gs.linecap = capstyle
     }
     0i32
@@ -1046,11 +1029,14 @@ pub unsafe extern "C" fn pdf_dev_setlinecap(mut capstyle: i32) -> i32 {
 pub unsafe extern "C" fn pdf_dev_setlinejoin(mut joinstyle: i32) -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
-    let mut len: i32 = 0i32;
-    let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
+    let mut buf = &mut fmt_buf;
     if gs.linejoin != joinstyle {
-        len = sprintf(buf, b" %d j\x00" as *const u8 as *const i8, joinstyle);
-        pdf_doc_add_page_content(buf, len as u32);
+        let len = sprintf(
+            buf.as_mut_ptr() as *mut i8,
+            b" %d j\x00" as *const u8 as *const i8,
+            joinstyle,
+        ) as usize;
+        pdf_doc_add_page_content(&buf[..len]);
         gs.linejoin = joinstyle
     }
     0i32
@@ -1059,47 +1045,40 @@ pub unsafe extern "C" fn pdf_dev_setlinejoin(mut joinstyle: i32) -> i32 {
 pub unsafe extern "C" fn pdf_dev_setlinewidth(mut width: f64) -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
-    let mut len: i32 = 0i32;
-    let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
+    let mut len = 0_usize;
+    let mut buf = &mut fmt_buf;
     if gs.linewidth != width {
-        let fresh52 = len;
-        len = len + 1;
-        *buf.offset(fresh52 as isize) = ' ' as i32 as i8;
-        len += pdf_sprint_length(buf.offset(len as isize), width);
-        let fresh53 = len;
-        len = len + 1;
-        *buf.offset(fresh53 as isize) = ' ' as i32 as i8;
-        let fresh54 = len;
-        len = len + 1;
-        *buf.offset(fresh54 as isize) = 'w' as i32 as i8;
-        pdf_doc_add_page_content(buf, len as u32);
+        buf[len] = b' ';
+        len += 1;
+        len += pdf_sprint_length(&mut buf[len..], width);
+        buf[len] = b' ';
+        len += 1;
+        buf[len] = b'w';
+        len += 1;
+        pdf_doc_add_page_content(&buf[..len]);
         gs.linewidth = width
     }
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn pdf_dev_setdash(
-    mut count: i32,
-    mut pattern: *mut f64,
-    mut offset: f64,
-) -> i32 {
+pub unsafe extern "C" fn pdf_dev_setdash(pattern: &[f64], mut offset: f64) -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
-    let mut len: i32 = 0i32;
-    let mut buf: *mut i8 = fmt_buf.as_mut_ptr();
-    gs.linedash.num_dash = count;
+    let mut buf = &mut fmt_buf;
+    let count = pattern.len();
+    gs.linedash.num_dash = count as i32;
     gs.linedash.offset = offset;
-    pdf_doc_add_page_content(b" [\x00" as *const u8 as *const i8, 2_u32);
+    pdf_doc_add_page_content(b" [");
     for i in 0..count {
-        *buf.offset(0) = ' ' as i32 as i8;
-        len = pdf_sprint_length(buf.offset(1), *pattern.offset(i as isize));
-        pdf_doc_add_page_content(buf, (len + 1i32) as u32);
-        gs.linedash.pattern[i as usize] = *pattern.offset(i as isize);
+        buf[0] = b' ';
+        let len = pdf_sprint_length(&mut buf[1..], pattern[i]);
+        pdf_doc_add_page_content(&buf[..len + 1]);
+        gs.linedash.pattern[i] = pattern[i];
     }
-    pdf_doc_add_page_content(b"] \x00" as *const u8 as *const i8, 2_u32);
-    len = pdf_sprint_length(buf, offset);
-    pdf_doc_add_page_content(buf, len as u32);
-    pdf_doc_add_page_content(b" d\x00" as *const u8 as *const i8, 2_u32);
+    pdf_doc_add_page_content(b"] ");
+    let len = pdf_sprint_length(&mut buf[..], offset);
+    pdf_doc_add_page_content(&buf[..len]);
+    pdf_doc_add_page_content(b" d");
     0i32
 }
 /* ZSYUEDVEDEOF */
@@ -1108,17 +1087,17 @@ pub unsafe extern "C" fn pdf_dev_clip() -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
-    pdf_dev__flushpath(cpa, 'W' as i32 as i8, 0i32, 0i32)
+    pdf_dev__flushpath(cpa, b'W', 0, 0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_eoclip() -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
-    pdf_dev__flushpath(cpa, 'W' as i32 as i8, 1i32, 0i32)
+    pdf_dev__flushpath(cpa, b'W', 1, 0)
 }
 #[no_mangle]
-pub unsafe extern "C" fn pdf_dev_flushpath(mut p_op: i8, mut fill_rule: i32) -> i32 {
+pub unsafe extern "C" fn pdf_dev_flushpath(mut p_op: u8, mut fill_rule: i32) -> i32 {
     let mut gss = unsafe { &mut gs_stack };
     let gs = gss.top();
     let cpa = &mut gs.path;
@@ -1141,7 +1120,7 @@ pub unsafe extern "C" fn pdf_dev_newpath() -> i32 {
         p.path.clear();
     }
     /* The following is required for "newpath" operator in mpost.c. */
-    pdf_doc_add_page_content(b" n\x00" as *const u8 as *const i8, 2_u32); /* op: n */
+    pdf_doc_add_page_content(b" n"); /* op: n */
     0i32
 }
 #[no_mangle]
@@ -1351,7 +1330,7 @@ pub unsafe extern "C" fn pdf_dev_rectfill(x: f64, y: f64, w: f64, h: f64) -> i32
         urx: x + w,
         ury: y + h,
     };
-    pdf_dev__rectshape(&mut r, None, 'f' as i32 as i8)
+    pdf_dev__rectshape(&mut r, None, b'f')
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_rectclip(x: f64, y: f64, w: f64, h: f64) -> i32 {
@@ -1361,7 +1340,7 @@ pub unsafe extern "C" fn pdf_dev_rectclip(x: f64, y: f64, w: f64, h: f64) -> i32
         urx: x + w,
         ury: y + h,
     };
-    pdf_dev__rectshape(&mut r, None, 'W' as i32 as i8)
+    pdf_dev__rectshape(&mut r, None, b'W')
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_rectadd(x: f64, y: f64, w: f64, h: f64) -> i32 {
@@ -1372,7 +1351,7 @@ pub unsafe extern "C" fn pdf_dev_rectadd(x: f64, y: f64, w: f64, h: f64) -> i32 
         ury: y + h,
     };
     path_added = 1i32;
-    pdf_dev__rectshape(&mut r, None, ' ' as i32 as i8)
+    pdf_dev__rectshape(&mut r, None, b' ')
 }
 #[no_mangle]
 pub extern "C" fn pdf_dev_set_fixed_point(mut x: f64, mut y: f64) {

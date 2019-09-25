@@ -145,12 +145,12 @@ unsafe extern "C" fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
     pdf_dev_setlinewidth(pn);
     if da > 0.0f64 {
         dp[0] = da * 72.0f64;
-        pdf_dev_setdash(1i32, dp.as_mut_ptr(), 0i32 as f64);
+        pdf_dev_setdash(&dp[..1], 0i32 as f64);
         pdf_dev_setlinecap(0i32);
     } else if da < 0.0f64 {
         dp[0] = pn;
         dp[1] = -da * 72.0f64;
-        pdf_dev_setdash(2i32, dp.as_mut_ptr(), 0i32 as f64);
+        pdf_dev_setdash(&dp[..], 0i32 as f64);
         pdf_dev_setlinecap(1i32);
     } else {
         pdf_dev_setlinecap(0i32);
@@ -160,9 +160,7 @@ unsafe extern "C" fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
 unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i32 {
     let mut dict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut resname: [u8; 32] = [0; 32];
-    let mut buf: [i8; 38] = [0; 38];
     let mut alp: i32 = 0;
-    let mut len: i32 = 0i32;
     if a > 0.0f64 {
         alp = (100.0f64 * a).round() as i32;
         sprintf(
@@ -189,12 +187,13 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
             );
             pdf_release_obj(dict);
         }
-        len += sprintf(
-            buf.as_mut_ptr().offset(len as isize),
+        let mut buf: [u8; 38] = [0; 38];
+        let len = sprintf(
+            buf.as_mut_ptr() as *mut i8,
             b" /%s gs\x00" as *const u8 as *const i8,
             resname.as_ptr() as *const i8,
-        );
-        pdf_doc_add_page_content(buf.as_mut_ptr(), len as u32);
+        ) as usize;
+        pdf_doc_add_page_content(&buf[..len]);
         /* op: gs */
     } /* get stroking and fill colors */
     let mut new_fc: pdf_color = pdf_color {
@@ -247,12 +246,12 @@ unsafe extern "C" fn showpath(mut f_vp: bool, mut f_fs: bool)
 {
     if f_vp {
         if f_fs {
-            pdf_dev_flushpath('b' as i32 as i8, 0i32);
+            pdf_dev_flushpath(b'b', 0);
         } else {
-            pdf_dev_flushpath('S' as i32 as i8, 0i32);
+            pdf_dev_flushpath(b'S', 0);
         }
     } else if f_fs {
-        pdf_dev_flushpath('f' as i32 as i8, 0i32);
+        pdf_dev_flushpath(b'f', 0);
     } else {
         pdf_dev_newpath();
     };
