@@ -37,6 +37,7 @@ use crate::warn;
 
 use super::dpx_mem::new;
 use super::dpx_sfnt::{sfnt_find_table_len, sfnt_find_table_pos, sfnt_locate_table};
+use crate::dpx_truetype::sfnt_table_info;
 use crate::{ttstub_input_read, ttstub_input_seek};
 
 pub type __ssize_t = i64;
@@ -257,7 +258,7 @@ pub unsafe extern "C" fn tt_read_head_table(mut sfont: *mut sfnt) -> *mut tt_hea
     let mut table: *mut tt_head_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_head_table>() as u64)
         as u32) as *mut tt_head_table;
-    sfnt_locate_table(sfont, b"head\x00" as *const u8 as *const i8);
+    sfnt_locate_table(sfont, sfnt_table_info::HEAD);
     (*table).version = tt_get_unsigned_quad((*sfont).handle);
     (*table).fontRevision = tt_get_unsigned_quad((*sfont).handle);
     (*table).checkSumAdjustment = tt_get_unsigned_quad((*sfont).handle);
@@ -347,7 +348,7 @@ pub unsafe extern "C" fn tt_read_maxp_table(mut sfont: *mut sfnt) -> *mut tt_max
     let mut table: *mut tt_maxp_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_maxp_table>() as u64)
         as u32) as *mut tt_maxp_table;
-    sfnt_locate_table(sfont, b"maxp\x00" as *const u8 as *const i8);
+    sfnt_locate_table(sfont, sfnt_table_info::MAXP);
     (*table).version = tt_get_unsigned_quad((*sfont).handle);
     (*table).numGlyphs = tt_get_unsigned_pair((*sfont).handle);
     (*table).maxPoints = tt_get_unsigned_pair((*sfont).handle);
@@ -423,7 +424,7 @@ pub unsafe extern "C" fn tt_read_hhea_table(mut sfont: *mut sfnt) -> *mut tt_hhe
     let mut table: *mut tt_hhea_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_hhea_table>() as u64)
         as u32) as *mut tt_hhea_table;
-    sfnt_locate_table(sfont, b"hhea\x00" as *const u8 as *const i8);
+    sfnt_locate_table(sfont, sfnt_table_info::HHEA);
     (*table).version = tt_get_unsigned_quad((*sfont).handle);
     (*table).ascent = tt_get_signed_pair((*sfont).handle);
     (*table).descent = tt_get_signed_pair((*sfont).handle);
@@ -443,7 +444,7 @@ pub unsafe extern "C" fn tt_read_hhea_table(mut sfont: *mut sfnt) -> *mut tt_hhe
         panic!("unknown metricDataFormat");
     }
     (*table).numOfLongHorMetrics = tt_get_unsigned_pair((*sfont).handle);
-    len = sfnt_find_table_len(sfont, b"hmtx\x00" as *const u8 as *const i8);
+    len = sfnt_find_table_len(sfont, sfnt_table_info::HMTX);
     (*table).numOfExSideBearings = len
         .wrapping_sub(((*table).numOfLongHorMetrics as i32 * 4i32) as u32)
         .wrapping_div(2_u32) as u16;
@@ -456,7 +457,7 @@ pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhe
     let mut table: *mut tt_vhea_table = new((1_u64)
         .wrapping_mul(::std::mem::size_of::<tt_vhea_table>() as u64)
         as u32) as *mut tt_vhea_table;
-    sfnt_locate_table(sfont, b"vhea\x00" as *const u8 as *const i8);
+    sfnt_locate_table(sfont, b"vhea");
     (*table).version = tt_get_unsigned_quad((*sfont).handle);
     (*table).vertTypoAscender = tt_get_signed_pair((*sfont).handle);
     (*table).vertTypoDescender = tt_get_signed_pair((*sfont).handle);
@@ -473,7 +474,7 @@ pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhe
     }
     (*table).metricDataFormat = tt_get_signed_pair((*sfont).handle);
     (*table).numOfLongVerMetrics = tt_get_unsigned_pair((*sfont).handle);
-    len = sfnt_find_table_len(sfont, b"vmtx\x00" as *const u8 as *const i8);
+    len = sfnt_find_table_len(sfont, b"vmtx");
     (*table).numOfExSideBearings = len
         .wrapping_sub(((*table).numOfLongVerMetrics as i32 * 4i32) as u32)
         .wrapping_div(2_u32) as u16;
@@ -483,11 +484,11 @@ pub unsafe extern "C" fn tt_read_vhea_table(mut sfont: *mut sfnt) -> *mut tt_vhe
 pub unsafe extern "C" fn tt_read_VORG_table(mut sfont: *mut sfnt) -> *mut tt_VORG_table {
     let mut vorg: *mut tt_VORG_table = 0 as *mut tt_VORG_table;
     let mut offset: u32 = 0;
-    offset = sfnt_find_table_pos(sfont, b"VORG\x00" as *const u8 as *const i8);
+    offset = sfnt_find_table_pos(sfont, b"VORG");
     if offset > 0_u32 {
         vorg = new((1_u64).wrapping_mul(::std::mem::size_of::<tt_VORG_table>() as u64) as u32)
             as *mut tt_VORG_table;
-        sfnt_locate_table(sfont, b"VORG\x00" as *const u8 as *const i8);
+        sfnt_locate_table(sfont, b"VORG");
         if tt_get_unsigned_pair((*sfont).handle) as i32 != 1i32
             || tt_get_unsigned_pair((*sfont).handle) as i32 != 0i32
         {
@@ -552,8 +553,8 @@ pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2
     let mut table: *mut tt_os2__table = 0 as *mut tt_os2__table;
     table = new((1_u64).wrapping_mul(::std::mem::size_of::<tt_os2__table>() as u64) as u32)
         as *mut tt_os2__table;
-    if sfnt_find_table_pos(sfont, b"OS/2\x00" as *const u8 as *const i8) > 0_u32 {
-        sfnt_locate_table(sfont, b"OS/2\x00" as *const u8 as *const i8);
+    if sfnt_find_table_pos(sfont, sfnt_table_info::OS_2) > 0_u32 {
+        sfnt_locate_table(sfont, sfnt_table_info::OS_2);
         (*table).version = tt_get_unsigned_pair((*sfont).handle);
         (*table).xAvgCharWidth = tt_get_signed_pair((*sfont).handle);
         (*table).usWeightClass = tt_get_unsigned_pair((*sfont).handle);
@@ -583,7 +584,7 @@ pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2
         (*table).fsSelection = tt_get_unsigned_pair((*sfont).handle);
         (*table).usFirstCharIndex = tt_get_unsigned_pair((*sfont).handle);
         (*table).usLastCharIndex = tt_get_unsigned_pair((*sfont).handle);
-        if sfnt_find_table_len(sfont, b"OS/2\x00" as *const u8 as *const i8) >= 78_u32 {
+        if sfnt_find_table_len(sfont, sfnt_table_info::OS_2) >= 78_u32 {
             /* these fields are not present in the original Apple spec (68-byte table),
             but Microsoft's version of "format 0" does include them... grr! */
             (*table).sTypoAscender = tt_get_signed_pair((*sfont).handle);
@@ -638,7 +639,7 @@ unsafe extern "C" fn tt_get_name(
     let mut string_offset: u16 = 0;
     let mut name_offset: u32 = 0;
     let mut i: i32 = 0;
-    name_offset = sfnt_locate_table(sfont, b"name\x00" as *const u8 as *const i8);
+    name_offset = sfnt_locate_table(sfont, sfnt_table_info::NAME);
     if tt_get_unsigned_pair((*sfont).handle) != 0 {
         panic!("Expecting zero");
     }

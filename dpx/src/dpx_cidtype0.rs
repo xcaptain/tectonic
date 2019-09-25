@@ -85,6 +85,7 @@ use crate::dpx_pdfobj::{
     pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj,
     pdf_ref_obj, pdf_release_obj, pdf_stream_dict,
 };
+use crate::dpx_truetype::sfnt_table_info;
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
 use libc::{free, memmove, memset, sprintf, strcat, strcmp, strcpy, strlen, strstr};
 
@@ -274,7 +275,7 @@ unsafe extern "C" fn add_CIDVMetrics(
      * No accurate vertical metrics can be obtained by simple way if the
      * font does not have VORG table. Only CJK fonts may have VORG.
      */
-    if sfnt_find_table_pos(sfont, b"VORG\x00" as *const u8 as *const i8) <= 0_u32 {
+    if sfnt_find_table_pos(sfont, b"VORG") <= 0_u32 {
         return;
     }
     vorg = tt_read_VORG_table(sfont);
@@ -284,12 +285,11 @@ unsafe extern "C" fn add_CIDVMetrics(
         + 0.5f64)
         .floor()
         * 1i32 as f64;
-    if sfnt_find_table_pos(sfont, b"vhea\x00" as *const u8 as *const i8) > 0_u32 {
+    if sfnt_find_table_pos(sfont, b"vhea") > 0_u32 {
         vhea = tt_read_vhea_table(sfont)
     }
-    if !vhea.is_null() && sfnt_find_table_pos(sfont, b"vmtx\x00" as *const u8 as *const i8) > 0_u32
-    {
-        sfnt_locate_table(sfont, b"vmtx\x00" as *const u8 as *const i8);
+    if !vhea.is_null() && sfnt_find_table_pos(sfont, b"vmtx") > 0_u32 {
+        sfnt_locate_table(sfont, b"vmtx");
         vmtx = tt_read_longMetrics(
             sfont,
             (*maxp).numGlyphs,
@@ -297,7 +297,7 @@ unsafe extern "C" fn add_CIDVMetrics(
             (*vhea).numOfExSideBearings,
         )
     }
-    if sfnt_find_table_pos(sfont, b"OS/2\x00" as *const u8 as *const i8) <= 0_u32 {
+    if sfnt_find_table_pos(sfont, sfnt_table_info::OS_2) <= 0_u32 {
         let mut os2: *mut tt_os2__table = 0 as *mut tt_os2__table;
         /* OpenType font must have OS/2 table. */
         os2 = tt_read_os2__table(sfont);
@@ -419,7 +419,7 @@ unsafe extern "C" fn add_CIDMetrics(
     head = tt_read_head_table(sfont);
     maxp = tt_read_maxp_table(sfont);
     hhea = tt_read_hhea_table(sfont);
-    sfnt_locate_table(sfont, b"hmtx\x00" as *const u8 as *const i8);
+    sfnt_locate_table(sfont, sfnt_table_info::HMTX);
     hmtx = tt_read_longMetrics(
         sfont,
         (*maxp).numGlyphs,
@@ -683,7 +683,7 @@ unsafe extern "C" fn CIDFont_type0_try_open(
     if (*(*info).sfont).type_0 != 1i32 << 4i32 && (*(*info).sfont).type_0 != 1i32 << 2i32
         || sfnt_read_table_directory((*info).sfont, offset) < 0i32
         || {
-            offset = sfnt_find_table_pos((*info).sfont, b"CFF \x00" as *const u8 as *const i8);
+            offset = sfnt_find_table_pos((*info).sfont, b"CFF ");
             offset == 0_u32
         }
     {
@@ -1049,7 +1049,7 @@ pub unsafe extern "C" fn CIDFont_type0_open(
         if (*sfont).type_0 != 1i32 << 4i32 && (*sfont).type_0 != 1i32 << 2i32
             || sfnt_read_table_directory(sfont, offset) < 0i32
             || {
-                offset = sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8);
+                offset = sfnt_find_table_pos(sfont, b"CFF ");
                 offset == 0_u32
             }
         {

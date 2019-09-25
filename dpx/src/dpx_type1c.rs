@@ -165,7 +165,7 @@ pub unsafe extern "C" fn pdf_font_open_type1c(mut font: *mut pdf_font) -> i32 {
     {
         panic!("Not a CFF/OpenType font (9)?");
     }
-    offset = sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8);
+    offset = sfnt_find_table_pos(sfont, b"CFF ");
     if offset < 1_u32 {
         panic!("No \"CFF \" table found; not a CFF/OpenType font (10)?");
     }
@@ -384,7 +384,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
         );
     }
     if (*sfont).type_0 != 1i32 << 2i32 || {
-        offset = sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8) as i32;
+        offset = sfnt_find_table_pos(sfont, b"CFF ") as i32;
         offset == 0i32
     } {
         panic!("Not a CFF/OpenType font (11)?");

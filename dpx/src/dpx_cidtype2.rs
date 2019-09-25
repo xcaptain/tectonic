@@ -36,6 +36,7 @@ use super::dpx_sfnt::{
     dfont_open, sfnt_close, sfnt_create_FontFile_stream, sfnt_find_table_pos, sfnt_open,
     sfnt_read_table_directory, sfnt_require_table,
 };
+use crate::dpx_truetype::SfntTableInfo;
 use crate::streq_ptr;
 use crate::{info, warn, FromBEByteSlice};
 
@@ -99,12 +100,6 @@ pub type CID = u16;
  *
  * The 'name' table added. See comments in ttf.c.
  */
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed_1 {
-    pub name: *const i8,
-    pub must_exist: i32,
-}
 
 use super::dpx_tt_glyf::tt_glyphs;
 
@@ -145,92 +140,23 @@ pub unsafe extern "C" fn CIDFont_type2_set_verbose(mut level: i32) {
 pub unsafe extern "C" fn CIDFont_type2_set_flags(mut flags: i32) {
     opt_flags = flags;
 }
-static mut required_table: [C2RustUnnamed_1; 12] = [
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"OS/2\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"head\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"hhea\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"loca\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"maxp\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"name\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"glyf\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"hmtx\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"fpgm\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"cvt \x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: b"prep\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        };
-        init
-    },
-    {
-        let mut init = C2RustUnnamed_1 {
-            name: 0 as *const i8,
-            must_exist: 0i32,
-        };
-        init
-    },
-];
+
+const required_table: [SfntTableInfo; 11] = {
+    use crate::dpx_truetype::sfnt_table_info::*;
+    [
+        SfntTableInfo::new(OS_2, false),
+        SfntTableInfo::new(HEAD, true),
+        SfntTableInfo::new(HHEA, true),
+        SfntTableInfo::new(LOCA, true),
+        SfntTableInfo::new(MAXP, true),
+        SfntTableInfo::new(NAME, true),
+        SfntTableInfo::new(GLYF, true),
+        SfntTableInfo::new(HMTX, true),
+        SfntTableInfo::new(FPGM, false),
+        SfntTableInfo::new(CVT, false),
+        SfntTableInfo::new(PREP, false),
+    ]
+};
 unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
     let mut i: i32 = 0;
     let mut count: i32 = 0;
@@ -1239,20 +1165,13 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
         return;
     }
     /* Create font file */
-    i = 0i32;
-    while !required_table[i as usize].name.is_null() {
-        if sfnt_require_table(
-            sfont,
-            required_table[i as usize].name,
-            required_table[i as usize].must_exist,
-        ) < 0i32
-        {
+    for table in &required_table {
+        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err() {
             panic!(
                 "Some required TrueType table ({}) does not exist.",
-                CStr::from_ptr(required_table[i as usize].name).display()
+                table.name_str()
             );
         }
-        i += 1
     }
     /*
      * FontFile2
@@ -1356,9 +1275,7 @@ pub unsafe extern "C" fn CIDFont_type2_open(
         panic!("Reading TrueType table directory failed.");
     }
     /* Ignore TrueType Collection with CFF table. */
-    if (*sfont).type_0 == 1i32 << 4i32
-        && sfnt_find_table_pos(sfont, b"CFF \x00" as *const u8 as *const i8) != 0
-    {
+    if (*sfont).type_0 == 1i32 << 4i32 && sfnt_find_table_pos(sfont, b"CFF ") != 0 {
         sfnt_close(sfont);
         if !handle.is_null() {
             ttstub_input_close(handle);

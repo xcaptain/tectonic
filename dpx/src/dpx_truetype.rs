@@ -80,25 +80,66 @@ use super::dpx_tt_post::tt_post_table;
 pub type FWord = i16;
 pub type Fixed = u32;
 use super::dpx_tt_cmap::tt_cmap;
-/*
- * The 'name' table should be preserved since it contains copyright
- * information, but it might cause problem when there are invalid
- * table entries (wrongly encoded text which is often the case in
- * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
- * fonts may have 10K bytes 'name' table...
- *
- * We preserve the 'OS/2' table too, since it contains the license
- * information. PDF applications should use this table to decide
- * whether the font is embedded only for the purpose of preview &
- * printing. Otherwise, we must encrypt the document. Acrobat does
- * not use 'OS/2' table, though...
- */
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct NameTable {
-    pub name: *const i8,
-    pub must_exist: i32,
+
+pub use sfnt_table_info::SfntTableInfo;
+
+/// Tag consts for SfntTableInfo.
+pub mod sfnt_table_info {
+    pub type Tag = &'static [u8; 4];
+
+    /*
+     * The 'name' table should be preserved since it contains copyright
+     * information, but it might cause problem when there are invalid
+     * table entries (wrongly encoded text which is often the case in
+     * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
+     * fonts may have 10K bytes 'name' table...
+     *
+     * We preserve the 'OS/2' table too, since it contains the license
+     * information. PDF applications should use this table to decide
+     * whether the font is embedded only for the purpose of preview &
+     * printing. Otherwise, we must encrypt the document. Acrobat does
+     * not use 'OS/2' table, though...
+     */
+    #[derive(Copy, Clone)]
+    pub struct SfntTableInfo {
+        name: Tag,
+        must_exist: bool,
+    }
+
+    impl SfntTableInfo {
+        pub const fn new(name: Tag, must_exist: bool) -> Self {
+            SfntTableInfo { name, must_exist }
+        }
+
+        pub const fn name(&self) -> Tag {
+            self.name
+        }
+
+        /// # Safety
+        /// This function assumes the name is valid utf8.
+        pub unsafe fn name_str(&self) -> &str {
+            &std::str::from_utf8_unchecked(self.name)
+        }
+
+        pub const fn must_exist(&self) -> bool {
+            self.must_exist
+        }
+    }
+
+    pub const OS_2: Tag = b"OS/2";
+    pub const HEAD: Tag = b"head";
+    pub const HHEA: Tag = b"hhea";
+    pub const LOCA: Tag = b"loca";
+    pub const MAXP: Tag = b"maxp";
+    pub const NAME: Tag = b"name";
+    pub const GLYF: Tag = b"glyf";
+    pub const HMTX: Tag = b"hmtx";
+    pub const FPGM: Tag = b"fpgm";
+    pub const CVT: Tag = b"cvt ";
+    pub const PREP: Tag = b"prep";
+    pub const CMAP: Tag = b"cmap";
 }
+
 use super::dpx_tt_glyf::tt_glyphs;
 
 /* Acoid conflict with CHAR ... from <winnt.h>.  */
@@ -250,86 +291,24 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     pdf_add_dict(fontdict, "Subtype", pdf_new_name("TrueType"));
     0i32
 }
-static mut required_table: [NameTable; 13] = [
-    {
-        NameTable {
-            name: b"OS/2\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"head\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"hhea\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"loca\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"maxp\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"name\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"glyf\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"hmtx\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"fpgm\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"cvt \x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"prep\x00" as *const u8 as *const i8,
-            must_exist: 0i32,
-        }
-    },
-    {
-        NameTable {
-            name: b"cmap\x00" as *const u8 as *const i8,
-            must_exist: 1i32,
-        }
-    },
-    {
-        NameTable {
-            name: 0 as *const i8,
-            must_exist: 0i32,
-        }
-    },
-];
+const required_table: [SfntTableInfo; 12] = {
+    use sfnt_table_info::*;
+    [
+        SfntTableInfo::new(OS_2, false),
+        SfntTableInfo::new(HEAD, false),
+        SfntTableInfo::new(HHEA, true),
+        SfntTableInfo::new(LOCA, true),
+        SfntTableInfo::new(MAXP, true),
+        SfntTableInfo::new(NAME, true),
+        SfntTableInfo::new(GLYF, true),
+        SfntTableInfo::new(HMTX, true),
+        SfntTableInfo::new(FPGM, false),
+        SfntTableInfo::new(CVT, false),
+        SfntTableInfo::new(PREP, false),
+        SfntTableInfo::new(CMAP, true),
+    ]
+};
+
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut tmparray: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -486,7 +465,7 @@ unsafe extern "C" fn do_builtin_encoding(
     tt_build_finish(glyphs);
     sfnt_set_table(
         sfont,
-        b"cmap\x00" as *const u8 as *const i8,
+        sfnt_table_info::CMAP,
         cmap_table as *mut libc::c_void,
         274_u32,
     );
@@ -1122,7 +1101,7 @@ unsafe extern "C" fn do_custom_encoding(
     tt_build_finish(glyphs);
     sfnt_set_table(
         sfont,
-        b"cmap\x00" as *const u8 as *const i8,
+        sfnt_table_info::CMAP,
         cmap_table as *mut libc::c_void,
         274_u32,
     );
@@ -1217,23 +1196,17 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     /*
      * TODO: post table?
      */
-    i = 0i32;
-    while !required_table[i as usize].name.is_null() {
-        if sfnt_require_table(
-            sfont,
-            required_table[i as usize].name,
-            required_table[i as usize].must_exist,
-        ) < 0i32
-        {
+
+    for table in &required_table {
+        if sfnt_require_table(sfont.as_mut().unwrap(), table).is_err() {
             sfnt_close(sfont);
             ttstub_input_close(handle as rust_input_handle_t);
             panic!(
                 "Required TrueType table \"{}\" does not exist in font: {}",
-                CStr::from_ptr(required_table[i as usize].name).display(),
+                table.name_str(),
                 CStr::from_ptr(ident).display(),
             );
         }
-        i += 1
     }
     /*
      * FontFile2

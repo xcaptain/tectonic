@@ -35,9 +35,10 @@ use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_add_stream, pdf_new_number, pdf_new_stream, pdf_obj, pdf_release_obj,
     pdf_stream_dict,
 };
+use crate::dpx_truetype::SfntTableInfo;
 use crate::mfree;
 use crate::{ttstub_input_read, ttstub_input_seek};
-use libc::{free, memcmp, memcpy};
+use libc::{free, memcpy};
 
 pub type __ssize_t = i64;
 pub type size_t = u64;
@@ -46,7 +47,7 @@ pub type rust_input_handle_t = *mut libc::c_void;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct sfnt_table {
-    pub tag: [i8; 4],
+    pub tag: [u8; 4],
     pub check_sum: u32,
     pub offset: u32,
     pub length: u32,
@@ -192,18 +193,17 @@ pub unsafe extern "C" fn put_big_endian(mut s: *mut libc::c_void, mut q: i32, mu
     }
     n
 }
+
 /* Convert four-byte number to big endianess
  * in a machine independent way.
  */
-unsafe extern "C" fn convert_tag(mut tag: *mut i8, mut u_tag: u32) {
-    let mut i: i32 = 0;
-    i = 3i32;
-    while i >= 0i32 {
-        *tag.offset(i as isize) = u_tag.wrapping_rem(256_u32) as i8;
-        u_tag = (u_tag as u32).wrapping_div(256_u32) as u32;
-        i -= 1
+unsafe extern "C" fn convert_tag(tag: &mut [u8; 4], mut u_tag: u32) {
+    for i in 3..=0 {
+        tag[i] = (u_tag % 256) as u8;
+        u_tag = u_tag / 256;
     }
 }
+
 /*
  * Computes the max power of 2 <= n
  */
@@ -242,29 +242,17 @@ unsafe extern "C" fn sfnt_calc_checksum(mut data: *mut libc::c_void, mut length:
     }
     chksum
 }
-unsafe extern "C" fn find_table_index(
-    mut td: *mut sfnt_table_directory,
-    mut tag: *const i8,
-) -> i32 {
-    if td.is_null() {
-        return -1i32;
-    }
-    for idx in 0..(*td).num_tables as i32 {
-        if memcmp(
-            (*(*td).tables.offset(idx as isize)).tag.as_mut_ptr() as *const libc::c_void,
-            tag as *const libc::c_void,
-            4,
-        ) == 0
-        {
-            return idx;
-        }
-    }
-    -1i32
+
+unsafe fn find_table_index(td: Option<&sfnt_table_directory>, tag: &[u8; 4]) -> i32 {
+    td.and_then(|td| (0..td.num_tables).find(|&idx| tag == &(*td.tables.offset(idx as isize)).tag))
+        .map(|idx| i32::from(idx))
+        .unwrap_or(-1)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn sfnt_set_table(
     mut sfont: *mut sfnt,
-    mut tag: *const i8,
+    mut tag: &[u8; 4],
     mut data: *mut libc::c_void,
     mut length: u32,
 ) {
@@ -272,7 +260,7 @@ pub unsafe extern "C" fn sfnt_set_table(
     let mut idx: i32 = 0;
     assert!(!sfont.is_null());
     td = (*sfont).directory;
-    idx = find_table_index(td, tag);
+    idx = find_table_index(td.as_ref(), tag);
     if idx < 0i32 {
         idx = (*td).num_tables as i32;
         (*td).num_tables = (*td).num_tables.wrapping_add(1);
@@ -281,11 +269,7 @@ pub unsafe extern "C" fn sfnt_set_table(
             ((*td).num_tables as u32 as u64)
                 .wrapping_mul(::std::mem::size_of::<sfnt_table>() as u64) as u32,
         ) as *mut sfnt_table;
-        memcpy(
-            (*(*td).tables.offset(idx as isize)).tag.as_mut_ptr() as *mut libc::c_void,
-            tag as *const libc::c_void,
-            4,
-        );
+        (*(*td).tables.offset(idx as isize)).tag = tag.clone();
     }
     (*(*td).tables.offset(idx as isize)).check_sum = sfnt_calc_checksum(data, length);
     (*(*td).tables.offset(idx as isize)).offset = 0i64 as u32;
@@ -294,13 +278,13 @@ pub unsafe extern "C" fn sfnt_set_table(
     *fresh0 = data as *mut i8;
 }
 #[no_mangle]
-pub unsafe extern "C" fn sfnt_find_table_len(mut sfont: *mut sfnt, mut tag: *const i8) -> u32 {
+pub unsafe extern "C" fn sfnt_find_table_len(mut sfont: *mut sfnt, tag: &[u8; 4]) -> u32 {
     let mut length: u32 = 0;
     let mut td: *mut sfnt_table_directory = 0 as *mut sfnt_table_directory;
     let mut idx: i32 = 0;
-    assert!(!sfont.is_null() && !tag.is_null());
+    assert!(!sfont.is_null());
     td = (*sfont).directory;
-    idx = find_table_index(td, tag);
+    idx = find_table_index(td.as_ref(), tag);
     if idx < 0i32 {
         length = 0_u32
     } else {
@@ -309,13 +293,13 @@ pub unsafe extern "C" fn sfnt_find_table_len(mut sfont: *mut sfnt, mut tag: *con
     length
 }
 #[no_mangle]
-pub unsafe extern "C" fn sfnt_find_table_pos(mut sfont: *mut sfnt, mut tag: *const i8) -> u32 {
+pub unsafe extern "C" fn sfnt_find_table_pos(mut sfont: *mut sfnt, tag: &[u8; 4]) -> u32 {
     let mut offset: u32 = 0;
     let mut td: *mut sfnt_table_directory = 0 as *mut sfnt_table_directory;
     let mut idx: i32 = 0;
-    assert!(!sfont.is_null() && !tag.is_null());
+    assert!(!sfont.is_null());
     td = (*sfont).directory;
-    idx = find_table_index(td, tag);
+    idx = find_table_index(td.as_ref(), tag);
     if idx < 0i32 {
         offset = 0_u32
     } else {
@@ -324,9 +308,9 @@ pub unsafe extern "C" fn sfnt_find_table_pos(mut sfont: *mut sfnt, mut tag: *con
     offset
 }
 #[no_mangle]
-pub unsafe extern "C" fn sfnt_locate_table(mut sfont: *mut sfnt, mut tag: *const i8) -> u32 {
+pub unsafe extern "C" fn sfnt_locate_table(mut sfont: *mut sfnt, tag: &[u8; 4]) -> u32 {
     let mut offset: u32 = 0;
-    assert!(!sfont.is_null() && !tag.is_null());
+    assert!(!sfont.is_null());
     offset = sfnt_find_table_pos(sfont, tag);
     if offset == 0_u32 {
         panic!("sfnt: table not found...");
@@ -361,7 +345,7 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
         as *mut sfnt_table;
     for i in 0..(*td).num_tables as u32 {
         u_tag = tt_get_unsigned_quad((*sfont).handle);
-        convert_tag((*(*td).tables.offset(i as isize)).tag.as_mut_ptr(), u_tag);
+        convert_tag(&mut (*(*td).tables.offset(i as isize)).tag, u_tag);
         (*(*td).tables.offset(i as isize)).check_sum = tt_get_unsigned_quad((*sfont).handle);
         (*(*td).tables.offset(i as isize)).offset =
             tt_get_unsigned_quad((*sfont).handle).wrapping_add((*sfont).offset);
@@ -376,25 +360,21 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
 }
 #[no_mangle]
 pub unsafe extern "C" fn sfnt_require_table(
-    mut sfont: *mut sfnt,
-    mut tag: *const i8,
-    mut must_exist: i32,
-) -> i32 {
-    let mut td: *mut sfnt_table_directory = 0 as *mut sfnt_table_directory;
-    let mut idx: i32 = 0;
-    assert!(!sfont.is_null() && !(*sfont).directory.is_null());
-    td = (*sfont).directory;
-    idx = find_table_index(td, tag);
-    if idx < 0i32 {
-        if must_exist != 0 {
-            return -1i32;
+    sfont: &mut sfnt,
+    table: &SfntTableInfo,
+) -> Result<(), ()> {
+    let mut td = (*sfont).directory.as_mut().unwrap();
+    let idx = find_table_index(Some(td), table.name());
+    if idx < 0 {
+        if table.must_exist() {
+            return Err(());
         }
     } else {
-        let ref mut fresh2 = *(*td).flags.offset(idx as isize);
+        let ref mut fresh2 = *td.flags.offset(idx as isize);
         *fresh2 = (*fresh2 as i32 | 1i32 << 0i32) as i8;
-        (*td).num_kept_tables = (*td).num_kept_tables.wrapping_add(1)
+        td.num_kept_tables = td.num_kept_tables + 1;
     }
-    0i32
+    Ok(())
 }
 /*
  * o All tables begin on four byte boundries, and pad any remaining space

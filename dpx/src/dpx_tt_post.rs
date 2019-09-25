@@ -163,7 +163,7 @@ unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont:
 pub unsafe extern "C" fn tt_read_post_table(mut sfont: *mut sfnt) -> *mut tt_post_table {
     let mut post: *mut tt_post_table = 0 as *mut tt_post_table;
     /* offset = */
-    sfnt_locate_table(sfont, b"post\x00" as *const u8 as *const i8); /* Fixed */
+    sfnt_locate_table(sfont, b"post"); /* Fixed */
     post = new((1_u64).wrapping_mul(::std::mem::size_of::<tt_post_table>() as u64) as u32)
         as *mut tt_post_table; /* Fixed */
     (*post).Version = tt_get_unsigned_quad((*sfont).handle); /* FWord */
