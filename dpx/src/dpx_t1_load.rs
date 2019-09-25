@@ -1512,8 +1512,7 @@ unsafe extern "C" fn parse_subrs(
                 .wrapping_mul(::std::mem::size_of::<u8>() as u64)
                 as u32) as *mut u8;
             offset = 0i32;
-            i = 0i32;
-            while i < count {
+            for i in 0..count {
                 *(*subrs).offset.offset(i as isize) = (offset + 1i32) as l_offset;
                 if *lengths.offset(i as isize) > 0i32 {
                     memcpy(
@@ -1523,7 +1522,6 @@ unsafe extern "C" fn parse_subrs(
                     );
                     offset += *lengths.offset(i as isize)
                 }
-                i += 1
             }
             *(*subrs).offset.offset(count as isize) = (offset + 1i32) as l_offset
         } else {
@@ -1611,7 +1609,6 @@ unsafe extern "C" fn parse_charstrings(
         let mut glyph_name: *mut i8 = 0 as *mut i8;
         let mut len: i32 = 0;
         let mut gid: i32 = 0;
-        let mut j: i32 = 0;
         /* BUG-20061126 (by ChoF):
          * Some fonts (e.g., belleek/blsy.pfb) does not have the correct number
          * of glyphs. Modify the codes even to work with these broken fonts.
@@ -1716,12 +1713,10 @@ unsafe extern "C" fn parse_charstrings(
                             (*charstrings).data as *const libc::c_void,
                             offset as _,
                         );
-                        j = 1i32;
-                        while j <= i {
+                        for j in 1..=i {
                             let ref mut fresh18 = *(*charstrings).offset.offset(j as isize);
                             *fresh18 = (*fresh18 as u32).wrapping_add((len - lenIV) as u32)
                                 as l_offset as l_offset;
-                            j += 1
                         }
                     } else {
                         memmove(
@@ -1729,12 +1724,10 @@ unsafe extern "C" fn parse_charstrings(
                             (*charstrings).data as *const libc::c_void,
                             offset as _,
                         );
-                        j = 1i32;
-                        while j <= i {
+                        for j in 1..=i {
                             let ref mut fresh19 = *(*charstrings).offset.offset(j as isize);
                             *fresh19 =
                                 (*fresh19 as u32).wrapping_add(len as u32) as l_offset as l_offset;
-                            j += 1
                         }
                     }
                 }
@@ -2096,7 +2089,6 @@ unsafe extern "C" fn parse_part1(
 #[no_mangle]
 pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
     let mut sig: [u8; 15] = [0; 15];
-    let mut i: i32 = 0;
     let mut ch: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     ch = ttstub_input_getc(handle);
@@ -2109,22 +2101,18 @@ pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
     {
         return false;
     }
-    i = 0i32;
-    while i < 4i32 {
+    for _ in 0..4 {
         ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             return false;
         }
-        i += 1
     }
-    i = 0i32;
-    while i < 14i32 {
+    for i in 0..14 {
         ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             return false;
         }
-        sig[i as usize] = ch as u8;
-        i += 1
+        sig[i] = ch as u8;
     }
     if memcmp(
         sig.as_mut_ptr() as *const libc::c_void,
@@ -2166,7 +2154,6 @@ unsafe extern "C" fn get_pfb_segment(
         let mut ch: i32 = 0;
         let mut slen: i32 = 0;
         let mut rlen: i32 = 0;
-        let mut i: i32 = 0;
         ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             break;
@@ -2180,15 +2167,13 @@ unsafe extern "C" fn get_pfb_segment(
             break;
         } else {
             slen = 0i32;
-            i = 0i32;
-            while i < 4i32 {
+            for i in 0..4 {
                 ch = ttstub_input_getc(handle);
                 if ch < 0i32 {
                     free(buffer as *mut libc::c_void);
                     return 0 as *mut u8;
                 }
                 slen = slen + (ch << 8i32 * i);
-                i += 1
             }
             buffer = renew(
                 buffer as *mut libc::c_void,

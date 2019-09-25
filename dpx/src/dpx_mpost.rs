@@ -2640,26 +2640,19 @@ static mut mps_operators: [operators; 28] = [
     },
 ];
 unsafe extern "C" fn get_opcode(mut token: *const i8) -> i32 {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[operators; 48]>() as u64)
-            .wrapping_div(::std::mem::size_of::<operators>() as u64)
+    for i in 0..(::std::mem::size_of::<[operators; 48]>() as u64)
+        .wrapping_div(::std::mem::size_of::<operators>() as u64) as usize
     {
-        if streq_ptr(token, ps_operators[i as usize].token) {
-            return ps_operators[i as usize].opcode;
+        if streq_ptr(token, ps_operators[i].token) {
+            return ps_operators[i].opcode;
         }
-        i = i.wrapping_add(1)
     }
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[operators; 28]>() as u64)
-            .wrapping_div(::std::mem::size_of::<operators>() as u64)
+    for i in 0..(::std::mem::size_of::<[operators; 28]>() as u64)
+        .wrapping_div(::std::mem::size_of::<operators>() as u64) as usize
     {
-        if streq_ptr(token, mps_operators[i as usize].token) {
-            return mps_operators[i as usize].opcode;
+        if streq_ptr(token, mps_operators[i].token) {
+            return mps_operators[i].opcode;
         }
-        i = i.wrapping_add(1)
     }
     -1i32
 }
@@ -2814,7 +2807,6 @@ unsafe extern "C" fn do_findfont() -> i32 {
 unsafe extern "C" fn do_scalefont() -> i32 {
     let mut error: i32 = 0i32;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut font_scale: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut scale: f64 = 0.;
     error = pop_get_numbers(&mut scale, 1i32);
     if error != 0 {
@@ -2942,19 +2934,16 @@ unsafe extern "C" fn do_show() -> i32 {
     if (*font).subfont_id >= 0i32 {
         let mut uch: u16 = 0;
         let mut ustr: *mut u8 = 0 as *mut u8;
-        let mut i: i32 = 0;
         ustr = new(
             ((length * 2i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32,
         ) as *mut u8;
-        i = 0i32;
-        while i < length {
+        for i in 0..length {
             uch = lookup_sfd_record((*font).subfont_id, *strptr.offset(i as isize));
             *ustr.offset((2i32 * i) as isize) = (uch as i32 >> 8i32) as u8;
             *ustr.offset((2i32 * i + 1i32) as isize) = (uch as i32 & 0xffi32) as u8;
             if (*font).tfm_id >= 0i32 {
                 text_width += tfm_get_width((*font).tfm_id, *strptr.offset(i as isize) as i32)
             }
-            i += 1
         }
         text_width *= (*font).pt_size;
         pdf_dev_set_string(

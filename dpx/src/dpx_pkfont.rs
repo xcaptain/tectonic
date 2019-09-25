@@ -381,7 +381,6 @@ unsafe extern "C" fn pk_decode_bitmap(
 ) -> i32 {
     let mut rowptr: *mut u8 = 0 as *mut u8;
     let mut c: u8 = 0;
-    let mut i: u32 = 0;
     let mut j: u32 = 0;
     let mut rowbytes: u32 = 0;
     static mut mask: [u8; 8] = [
@@ -410,9 +409,9 @@ unsafe extern "C" fn pk_decode_bitmap(
         new((rowbytes as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
     memset(rowptr as *mut libc::c_void, 0i32, rowbytes as _);
     /* Flip. PK bitmap is not byte aligned for each rows. */
-    i = 0_u32; /* flip bit */
+    /* flip bit */
     j = 0_u32;
-    while i < ht.wrapping_mul(wd) {
+    for i in 0..ht.wrapping_mul(wd) {
         c = (*dp.offset(i.wrapping_div(8_u32) as isize) as i32
             & mask[i.wrapping_rem(8_u32) as usize] as i32) as u8;
         if c as i32 == 0i32 {
@@ -425,7 +424,6 @@ unsafe extern "C" fn pk_decode_bitmap(
             memset(rowptr as *mut libc::c_void, 0i32, rowbytes as _);
             j = 0_u32
         }
-        i = i.wrapping_add(1)
     }
     0i32
 }
@@ -616,7 +614,6 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     let mut point_size: f64 = 0.;
     let mut pix2charu: f64 = 0.;
     let mut opcode: i32 = 0;
-    let mut code: i32 = 0;
     let mut firstchar: i32 = 0;
     let mut lastchar: i32 = 0;
     let mut prev: i32 = 0;
@@ -774,7 +771,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 }
                 pdf_add_dict(
                     charprocs,
-                    CStr::from_ptr(charname).to_str().unwrap(),
+                    CStr::from_ptr(charname).to_bytes(),
                     pdf_ref_obj(charproc),
                 );
                 pdf_release_obj(charproc);
@@ -802,8 +799,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     }
     fclose(fp);
     /* Check if we really got all glyphs needed. */
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if *usedchars.offset(code as isize) as i32 != 0 && charavail[code as usize] == 0 {
             warn!(
                 "Missing glyph code=0x{:02x} in PK font \"{}\".",
@@ -811,7 +807,6 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 CStr::from_ptr(ident).display(),
             );
         }
-        code += 1
     }
     /* Now actually fill fontdict. */
     fontdict = pdf_font_get_resource(font);
@@ -836,8 +831,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     prev = -2i32;
     firstchar = 255i32;
     lastchar = 0i32;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         let mut charname_0: *mut i8 = 0 as *mut i8;
         if *usedchars.offset(code as isize) != 0 {
             if code < firstchar {
@@ -871,7 +865,6 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
             pdf_add_array(tmp_array, pdf_copy_name(charname_0));
             prev = code
         }
-        code += 1
     }
     if firstchar > lastchar {
         pdf_release_obj(tmp_array);
@@ -902,14 +895,12 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
      *  Indirect reference preffered. (See PDF Reference)
      */
     tmp_array = pdf_new_array();
-    code = firstchar;
-    while code <= lastchar {
+    for code in firstchar..=lastchar {
         if *usedchars.offset(code as isize) != 0 {
             pdf_add_array(tmp_array, pdf_new_number(widths[code as usize]));
         } else {
             pdf_add_array(tmp_array, pdf_new_number(0i32 as f64));
         }
-        code += 1
     }
     pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     pdf_release_obj(tmp_array);

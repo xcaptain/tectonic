@@ -180,16 +180,16 @@ unsafe extern "C" fn spc_handler_xtx_rotate(mut spe: *mut spc_env, mut args: *mu
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_handler_xtx_gsave(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_dev_gsave();
     0i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_handler_xtx_grestore(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_dev_grestore();
     /*
@@ -207,8 +207,8 @@ pub unsafe extern "C" fn spc_handler_xtx_grestore(
  * This should be handled before processing pages!
  */
 unsafe extern "C" fn spc_handler_xtx_papersize(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     0i32
 }
@@ -344,7 +344,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapfile(
 }
 static mut overlay_name: [i8; 256] = [0; 256];
 unsafe extern "C" fn spc_handler_xtx_initoverlay(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
@@ -361,7 +361,7 @@ unsafe extern "C" fn spc_handler_xtx_initoverlay(
     0i32
 }
 unsafe extern "C" fn spc_handler_xtx_clipoverlay(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
@@ -684,7 +684,6 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut i: u32 = 0;
     let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_white(&mut (*ap).curptr, (*ap).endptr);
@@ -707,10 +706,8 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        i = 0_u32;
-        while (i as u64)
-            < (::std::mem::size_of::<[spc_handler; 21]>() as u64)
-                .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+        for i in 0..(::std::mem::size_of::<[spc_handler; 21]>() as u64)
+            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
             if streq_ptr(q, xtx_handlers[i as usize].key) {
                 (*ap).command = xtx_handlers[i as usize].key;
@@ -719,8 +716,6 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
-            } else {
-                i = i.wrapping_add(1)
             }
         }
         free(q as *mut libc::c_void);

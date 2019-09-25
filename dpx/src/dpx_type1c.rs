@@ -228,7 +228,6 @@ unsafe extern "C" fn add_SimpleMetrics(
     mut num_glyphs: u16,
 ) {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut code: i32 = 0;
     let mut firstchar: i32 = 0;
     let mut lastchar: i32 = 0;
     let mut tfm_id: i32 = 0;
@@ -260,8 +259,7 @@ unsafe extern "C" fn add_SimpleMetrics(
     } else {
         firstchar = 255i32;
         lastchar = 0i32;
-        code = 0i32;
-        while code < 256i32 {
+        for code in 0..256i32 {
             if *usedchars.offset(code as isize) != 0 {
                 if code < firstchar {
                     firstchar = code
@@ -270,15 +268,13 @@ unsafe extern "C" fn add_SimpleMetrics(
                     lastchar = code
                 }
             }
-            code += 1
         }
         if firstchar > lastchar {
             pdf_release_obj(tmp_array);
             panic!("No glyphs used at all!");
         }
         tfm_id = tfm_open(pdf_font_get_mapname(font), 0i32);
-        code = firstchar;
-        while code <= lastchar {
+        for code in firstchar..=lastchar {
             if *usedchars.offset(code as isize) != 0 {
                 let mut width: f64 = 0.;
                 if tfm_id < 0i32 {
@@ -307,7 +303,6 @@ unsafe extern "C" fn add_SimpleMetrics(
             } else {
                 pdf_add_array(tmp_array, pdf_new_number(0.0f64));
             }
-            code += 1
         }
     }
     if pdf_array_length(tmp_array) > 0_u32 {
@@ -344,7 +339,6 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
     let mut data: *mut u8 = 0 as *mut u8;
     let mut num_glyphs: u16 = 0;
     let mut cs_count: u16 = 0;
-    let mut code: u16 = 0;
     let mut ginfo = cs_ginfo::new();
     let mut nominal_width: f64 = 0.;
     let mut default_width: f64 = 0.;
@@ -442,8 +436,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
          */
         enc_vec = new((256_u64).wrapping_mul(::std::mem::size_of::<*mut i8>() as u64) as u32)
             as *mut *mut i8;
-        code = 0i32 as u16;
-        while (code as i32) < 256i32 {
+        for code in 0..256 {
             if *usedchars.offset(code as isize) != 0 {
                 let mut gid: u16 = 0;
                 gid = cff_encoding_lookup(cffont, code as u8);
@@ -453,7 +446,6 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                 let ref mut fresh1 = *enc_vec.offset(code as isize);
                 *fresh1 = 0 as *mut i8
             }
-            code = code.wrapping_add(1)
         }
         if pdf_lookup_dict(fontdict, "ToUnicode").is_none() {
             tounicode = pdf_create_ToUnicode_CMap(fullname, enc_vec, usedchars);
@@ -597,8 +589,7 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
      */
     num_glyphs = 1i32 as u16;
     pdfcharset = pdf_new_stream(0i32);
-    code = 0i32 as u16;
-    while (code as i32) < 256i32 {
+    for code in 0..256 {
         let mut gid_0: u16 = 0;
         let mut j: u16 = 0;
         let mut sid_orig: s_SID = 0;
@@ -717,7 +708,6 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
                 }
             }
         }
-        code = code.wrapping_add(1)
         /* Prevent duplication. */
     }
     if verbose > 2i32 {
@@ -733,8 +723,8 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
         free((*encoding).supp as *mut libc::c_void); /* Have supplemantary data. */
         /* FIXME */
     }
-    code = 0i32 as u16;
-    while (code as i32) < 256i32 {
+    let mut code = 0_u16;
+    while code < 256 {
         if !(*usedchars.offset(code as isize) == 0
             || (*enc_vec.offset(code as isize)).is_null()
             || streq_ptr(
@@ -777,12 +767,10 @@ pub unsafe extern "C" fn pdf_font_load_type1c(mut font: *mut pdf_font) -> i32 {
     }
     /* cleanup */
     if encoding_id < 0i32 && !enc_vec.is_null() {
-        code = 0i32 as u16;
-        while (code as i32) < 256i32 {
+        for code in 0..256 {
             if !(*enc_vec.offset(code as isize)).is_null() {
                 free(*enc_vec.offset(code as isize) as *mut libc::c_void);
             }
-            code = code.wrapping_add(1)
         }
         free(enc_vec as *mut libc::c_void);
     }

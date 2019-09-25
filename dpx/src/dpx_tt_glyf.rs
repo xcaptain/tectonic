@@ -105,16 +105,12 @@ unsafe extern "C" fn find_empty_slot(mut g: *mut tt_glyphs) -> u16 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn tt_find_glyph(mut g: *mut tt_glyphs, mut gid: u16) -> u16 {
-    let mut idx: u16 = 0;
     let mut new_gid: u16 = 0_u16;
     assert!(!g.is_null());
-    idx = 0_u16;
-    while (idx as i32) < (*g).num_glyphs as i32 {
+    for idx in 0..(*g).num_glyphs as i32 {
         if gid as i32 == (*(*g).gd.offset(idx as isize)).ogid as i32 {
             new_gid = (*(*g).gd.offset(idx as isize)).gid;
             break;
-        } else {
-            idx = idx.wrapping_add(1)
         }
     }
     new_gid
@@ -199,11 +195,8 @@ pub unsafe extern "C" fn tt_build_init() -> *mut tt_glyphs {
 pub unsafe extern "C" fn tt_build_finish(mut g: *mut tt_glyphs) {
     if !g.is_null() {
         if !(*g).gd.is_null() {
-            let mut idx: u16 = 0;
-            idx = 0_u16;
-            while (idx as i32) < (*g).num_glyphs as i32 {
+            for idx in 0..(*g).num_glyphs as i32 {
                 free((*(*g).gd.offset(idx as isize)).data as *mut libc::c_void);
-                idx = idx.wrapping_add(1)
             }
             free((*g).gd as *mut libc::c_void);
         }
@@ -305,17 +298,13 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     location = new((((*maxp).numGlyphs as i32 + 1i32) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u32>() as u64) as u32) as *mut u32;
     if (*head).indexToLocFormat as i32 == 0i32 {
-        i = 0i32;
-        while i <= (*maxp).numGlyphs as i32 {
+        for i in 0..=(*maxp).numGlyphs as i32 {
             *location.offset(i as isize) =
                 (2_u32).wrapping_mul(tt_get_unsigned_pair((*sfont).handle) as u32);
-            i += 1
         }
     } else if (*head).indexToLocFormat as i32 == 1i32 {
-        i = 0i32;
-        while i <= (*maxp).numGlyphs as i32 {
+        for i in 0..=(*maxp).numGlyphs as i32 {
             *location.offset(i as isize) = tt_get_unsigned_quad((*sfont).handle);
-            i += 1
         }
     } else {
         panic!("Unknown IndexToLocFormat.");
@@ -338,8 +327,8 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
      * Glyph programs of composite glyphs are modified so that it
      * correctly refer to new gid of their components.
      */
-    i = 0i32; /* old gid */
-    while i < 65534i32 {
+    /* old gid */
+    for i in 0..65534 {
         let mut gid: u16 = 0;
         let mut loc: u32 = 0;
         let mut len: u32 = 0;
@@ -487,20 +476,17 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
             }
         }
         /* Does not contains any data. */
-        i += 1
     }
     free(location as *mut libc::c_void);
     free(hmtx as *mut libc::c_void);
     free(vmtx as *mut libc::c_void);
     let mut max_count: i32 = -1i32;
     (*g).dw = (*(*g).gd.offset(0)).advw;
-    i = 0i32;
-    while i < (*g).emsize as i32 + 1i32 {
+    for i in 0..(*g).emsize as i32 + 1i32 {
         if *w_stat.offset(i as isize) as i32 > max_count {
             max_count = *w_stat.offset(i as isize) as i32;
             (*g).dw = i as u16
         }
-        i += 1
     }
     free(w_stat as *mut libc::c_void);
     qsort(
@@ -566,13 +552,10 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
             as *mut i8;
     offset = 0u64 as u32;
     prev = 0_u16;
-    i = 0i32;
-    while i < (*g).num_glyphs as i32 {
+    for i in 0..(*g).num_glyphs as i32 {
         let mut gap: i32 = 0;
-        let mut j: i32 = 0;
         gap = (*(*g).gd.offset(i as isize)).gid as i32 - prev as i32 - 1i32;
-        j = 1i32;
-        while j <= gap {
+        for j in 1..=gap {
             if prev as i32 + j == (*hhea).numOfLongHorMetrics as i32 - 1i32 {
                 p_0 = p_0.offset(
                     put_big_endian(p_0 as *mut libc::c_void, last_advw as i32, 2i32) as isize,
@@ -590,7 +573,6 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
             } else {
                 q = q.offset(put_big_endian(q as *mut libc::c_void, offset as i32, 4i32) as isize)
             }
-            j += 1
         }
         padlen = (if (*(*g).gd.offset(i as isize)).length.wrapping_rem(4_u32) != 0 {
             (4_u32).wrapping_sub((*(*g).gd.offset(i as isize)).length.wrapping_rem(4_u32))
@@ -641,7 +623,6 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
         (*(*g).gd.offset(i as isize)).length = 0_u32;
         let ref mut fresh6 = (*(*g).gd.offset(i as isize)).data;
         *fresh6 = 0 as *mut u8;
-        i += 1
     }
     if (*head).indexToLocFormat as i32 == 0i32 {
         q = q.offset(put_big_endian(
@@ -712,7 +693,6 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     /* temp */
     let mut location: *mut u32 = 0 as *mut u32;
     let mut offset: u32 = 0;
-    let mut i: u32 = 0;
     let mut w_stat: *mut u16 = 0 as *mut u16;
     assert!(!g.is_null());
     if sfont.is_null() || (*sfont).handle.is_null() {
@@ -767,17 +747,13 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     location = new((((*maxp).numGlyphs as i32 + 1i32) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u32>() as u64) as u32) as *mut u32;
     if (*head).indexToLocFormat as i32 == 0i32 {
-        i = 0_u32;
-        while i <= (*maxp).numGlyphs as u32 {
+        for i in 0..=(*maxp).numGlyphs as u32 {
             *location.offset(i as isize) =
                 (2_u32).wrapping_mul(tt_get_unsigned_pair((*sfont).handle) as u32);
-            i = i.wrapping_add(1)
         }
     } else if (*head).indexToLocFormat as i32 == 1i32 {
-        i = 0_u32;
-        while i <= (*maxp).numGlyphs as u32 {
+        for i in 0..=(*maxp).numGlyphs as u32 {
             *location.offset(i as isize) = tt_get_unsigned_quad((*sfont).handle);
-            i = i.wrapping_add(1)
         }
     } else {
         panic!("Unknown IndexToLocFormat.");
@@ -793,8 +769,7 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
      * Read glyf table.
      */
     offset = sfnt_locate_table(sfont, b"glyf"); /* old gid */
-    i = 0_u32;
-    while i < (*g).num_glyphs as u32 {
+    for i in 0..(*g).num_glyphs as u32 {
         let mut gid: u16 = 0;
         let mut loc: u32 = 0;
         let mut len: u32 = 0;
@@ -845,7 +820,6 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
             }
         }
         /* Does not contains any data. */
-        i = i.wrapping_add(1)
     }
     free(location as *mut libc::c_void);
     free(hmtx as *mut libc::c_void);
@@ -856,13 +830,11 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     free(vmtx as *mut libc::c_void);
     let mut max_count: i32 = -1i32;
     (*g).dw = (*(*g).gd.offset(0)).advw;
-    i = 0_u32;
-    while i < ((*g).emsize as i32 + 1i32) as u32 {
+    for i in 0..((*g).emsize as i32 + 1i32) as u32 {
         if *w_stat.offset(i as isize) as i32 > max_count {
             max_count = *w_stat.offset(i as isize) as i32;
             (*g).dw = i as u16
         }
-        i = i.wrapping_add(1)
     }
     free(w_stat as *mut libc::c_void);
     0i32

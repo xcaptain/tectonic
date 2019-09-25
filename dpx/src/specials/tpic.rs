@@ -202,7 +202,7 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
         spot_color_name: None,
         values: [0.; 4],
     };
-    let (sc, fc) = pdf_color_get_current();
+    let (_sc, fc) = pdf_color_get_current();
     pdf_color_brighten_color(&mut new_fc, fc, g);
     pdf_dev_set_color(&mut new_fc, 0x20_i8, 0i32);
     0i32
@@ -265,7 +265,6 @@ unsafe extern "C" fn tpic__polyline(
 ) -> i32 {
     let mut pn: f64 = (*tp).pen_size;
     let mut f_fs: bool = (*tp).fill_shape;
-    let mut i: i32 = 0;
     let mut error: i32 = 0i32;
     /*
      * Acrobat claims 'Q' as illegal operation when there are unfinished
@@ -286,13 +285,11 @@ unsafe extern "C" fn tpic__polyline(
         pdf_dev_gsave();
         set_styles(tp, c, f_fs, f_vp, pn, da);
         pdf_dev_moveto((*(*tp).points.offset(0)).x, (*(*tp).points.offset(0)).y);
-        i = 0i32;
-        while i < (*tp).num_points {
+        for i in 0..(*tp).num_points {
             pdf_dev_lineto(
                 (*(*tp).points.offset(i as isize)).x,
                 (*(*tp).points.offset(i as isize)).y,
             );
-            i += 1
         }
         showpath(f_vp, f_fs);
         pdf_dev_grestore();
@@ -821,7 +818,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
                 } else {
                     pdf_add_dict(
                         dict,
-                        CStr::from_ptr(kp).to_str().unwrap(),
+                        CStr::from_ptr(kp).to_bytes(),
                         pdf_new_string(vp as *const libc::c_void, strlen(vp).wrapping_add(1) as _),
                     );
                     free(vp as *mut libc::c_void);
@@ -829,11 +826,7 @@ unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
             }
         } else {
             /* Treated as 'flag' */
-            pdf_add_dict(
-                dict,
-                CStr::from_ptr(kp).to_str().unwrap(),
-                pdf_new_boolean(1_i8),
-            );
+            pdf_add_dict(dict, CStr::from_ptr(kp).to_bytes(), pdf_new_boolean(1_i8));
         }
         free(kp as *mut libc::c_void);
         if error == 0 {
@@ -1055,7 +1048,6 @@ pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32
     let mut q: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = 0 as *const i8;
     let mut endptr: *const i8 = 0 as *const i8;
-    let mut i: size_t = 0;
     p = buf;
     endptr = p.offset(len as isize);
     skip_blank(&mut p, endptr);
@@ -1079,16 +1071,12 @@ pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32
         istpic = true;
         free(q as *mut libc::c_void);
     } else {
-        i = 0i32 as size_t;
-        while i
-            < (::std::mem::size_of::<[spc_handler; 13]>() as u64)
-                .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+        for i in 0..(::std::mem::size_of::<[spc_handler; 13]>() as u64)
+            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
             if streq_ptr(q, tpic_handlers[i as usize].key) {
                 istpic = true;
                 break;
-            } else {
-                i = i.wrapping_add(1)
             }
         }
         free(q as *mut libc::c_void);
@@ -1102,7 +1090,6 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut q: *mut i8 = 0 as *mut i8;
-    let mut i: u32 = 0;
     let mut hasnsp: i32 = 0i32;
     let mut error: i32 = -1i32;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
@@ -1139,10 +1126,8 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
         error = 0i32;
         free(q as *mut libc::c_void);
     } else {
-        i = 0_u32;
-        while (i as u64)
-            < (::std::mem::size_of::<[spc_handler; 13]>() as u64)
-                .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+        for i in 0..(::std::mem::size_of::<[spc_handler; 13]>() as u64)
+            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
             if streq_ptr(q, tpic_handlers[i as usize].key) {
                 (*ap).command = tpic_handlers[i as usize].key;
@@ -1151,8 +1136,6 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
                 skip_blank(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
-            } else {
-                i = i.wrapping_add(1)
             }
         }
         free(q as *mut libc::c_void);

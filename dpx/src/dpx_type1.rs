@@ -124,13 +124,10 @@ unsafe extern "C" fn is_basefont(mut name: *const i8) -> bool {
         b"Times-BoldItalic\x00" as *const u8 as *const i8,
         b"ZapfDingbats\x00" as *const u8 as *const i8,
     ];
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < 14i32 {
-        if streq_ptr(name, basefonts[i as usize]) {
+    for i in 0..14 {
+        if streq_ptr(name, basefonts[i]) {
             return true;
         }
-        i += 1
     }
     false
 }
@@ -415,11 +412,9 @@ unsafe extern "C" fn add_metrics(
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut descriptor: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut tmp_array: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut code: i32 = 0;
     let mut firstchar: i32 = 0;
     let mut lastchar: i32 = 0;
     let mut val: f64 = 0.;
-    let mut i: i32 = 0;
     let mut tfm_id: i32 = 0;
     let mut usedchars: *mut i8 = 0 as *mut i8;
     let mut scaling: f64 = 0.;
@@ -450,14 +445,12 @@ unsafe extern "C" fn add_metrics(
         scaling = 1i32 as f64
     }
     tmp_array = pdf_new_array();
-    i = 0i32;
-    while i < 4i32 {
+    for i in 0..4 {
         val = cff_dict_get(cffont.topdict, b"FontBBox\x00" as *const u8 as *const i8, i);
         pdf_add_array(
             tmp_array,
             pdf_new_number((val / 1.0f64 + 0.5f64).floor() * 1.0f64),
         );
-        i += 1
     }
     pdf_add_dict(descriptor, "FontBBox", tmp_array);
     tmp_array = pdf_new_array();
@@ -469,8 +462,7 @@ unsafe extern "C" fn add_metrics(
     } else {
         firstchar = 255i32;
         lastchar = 0i32;
-        code = 0i32;
-        while code < 256i32 {
+        for code in 0..256 {
             if *usedchars.offset(code as isize) != 0 {
                 if code < firstchar {
                     firstchar = code
@@ -479,7 +471,6 @@ unsafe extern "C" fn add_metrics(
                     lastchar = code
                 }
             }
-            code += 1
         }
         if firstchar > lastchar {
             warn!("No glyphs actually used???");
@@ -491,8 +482,7 @@ unsafe extern "C" fn add_metrics(
          * and actual glyph width are different.
          */
         tfm_id = tfm_open(pdf_font_get_mapname(font), 0i32);
-        code = firstchar;
-        while code <= lastchar {
+        for code in firstchar..=lastchar {
             if *usedchars.offset(code as isize) != 0 {
                 let mut width: f64 = 0.;
                 if tfm_id < 0i32 {
@@ -530,7 +520,6 @@ unsafe extern "C" fn add_metrics(
             } else {
                 pdf_add_array(tmp_array, pdf_new_number(0.0f64));
             }
-            code += 1
         }
     }
     if pdf_array_length(tmp_array) > 0_u32 {
@@ -720,7 +709,6 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     let mut GIDMap: *mut u16 = 0 as *mut u16;
     let mut num_glyphs: u16 = 0i32 as u16;
     let mut offset: i32 = 0;
-    let mut code: i32 = 0;
     let mut verbose: i32 = 0;
     let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
     assert!(!font.is_null());
@@ -752,11 +740,9 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     } else {
         enc_vec = new((256_u64).wrapping_mul(::std::mem::size_of::<*mut i8>() as u64) as u32)
             as *mut *mut i8;
-        code = 0i32;
-        while code <= 0xffi32 {
+        for code in 0..=0xff {
             let ref mut fresh0 = *enc_vec.offset(code as isize);
             *fresh0 = 0 as *mut i8;
-            code += 1
         }
     }
     cffont = t1_load_font(enc_vec, 0i32, handle);
@@ -855,8 +841,7 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     }
     num_glyphs = 1i32 as u16;
     prev = -2i32;
-    code = 0i32;
-    while code <= 0xffi32 {
+    for code in 0..=0xff {
         glyph = *enc_vec.offset(code as isize);
         if !(*usedchars.offset(code as isize) == 0) {
             if streq_ptr(glyph, b".notdef\x00" as *const u8 as *const i8) {
@@ -946,7 +931,6 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
                 }
             }
         }
-        code += 1
     }
     if (*cffont.encoding).num_supps as i32 > 0i32 {
         (*cffont.encoding).format = ((*cffont.encoding).format as i32 | 0x80i32) as u8
@@ -965,7 +949,6 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
      */
     let mut cstring: *mut cff_index = 0 as *mut cff_index;
     let mut gm = t1_ginfo::new();
-    let mut gid_0: u16 = 0;
     let mut gid_orig: u16 = 0;
     let mut dstlen_max: i32 = 0;
     let mut srclen: i32 = 0;
@@ -978,8 +961,7 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     *(*cstring).offset.offset(0) = 1i32 as l_offset;
     let mut current_block_150: u64;
     /* The num_glyphs increases if "seac" operators are used. */
-    gid_0 = 0i32 as u16;
-    while (gid_0 as i32) < num_glyphs as i32 {
+    for gid_0 in 0..num_glyphs as i32 {
         if offset + 65536i32 >= dstlen_max {
             dstlen_max += 65536i32 * 2i32;
             (*cstring).data = renew(
@@ -1091,7 +1073,6 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
             17100064147490331435 => *widths.offset(gid_0 as isize) = gm.wx,
             _ => {}
         }
-        gid_0 = gid_0.wrapping_add(1)
     }
     (*cstring).count = num_glyphs;
     cff_release_index(*cffont.subrs.offset(0));
@@ -1118,11 +1099,9 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
     cff_close(cffont);
     /* Cleanup */
     if encoding_id < 0i32 && !enc_vec.is_null() {
-        code = 0i32;
-        while code < 256i32 {
+        for code in 0..256 {
             let ref mut fresh5 = *enc_vec.offset(code as isize);
             *fresh5 = mfree(*enc_vec.offset(code as isize) as *mut libc::c_void) as *mut i8;
-            code += 1
         }
         free(enc_vec as *mut libc::c_void);
     }

@@ -119,25 +119,20 @@ pub unsafe extern "C" fn skip_white_spaces(mut s: *mut *mut u8, mut endptr: *mut
 }
 #[no_mangle]
 pub unsafe extern "C" fn ht_init_table(mut ht: *mut ht_table, mut hval_free_fn: hval_free_func) {
-    let mut i: i32 = 0;
     assert!(!ht.is_null());
-    i = 0i32;
-    while i < 503i32 {
-        (*ht).table[i as usize] = 0 as *mut ht_entry;
-        i += 1
+    for i in 0..503 {
+        (*ht).table[i] = 0 as *mut ht_entry;
     }
     (*ht).count = 0i32;
     (*ht).hval_free_fn = hval_free_fn;
 }
 #[no_mangle]
 pub unsafe extern "C" fn ht_clear_table(mut ht: *mut ht_table) {
-    let mut i: i32 = 0;
     assert!(!ht.is_null());
-    i = 0i32;
-    while i < 503i32 {
+    for i in 0..503 {
         let mut hent: *mut ht_entry = 0 as *mut ht_entry;
         let mut next: *mut ht_entry = 0 as *mut ht_entry;
-        hent = (*ht).table[i as usize];
+        hent = (*ht).table[i];
         while !hent.is_null() {
             if !(*hent).value.is_null() && (*ht).hval_free_fn.is_some() {
                 (*ht).hval_free_fn.expect("non-null function pointer")((*hent).value);
@@ -151,8 +146,7 @@ pub unsafe extern "C" fn ht_clear_table(mut ht: *mut ht_table) {
             free(hent as *mut libc::c_void);
             hent = next
         }
-        (*ht).table[i as usize] = 0 as *mut ht_entry;
-        i += 1
+        (*ht).table[i] = 0 as *mut ht_entry;
     }
     (*ht).count = 0i32;
     (*ht).hval_free_fn = None;
@@ -164,13 +158,10 @@ pub unsafe extern "C" fn ht_table_size(mut ht: *mut ht_table) -> i32 {
 }
 unsafe extern "C" fn get_hash(mut key: *const libc::c_void, mut keylen: i32) -> u32 {
     let mut hkey: u32 = 0_u32;
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < keylen {
+    for i in 0..keylen {
         hkey = (hkey << 5i32)
             .wrapping_add(hkey)
             .wrapping_add(*(key as *const i8).offset(i as isize) as u32);
-        i += 1
     }
     hkey.wrapping_rem(503_u32)
 }
@@ -318,17 +309,14 @@ pub unsafe extern "C" fn ht_append_table(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ht_set_iter(mut ht: *mut ht_table, mut iter: *mut ht_iter) -> i32 {
-    let mut i: i32 = 0;
     assert!(!ht.is_null() && !iter.is_null());
-    i = 0i32;
-    while i < 503i32 {
+    for i in 0..503 {
         if !(*ht).table[i as usize].is_null() {
             (*iter).index = i;
             (*iter).curr = (*ht).table[i as usize] as *mut libc::c_void;
             (*iter).hash = ht;
             return 0i32;
         }
-        i += 1
     }
     -1i32
 }

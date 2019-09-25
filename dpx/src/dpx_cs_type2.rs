@@ -100,9 +100,7 @@ static mut trn_array: [f64; 32] = [0.; 32];
  * clear_stack() put all operands sotred in operand stack to dest.
  */
 unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < stack_top {
+    for i in 0..stack_top {
         let mut value: f64 = 0.;
         let mut ivalue: i32 = 0;
         value = arg_stack[i as usize];
@@ -193,7 +191,6 @@ unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
                 panic!("{}: Unexpected error.", "Type2 Charstring Parser",);
             }
         }
-        i += 1
     }
     stack_top = 0i32;
 }

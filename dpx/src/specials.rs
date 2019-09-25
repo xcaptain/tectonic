@@ -19,15 +19,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
-#![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
-    unused_mut
-)]
+#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
 
 pub mod color;
 pub mod dvipdfmx;
@@ -109,23 +101,21 @@ use super::dpx_pdfdev::pdf_coord;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
+pub struct Special {
     pub key: *const i8,
     pub bodhk_func: Option<unsafe extern "C" fn() -> i32>,
     pub eodhk_func: Option<unsafe extern "C" fn() -> i32>,
     pub bophk_func: Option<unsafe extern "C" fn() -> i32>,
     pub eophk_func: Option<unsafe extern "C" fn() -> i32>,
-    pub check_func: Option<unsafe extern "C" fn(_: *const i8, _: i32) -> bool>,
+    pub check_func: unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
     pub setup_func:
-        Option<unsafe extern "C" fn(_: *mut spc_handler, _: *mut spc_env, _: *mut spc_arg) -> i32>,
+        unsafe extern "C" fn(_: *mut spc_handler, _: *mut spc_env, _: *mut spc_arg) -> i32,
 }
 static mut verbose: i32 = 0i32;
-#[no_mangle]
-pub unsafe extern "C" fn spc_set_verbose(mut level: i32) {
+pub unsafe fn spc_set_verbose(mut level: i32) {
     verbose = level;
 }
-#[no_mangle]
-pub unsafe extern "C" fn spc_warn(mut spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
+pub unsafe extern "C" fn spc_warn(mut _spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
     let mut ap: ::std::ffi::VaListImpl;
     static mut buf: [u8; 1024] = [0; 1024];
     ap = args.clone();
@@ -140,25 +130,22 @@ pub unsafe extern "C" fn spc_warn(mut spe: *mut spc_env, mut fmt: *const i8, mut
 /* This is currently just to make other spc_xxx to not directly
  * call dvi_xxx.
  */
-#[no_mangle]
-pub unsafe extern "C" fn spc_begin_annot(mut spe: *mut spc_env, mut dict: *mut pdf_obj) -> i32 {
+pub unsafe extern "C" fn spc_begin_annot(mut _spe: *mut spc_env, mut dict: *mut pdf_obj) -> i32 {
     pdf_doc_begin_annot(dict); /* Tell dvi interpreter to handle line-break. */
     dvi_tag_depth();
     0i32
 }
-#[no_mangle]
-pub unsafe extern "C" fn spc_end_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_end_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_untag_depth();
     pdf_doc_end_annot();
     0i32
 }
-#[no_mangle]
-pub unsafe extern "C" fn spc_resume_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_resume_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_link_annot(1i32);
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn spc_suspend_annot(mut spe: *mut spc_env) -> i32 {
+pub unsafe extern "C" fn spc_suspend_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_link_annot(0i32);
     0i32
 }
@@ -181,7 +168,6 @@ static mut _rkeys: [*const i8; 11] = [
  * Note that page need not exist at this time.
  */
 unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
-    let mut p: *const i8 = 0 as *const i8;
     if strlen(key) <= strlen(b"page\x00" as *const u8 as *const i8)
         || memcmp(
             key as *const libc::c_void,
@@ -191,7 +177,7 @@ unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
     {
         return 0i32;
     } else {
-        p = key.offset(4);
+        let mut p = key.offset(4);
         while *p as i32 != 0 && *p as i32 >= '0' as i32 && *p as i32 <= '9' as i32 {
             p = p.offset(1)
         }
@@ -204,7 +190,6 @@ unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
 /*
  * The following routine returns copies, not the original object.
  */
-#[no_mangle]
 pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_obj {
     assert!(!named_objects.is_null());
     if key.is_null() {
@@ -262,18 +247,16 @@ pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_ob
     }
     value
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
-    let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut k: i32 = 0;
     assert!(!named_objects.is_null());
     if key.is_null() {
         return 0 as *mut pdf_obj;
     }
-    k = 0i32;
+    let mut k = 0i32;
     while !_rkeys[k as usize].is_null() && strcmp(key, _rkeys[k as usize]) != 0 {
         k += 1
     }
+    let value;
     match k {
         0 => {
             let mut cp = pdf_coord::new(dvi_dev_xpos(), 0.);
@@ -306,7 +289,6 @@ pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
     */
     return value; /* _FIXME_ */
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_push_object(mut key: *const i8, mut value: *mut pdf_obj) {
     assert!(!named_objects.is_null());
     if key.is_null() || value.is_null() {
@@ -319,7 +301,6 @@ pub unsafe extern "C" fn spc_push_object(mut key: *const i8, mut value: *mut pdf
         value,
     );
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_flush_object(mut key: *const i8) {
     pdf_names_close_object(
         named_objects,
@@ -327,7 +308,6 @@ pub unsafe extern "C" fn spc_flush_object(mut key: *const i8) {
         strlen(key) as i32,
     );
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_clear_objects() {
     pdf_delete_name_tree(&mut named_objects);
     named_objects = pdf_new_name_tree();
@@ -337,287 +317,152 @@ unsafe extern "C" fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut s
     (*args).curptr = (*args).endptr;
     -1i32
 }
-unsafe extern "C" fn init_special(
-    mut special: *mut spc_handler,
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+unsafe fn init_special(
+    mut special: &mut spc_handler,
+    mut spe: &mut spc_env,
+    mut args: &mut spc_arg,
     mut p: *const i8,
     mut size: u32,
     mut x_user: f64,
     mut y_user: f64,
     mut mag: f64,
 ) {
-    (*special).key = 0 as *const i8;
-    (*special).exec = ::std::mem::transmute::<
+    special.key = 0 as *const i8;
+    special.exec = ::std::mem::transmute::<
         Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>,
         spc_handler_fn_ptr,
     >(Some(
         spc_handler_unknown as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
     ));
-    (*spe).x_user = x_user;
-    (*spe).y_user = y_user;
-    (*spe).mag = mag;
-    (*spe).pg = pdf_doc_current_page_number();
-    (*args).curptr = p;
-    (*args).endptr = (*args).curptr.offset(size as isize);
-    (*args).base = (*args).curptr;
-    (*args).command = 0 as *const i8;
+    spe.x_user = x_user;
+    spe.y_user = y_user;
+    spe.mag = mag;
+    spe.pg = pdf_doc_current_page_number();
+    args.curptr = p;
+    args.endptr = (*args).curptr.offset(size as isize);
+    args.base = (*args).curptr;
+    args.command = 0 as *const i8;
 }
-unsafe extern "C" fn check_garbage(mut args: *mut spc_arg) {
-    assert!(!args.is_null());
-    if (*args).curptr >= (*args).endptr {
+unsafe fn check_garbage(mut args: &mut spc_arg) {
+    if args.curptr >= args.endptr {
         return;
     }
-    skip_white(&mut (*args).curptr, (*args).endptr);
-    if (*args).curptr < (*args).endptr {
+    skip_white(&mut args.curptr, args.endptr);
+    if args.curptr < args.endptr {
         warn!("Unparsed material at end of special ignored.");
         dump((*args).curptr, (*args).endptr);
     };
 }
-static mut known_specials: [C2RustUnnamed_0; 9] = {
-    [
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"pdf:\x00" as *const u8 as *const i8,
-                bodhk_func: Some(spc_pdfm_at_begin_document as unsafe extern "C" fn() -> i32),
-                eodhk_func: Some(spc_pdfm_at_end_document as unsafe extern "C" fn() -> i32),
-                bophk_func: None,
-                eophk_func: None,
-                check_func: Some(
-                    spc_pdfm_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_pdfm_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"x:\x00" as *const u8 as *const i8,
-                bodhk_func: None,
-                eodhk_func: None,
-                bophk_func: None,
-                eophk_func: None,
-                check_func: Some(
-                    spc_xtx_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_xtx_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"dvipdfmx:\x00" as *const u8 as *const i8,
-                bodhk_func: None,
-                eodhk_func: None,
-                bophk_func: None,
-                eophk_func: None,
-                check_func: Some(
-                    spc_dvipdfmx_check_special
-                        as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_dvipdfmx_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"ps:\x00" as *const u8 as *const i8,
-                bodhk_func: Some(spc_dvips_at_begin_document as unsafe extern "C" fn() -> i32),
-                eodhk_func: Some(spc_dvips_at_end_document as unsafe extern "C" fn() -> i32),
-                bophk_func: Some(spc_dvips_at_begin_page as unsafe extern "C" fn() -> i32),
-                eophk_func: Some(spc_dvips_at_end_page as unsafe extern "C" fn() -> i32),
-                check_func: Some(
-                    spc_dvips_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_dvips_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"color\x00" as *const u8 as *const i8,
-                bodhk_func: None,
-                eodhk_func: None,
-                bophk_func: None,
-                eophk_func: None,
-                check_func: Some(
-                    spc_color_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_color_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"tpic\x00" as *const u8 as *const i8,
-                bodhk_func: Some(spc_tpic_at_begin_document as unsafe extern "C" fn() -> i32),
-                eodhk_func: Some(spc_tpic_at_end_document as unsafe extern "C" fn() -> i32),
-                bophk_func: Some(spc_tpic_at_begin_page as unsafe extern "C" fn() -> i32),
-                eophk_func: Some(spc_tpic_at_end_page as unsafe extern "C" fn() -> i32),
-                check_func: Some(
-                    spc_tpic_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_tpic_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"html:\x00" as *const u8 as *const i8,
-                bodhk_func: Some(spc_html_at_begin_document as unsafe extern "C" fn() -> i32),
-                eodhk_func: Some(spc_html_at_end_document as unsafe extern "C" fn() -> i32),
-                bophk_func: Some(spc_html_at_begin_page as unsafe extern "C" fn() -> i32),
-                eophk_func: Some(spc_html_at_end_page as unsafe extern "C" fn() -> i32),
-                check_func: Some(
-                    spc_html_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_html_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: b"unknown\x00" as *const u8 as *const i8,
-                bodhk_func: None,
-                eodhk_func: None,
-                bophk_func: None,
-                eophk_func: None,
-                check_func: Some(
-                    spc_misc_check_special as unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
-                ),
-                setup_func: Some(
-                    spc_misc_setup_handler
-                        as unsafe extern "C" fn(
-                            _: *mut spc_handler,
-                            _: *mut spc_env,
-                            _: *mut spc_arg,
-                        ) -> i32,
-                ),
-            };
-            init
-        },
-        {
-            let mut init = C2RustUnnamed_0 {
-                key: 0 as *const i8,
-                bodhk_func: None,
-                eodhk_func: None,
-                bophk_func: None,
-                eophk_func: None,
-                check_func: None,
-                setup_func: None,
-            };
-            init
-        },
-    ]
-};
-#[no_mangle]
+const known_specials: [Special; 8] = [
+    Special {
+        key: b"pdf:\x00" as *const u8 as *const i8,
+        bodhk_func: Some(spc_pdfm_at_begin_document),
+        eodhk_func: Some(spc_pdfm_at_end_document),
+        bophk_func: None,
+        eophk_func: None,
+        check_func: spc_pdfm_check_special,
+        setup_func: spc_pdfm_setup_handler,
+    },
+    Special {
+        key: b"x:\x00" as *const u8 as *const i8,
+        bodhk_func: None,
+        eodhk_func: None,
+        bophk_func: None,
+        eophk_func: None,
+        check_func: spc_xtx_check_special,
+        setup_func: spc_xtx_setup_handler,
+    },
+    Special {
+        key: b"dvipdfmx:\x00" as *const u8 as *const i8,
+        bodhk_func: None,
+        eodhk_func: None,
+        bophk_func: None,
+        eophk_func: None,
+        check_func: spc_dvipdfmx_check_special,
+        setup_func: spc_dvipdfmx_setup_handler,
+    },
+    Special {
+        key: b"ps:\x00" as *const u8 as *const i8,
+        bodhk_func: Some(spc_dvips_at_begin_document),
+        eodhk_func: Some(spc_dvips_at_end_document),
+        bophk_func: Some(spc_dvips_at_begin_page),
+        eophk_func: Some(spc_dvips_at_end_page),
+        check_func: spc_dvips_check_special,
+        setup_func: spc_dvips_setup_handler,
+    },
+    Special {
+        key: b"color\x00" as *const u8 as *const i8,
+        bodhk_func: None,
+        eodhk_func: None,
+        bophk_func: None,
+        eophk_func: None,
+        check_func: spc_color_check_special,
+        setup_func: spc_color_setup_handler,
+    },
+    Special {
+        key: b"tpic\x00" as *const u8 as *const i8,
+        bodhk_func: Some(spc_tpic_at_begin_document),
+        eodhk_func: Some(spc_tpic_at_end_document),
+        bophk_func: Some(spc_tpic_at_begin_page),
+        eophk_func: Some(spc_tpic_at_end_page),
+        check_func: spc_tpic_check_special,
+        setup_func: spc_tpic_setup_handler,
+    },
+    Special {
+        key: b"html:\x00" as *const u8 as *const i8,
+        bodhk_func: Some(spc_html_at_begin_document),
+        eodhk_func: Some(spc_html_at_end_document),
+        bophk_func: Some(spc_html_at_begin_page),
+        eophk_func: Some(spc_html_at_end_page),
+        check_func: spc_html_check_special,
+        setup_func: spc_html_setup_handler,
+    },
+    Special {
+        key: b"unknown\x00" as *const u8 as *const i8,
+        bodhk_func: None,
+        eodhk_func: None,
+        bophk_func: None,
+        eophk_func: None,
+        check_func: spc_misc_check_special,
+        setup_func: spc_misc_setup_handler,
+    },
+];
 pub unsafe extern "C" fn spc_exec_at_begin_page() -> i32 {
     let mut error: i32 = 0i32;
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while !known_specials[i as usize].key.is_null() {
-        if known_specials[i as usize].bophk_func.is_some() {
-            error = known_specials[i as usize]
-                .bophk_func
-                .expect("non-null function pointer")()
+    for spc in &known_specials {
+        if let Some(bophk) = spc.bophk_func {
+            error = bophk();
         }
-        i = i.wrapping_add(1)
     }
     error
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_exec_at_end_page() -> i32 {
     let mut error: i32 = 0i32;
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while !known_specials[i as usize].key.is_null() {
-        if known_specials[i as usize].eophk_func.is_some() {
-            error = known_specials[i as usize]
-                .eophk_func
-                .expect("non-null function pointer")()
+    for spc in &known_specials {
+        if let Some(eophk) = spc.eophk_func {
+            error = eophk();
         }
-        i = i.wrapping_add(1)
     }
     error
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_exec_at_begin_document() -> i32 {
     let mut error: i32 = 0i32;
-    let mut i: u32 = 0;
     assert!(named_objects.is_null());
     named_objects = pdf_new_name_tree();
-    i = 0_u32;
-    while !known_specials[i as usize].key.is_null() {
-        if known_specials[i as usize].bodhk_func.is_some() {
-            error = known_specials[i as usize]
-                .bodhk_func
-                .expect("non-null function pointer")()
+    for spc in &known_specials {
+        if let Some(bodhk) = spc.bodhk_func {
+            error = bodhk();
         }
-        i = i.wrapping_add(1)
     }
     error
 }
-#[no_mangle]
 pub unsafe extern "C" fn spc_exec_at_end_document() -> i32 {
     let mut error: i32 = 0i32;
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while !known_specials[i as usize].key.is_null() {
-        if known_specials[i as usize].eodhk_func.is_some() {
-            error = known_specials[i as usize]
-                .eodhk_func
-                .expect("non-null function pointer")()
+
+    for spc in &known_specials {
+        if let Some(eodhk) = spc.eodhk_func {
+            error = eodhk();
         }
-        i = i.wrapping_add(1)
     }
     if !named_objects.is_null() {
         pdf_delete_name_tree(&mut named_objects);
@@ -625,9 +470,7 @@ pub unsafe extern "C" fn spc_exec_at_end_document() -> i32 {
     error
 }
 unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut ap: *mut spc_arg) {
-    let mut p: *const i8 = 0 as *const i8;
     let mut ebuf: [i8; 64] = [0; 64];
-    let mut i: i32 = 0;
     let mut pg: i32 = (*spe).pg;
     let mut c = pdf_coord::new((*spe).x_user, (*spe).y_user);
     pdf_dev_transform(&mut c, None);
@@ -642,8 +485,8 @@ unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut
             pg, c.x, c.y,
         );
     }
-    i = 0i32;
-    p = (*ap).base;
+    let mut i = 0i32;
+    let mut p = (*ap).base;
     while i < 63i32 && p < (*ap).endptr {
         if libc::isprint(*p as _) != 0 {
             let fresh0 = i;
@@ -715,7 +558,6 @@ unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut
 /* This should not use pdf_. */
 /* PDF parser shouldn't depend on this...
  */
-#[no_mangle]
 pub unsafe extern "C" fn spc_exec_special(
     mut buffer: *const i8,
     mut size: i32,
@@ -724,8 +566,6 @@ pub unsafe extern "C" fn spc_exec_special(
     mut mag: f64,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut i: i32 = 0;
-    let mut found: bool = false;
     let mut spe: spc_env = spc_env {
         x_user: 0.,
         y_user: 0.,
@@ -755,26 +595,18 @@ pub unsafe extern "C" fn spc_exec_special(
         y_user,
         mag,
     );
-    i = 0i32;
-    while !known_specials[i as usize].key.is_null() {
-        found = known_specials[i as usize]
-            .check_func
-            .expect("non-null function pointer")(buffer, size);
+
+    for spc in &known_specials {
+        let found = (spc.check_func)(buffer, size);
         if found {
-            error = known_specials[i as usize]
-                .setup_func
-                .expect("non-null function pointer")(
-                &mut special, &mut spe, &mut args
-            );
+            error = (spc.setup_func)(&mut special, &mut spe, &mut args);
             if error == 0 {
                 error = special.exec.expect("non-null function pointer")(&mut spe, &mut args)
             }
             if error != 0 {
-                print_error(known_specials[i as usize].key, &mut spe, &mut args);
+                print_error(spc.key, &mut spe, &mut args);
             }
             break;
-        } else {
-            i += 1
         }
     }
     check_garbage(&mut args);

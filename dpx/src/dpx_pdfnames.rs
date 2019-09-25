@@ -311,7 +311,6 @@ unsafe extern "C" fn build_name_tree(
     mut is_root: i32,
 ) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut i: i32 = 0;
     result = pdf_new_dict();
     /*
      * According to PDF Refrence, Third Edition (p.101-102), a name tree
@@ -344,8 +343,7 @@ unsafe extern "C" fn build_name_tree(
         let mut names: *mut pdf_obj = 0 as *mut pdf_obj;
         /* Create leaf nodes. */
         names = pdf_new_array();
-        i = 0i32;
-        while i < num_leaves {
+        for i in 0..num_leaves {
             let mut cur: *mut named_object = 0 as *mut named_object;
             cur = &mut *first.offset(i as isize) as *mut named_object;
             pdf_add_array(
@@ -368,15 +366,13 @@ unsafe extern "C" fn build_name_tree(
             }
             pdf_release_obj((*cur).value);
             (*cur).value = 0 as *mut pdf_obj;
-            i += 1
         }
         pdf_add_dict(result, "Names", names);
     } else if num_leaves > 0i32 {
         let mut kids: *mut pdf_obj = 0 as *mut pdf_obj;
         /* Intermediate node */
         kids = pdf_new_array();
-        i = 0i32;
-        while i < 4i32 {
+        for i in 0..4 {
             let mut subtree: *mut pdf_obj = 0 as *mut pdf_obj;
             let mut start: i32 = 0;
             let mut end: i32 = 0;
@@ -385,7 +381,6 @@ unsafe extern "C" fn build_name_tree(
             subtree = build_name_tree(&mut *first.offset(start as isize), end - start, 0i32);
             pdf_add_array(kids, pdf_ref_obj(subtree));
             pdf_release_obj(subtree);
-            i += 1
         }
         pdf_add_dict(result, "Kids", kids);
     }

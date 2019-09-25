@@ -284,14 +284,11 @@ pub unsafe extern "C" fn jpeg_include_image(
     pdf_add_dict(stream_dict, "ColorSpace", colorspace);
     if j_info.flags & 1i32 << 1i32 != 0 && j_info.num_components as i32 == 4i32 {
         let mut decode: *mut pdf_obj = 0 as *mut pdf_obj;
-        let mut i: u32 = 0;
         warn!("Adobe CMYK JPEG: Inverted color assumed.");
         decode = pdf_new_array();
-        i = 0_u32;
-        while i < j_info.num_components as u32 {
+        for _ in 0..j_info.num_components as u32 {
             pdf_add_array(decode, pdf_new_number(1.0f64));
             pdf_add_array(decode, pdf_new_number(0.0f64));
-            i = i.wrapping_add(1)
         }
         pdf_add_dict(stream_dict, "Decode", decode);
     }
@@ -374,15 +371,12 @@ unsafe extern "C" fn JPEG_release_APPn_data(
 }
 unsafe extern "C" fn JPEG_info_clear(mut j_info: *mut JPEG_info) {
     if (*j_info).num_appn > 0i32 && !(*j_info).appn.is_null() {
-        let mut i: i32 = 0;
-        i = 0i32;
-        while i < (*j_info).num_appn {
+        for i in 0..(*j_info).num_appn {
             JPEG_release_APPn_data(
                 (*(*j_info).appn.offset(i as isize)).marker,
                 (*(*j_info).appn.offset(i as isize)).app_sig,
                 (*(*j_info).appn.offset(i as isize)).app_data,
             );
-            i += 1
         }
         free((*j_info).appn as *mut libc::c_void);
     }
@@ -394,12 +388,10 @@ unsafe extern "C" fn JPEG_info_clear(mut j_info: *mut JPEG_info) {
 unsafe extern "C" fn JPEG_get_iccp(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     let mut icc_stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut icc: *mut JPEG_APPn_ICC = 0 as *mut JPEG_APPn_ICC;
-    let mut i: i32 = 0;
     let mut prev_id: i32 = 0i32;
     let mut num_icc_seg: i32 = -1i32;
     icc_stream = pdf_new_stream(1i32 << 0i32);
-    i = 0i32;
-    while i < (*j_info).num_appn {
+    for i in 0..(*j_info).num_appn {
         if !((*(*j_info).appn.offset(i as isize)).marker as u32 != JM_APP2 as i32 as u32
             || (*(*j_info).appn.offset(i as isize)).app_sig as u32 != JS_APPn_ICC as i32 as u32)
         {
@@ -429,7 +421,6 @@ unsafe extern "C" fn JPEG_get_iccp(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
             prev_id = (*icc).seq_id as i32;
             num_icc_seg = (*icc).num_chunks as i32
         }
-        i += 1
     }
     icc_stream
 }
@@ -437,15 +428,13 @@ unsafe extern "C" fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     let mut XMP_stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut stream_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut XMP: *mut JPEG_APPn_XMP = 0 as *mut JPEG_APPn_XMP;
-    let mut i: i32 = 0;
     let mut count: i32 = 0i32;
     /* I don't know if XMP Metadata should be compressed here.*/
     XMP_stream = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(XMP_stream);
     pdf_add_dict(stream_dict, "Type", pdf_new_name("Metadata"));
     pdf_add_dict(stream_dict, "Subtype", pdf_new_name("XML"));
-    i = 0i32;
-    while i < (*j_info).num_appn {
+    for i in 0..(*j_info).num_appn {
         /* Not sure for the case of multiple segments */
         if !((*(*j_info).appn.offset(i as isize)).marker as u32 != JM_APP1 as i32 as u32
             || (*(*j_info).appn.offset(i as isize)).app_sig as u32 != JS_APPn_XMP as i32 as u32)
@@ -458,7 +447,6 @@ unsafe extern "C" fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
             );
             count += 1
         }
-        i += 1
     }
     if count > 1i32 {
         warn!(
@@ -530,20 +518,15 @@ unsafe extern "C" fn read_APP14_Adobe(
 unsafe extern "C" fn read_exif_bytes(mut pp: *mut *mut u8, mut n: i32, mut endian: i32) -> i32 {
     let mut rval: i32 = 0i32;
     let mut p: *mut u8 = *pp;
-    let mut i: i32 = 0;
     match endian {
         0 => {
-            i = 0i32;
-            while i < n {
+            for i in 0..n {
                 rval = (rval << 8i32) + *p.offset(i as isize) as i32;
-                i += 1
             }
         }
         1 => {
-            i = n - 1i32;
-            while i >= 0i32 {
+            for i in (0..n).rev() {
                 rval = (rval << 8i32) + *p.offset(i as isize) as i32;
-                i -= 1
             }
         }
         _ => {}

@@ -87,11 +87,8 @@ pub unsafe extern "C" fn cff_new_dict() -> *mut cff_dict {
 pub unsafe extern "C" fn cff_release_dict(mut dict: *mut cff_dict) {
     if !dict.is_null() {
         if !(*dict).entries.is_null() {
-            let mut i: i32 = 0;
-            i = 0i32;
-            while i < (*dict).count {
+            for i in 0..(*dict).count {
                 free((*(*dict).entries.offset(i as isize)).values as *mut libc::c_void);
-                i += 1
             }
             free((*dict).entries as *mut libc::c_void);
         }
@@ -556,18 +553,15 @@ unsafe extern "C" fn get_integer(
         }
     } else if b0 as i32 == 29i32 && *data < endptr.offset(-4) {
         /* longint */
-        let mut i: i32 = 0;
         let fresh3 = *data;
         *data = (*data).offset(1);
         result = *fresh3 as i32;
         if result > 0x7fi32 {
             result -= 0x100i32
         }
-        i = 0i32;
-        while i < 3i32 {
+        for _ in 0..3 {
             result = result * 256i32 + **data as i32;
             *data = (*data).offset(1);
-            i += 1
         }
     } else if b0 as i32 >= 32i32 && b0 as i32 <= 246i32 {
         /* int (1) */
@@ -918,16 +912,13 @@ unsafe extern "C" fn put_dict_entry(mut de: *mut cff_dict_entry, dest: &mut [u8]
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_pack(mut dict: *mut cff_dict, dest: &mut [u8]) -> usize {
     let mut len = 0_usize;
-    let mut i = 0;
-    while i < (*dict).count as isize {
+    for i in 0..(*dict).count as isize {
         if streq_ptr(
             (*(*dict).entries.offset(i)).key,
             b"ROS\x00" as *const u8 as *const i8,
         ) {
             len += put_dict_entry(&mut *(*dict).entries.offset(i), dest);
             break;
-        } else {
-            i += 1
         }
     }
     for i in 0..(*dict).count as isize {
@@ -944,7 +935,6 @@ pub unsafe extern "C" fn cff_dict_pack(mut dict: *mut cff_dict, dest: &mut [u8])
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_add(mut dict: *mut cff_dict, mut key: *const i8, mut count: i32) {
     let mut id: i32 = 0;
-    let mut i: i32 = 0;
     id = 0i32;
     while id < 22i32 + 39i32 {
         if !key.is_null()
@@ -958,15 +948,13 @@ pub unsafe extern "C" fn cff_dict_add(mut dict: *mut cff_dict, mut key: *const i
     if id == 22i32 + 39i32 {
         panic!("{}: Unknown CFF DICT operator.", "CFF",);
     }
-    i = 0i32;
-    while i < (*dict).count {
+    for i in 0..(*dict).count {
         if (*(*dict).entries.offset(i as isize)).id == id {
             if (*(*dict).entries.offset(i as isize)).count != count {
                 panic!("{}: Inconsistent DICT argument number.", "CFF",);
             }
             return;
         }
-        i += 1
     }
     if (*dict).count + 1i32 >= (*dict).max {
         (*dict).max += 8i32;
@@ -998,29 +986,23 @@ pub unsafe extern "C" fn cff_dict_add(mut dict: *mut cff_dict, mut key: *const i
 }
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_remove(mut dict: *mut cff_dict, mut key: *const i8) {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < (*dict).count {
+    for i in 0..(*dict).count {
         if streq_ptr(key, (*(*dict).entries.offset(i as isize)).key) {
             (*(*dict).entries.offset(i as isize)).count = 0i32;
             let ref mut fresh23 = (*(*dict).entries.offset(i as isize)).values;
             *fresh23 =
                 mfree((*(*dict).entries.offset(i as isize)).values as *mut libc::c_void) as *mut f64
         }
-        i += 1
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_known(mut dict: *mut cff_dict, mut key: *const i8) -> i32 {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < (*dict).count {
+    for i in 0..(*dict).count {
         if streq_ptr(key, (*(*dict).entries.offset(i as isize)).key) as i32 != 0
             && (*(*dict).entries.offset(i as isize)).count > 0i32
         {
             return 1i32;
         }
-        i += 1
     }
     0i32
 }
@@ -1092,9 +1074,7 @@ pub unsafe extern "C" fn cff_dict_set(
 /* decode/encode DICT */
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_update(mut dict: *mut cff_dict, cff: &mut cff_font) {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while i < (*dict).count {
+    for i in 0..(*dict).count {
         if (*(*dict).entries.offset(i as isize)).count > 0i32 {
             let mut str: *mut i8 = 0 as *mut i8;
             let mut id: i32 = 0;
@@ -1124,6 +1104,5 @@ pub unsafe extern "C" fn cff_dict_update(mut dict: *mut cff_dict, cff: &mut cff_
                 free(str as *mut libc::c_void);
             }
         }
-        i += 1
     }
 }

@@ -225,7 +225,6 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     /* ENABLE_NOEMBED */
     assert!(!fontdict.is_null() && !descriptor.is_null());
     let mut fontname: [i8; 256] = [0; 256];
-    let mut n: i32 = 0;
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     memset(fontname.as_mut_ptr() as *mut libc::c_void, 0i32, 256);
     length = tt_get_ps_fontname(sfont, fontname.as_mut_ptr(), 255_u16) as i32;
@@ -241,8 +240,7 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         strncpy(fontname.as_mut_ptr(), ident, length as _);
     }
     fontname[length as usize] = '\u{0}' as i32 as i8;
-    n = 0i32;
-    while n < length {
+    for n in 0..length {
         if fontname[n as usize] as i32 == 0i32 {
             memmove(
                 fontname.as_mut_ptr().offset(n as isize) as *mut libc::c_void,
@@ -250,7 +248,6 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
                 (length - n - 1) as _,
             );
         }
-        n += 1
     }
     if strlen(fontname.as_mut_ptr()) == 0 {
         panic!(
@@ -315,7 +312,6 @@ const required_table: [SfntTableInfo; 12] = {
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut tmparray: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut code: i32 = 0;
     let mut firstchar: i32 = 0;
     let mut lastchar: i32 = 0;
     let mut tfm_id: i32 = 0;
@@ -325,8 +321,7 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     tmparray = pdf_new_array();
     firstchar = 255i32;
     lastchar = 0i32;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
             if code < firstchar {
                 firstchar = code
@@ -335,7 +330,6 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
                 lastchar = code
             }
         }
-        code += 1
     }
     if firstchar > lastchar {
         warn!("No glyphs actually used???");
@@ -343,8 +337,7 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
         return;
     }
     tfm_id = tfm_open(pdf_font_get_mapname(font), 0i32);
-    code = firstchar;
-    while code <= lastchar {
+    for code in firstchar..=lastchar {
         if *usedchars.offset(code as isize) != 0 {
             let mut width: f64 = 0.;
             if tfm_id < 0i32 {
@@ -360,7 +353,6 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
         } else {
             pdf_add_array(tmparray, pdf_new_number(0.0f64));
         }
-        code += 1
     }
     if pdf_array_length(tmparray) > 0_u32 {
         pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmparray));
@@ -388,7 +380,6 @@ unsafe extern "C" fn do_builtin_encoding(
     let mut ttcm: *mut tt_cmap = 0 as *mut tt_cmap;
     let mut gid: u16 = 0;
     let mut idx: u16 = 0;
-    let mut code: i32 = 0;
     let mut count: i32 = 0;
     let mut widths: [f64; 256] = [0.; 256];
     ttcm = tt_cmap_read(sfont, 1_u16, 0_u16);
@@ -419,8 +410,7 @@ unsafe extern "C" fn do_builtin_encoding(
         info!("[glyphs:/.notdef");
     }
     count = 1i32;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if !(*usedchars.offset(code as isize) == 0) {
             if verbose > 2i32 {
                 info!("/.c0x{:02x}", code);
@@ -443,7 +433,6 @@ unsafe extern "C" fn do_builtin_encoding(
             *cmap_table.offset((18i32 + code) as isize) = (idx as i32 & 0xffi32) as i8;
             count += 1
         }
-        code += 1
     }
     tt_cmap_release(ttcm);
     if verbose > 2i32 {
@@ -455,8 +444,7 @@ unsafe extern "C" fn do_builtin_encoding(
         free(cmap_table as *mut libc::c_void);
         return -1i32;
     }
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
             idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
             widths[code as usize] = (1000.0f64
@@ -469,7 +457,6 @@ unsafe extern "C" fn do_builtin_encoding(
         } else {
             widths[code as usize] = 0.0f64
         }
-        code += 1
     }
     do_widths(font, widths.as_mut_ptr());
     if verbose > 1i32 {
@@ -880,7 +867,7 @@ unsafe extern "C" fn findparanoiac(
                         } else {
                             ',' as i32
                         }) as i8;
-                        _i += 1
+                        _i += 1;
                     }
                     let fresh4 = _n;
                     _n = _n + 1;
@@ -994,7 +981,6 @@ unsafe extern "C" fn do_custom_encoding(
 ) -> i32 {
     let mut glyphs: *mut tt_glyphs = 0 as *mut tt_glyphs;
     let mut cmap_table: *mut i8 = 0 as *mut i8;
-    let mut code: i32 = 0;
     let mut count: i32 = 0;
     let mut widths: [f64; 256] = [0.; 256];
     let mut gm: glyph_mapper = glyph_mapper {
@@ -1036,8 +1022,7 @@ unsafe extern "C" fn do_custom_encoding(
     /* Language */
     glyphs = tt_build_init(); /* +1 for .notdef */
     count = 1i32;
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if !(*usedchars.offset(code as isize) == 0) {
             if (*encoding.offset(code as isize)).is_null()
                 || streq_ptr(
@@ -1081,7 +1066,6 @@ unsafe extern "C" fn do_custom_encoding(
             }
             *cmap_table.offset((18i32 + code) as isize) = (idx as i32 & 0xffi32) as i8
         }
-        code += 1
         /* bug here */
     } /* _FIXME_: wrong message */
     clean_glyph_mapper(&mut gm);
@@ -1091,8 +1075,7 @@ unsafe extern "C" fn do_custom_encoding(
         free(cmap_table as *mut libc::c_void);
         return -1i32;
     }
-    code = 0i32;
-    while code < 256i32 {
+    for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
             idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
             widths[code as usize] = (1000.0f64
@@ -1105,7 +1088,6 @@ unsafe extern "C" fn do_custom_encoding(
         } else {
             widths[code as usize] = 0.0f64
         }
-        code += 1
     }
     do_widths(font, widths.as_mut_ptr());
     if verbose > 1i32 {

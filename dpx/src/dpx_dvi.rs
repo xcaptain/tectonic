@@ -584,7 +584,6 @@ unsafe extern "C" fn get_buffered_unsigned_pair() -> u32 {
     pair
 }
 unsafe extern "C" fn get_buffered_signed_quad() -> i32 {
-    let mut i: u32 = 0;
     let fresh4 = dvi_page_buf_index;
     dvi_page_buf_index = dvi_page_buf_index.wrapping_add(1);
     let mut quad: i32 = *dvi_page_buffer.offset(fresh4 as isize) as i32;
@@ -592,12 +591,10 @@ unsafe extern "C" fn get_buffered_signed_quad() -> i32 {
     if quad >= 0x80i32 {
         quad -= 0x100i32
     }
-    i = 0_u32;
-    while i < 3_u32 {
+    for _ in 0..3 {
         let fresh5 = dvi_page_buf_index;
         dvi_page_buf_index = dvi_page_buf_index.wrapping_add(1);
         quad = quad << 8i32 | *dvi_page_buffer.offset(fresh5 as isize) as i32;
-        i = i.wrapping_add(1)
     }
     quad
 }
@@ -1006,11 +1003,9 @@ unsafe extern "C" fn get_dvi_fonts(mut post_location: i32) {
         }
     }
     if verbose > 2i32 {
-        let mut i: u32 = 0;
         info!("\n");
         info!("DVI file font info\n");
-        i = 0_u32;
-        while i < num_def_fonts {
+        for i in 0..num_def_fonts {
             info!(
                 "TeX Font: {:10} loaded at ID={:5}, ",
                 CStr::from_ptr((*def_fonts.offset(i as isize)).font_name).display(),
@@ -1024,7 +1019,6 @@ unsafe extern "C" fn get_dvi_fonts(mut post_location: i32) {
                         / (*def_fonts.offset(i as isize)).design_size as f64),
             );
             info!("\n");
-            i = i.wrapping_add(1)
         }
     };
 }
@@ -1930,15 +1924,12 @@ unsafe extern "C" fn do_xxx(mut size: i32) {
     dvi_page_buf_index = dvi_page_buf_index.wrapping_add(size as u32);
 }
 unsafe extern "C" fn do_bop() {
-    let mut i: u32 = 0;
     if processing_page != 0 {
         panic!("Got a bop in the middle of a page!");
     }
     /* For now, ignore TeX's count registers */
-    i = 0_u32;
-    while i < 10_u32 {
+    for _ in 0..10 {
         dvi_page_buf_index = dvi_page_buf_index.wrapping_add(4_u32);
-        i = i.wrapping_add(1)
     }
     /* Ignore previous page pointer since we have already
      * saved this information
@@ -2039,15 +2030,13 @@ unsafe extern "C" fn do_native_font_def(mut tex_id: i32) {
     /* don't buffer the opcode */
 }
 unsafe extern "C" fn skip_glyphs() {
-    let mut i: u32 = 0; /* Will actually move left */
+    /* Will actually move left */
     let mut slen: u32 = 0_u32; /* freetype glyph index */
     slen = get_buffered_unsigned_pair();
-    i = 0_u32;
-    while i < slen {
+    for _ in 0..slen {
         dvi_page_buf_index = dvi_page_buf_index.wrapping_add(4_u32);
         dvi_page_buf_index = dvi_page_buf_index.wrapping_add(4_u32);
         dvi_page_buf_index = dvi_page_buf_index.wrapping_add(2_u32);
-        i = i.wrapping_add(1)
     }
 }
 unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
@@ -2059,7 +2048,6 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
     let mut yloc: *mut spt_t = 0 as *mut spt_t;
     let mut glyph_width: spt_t = 0i32;
     let mut wbuf: [u8; 2] = [0; 2];
-    let mut i: u32 = 0;
     let mut glyph_id: u32 = 0;
     let mut slen: u32 = 0_u32;
     if current_font < 0i32 {
@@ -2069,19 +2057,15 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
     if do_actual_text != 0 {
         slen = get_buffered_unsigned_pair();
         if lr_mode >= 2i32 {
-            i = 0_u32;
-            while i < slen {
+            for _ in 0..slen {
                 dvi_page_buf_index = dvi_page_buf_index.wrapping_add(2_u32);
-                i = i.wrapping_add(1)
             }
         } else {
             let mut unicodes: *mut u16 = new((slen as u64)
                 .wrapping_mul(::std::mem::size_of::<u16>() as u64)
                 as u32) as *mut u16;
-            i = 0_u32;
-            while i < slen {
+            for i in 0..slen {
                 *unicodes.offset(i as isize) = get_buffered_unsigned_pair() as u16;
-                i = i.wrapping_add(1)
             }
             pdf_dev_begin_actualtext(unicodes, slen as i32);
             free(unicodes as *mut libc::c_void);
@@ -2101,11 +2085,9 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
         new((slen as u64).wrapping_mul(::std::mem::size_of::<spt_t>() as u64) as u32) as *mut spt_t;
     yloc =
         new((slen as u64).wrapping_mul(::std::mem::size_of::<spt_t>() as u64) as u32) as *mut spt_t;
-    i = 0_u32;
-    while i < slen {
+    for i in 0..slen {
         *xloc.offset(i as isize) = get_buffered_signed_quad();
         *yloc.offset(i as isize) = get_buffered_signed_quad();
-        i = i.wrapping_add(1)
     }
     if (*font).rgba_color != 0xffffffffu32 {
         let mut color: pdf_color = pdf_color {
@@ -2122,8 +2104,7 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
         let color_clone = color.clone();
         pdf_color_push(&mut color, &color_clone);
     }
-    i = 0_u32;
-    while i < slen {
+    for i in 0..slen {
         glyph_id = get_buffered_unsigned_pair();
         if glyph_id < (*font).numGlyphs {
             let mut advance: u32 = 0;
@@ -2189,7 +2170,6 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
             (*font).font_id,
             -1i32,
         );
-        i = i.wrapping_add(1)
     }
     if (*font).rgba_color != 0xffffffffu32 {
         pdf_color_pop();
@@ -2479,7 +2459,6 @@ pub unsafe extern "C" fn dvi_init(mut dvi_filename: *const i8, mut mag: f64) -> 
 }
 #[no_mangle]
 pub unsafe extern "C" fn dvi_close() {
-    let mut i: u32 = 0;
     if linear != 0 {
         /* probably reading a pipe from xetex; consume any remaining data */
         while ttstub_input_getc(dvi_handle) != -1i32 {}
@@ -2492,20 +2471,17 @@ pub unsafe extern "C" fn dvi_close() {
     ttstub_input_close(dvi_handle);
     dvi_handle = 0 as *mut libc::c_void;
     if !def_fonts.is_null() {
-        i = 0_u32;
-        while i < num_def_fonts {
+        for i in 0..num_def_fonts {
             let ref mut fresh23 = (*def_fonts.offset(i as isize)).font_name;
             *fresh23 =
                 mfree((*def_fonts.offset(i as isize)).font_name as *mut libc::c_void) as *mut i8;
-            i = i.wrapping_add(1)
         }
         free(def_fonts as *mut libc::c_void);
     }
     def_fonts = 0 as *mut font_def;
     page_loc = mfree(page_loc as *mut libc::c_void) as *mut u32;
     num_pages = 0_u32;
-    i = 0_u32;
-    while i < num_loaded_fonts {
+    for i in 0..num_loaded_fonts {
         free((*loaded_fonts.offset(i as isize)).hvmt as *mut libc::c_void);
         let ref mut fresh24 = (*loaded_fonts.offset(i as isize)).hvmt;
         *fresh24 = 0 as *mut tt_longMetrics;
@@ -2514,7 +2490,6 @@ pub unsafe extern "C" fn dvi_close() {
         }
         let ref mut fresh25 = (*loaded_fonts.offset(i as isize)).cffont;
         *fresh25 = 0 as *mut cff_font;
-        i = i.wrapping_add(1)
     }
     loaded_fonts = mfree(loaded_fonts as *mut libc::c_void) as *mut loaded_font;
     num_loaded_fonts = 0_u32;

@@ -207,7 +207,6 @@ unsafe extern "C" fn skip_capital(mut p: *mut *const i8, mut endptr: *const i8) 
 }
 unsafe extern "C" fn skip_modifier(mut p: *mut *const i8, mut endptr: *const i8) -> size_t {
     let mut slen: size_t = 0i32 as size_t;
-    let mut len: size_t = 0;
     let mut i: u32 = 0;
     let len = endptr.wrapping_offset_from(*p) as usize;
     i = 0;
@@ -674,7 +673,6 @@ unsafe extern "C" fn agl_guess_name(mut glyphname: *const i8) -> ssize_t {
 unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_name {
     let mut agln: *mut agl_name = 0 as *mut agl_name;
     let mut suffix: *mut i8 = 0 as *mut i8;
-    let mut i: i32 = 0;
     let mut n: i32 = 0;
     if glyphname.is_null() {
         return 0 as *mut agl_name;
@@ -706,15 +704,13 @@ unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_nam
         (*agln).name =
             new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
                 as *mut i8;
-        i = 0i32;
-        while i < n {
+        for i in 0..n {
             *(*agln).name.offset(i as isize) =
                 (if libc::isupper(*glyphname.offset(i as isize) as _) != 0 {
                     *glyphname.offset(i as isize) as i32 + 32i32
                 } else {
                     *glyphname.offset(i as isize) as i32
                 }) as i8;
-            i += 1
         }
         *(*agln).name.offset(n as isize) = '\u{0}' as i32 as i8
     } else {
@@ -813,7 +809,6 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
         let mut duplicate: *mut agl_name = 0 as *mut agl_name;
         let mut name: *mut i8 = 0 as *mut i8;
         let mut n_unicodes: i32 = 0;
-        let mut i: i32 = 0;
         let mut unicodes: [i32; 16] = [0; 16];
         endptr = p.offset(strlen(p) as isize);
         skip_white(&mut p, endptr);
@@ -862,10 +857,8 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                 agln = agl_normalized_name(name);
                 (*agln).is_predef = is_predef;
                 (*agln).n_components = n_unicodes;
-                i = 0i32;
-                while i < n_unicodes {
-                    (*agln).unicodes[i as usize] = unicodes[i as usize];
-                    i += 1
+                for i in 0..n_unicodes as usize {
+                    (*agln).unicodes[i] = unicodes[i];
                 }
                 duplicate = ht_lookup_table(
                     &mut aglmap,
@@ -900,14 +893,12 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                             CStr::from_ptr((*agln).name).display(),
                         );
                     }
-                    i = 0i32;
-                    while i < (*agln).n_components {
-                        if (*agln).unicodes[i as usize] > 0xffffi32 {
-                            info!(" U+{:06X}", (*agln).unicodes[i as usize],);
+                    for i in 0..(*agln).n_components as usize {
+                        if (*agln).unicodes[i] > 0xffffi32 {
+                            info!(" U+{:06X}", (*agln).unicodes[i],);
                         } else {
-                            info!(" U+{:04X}", (*agln).unicodes[i as usize],);
+                            info!(" U+{:04X}", (*agln).unicodes[i],);
                         }
-                        i += 1
                     }
                     info!("\n");
                 }
@@ -939,7 +930,6 @@ pub unsafe extern "C" fn agl_lookup_list(mut glyphname: *const i8) -> *mut agl_n
 pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
     let mut c: i8 = 0;
     let mut suffix: *mut i8 = 0 as *mut i8;
-    let mut i: size_t = 0;
     let mut len: size_t = 0;
     if glyphname.is_null() {
         return false;
@@ -969,14 +959,12 @@ pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
         }
     } else {
         if len <= 7i32 as u64 && len >= 5i32 as u64 && *glyphname.offset(0) as i32 == 'u' as i32 {
-            i = 1i32 as size_t;
-            while i < len.wrapping_sub(1i32 as u64) {
+            for i in 1..len - 1 {
                 c = *glyphname.offset(i as isize);
                 if libc::isdigit(c as _) == 0 && ((c as i32) < 'A' as i32 || c as i32 > 'F' as i32)
                 {
                     return false;
                 }
-                i = i.wrapping_add(1)
             }
             return true;
         }
@@ -1093,7 +1081,6 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
         let mut name: *mut i8 = 0 as *mut i8;
         let mut delim: *const i8 = 0 as *const i8;
         let mut sub_len: i32 = 0;
-        let mut i: i32 = 0;
         let mut agln0: *mut agl_name = 0 as *mut agl_name;
         let mut agln1: *mut agl_name = 0 as *mut agl_name;
         delim = strchr(p, '_' as i32);
@@ -1161,14 +1148,12 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
                 }
             }
             if !agln1.is_null() {
-                i = 0i32;
-                while i < (*agln1).n_components {
+                for i in 0..(*agln1).n_components as usize {
                     len = (len as u64).wrapping_add(UC_UTF16BE_encode_char(
-                        (*agln1).unicodes[i as usize],
+                        (*agln1).unicodes[i],
                         dstpp,
                         limptr,
                     )) as i32 as i32;
-                    i += 1
                 }
             } else {
                 if verbose != 0 {
@@ -1206,7 +1191,6 @@ pub unsafe extern "C" fn agl_get_unicodes(
         let mut name: *mut i8 = 0 as *mut i8;
         let mut delim: *const i8 = 0 as *const i8;
         let mut sub_len: i32 = 0;
-        let mut i: i32 = 0;
         let mut agln0: *mut agl_name = 0 as *mut agl_name;
         let mut agln1: *mut agl_name = 0 as *mut agl_name;
         delim = strchr(p, '_' as i32);
@@ -1292,12 +1276,10 @@ pub unsafe extern "C" fn agl_get_unicodes(
                     free(name as *mut libc::c_void);
                     return -1i32;
                 }
-                i = 0i32;
-                while i < (*agln1).n_components {
+                for i in 0..(*agln1).n_components {
                     let fresh4 = count;
                     count = count + 1;
                     *unicodes.offset(fresh4 as isize) = (*agln1).unicodes[i as usize];
-                    i += 1
                 }
             } else {
                 if verbose > 1i32 {

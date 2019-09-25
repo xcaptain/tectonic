@@ -30,6 +30,7 @@
 )]
 
 use crate::warn;
+use crate::DisplayExt;
 use crate::TTInputFormat;
 use crate::{streq_ptr, strstartswith};
 
@@ -267,7 +268,7 @@ pub unsafe extern "C" fn spc_pdfm_at_end_document() -> i32 {
     spc_handler_pdfm__clean(sd as *mut libc::c_void)
 }
 /* Dvipdfm specials */
-unsafe extern "C" fn spc_handler_pdfm_bop(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_bop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if (*args).curptr < (*args).endptr {
         pdf_doc_set_bop_content(
             (*args).curptr,
@@ -277,7 +278,7 @@ unsafe extern "C" fn spc_handler_pdfm_bop(mut spe: *mut spc_env, mut args: *mut 
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_eop(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_eop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if (*args).curptr < (*args).endptr {
         pdf_doc_set_eop_content(
             (*args).curptr,
@@ -294,11 +295,14 @@ unsafe extern "C" fn safeputresdent(
     mut dp: *mut libc::c_void,
 ) -> i32 {
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    let key = pdf_name_value(&*kp).to_str().unwrap();
-    if pdf_lookup_dict(dp as *mut pdf_obj, key).is_some() {
-        warn!("Object \"{}\" already defined in dict! (ignored)", key);
+    let key = pdf_name_value(&*kp);
+    if pdf_lookup_dict(dp as *mut pdf_obj, key.to_bytes()).is_some() {
+        warn!(
+            "Object \"{}\" already defined in dict! (ignored)",
+            key.display()
+        );
     } else {
-        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
     }
     0i32
 }
@@ -307,12 +311,11 @@ unsafe extern "C" fn safeputresdict(
     mut vp: *mut pdf_obj,
     mut dp: *mut libc::c_void,
 ) -> i32 {
-    let mut key: *mut i8 = 0 as *mut i8;
     assert!(!kp.is_null() && !vp.is_null() && !dp.is_null());
-    let key = pdf_name_value(&*kp).to_str().unwrap();
-    let dict = pdf_lookup_dict(dp as *mut pdf_obj, key);
+    let key = pdf_name_value(&*kp);
+    let dict = pdf_lookup_dict(dp as *mut pdf_obj, key.to_bytes());
     if (*vp).is_indirect() {
-        pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+        pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
     } else if pdf_obj_typeof(vp) == PdfObjType::DICT {
         if let Some(dict) = dict {
             pdf_foreach_dict(
@@ -328,12 +331,12 @@ unsafe extern "C" fn safeputresdict(
                 dict as *mut libc::c_void,
             );
         } else {
-            pdf_add_dict(dp as *mut pdf_obj, key, pdf_link_obj(vp));
+            pdf_add_dict(dp as *mut pdf_obj, key.to_bytes(), pdf_link_obj(vp));
         }
     } else {
         warn!(
             "Invalid type (not DICT) for page/form resource dict entry: key=\"{}\"",
-            key,
+            key.display(),
         );
         return -1i32;
     }
@@ -565,20 +568,16 @@ unsafe extern "C" fn needreencode(
     mut cd: *mut tounicode,
 ) -> i32 {
     let mut r: i32 = 0i32;
-    let mut i: u32 = 0;
     let mut tk: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!cd.is_null() && !(*cd).taintkeys.is_null());
     assert!(pdf_obj_typeof(kp) == PdfObjType::NAME);
     assert!(pdf_obj_typeof(vp) == PdfObjType::STRING);
-    i = 0_u32;
-    while i < pdf_array_length((*cd).taintkeys) {
+    for i in 0..pdf_array_length((*cd).taintkeys) {
         tk = pdf_get_array((*cd).taintkeys, i as i32);
         assert!(!tk.is_null() && pdf_obj_typeof(tk) == PdfObjType::NAME);
         if pdf_name_value(&*kp) == pdf_name_value(&*tk) {
             r = 1i32;
             break;
-        } else {
-            i = i.wrapping_add(1)
         }
     }
     if r != 0 {
@@ -798,7 +797,7 @@ unsafe extern "C" fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut
     error = spc_begin_annot(spe, (*sd).annot_dict);
     error
 }
-unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
     let mut error: i32 = 0i32;
     if (*sd).annot_dict.is_null() {
@@ -881,7 +880,10 @@ unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut
     }
     error
 }
-unsafe extern "C" fn spc_handler_pdfm_ecolor(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_ecolor(
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
+) -> i32 {
     pdf_color_pop();
     0i32
 }
@@ -899,7 +901,10 @@ unsafe extern "C" fn spc_handler_pdfm_btrans(mut spe: *mut spc_env, mut args: *m
     pdf_dev_concat(&mut M);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_etrans(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_etrans(
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
+) -> i32 {
     pdf_dev_grestore();
     /*
      * Unfortunately, the following line is necessary in case
@@ -1268,7 +1273,6 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
     let mut key: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut value: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut i: i32 = 0;
     let mut size: i32 = 0;
     category = parse_pdf_object(&mut (*args).curptr, (*args).endptr, 0 as *mut pdf_file);
     if category.is_null() {
@@ -1307,8 +1311,7 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
                 pdf_release_obj(tmp);
                 return -1i32;
             }
-            i = 0i32;
-            while i < size / 2i32 {
+            for i in 0..(size / 2) {
                 key = pdf_get_array(tmp, 2i32 * i);
                 value = pdf_get_array(tmp, 2i32 * i + 1i32);
                 if !(!key.is_null() && pdf_obj_typeof(key) == PdfObjType::STRING) {
@@ -1336,7 +1339,6 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
                         return -1i32;
                     }
                 }
-                i += 1
             }
             pdf_release_obj(tmp);
         } else if !tmp.is_null() && pdf_obj_typeof(tmp) == PdfObjType::STRING {
@@ -1427,7 +1429,7 @@ unsafe extern "C" fn spc_handler_pdfm_docview(
     pdf_release_obj(dict);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_close(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_close(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut ident: *mut i8 = 0 as *mut i8;
     skip_white(&mut (*args).curptr, (*args).endptr);
     ident = parse_opt_ident(&mut (*args).curptr, (*args).endptr);
@@ -1557,7 +1559,7 @@ unsafe extern "C" fn spc_handler_pdfm_literal(
 }
 unsafe extern "C" fn spc_handler_pdfm_bcontent(
     mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     let mut xpos: f64 = 0.;
     let mut ypos: f64 = 0.;
@@ -1576,15 +1578,15 @@ unsafe extern "C" fn spc_handler_pdfm_bcontent(
     0i32
 }
 unsafe extern "C" fn spc_handler_pdfm_econtent(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
+    mut _spe: *mut spc_env,
+    mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_dev_pop_coord();
     pdf_dev_grestore();
     pdf_dev_reset_color(0i32);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_code(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_code(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
         pdf_doc_add_page_content(b" \x00" as *const u8 as *const i8, 1_u32);
@@ -1597,7 +1599,7 @@ unsafe extern "C" fn spc_handler_pdfm_code(mut spe: *mut spc_env, mut args: *mut
     0i32
 }
 unsafe extern "C" fn spc_handler_pdfm_do_nothing(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     (*args).curptr = (*args).endptr;
@@ -1851,7 +1853,7 @@ unsafe extern "C" fn spc_handler_pdfm_bform(mut spe: *mut spc_env, mut args: *mu
  * not resource dictionary.
  * Please use pdf:put @resources (before pdf:exobj) instead.
  */
-unsafe extern "C" fn spc_handler_pdfm_eform(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_eform(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut attrib: *mut pdf_obj = 0 as *mut pdf_obj;
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
@@ -1936,15 +1938,18 @@ unsafe extern "C" fn spc_handler_pdfm_uxobj(mut spe: *mut spc_env, mut args: *mu
     free(ident as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_link(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_link(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     spc_resume_annot(spe)
 }
-unsafe extern "C" fn spc_handler_pdfm_nolink(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe extern "C" fn spc_handler_pdfm_nolink(
+    mut spe: *mut spc_env,
+    mut _args: *mut spc_arg,
+) -> i32 {
     spc_suspend_annot(spe)
 }
 /* Handled at BOP */
 unsafe extern "C" fn spc_handler_pdfm_pagesize(
-    mut spe: *mut spc_env,
+    mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     (*args).curptr = (*args).endptr;
@@ -2961,7 +2966,6 @@ pub unsafe extern "C" fn spc_pdfm_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut i: size_t = 0;
     let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_white(&mut (*ap).curptr, (*ap).endptr);
@@ -2984,10 +2988,8 @@ pub unsafe extern "C" fn spc_pdfm_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        i = 0i32 as size_t;
-        while i
-            < (::std::mem::size_of::<[spc_handler; 80]>() as u64)
-                .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
+        for i in 0..(::std::mem::size_of::<[spc_handler; 80]>() as u64)
+            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
             if streq_ptr(q, pdfm_handlers[i as usize].key) {
                 (*ap).command = pdfm_handlers[i as usize].key;
@@ -2996,8 +2998,6 @@ pub unsafe extern "C" fn spc_pdfm_setup_handler(
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
-            } else {
-                i = i.wrapping_add(1)
             }
         }
         free(q as *mut libc::c_void);

@@ -170,53 +170,38 @@ unsafe extern "C" fn pdf_clean_resource(mut res: *mut pdf_res) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_init_resources() {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
-            .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64)
+    for i in 0..(::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
+        .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64) as usize
     {
-        resources[i as usize].count = 0i32;
-        resources[i as usize].capacity = 0i32;
-        resources[i as usize].resources = 0 as *mut pdf_res;
-        i = i.wrapping_add(1)
+        resources[i].count = 0i32;
+        resources[i].capacity = 0i32;
+        resources[i].resources = 0 as *mut pdf_res;
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_close_resources() {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
-            .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64)
+    for i in 0..(::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
+        .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64)
     {
         let mut rc: *mut res_cache = 0 as *mut res_cache;
-        let mut j: i32 = 0;
         rc = &mut *resources.as_mut_ptr().offset(i as isize) as *mut res_cache;
-        j = 0i32;
-        while j < (*rc).count {
+        for j in 0..(*rc).count {
             pdf_flush_resource(&mut *(*rc).resources.offset(j as isize));
             pdf_clean_resource(&mut *(*rc).resources.offset(j as isize));
-            j += 1
         }
         free((*rc).resources as *mut libc::c_void);
         (*rc).count = 0i32;
         (*rc).capacity = 0i32;
         (*rc).resources = 0 as *mut pdf_res;
-        i = i.wrapping_add(1)
     }
 }
 unsafe extern "C" fn get_category(mut category: *const i8) -> i32 {
-    let mut i: u32 = 0;
-    i = 0_u32;
-    while (i as u64)
-        < (::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
-            .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64)
+    for i in 0..(::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
+        .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64) as usize
     {
-        if streq_ptr(category, pdf_resource_categories[i as usize].name) {
-            return pdf_resource_categories[i as usize].cat_id;
+        if streq_ptr(category, pdf_resource_categories[i].name) {
+            return pdf_resource_categories[i].cat_id;
         }
-        i = i.wrapping_add(1)
     }
     -1i32
 }
@@ -297,7 +282,6 @@ pub unsafe extern "C" fn pdf_defineresource(
 #[no_mangle]
 pub unsafe extern "C" fn pdf_findresource(mut category: *const i8, mut resname: *const i8) -> i32 {
     let mut res: *mut pdf_res = 0 as *mut pdf_res;
-    let mut res_id: i32 = 0;
     let mut cat_id: i32 = 0;
     let mut rc: *mut res_cache = 0 as *mut res_cache;
     assert!(!resname.is_null() && !category.is_null());
@@ -309,13 +293,11 @@ pub unsafe extern "C" fn pdf_findresource(mut category: *const i8, mut resname: 
         );
     }
     rc = &mut *resources.as_mut_ptr().offset(cat_id as isize) as *mut res_cache;
-    res_id = 0i32;
-    while res_id < (*rc).count {
+    for res_id in 0..(*rc).count {
         res = &mut *(*rc).resources.offset(res_id as isize) as *mut pdf_res;
         if streq_ptr(resname, (*res).ident) {
             return cat_id << 16i32 | res_id;
         }
-        res_id += 1
     }
     -1i32
 }
