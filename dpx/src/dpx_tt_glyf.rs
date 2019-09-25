@@ -39,6 +39,7 @@ use super::dpx_tt_table::{
     tt_pack_hhea_table, tt_pack_maxp_table, tt_read_head_table, tt_read_hhea_table,
     tt_read_longMetrics, tt_read_maxp_table, tt_read_os2__table, tt_read_vhea_table, tt_vhea_table,
 };
+use crate::dpx_truetype::sfnt_table_info;
 use crate::qsort;
 use crate::{ttstub_input_read, ttstub_input_seek};
 use libc::{free, memcpy, memset};
@@ -268,7 +269,7 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
         panic!("Unknown metricDataFormat.");
     }
     (*g).emsize = (*head).unitsPerEm;
-    sfnt_locate_table(sfont, b"hmtx");
+    sfnt_locate_table(sfont, sfnt_table_info::HMTX);
     hmtx = tt_read_longMetrics(
         sfont,
         (*maxp).numGlyphs,
@@ -294,7 +295,7 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     } else {
         vmtx = 0 as *mut tt_longMetrics
     }
-    sfnt_locate_table(sfont, b"loca");
+    sfnt_locate_table(sfont, sfnt_table_info::LOCA);
     location = new((((*maxp).numGlyphs as i32 + 1i32) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u32>() as u64) as u32) as *mut u32;
     if (*head).indexToLocFormat as i32 == 0i32 {
@@ -319,7 +320,7 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     /*
      * Read glyf table.
      */
-    offset = sfnt_locate_table(sfont, b"glyf");
+    offset = sfnt_locate_table(sfont, sfnt_table_info::GLYF);
     /*
      * The num_glyphs may grow when composite glyph is found.
      * A component of glyph refered by a composite glyph is appended
@@ -635,19 +636,19 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     }
     sfnt_set_table(
         sfont,
-        b"hmtx",
+        sfnt_table_info::HMTX,
         hmtx_table_data as *mut libc::c_void,
         hmtx_table_size,
     );
     sfnt_set_table(
         sfont,
-        b"loca",
+        sfnt_table_info::LOCA,
         loca_table_data as *mut libc::c_void,
         loca_table_size,
     );
     sfnt_set_table(
         sfont,
-        b"glyf",
+        sfnt_table_info::GLYF,
         glyf_table_data as *mut libc::c_void,
         glyf_table_size,
     );
@@ -656,19 +657,19 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
     /* TODO */
     sfnt_set_table(
         sfont,
-        b"maxp",
+        sfnt_table_info::MAXP,
         tt_pack_maxp_table(maxp) as *mut libc::c_void,
         32u64 as u32,
     );
     sfnt_set_table(
         sfont,
-        b"hhea",
+        sfnt_table_info::HHEA,
         tt_pack_hhea_table(hhea) as *mut libc::c_void,
         36u64 as u32,
     );
     sfnt_set_table(
         sfont,
-        b"head",
+        sfnt_table_info::HEAD,
         tt_pack_head_table(head) as *mut libc::c_void,
         54u64 as u32,
     );
@@ -719,7 +720,7 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
         panic!("Unknown metricDataFormat.");
     }
     (*g).emsize = (*head).unitsPerEm;
-    sfnt_locate_table(sfont, b"hmtx");
+    sfnt_locate_table(sfont, sfnt_table_info::HMTX);
     hmtx = tt_read_longMetrics(
         sfont,
         (*maxp).numGlyphs,
@@ -743,7 +744,7 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     } else {
         vmtx = 0 as *mut tt_longMetrics
     }
-    sfnt_locate_table(sfont, b"loca");
+    sfnt_locate_table(sfont, sfnt_table_info::LOCA);
     location = new((((*maxp).numGlyphs as i32 + 1i32) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u32>() as u64) as u32) as *mut u32;
     if (*head).indexToLocFormat as i32 == 0i32 {
@@ -768,7 +769,7 @@ pub unsafe extern "C" fn tt_get_metrics(mut sfont: *mut sfnt, mut g: *mut tt_gly
     /*
      * Read glyf table.
      */
-    offset = sfnt_locate_table(sfont, b"glyf"); /* old gid */
+    offset = sfnt_locate_table(sfont, sfnt_table_info::GLYF); /* old gid */
     for i in 0..(*g).num_glyphs as u32 {
         let mut gid: u16 = 0;
         let mut loc: u32 = 0;

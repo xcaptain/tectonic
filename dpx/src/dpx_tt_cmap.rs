@@ -65,6 +65,7 @@ use super::dpx_tt_post::{tt_get_glyphname, tt_read_post_table, tt_release_post_t
 use super::dpx_tt_table::tt_read_maxp_table;
 use super::dpx_unicode::UC_UTF16BE_encode_char;
 use crate::dpx_pdfobj::pdf_obj;
+use crate::dpx_truetype::sfnt_table_info;
 use crate::mfree;
 use crate::{ttstub_input_close, ttstub_input_seek};
 use libc::{free, memcpy, memset, sprintf, strcpy, strlen};
@@ -523,7 +524,7 @@ pub unsafe extern "C" fn tt_cmap_read(
     let mut i: u16 = 0;
     let mut n_subtabs: u16 = 0;
     assert!(!sfont.is_null());
-    offset = sfnt_locate_table(sfont, b"cmap");
+    offset = sfnt_locate_table(sfont, sfnt_table_info::CMAP);
     tt_get_unsigned_pair((*sfont).handle);
     n_subtabs = tt_get_unsigned_pair((*sfont).handle);
     i = 0_u16;

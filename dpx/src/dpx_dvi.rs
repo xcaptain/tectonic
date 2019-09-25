@@ -81,6 +81,7 @@ use super::dpx_vf::{vf_close_all_fonts, vf_locate_font, vf_set_char, vf_set_verb
 use crate::dpx_pdfobj::{
     pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_release_obj, pdf_string_value, PdfObjType,
 };
+use crate::dpx_truetype::sfnt_table_info;
 use crate::specials::{
     spc_exec_at_begin_page, spc_exec_at_end_page, spc_exec_special, spc_set_verbose,
 };
@@ -1474,7 +1475,7 @@ unsafe extern "C" fn dvi_locate_native_font(
             );
             free(vhea as *mut libc::c_void);
         } else {
-            sfnt_locate_table(sfont, b"hmtx");
+            sfnt_locate_table(sfont, sfnt_table_info::HMTX);
             let ref mut fresh20 = (*loaded_fonts.offset(cur_id as isize)).hvmt;
             *fresh20 = tt_read_longMetrics(
                 sfont,

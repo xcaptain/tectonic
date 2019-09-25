@@ -359,7 +359,10 @@ pub unsafe extern "C" fn sfnt_read_table_directory(mut sfont: *mut sfnt, mut off
     0i32
 }
 #[no_mangle]
-pub unsafe extern "C" fn sfnt_require_table(sfont: &mut sfnt, table: &SfntTableInfo) -> Result<(), ()> {
+pub unsafe extern "C" fn sfnt_require_table(
+    sfont: &mut sfnt,
+    table: &SfntTableInfo,
+) -> Result<(), ()> {
     let mut td = (*sfont).directory.as_mut().unwrap();
     let idx = find_table_index(Some(td), table.name());
     if idx < 0 {

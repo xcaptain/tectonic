@@ -85,6 +85,7 @@ use crate::dpx_pdfobj::{
     pdf_new_dict, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj,
     pdf_ref_obj, pdf_release_obj, pdf_stream_dict,
 };
+use crate::dpx_truetype::sfnt_table_info;
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
 use libc::{free, memmove, memset, sprintf, strcat, strcmp, strcpy, strlen, strstr};
 
@@ -296,7 +297,7 @@ unsafe extern "C" fn add_CIDVMetrics(
             (*vhea).numOfExSideBearings,
         )
     }
-    if sfnt_find_table_pos(sfont, b"OS/2") <= 0_u32 {
+    if sfnt_find_table_pos(sfont, sfnt_table_info::OS_2) <= 0_u32 {
         let mut os2: *mut tt_os2__table = 0 as *mut tt_os2__table;
         /* OpenType font must have OS/2 table. */
         os2 = tt_read_os2__table(sfont);
@@ -418,7 +419,7 @@ unsafe extern "C" fn add_CIDMetrics(
     head = tt_read_head_table(sfont);
     maxp = tt_read_maxp_table(sfont);
     hhea = tt_read_hhea_table(sfont);
-    sfnt_locate_table(sfont, b"hmtx");
+    sfnt_locate_table(sfont, sfnt_table_info::HMTX);
     hmtx = tt_read_longMetrics(
         sfont,
         (*maxp).numGlyphs,

@@ -88,24 +88,24 @@ pub mod sfnt_table_info {
     pub type Tag = &'static [u8; 4];
 
     /*
-    * The 'name' table should be preserved since it contains copyright
-    * information, but it might cause problem when there are invalid
-    * table entries (wrongly encoded text which is often the case in
-    * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
-    * fonts may have 10K bytes 'name' table...
-    *
-    * We preserve the 'OS/2' table too, since it contains the license
-    * information. PDF applications should use this table to decide
-    * whether the font is embedded only for the purpose of preview &
-    * printing. Otherwise, we must encrypt the document. Acrobat does
-    * not use 'OS/2' table, though...
-    */
+     * The 'name' table should be preserved since it contains copyright
+     * information, but it might cause problem when there are invalid
+     * table entries (wrongly encoded text which is often the case in
+     * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
+     * fonts may have 10K bytes 'name' table...
+     *
+     * We preserve the 'OS/2' table too, since it contains the license
+     * information. PDF applications should use this table to decide
+     * whether the font is embedded only for the purpose of preview &
+     * printing. Otherwise, we must encrypt the document. Acrobat does
+     * not use 'OS/2' table, though...
+     */
     #[derive(Copy, Clone)]
     pub struct SfntTableInfo {
         name: Tag,
         must_exist: bool,
     }
-    
+
     impl SfntTableInfo {
         pub const fn new(name: Tag, must_exist: bool) -> Self {
             SfntTableInfo { name, must_exist }
@@ -463,7 +463,12 @@ unsafe extern "C" fn do_builtin_encoding(
         info!("[{} glyphs]", (*glyphs).num_glyphs as i32);
     }
     tt_build_finish(glyphs);
-    sfnt_set_table(sfont, b"cmap", cmap_table as *mut libc::c_void, 274_u32);
+    sfnt_set_table(
+        sfont,
+        sfnt_table_info::CMAP,
+        cmap_table as *mut libc::c_void,
+        274_u32,
+    );
     0i32
 }
 /* WARNING: This modifies glyphname itself */
@@ -1094,7 +1099,12 @@ unsafe extern "C" fn do_custom_encoding(
         info!("[{} glyphs]", (*glyphs).num_glyphs as i32);
     }
     tt_build_finish(glyphs);
-    sfnt_set_table(sfont, b"cmap", cmap_table as *mut libc::c_void, 274_u32);
+    sfnt_set_table(
+        sfont,
+        sfnt_table_info::CMAP,
+        cmap_table as *mut libc::c_void,
+        274_u32,
+    );
     0i32
 }
 #[no_mangle]
