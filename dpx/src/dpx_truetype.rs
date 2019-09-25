@@ -80,43 +80,64 @@ use super::dpx_tt_post::tt_post_table;
 pub type FWord = i16;
 pub type Fixed = u32;
 use super::dpx_tt_cmap::tt_cmap;
-/*
- * The 'name' table should be preserved since it contains copyright
- * information, but it might cause problem when there are invalid
- * table entries (wrongly encoded text which is often the case in
- * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
- * fonts may have 10K bytes 'name' table...
- *
- * We preserve the 'OS/2' table too, since it contains the license
- * information. PDF applications should use this table to decide
- * whether the font is embedded only for the purpose of preview &
- * printing. Otherwise, we must encrypt the document. Acrobat does
- * not use 'OS/2' table, though...
- */
-#[derive(Copy, Clone)]
-pub struct NameTable {
-    name: [u8; 4],
-    must_exist: bool,
-}
 
-impl NameTable {
-    pub const fn new(name: [u8; 4], must_exist: bool) -> Self {
-        NameTable { name, must_exist }
+pub use sfnt_table_info::SfntTableInfo;
+
+/// Tag consts for SfntTableInfo.
+pub mod sfnt_table_info {
+    pub type Tag = &'static [u8; 4];
+
+    /*
+    * The 'name' table should be preserved since it contains copyright
+    * information, but it might cause problem when there are invalid
+    * table entries (wrongly encoded text which is often the case in
+    * CJK fonts). Acrobat does not use 'name' table. Unicode TrueType
+    * fonts may have 10K bytes 'name' table...
+    *
+    * We preserve the 'OS/2' table too, since it contains the license
+    * information. PDF applications should use this table to decide
+    * whether the font is embedded only for the purpose of preview &
+    * printing. Otherwise, we must encrypt the document. Acrobat does
+    * not use 'OS/2' table, though...
+    */
+    #[derive(Copy, Clone)]
+    pub struct SfntTableInfo {
+        name: Tag,
+        must_exist: bool,
+    }
+    
+    impl SfntTableInfo {
+        pub const fn new(name: Tag, must_exist: bool) -> Self {
+            SfntTableInfo { name, must_exist }
+        }
+
+        pub const fn name(&self) -> Tag {
+            self.name
+        }
+
+        /// # Safety
+        /// This function assumes the name is valid utf8.
+        pub unsafe fn name_str(&self) -> &str {
+            &std::str::from_utf8_unchecked(self.name)
+        }
+
+        pub const fn must_exist(&self) -> bool {
+            self.must_exist
+        }
     }
 
-    pub const fn name(&self) -> &[u8; 4] {
-        &self.name
-    }
-
-    /// # Safety
-    /// This function assumes the name is valid utf8.
-    pub unsafe fn name_str(&self) -> &str {
-        &std::str::from_utf8_unchecked(&self.name)
-    }
-
-    pub const fn must_exist(&self) -> bool {
-        self.must_exist
-    }
+    pub const OS_2: Tag = b"OS/2";
+    pub const HEAD: Tag = b"head";
+    pub const HHEA: Tag = b"hhea";
+    pub const LOCA: Tag = b"loca";
+    pub const MAXP: Tag = b"maxp";
+    pub const NAME: Tag = b"name";
+    pub const GLYF: Tag = b"glyf";
+    pub const HMTX: Tag = b"hmtx";
+    pub const FPGM: Tag = b"fpgm";
+    pub const CVT: Tag = b"cvt ";
+    pub const PREP: Tag = b"prep";
+    pub const CMAP: Tag = b"cmap";
 }
 
 use super::dpx_tt_glyf::tt_glyphs;
@@ -273,20 +294,23 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     pdf_add_dict(fontdict, "Subtype", pdf_new_name("TrueType"));
     0i32
 }
-const required_table: [NameTable; 12] = [
-    NameTable::new(*b"OS/2", false),
-    NameTable::new(*b"head", false),
-    NameTable::new(*b"hhea", true),
-    NameTable::new(*b"loca", true),
-    NameTable::new(*b"maxp", true),
-    NameTable::new(*b"name", true),
-    NameTable::new(*b"glyf", true),
-    NameTable::new(*b"hmtx", true),
-    NameTable::new(*b"fpgm", false),
-    NameTable::new(*b"cvt ", false),
-    NameTable::new(*b"prep", false),
-    NameTable::new(*b"cmap", true),
-];
+const required_table: [SfntTableInfo; 12] = {
+    use sfnt_table_info::*;
+    [
+        SfntTableInfo::new(OS_2, false),
+        SfntTableInfo::new(HEAD, false),
+        SfntTableInfo::new(HHEA, true),
+        SfntTableInfo::new(LOCA, true),
+        SfntTableInfo::new(MAXP, true),
+        SfntTableInfo::new(NAME, true),
+        SfntTableInfo::new(GLYF, true),
+        SfntTableInfo::new(HMTX, true),
+        SfntTableInfo::new(FPGM, false),
+        SfntTableInfo::new(CVT, false),
+        SfntTableInfo::new(PREP, false),
+        SfntTableInfo::new(CMAP, true),
+    ]
+};
 
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;

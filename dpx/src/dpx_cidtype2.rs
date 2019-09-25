@@ -36,7 +36,7 @@ use super::dpx_sfnt::{
     dfont_open, sfnt_close, sfnt_create_FontFile_stream, sfnt_find_table_pos, sfnt_open,
     sfnt_read_table_directory, sfnt_require_table,
 };
-use crate::dpx_truetype::NameTable;
+use crate::dpx_truetype::SfntTableInfo;
 use crate::streq_ptr;
 use crate::{info, warn, FromBEByteSlice};
 
@@ -141,19 +141,22 @@ pub unsafe extern "C" fn CIDFont_type2_set_flags(mut flags: i32) {
     opt_flags = flags;
 }
 
-const required_table: [NameTable; 11] = [
-    NameTable::new(*b"OS/2", false),
-    NameTable::new(*b"head", true),
-    NameTable::new(*b"hhea", true),
-    NameTable::new(*b"loca", true),
-    NameTable::new(*b"maxp", true),
-    NameTable::new(*b"name", true),
-    NameTable::new(*b"glyf", true),
-    NameTable::new(*b"hmtx", true),
-    NameTable::new(*b"fpgm", false),
-    NameTable::new(*b"cvt ", false),
-    NameTable::new(*b"prep", false),
-];
+const required_table: [SfntTableInfo; 11] = {
+    use crate::dpx_truetype::sfnt_table_info::*;
+    [
+        SfntTableInfo::new(OS_2, false),
+        SfntTableInfo::new(HEAD, true),
+        SfntTableInfo::new(HHEA, true),
+        SfntTableInfo::new(LOCA, true),
+        SfntTableInfo::new(MAXP, true),
+        SfntTableInfo::new(NAME, true),
+        SfntTableInfo::new(GLYF, true),
+        SfntTableInfo::new(HMTX, true),
+        SfntTableInfo::new(FPGM, false),
+        SfntTableInfo::new(CVT, false),
+        SfntTableInfo::new(PREP, false),
+    ]
+};
 unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
     let mut i: i32 = 0;
     let mut count: i32 = 0;
