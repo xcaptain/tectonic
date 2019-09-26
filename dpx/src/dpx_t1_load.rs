@@ -50,7 +50,7 @@ use libc::{free, memcmp, memcpy, memmove, memset, strcmp, strcpy, strlen};
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 /* CFF Data Types */
 /* SID SID number */

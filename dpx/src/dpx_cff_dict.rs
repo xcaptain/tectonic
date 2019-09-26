@@ -42,7 +42,6 @@ use crate::warn;
 use libc::{free, memset, strcmp, strtod};
 use crate::shims::sprintf;
 
-pub type rust_input_handle_t = *mut libc::c_void;
 pub type l_offset = u32;
 pub type s_SID = u16;
 /* CFF Data Types */

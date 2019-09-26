@@ -35,7 +35,7 @@ use crate::*;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type UErrorCode = i32;
 pub const U_ERROR_LIMIT: UErrorCode = 66818;
 pub const U_PLUGIN_ERROR_LIMIT: UErrorCode = 66818;

@@ -54,7 +54,7 @@ extern "C" {
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 use crate::dpx_pdfximage::{pdf_ximage, ximage_info};
 
@@ -204,8 +204,8 @@ pub unsafe extern "C" fn png_include_image(
     }
     stream = pdf_new_stream(1i32 << 0i32);
     stream_dict = pdf_stream_dict(stream);
-    let stream_data_ptr = new((rowbytes.wrapping_mul(height) as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<png_byte>() as libc::c_ulong)
+    let stream_data_ptr = new((rowbytes.wrapping_mul(height) as u64)
+        .wrapping_mul(::std::mem::size_of::<png_byte>() as u64)
         as u32) as *mut png_byte;
     read_image_data(png, stream_data_ptr, height, rowbytes);
     /* Non-NULL intent means there is valid sRGB chunk. */
@@ -1058,9 +1058,9 @@ unsafe extern "C" fn strip_soft_mask(
         } else {
             8i32
         };
-        if *rowbytes_ptr as libc::c_ulong
-            != ((bps as libc::c_uint).wrapping_mul(width) as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<png_byte>() as libc::c_ulong)
+        if *rowbytes_ptr as u64
+            != ((bps as libc::c_uint).wrapping_mul(width) as u64)
+                .wrapping_mul(::std::mem::size_of::<png_byte>() as u64)
         {
             /* Something wrong */
             warn!("{}: Inconsistent rowbytes value.", "PNG");
@@ -1180,9 +1180,9 @@ unsafe extern "C" fn read_image_data(
     mut height: png_uint_32,
     mut rowbytes: png_uint_32,
 ) {
-    let mut rows_p = new((height as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<png_bytep>() as libc::c_ulong)
-        as u32) as *mut png_bytep;
+    let mut rows_p =
+        new((height as u64).wrapping_mul(::std::mem::size_of::<png_bytep>() as u64) as u32)
+            as *mut png_bytep;
     for i in 0..height {
         let ref mut fresh1 = *rows_p.offset(i as isize);
         *fresh1 = dest_ptr.offset(rowbytes.wrapping_mul(i) as isize);

@@ -29,11 +29,13 @@
     unused_mut
 )]
 
-use crate::{ttstub_issue_warning, ttstub_output_open_stdout, ttstub_output_write};
+use std::io::Write;
+
+use crate::{ttstub_issue_warning, ttstub_output_open_stdout};
 use bridge::vsnprintf;
 
 pub type size_t = u64;
-pub type rust_output_handle_t = *mut libc::c_void;
+use bridge::OutputHandleWrapper;
 pub type message_type_t = _message_type;
 pub type _message_type = u32;
 pub const DPX_MESG_WARN: _message_type = 1;
@@ -44,24 +46,25 @@ pub static mut _dpx_quietness: i32 = 0i32;
 pub unsafe extern "C" fn shut_up(mut quietness: i32) {
     _dpx_quietness = quietness;
 }
-static mut _dpx_message_handle: rust_output_handle_t =
-    0 as *const libc::c_void as *mut libc::c_void;
-static mut _dpx_message_buf: [i8; 1024] = [0; 1024];
-pub unsafe extern "C" fn _dpx_ensure_output_handle() -> rust_output_handle_t {
-    _dpx_message_handle = ttstub_output_open_stdout();
-    if _dpx_message_handle.is_null() {
+static mut _dpx_message_handle: Option<OutputHandleWrapper> = None;
+
+static mut _dpx_message_buf: [u8; 1024] = [0; 1024];
+pub unsafe extern "C" fn _dpx_ensure_output_handle() -> OutputHandleWrapper {
+    if let Some(handle) = ttstub_output_open_stdout() {
+        _dpx_message_handle = Some(handle);
+        handle
+    } else {
         panic!("xdvipdfmx cannot get output logging handle?!");
     }
-    _dpx_message_handle
 }
 unsafe extern "C" fn _dpx_print_to_stdout(
     mut fmt: *const i8,
     mut argp: ::std::ffi::VaList,
-    mut warn: i32,
+    mut warn: bool,
 ) {
     let mut n: i32 = 0;
     n = vsnprintf(
-        _dpx_message_buf.as_mut_ptr(),
+        _dpx_message_buf.as_mut_ptr() as *mut i8,
         ::std::mem::size_of::<[i8; 1024]>() as u64,
         fmt,
         argp.as_va_list(),
@@ -70,19 +73,15 @@ unsafe extern "C" fn _dpx_print_to_stdout(
      * bigger than sizeof(buf). */
     if n as u64 >= ::std::mem::size_of::<[i8; 1024]>() as u64 {
         n = (::std::mem::size_of::<[i8; 1024]>() as u64).wrapping_sub(1i32 as u64) as i32;
-        _dpx_message_buf[n as usize] = '\u{0}' as i32 as i8
+        _dpx_message_buf[n as usize] = 0
     }
-    if warn != 0 {
+    if warn {
         ttstub_issue_warning(
             b"%s\x00" as *const u8 as *const i8,
-            _dpx_message_buf.as_mut_ptr(),
+            _dpx_message_buf.as_mut_ptr() as *mut i8,
         );
     }
-    ttstub_output_write(
-        _dpx_ensure_output_handle(),
-        _dpx_message_buf.as_mut_ptr(),
-        n as size_t,
-    );
+    _dpx_ensure_output_handle().write(&_dpx_message_buf[..n as usize]);
 }
 
 #[no_mangle]
@@ -92,7 +91,7 @@ pub unsafe extern "C" fn dpx_message(mut fmt: *const i8, mut args: ...) {
         return;
     }
     argp = args.clone();
-    _dpx_print_to_stdout(fmt, argp.as_va_list(), 0i32);
+    _dpx_print_to_stdout(fmt, argp.as_va_list(), false);
     _last_message_type = DPX_MESG_INFO;
 }
 #[no_mangle]
@@ -102,23 +101,11 @@ pub unsafe extern "C" fn dpx_warning(mut fmt: *const i8, mut args: ...) {
         return;
     }
     if _last_message_type as u32 == DPX_MESG_INFO as i32 as u32 {
-        ttstub_output_write(
-            _dpx_ensure_output_handle(),
-            b"\n\x00" as *const u8 as *const i8,
-            1i32 as size_t,
-        );
+        _dpx_ensure_output_handle().write(b"\n");
     }
-    ttstub_output_write(
-        _dpx_ensure_output_handle(),
-        b"warning: \x00" as *const u8 as *const i8,
-        9i32 as size_t,
-    );
+    _dpx_ensure_output_handle().write(b"warning: ");
     argp = args.clone();
-    _dpx_print_to_stdout(fmt, argp.as_va_list(), 1i32);
-    ttstub_output_write(
-        _dpx_ensure_output_handle(),
-        b"\n\x00" as *const u8 as *const i8,
-        1i32 as size_t,
-    );
+    _dpx_print_to_stdout(fmt, argp.as_va_list(), true);
+    _dpx_ensure_output_handle().write(b"\n");
     _last_message_type = DPX_MESG_WARN;
 }

@@ -37,7 +37,7 @@ use std::ffi::CStr;
 pub type __off_t = i64;
 pub type __off64_t = i64;
 pub type size_t = u64;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type fixword = i32;
 #[no_mangle]
 pub unsafe extern "C" fn get_unsigned_byte(mut file: *mut FILE) -> u8 {

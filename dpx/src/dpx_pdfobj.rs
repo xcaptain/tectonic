@@ -30,6 +30,7 @@
 )]
 
 use std::ffi::CString;
+use std::io::Write;
 
 use crate::dpx_pdfparse::{parse_number, parse_pdf_dict, parse_pdf_object, parse_unsigned};
 use crate::mfree;
@@ -47,7 +48,7 @@ use super::dpx_pdfparse::skip_white;
 use crate::{
     ttstub_input_get_size, ttstub_input_getc, ttstub_input_read, ttstub_input_seek,
     ttstub_input_ungetc, ttstub_output_close, ttstub_output_open, ttstub_output_open_stdout,
-    ttstub_output_putc, ttstub_output_write,
+    ttstub_output_putc,
 };
 use bridge::_tt_abort;
 use libc::{atof, atoi, free, memcmp, memset, strlen, strtoul};
@@ -58,8 +59,8 @@ use libz_sys as libz;
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_output_handle_t = *mut libc::c_void;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
+use bridge::OutputHandleWrapper;
 
 pub type hval_free_func = Option<unsafe extern "C" fn(_: *mut libc::c_void) -> ()>;
 
@@ -248,9 +249,9 @@ pub struct pdf_boolean {
 /* Note that we explicitly do *not* change this on Windows. For maximum
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
-static mut pdf_output_handle: rust_output_handle_t = 0 as *const libc::c_void as *mut libc::c_void;
-static mut pdf_output_file_position: i32 = 0i32;
-static mut pdf_output_line_position: i32 = 0i32;
+static mut pdf_output_handle: Option<OutputHandleWrapper> = None;
+static mut pdf_output_file_position: usize = 0;
+static mut pdf_output_line_position: usize = 0;
 static mut compression_saved: i32 = 0i32;
 static mut format_buffer: [u8; 4096] = [0; 4096];
 static mut output_xref: *mut xref_entry = 0 as *const xref_entry as *mut xref_entry;
@@ -360,7 +361,7 @@ pub unsafe extern "C" fn pdf_out_init(
         panic!("stdout PDF output not supported");
     }
     pdf_output_handle = ttstub_output_open(filename, 0i32);
-    if pdf_output_handle.is_null() {
+    if pdf_output_handle.is_none() {
         if strlen(filename) < 128 {
             _tt_abort(
                 b"Unable to open \"%s\".\x00" as *const u8 as *const i8,
@@ -370,48 +371,25 @@ pub unsafe extern "C" fn pdf_out_init(
             panic!("Unable to open file.");
         }
     }
-    pdf_out(
-        pdf_output_handle,
-        b"%PDF-1.\x00" as *const u8 as *const i8 as *const libc::c_void,
-        strlen(b"%PDF-1.\x00" as *const u8 as *const i8) as i32,
-    );
-    v = ('0' as i32 as u32).wrapping_add(pdf_version) as i8;
-    pdf_out(
-        pdf_output_handle,
-        &mut v as *mut i8 as *const libc::c_void,
-        1i32,
-    );
-    pdf_out(
-        pdf_output_handle,
-        b"\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        1i32,
-    );
-    pdf_out(
-        pdf_output_handle,
-        b"%\xe4\xf0\xed\xf8\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        strlen(b"%\xe4\xf0\xed\xf8\n\x00" as *const u8 as *const i8) as i32,
-    );
+    let handle = pdf_output_handle.unwrap();
+    pdf_out(handle, b"%PDF-1.");
+    let v = [b'0' + (pdf_version as u8)];
+    pdf_out(handle, &v[..]);
+    pdf_out(handle, b"\n");
+    pdf_out(handle, b"%\xe4\xf0\xed\xf8\n");
     enc_mode = false;
     doc_enc_mode = do_encryption;
 }
 unsafe extern "C" fn dump_xref_table() {
-    let mut length: i32 = 0;
-    pdf_out(
-        pdf_output_handle,
-        b"xref\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        5i32,
-    );
-    length = sprintf(
+    let handle = pdf_output_handle.unwrap();
+    pdf_out(handle, b"xref\n");
+    let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
         b"%d %u\n\x00" as *const u8 as *const i8,
         0i32,
         next_label,
-    );
-    pdf_out(
-        pdf_output_handle,
-        format_buffer.as_mut_ptr() as *const libc::c_void,
-        length,
-    );
+    ) as usize;
+    pdf_out(handle, &format_buffer[..length]);
     /*
      * Every space counts.  The space after the 'f' and 'n' is * *essential*.
      * The PDF spec says the lines must be 20 characters long including the
@@ -425,7 +403,7 @@ unsafe extern "C" fn dump_xref_table() {
                 typ as i32,
             );
         }
-        length = sprintf(
+        let length = sprintf(
             format_buffer.as_mut_ptr() as *mut i8,
             b"%010u %05hu %c \n\x00" as *const u8 as *const i8,
             (*output_xref.offset(i as isize)).field2,
@@ -435,24 +413,17 @@ unsafe extern "C" fn dump_xref_table() {
             } else {
                 'f' as i32
             },
-        );
-        pdf_out(
-            pdf_output_handle,
-            format_buffer.as_mut_ptr() as *const libc::c_void,
-            length,
-        );
+        ) as usize;
+        pdf_out(handle, &format_buffer[..length]);
     }
 }
 unsafe extern "C" fn dump_trailer_dict() {
-    pdf_out(
-        pdf_output_handle,
-        b"trailer\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        8i32,
-    );
+    let handle = pdf_output_handle.unwrap();
+    pdf_out(handle, b"trailer\n");
     enc_mode = false;
-    write_dict((*trailer_dict).data as *mut pdf_dict, pdf_output_handle);
+    write_dict((*trailer_dict).data as *mut pdf_dict, handle);
     pdf_release_obj(trailer_dict);
-    pdf_out_char(pdf_output_handle, '\n' as i32 as i8);
+    pdf_out_char(handle, b'\n');
 }
 /*
  * output a PDF 1.5 cross-reference stream;
@@ -508,8 +479,7 @@ unsafe extern "C" fn dump_xref_stream() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_out_flush() {
-    if !pdf_output_handle.is_null() {
-        let mut length: i32 = 0;
+    if let Some(handle) = pdf_output_handle {
         /* Flush current object stream */
         if !current_objstm.is_null() {
             release_objstm(current_objstm);
@@ -534,26 +504,14 @@ pub unsafe extern "C" fn pdf_out_flush() {
         }
         /* Done with xref table */
         free(output_xref as *mut libc::c_void);
-        pdf_out(
-            pdf_output_handle,
-            b"startxref\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-            10i32,
-        );
-        length = sprintf(
+        pdf_out(handle, b"startxref\n");
+        let length = sprintf(
             format_buffer.as_mut_ptr() as *mut i8,
             b"%u\n\x00" as *const u8 as *const i8,
             startxref,
-        );
-        pdf_out(
-            pdf_output_handle,
-            format_buffer.as_mut_ptr() as *const libc::c_void,
-            length,
-        );
-        pdf_out(
-            pdf_output_handle,
-            b"%%EOF\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-            6i32,
-        );
+        ) as usize;
+        pdf_out(handle, &format_buffer[..length]);
+        pdf_out(handle, b"%%EOF\n");
         if verbose != 0 {
             if compression_level as i32 > 0i32 {
                 info!(
@@ -567,8 +525,8 @@ pub unsafe extern "C" fn pdf_out_flush() {
                 );
             }
         }
-        ttstub_output_close(pdf_output_handle);
-        pdf_output_handle = 0 as *mut libc::c_void
+        ttstub_output_close(handle);
+        pdf_output_handle = None
     };
 }
 #[no_mangle]
@@ -577,9 +535,9 @@ pub unsafe extern "C" fn pdf_error_cleanup() {
      * This routine is the cleanup required for an abnormal exit.
      * For now, simply close the file.
      */
-    if !pdf_output_handle.is_null() {
-        ttstub_output_close(pdf_output_handle);
-        pdf_output_handle = 0 as *mut libc::c_void
+    if let Some(handle) = pdf_output_handle {
+        ttstub_output_close(handle);
+        pdf_output_handle = None
     };
 }
 #[no_mangle]
@@ -615,47 +573,45 @@ pub unsafe extern "C" fn pdf_set_encrypt(mut encrypt: *mut pdf_obj) {
     }
     (*encrypt).flags |= 1i32 << 1i32;
 }
-unsafe extern "C" fn pdf_out_char(mut handle: rust_output_handle_t, mut c: i8) {
-    if !output_stream.is_null() && handle == pdf_output_handle {
+unsafe extern "C" fn pdf_out_char(handle: OutputHandleWrapper, mut c: u8) {
+    if !output_stream.is_null() && Some(handle) == pdf_output_handle {
         pdf_add_stream(
             output_stream,
-            &mut c as *mut i8 as *const libc::c_void,
+            &mut c as *mut u8 as *mut i8 as *const libc::c_void,
             1i32,
         );
     } else {
         ttstub_output_putc(handle, c as i32);
         /* Keep tallys for xref table *only* if writing a pdf file. */
-        if handle == pdf_output_handle {
-            pdf_output_file_position += 1i32;
-            if c as i32 == '\n' as i32 {
-                pdf_output_line_position = 0i32
+        if Some(handle) == pdf_output_handle {
+            pdf_output_file_position += 1;
+            if c == b'\n' {
+                pdf_output_line_position = 0
             } else {
-                pdf_output_line_position += 1i32
+                pdf_output_line_position += 1
             }
         }
     };
 }
-static mut xchar: [i8; 17] = [
-    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 0,
-];
-unsafe extern "C" fn pdf_out(
-    mut handle: rust_output_handle_t,
-    mut buffer: *const libc::c_void,
-    mut length: i32,
-) {
-    if !output_stream.is_null() && handle == pdf_output_handle {
-        pdf_add_stream(output_stream, buffer, length);
+const xchar: &[u8; 17] = b"0123456789abcdef\x00";
+
+unsafe extern "C" fn pdf_out(mut handle: OutputHandleWrapper, buffer: &[u8]) {
+    let length = buffer.len();
+    if !output_stream.is_null() && Some(handle) == pdf_output_handle {
+        pdf_add_stream(
+            output_stream,
+            buffer.as_ptr() as *const libc::c_void,
+            length as i32,
+        );
     } else {
-        ttstub_output_write(handle, buffer as *const i8, length as size_t);
+        handle.write(buffer);
         /* Keep tallys for xref table *only* if writing a pdf file */
-        if handle == pdf_output_handle {
+        if pdf_output_handle.is_some() {
             pdf_output_file_position += length;
             pdf_output_line_position += length;
             /* "foo\nbar\n "... */
-            if length > 0i32
-                && *(buffer as *const i8).offset((length - 1i32) as isize) as i32 == '\n' as i32
-            {
-                pdf_output_line_position = 0i32
+            if length > 0 && buffer[length - 1] == b'\n' {
+                pdf_output_line_position = 0
             }
         }
     };
@@ -671,11 +627,11 @@ unsafe extern "C" fn pdf_need_white(mut type1: i32, mut type2: i32) -> i32 {
         || type2 == 5i32
         || type2 == 6i32) as i32;
 }
-unsafe extern "C" fn pdf_out_white(mut handle: rust_output_handle_t) {
-    if handle == pdf_output_handle && pdf_output_line_position >= 80i32 {
-        pdf_out_char(handle, '\n' as i32 as i8);
+unsafe extern "C" fn pdf_out_white(mut handle: OutputHandleWrapper) {
+    if Some(handle) == pdf_output_handle && pdf_output_line_position >= 80 {
+        pdf_out_char(handle, b'\n');
     } else {
-        pdf_out_char(handle, ' ' as i32 as i8);
+        pdf_out_char(handle, b' ');
     };
 }
 unsafe extern "C" fn pdf_new_obj(typ: PdfObjType) -> *mut pdf_obj {
@@ -743,7 +699,7 @@ pub unsafe extern "C" fn pdf_ref_obj(mut object: *mut pdf_obj) -> *mut pdf_obj {
     }
     if (*object).refcount == 0_u32 {
         info!("\nTrying to refer already released object!!!\n");
-        pdf_write_obj(object, ttstub_output_open_stdout());
+        pdf_write_obj(object, ttstub_output_open_stdout().unwrap());
         panic!("Cannot continue...");
     }
     if !object.is_null() && (*object).is_indirect() {
@@ -755,23 +711,15 @@ pub unsafe extern "C" fn pdf_ref_obj(mut object: *mut pdf_obj) -> *mut pdf_obj {
 unsafe extern "C" fn release_indirect(mut data: *mut pdf_indirect) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_indirect(
-    mut indirect: *mut pdf_indirect,
-    mut handle: rust_output_handle_t,
-) {
-    let mut length: i32 = 0;
+unsafe extern "C" fn write_indirect(mut indirect: *mut pdf_indirect, handle: OutputHandleWrapper) {
     assert!((*indirect).pf.is_null());
-    length = sprintf(
+    let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
         b"%u %hu R\x00" as *const u8 as *const i8,
         (*indirect).label,
         (*indirect).generation as i32,
-    );
-    pdf_out(
-        handle,
-        format_buffer.as_mut_ptr() as *const libc::c_void,
-        length,
-    );
+    ) as usize;
+    pdf_out(handle, &format_buffer[..length]);
 }
 /* The undefined object is used as a placeholder in pdfnames.c
  * for objects which are referenced before they are defined.
@@ -790,12 +738,8 @@ pub unsafe extern "C" fn pdf_new_null() -> *mut pdf_obj {
     (*result).data = 0 as *mut libc::c_void;
     result
 }
-unsafe extern "C" fn write_null(mut handle: rust_output_handle_t) {
-    pdf_out(
-        handle,
-        b"null\x00" as *const u8 as *const i8 as *const libc::c_void,
-        4i32,
-    );
+unsafe extern "C" fn write_null(mut handle: OutputHandleWrapper) {
+    pdf_out(handle, b"null");
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_new_boolean(mut value: i8) -> *mut pdf_obj {
@@ -811,19 +755,11 @@ pub unsafe extern "C" fn pdf_new_boolean(mut value: i8) -> *mut pdf_obj {
 unsafe extern "C" fn release_boolean(mut data: *mut pdf_obj) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_boolean(mut data: *mut pdf_boolean, mut handle: rust_output_handle_t) {
+unsafe extern "C" fn write_boolean(mut data: *mut pdf_boolean, handle: OutputHandleWrapper) {
     if (*data).value != 0 {
-        pdf_out(
-            handle,
-            b"true\x00" as *const u8 as *const i8 as *const libc::c_void,
-            4i32,
-        );
+        pdf_out(handle, b"true");
     } else {
-        pdf_out(
-            handle,
-            b"false\x00" as *const u8 as *const i8 as *const libc::c_void,
-            5i32,
-        );
+        pdf_out(handle, b"false");
     };
 }
 #[no_mangle]
@@ -858,14 +794,9 @@ pub unsafe extern "C" fn pdf_new_number(mut value: f64) -> *mut pdf_obj {
 unsafe extern "C" fn release_number(mut data: *mut pdf_number) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_number(mut number: *mut pdf_number, mut handle: rust_output_handle_t) {
-    let mut count: i32 = 0;
-    count = pdf_sprint_number(&mut format_buffer[..], (*number).value) as i32;
-    pdf_out(
-        handle,
-        format_buffer.as_mut_ptr() as *const libc::c_void,
-        count,
-    );
+unsafe extern "C" fn write_number(mut number: *mut pdf_number, handle: OutputHandleWrapper) {
+    let count = pdf_sprint_number(&mut format_buffer[..], (*number).value) as usize;
+    pdf_out(handle, &format_buffer[..count]);
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_set_number(mut object: *mut pdf_obj, mut value: f64) {
@@ -1031,11 +962,10 @@ pub unsafe extern "C" fn pdfobj_escape_str(
     }
     result
 }
-unsafe extern "C" fn write_string(mut str: *mut pdf_string, mut handle: rust_output_handle_t) {
+unsafe extern "C" fn write_string(mut str: *mut pdf_string, handle: OutputHandleWrapper) {
     let mut s: *mut u8 = 0 as *mut u8;
-    let mut wbuf: [i8; 4096] = [0; 4096];
+    let mut wbuf = [0_u8; 4096];
     let mut nescc: i32 = 0i32;
-    let mut count: i32 = 0;
     let mut len: size_t = 0i32 as size_t;
     if enc_mode {
         pdf_encrypt_data((*str).string, (*str).length, &mut s, &mut len);
@@ -1056,7 +986,7 @@ unsafe extern "C" fn write_string(mut str: *mut pdf_string, mut handle: rust_out
      * ASCII hex string.
      */
     if nescc as u64 > len.wrapping_div(3i32 as u64) {
-        pdf_out_char(handle, '<' as i32 as i8);
+        pdf_out_char(handle, b'<');
         for i in 0..len {
             pdf_out_char(
                 handle,
@@ -1067,9 +997,9 @@ unsafe extern "C" fn write_string(mut str: *mut pdf_string, mut handle: rust_out
                 xchar[(*s.offset(i as isize) as i32 & 0xfi32) as usize],
             );
         }
-        pdf_out_char(handle, '>' as i32 as i8);
+        pdf_out_char(handle, b'>');
     } else {
-        pdf_out_char(handle, '(' as i32 as i8);
+        pdf_out_char(handle, b'(');
         /*
          * This section of code probably isn't speed critical.  Escaping the
          * characters in the string one at a time may seem slow, but it's
@@ -1079,15 +1009,15 @@ unsafe extern "C" fn write_string(mut str: *mut pdf_string, mut handle: rust_out
          * handled as quickly as possible since there are so many of them.
          */
         for i in 0..len {
-            count = pdfobj_escape_str(
-                wbuf.as_mut_ptr(),
+            let count = pdfobj_escape_str(
+                wbuf.as_mut_ptr() as *mut i8,
                 4096i32 as size_t,
                 &mut *s.offset(i as isize),
                 1i32 as size_t,
-            ) as i32;
-            pdf_out(handle, wbuf.as_mut_ptr() as *const libc::c_void, count);
+            ) as usize;
+            pdf_out(handle, &wbuf[..count]);
         }
-        pdf_out_char(handle, ')' as i32 as i8);
+        pdf_out_char(handle, b')');
     }
     if enc_mode as i32 != 0 && !s.is_null() {
         free(s as *mut libc::c_void);
@@ -1173,7 +1103,7 @@ pub unsafe fn pdf_copy_name(name: *const i8) -> *mut pdf_obj {
     result
 }
 
-unsafe extern "C" fn write_name(mut name: *mut pdf_name, mut handle: rust_output_handle_t) {
+unsafe extern "C" fn write_name(mut name: *mut pdf_name, handle: OutputHandleWrapper) {
     let mut s: *mut i8 = 0 as *mut i8;
     let mut length: i32 = 0;
     s = (*name).name;
@@ -1193,18 +1123,21 @@ unsafe extern "C" fn write_name(mut name: *mut pdf_name, mut handle: rust_output
      *  character itself; it is recommended but not required for characters
      *  whose codes are outside the range 33 (!) to 126 (~).
      */
-    pdf_out_char(handle, '/' as i32 as i8);
+    pdf_out_char(handle, b'/');
     for i in 0..length as isize {
         if (*s.offset(i) as u8) < b'!'
             || (*s.offset(i) as u8) > b'~'
             || b"#()/<>[]{}%".contains(&(*s.offset(i) as u8))
         {
             /*     ^ "space" is here. */
-            pdf_out_char(handle, '#' as i32 as i8);
-            pdf_out_char(handle, xchar[(*s.offset(i) as i32 >> 4 & 0xf) as usize]);
-            pdf_out_char(handle, xchar[(*s.offset(i) as i32 & 0xf) as usize]);
+            pdf_out_char(handle, b'#');
+            pdf_out_char(
+                handle,
+                xchar[(*s.offset(i) as i32 >> 4 & 0xf) as usize] as u8,
+            );
+            pdf_out_char(handle, xchar[(*s.offset(i) as i32 & 0xf) as usize] as u8);
         } else {
-            pdf_out_char(handle, *s.offset(i));
+            pdf_out_char(handle, *s.offset(i) as u8);
         }
     }
 }
@@ -1238,8 +1171,8 @@ pub unsafe extern "C" fn pdf_new_array() -> *mut pdf_obj {
     (*result).data = data as *mut libc::c_void;
     result
 }
-unsafe extern "C" fn write_array(mut array: *mut pdf_array, mut handle: rust_output_handle_t) {
-    pdf_out_char(handle, '[' as i32 as i8);
+unsafe extern "C" fn write_array(mut array: *mut pdf_array, handle: OutputHandleWrapper) {
+    pdf_out_char(handle, b'[');
     if (*array).size > 0_u32 {
         let mut type1: i32 = 10i32;
         let mut type2: i32 = 0;
@@ -1256,7 +1189,7 @@ unsafe extern "C" fn write_array(mut array: *mut pdf_array, mut handle: rust_out
             }
         }
     }
-    pdf_out_char(handle, ']' as i32 as i8);
+    pdf_out_char(handle, b']');
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_get_array(mut array: *mut pdf_obj, mut idx: i32) -> *mut pdf_obj {
@@ -1364,9 +1297,7 @@ unsafe extern "C" fn pdf_unshift_array(mut array: *mut pdf_obj, mut object: *mut
         (*data).max = (*data).max.wrapping_add(256i32 as libc::c_uint);
         (*data).values = renew(
             (*data).values as *mut libc::c_void,
-            ((*data).max as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<*mut pdf_obj>() as libc::c_ulong)
-                as u32,
+            ((*data).max as u64).wrapping_mul(::std::mem::size_of::<*mut pdf_obj>() as u64) as u32,
         ) as *mut *mut pdf_obj
     }
     libc::memmove(
@@ -1378,12 +1309,8 @@ unsafe extern "C" fn pdf_unshift_array(mut array: *mut pdf_obj, mut object: *mut
     *fresh14 = object;
     (*data).size = (*data).size.wrapping_add(1);
 }
-unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, mut handle: rust_output_handle_t) {
-    pdf_out(
-        handle,
-        b"<<\x00" as *const u8 as *const i8 as *const libc::c_void,
-        2i32,
-    );
+unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, handle: OutputHandleWrapper) {
+    pdf_out(handle, b"<<");
     while !(*dict).key.is_null() {
         pdf_write_obj((*dict).key, handle);
         if pdf_need_white(4i32, (*(*dict).value).typ) != 0 {
@@ -1392,11 +1319,7 @@ unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, mut handle: rust_output
         pdf_write_obj((*dict).value, handle);
         dict = (*dict).next
     }
-    pdf_out(
-        handle,
-        b">>\x00" as *const u8 as *const i8 as *const libc::c_void,
-        2i32,
-    );
+    pdf_out(handle, b">>");
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_new_dict() -> *mut pdf_obj {
@@ -1691,8 +1614,8 @@ unsafe extern "C" fn filter_PNG15_apply_filter(
     let mut rowbytes: i32 = columns * bytes_per_pixel;
     assert!(!raster.is_null() && !length.is_null());
     /* Result */
-    dst = new((((rowbytes + 1i32) * rows) as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong) as u32)
+    dst = new((((rowbytes + 1i32) * rows) as u32 as u64)
+        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64) as u32)
         as *mut libc::c_uchar;
     *length = (rowbytes + 1i32) * rows;
     for j in 0..rows {
@@ -1898,8 +1821,8 @@ unsafe extern "C" fn apply_filter_TIFF2_1_2_4(
     let mut prev: *mut u16 = 0 as *mut u16;
     assert!(!raster.is_null());
     assert!(bpc as libc::c_int > 0i32 && bpc as libc::c_int <= 8i32);
-    prev = new((num_comp as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<u16>() as libc::c_ulong) as u32) as *mut u16;
+    prev = new((num_comp as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32)
+        as *mut u16;
     /* Generic routine for 1 to 16 bit.
      * It supports, e.g., 7 bpc images too.
      * Actually, it is not necessary to have 16 bit inbuf and outbuf
@@ -1915,8 +1838,7 @@ unsafe extern "C" fn apply_filter_TIFF2_1_2_4(
         memset(
             prev as *mut libc::c_void,
             0i32,
-            (::std::mem::size_of::<u16>() as libc::c_ulong).wrapping_mul(num_comp as libc::c_ulong)
-                as _,
+            (::std::mem::size_of::<u16>() as u64).wrapping_mul(num_comp as u64) as _,
         );
         outbuf = 0i32 as u16;
         inbuf = outbuf;
@@ -1977,8 +1899,8 @@ unsafe extern "C" fn filter_TIFF2_apply_filter(
     let mut prev: *mut u16 = 0 as *mut u16;
     let mut rowbytes: i32 = (bpc as libc::c_int * colors as libc::c_int * columns + 7i32) / 8i32;
     assert!(!raster.is_null() && !length.is_null());
-    dst = new(((rowbytes * rows) as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong) as u32)
+    dst = new(((rowbytes * rows) as u32 as u64)
+        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64) as u32)
         as *mut libc::c_uchar;
     libc::memcpy(
         dst as *mut libc::c_void,
@@ -1991,15 +1913,14 @@ unsafe extern "C" fn filter_TIFF2_apply_filter(
             apply_filter_TIFF2_1_2_4(dst, columns, rows, bpc, colors);
         }
         8 => {
-            prev = new((colors as u32 as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<u16>() as libc::c_ulong)
-                as u32) as *mut u16;
+            prev = new(
+                (colors as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32,
+            ) as *mut u16;
             for j in 0..rows {
                 memset(
                     prev as *mut libc::c_void,
                     0i32,
-                    (::std::mem::size_of::<u16>() as libc::c_ulong)
-                        .wrapping_mul(colors as libc::c_ulong) as _,
+                    (::std::mem::size_of::<u16>() as u64).wrapping_mul(colors as u64) as _,
                 );
                 for i in 0..columns {
                     let mut pos: i32 = colors as libc::c_int * (columns * j + i);
@@ -2015,15 +1936,14 @@ unsafe extern "C" fn filter_TIFF2_apply_filter(
             free(prev as *mut libc::c_void);
         }
         16 => {
-            prev = new((colors as u32 as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<u16>() as libc::c_ulong)
-                as u32) as *mut u16;
+            prev = new(
+                (colors as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32,
+            ) as *mut u16;
             for j in 0..rows {
                 memset(
                     prev as *mut libc::c_void,
                     0i32,
-                    (::std::mem::size_of::<u16>() as libc::c_ulong)
-                        .wrapping_mul(colors as libc::c_ulong) as _,
+                    (::std::mem::size_of::<u16>() as u64).wrapping_mul(colors as u64) as _,
                 );
                 for i in 0..columns {
                     let mut pos_0: i32 = 2i32 * colors as libc::c_int * (columns * j + i);
@@ -2064,7 +1984,7 @@ unsafe extern "C" fn filter_create_predictor_dict(
     pdf_add_dict(parms, "Predictor", pdf_new_number(predictor as f64));
     return parms;
 }
-unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_output_handle_t) {
+unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, handle: OutputHandleWrapper) {
     let mut filtered: *mut u8 = 0 as *mut u8;
     let mut filtered_length: u32 = 0;
     /*
@@ -2156,8 +2076,8 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
             buffer_length = filtered_length
                 .wrapping_add(filtered_length.wrapping_div(1000i32 as libc::c_uint))
                 .wrapping_add(14i32 as libc::c_uint) as libz::uLong;
-            buffer = new((buffer_length as u32 as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong)
+            buffer = new((buffer_length as u32 as u64)
+                .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64)
                 as u32) as *mut libc::c_uchar;
             let mut filter_name: *mut pdf_obj = pdf_new_name("FlateDecode");
             if let Some(filters) = filters {
@@ -2200,14 +2120,14 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
                 }
             }
             free(filtered as *mut libc::c_void);
-            compression_saved = (compression_saved as libc::c_ulong).wrapping_add(
-                (filtered_length as libc::c_ulong)
+            compression_saved = (compression_saved as u64).wrapping_add(
+                (filtered_length as u64)
                     .wrapping_sub(buffer_length)
                     .wrapping_sub(if filters.is_some() {
                         strlen(b"/FlateDecode \x00" as *const u8 as *const i8)
                     } else {
                         strlen(b"/Filter/FlateDecode\n\x00" as *const u8 as *const i8)
-                    } as libc::c_ulong),
+                    } as u64),
             ) as libc::c_int as libc::c_int;
             filtered = buffer;
             filtered_length = buffer_length as libc::c_uint
@@ -2234,16 +2154,14 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
         pdf_new_number(filtered_length as f64),
     );
     pdf_write_obj((*stream).dict, handle);
-    pdf_out(
-        handle,
-        b"\nstream\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        8i32,
-    );
+    pdf_out(handle, b"\nstream\n");
+    let mut v = Vec::<u8>::new();
+    for i in 0..filtered_length {
+        v.push(*filtered.offset(i as isize));
+    }
     if filtered_length > 0_u32 {
         pdf_out(
-            handle,
-            filtered as *const libc::c_void,
-            filtered_length as i32,
+            handle, &v, //TODO: check
         );
     }
     free(filtered as *mut libc::c_void);
@@ -2253,16 +2171,8 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, mut handle: rust_
      * If this stream gets written more than once with different
      * filters, this could be a problem.
      */
-    pdf_out(
-        handle,
-        b"\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        1i32,
-    );
-    pdf_out(
-        handle,
-        b"endstream\x00" as *const u8 as *const i8 as *const libc::c_void,
-        9i32,
-    );
+    pdf_out(handle, b"\n");
+    pdf_out(handle, b"endstream");
 }
 unsafe extern "C" fn release_stream(mut stream: *mut pdf_stream) {
     pdf_release_obj((*stream).dict);
@@ -2409,7 +2319,7 @@ pub unsafe extern "C" fn pdf_add_stream_flate(
     if libz::inflateInit_(
         &mut z,
         b"1.2.11\x00" as *const u8 as *const i8,
-        ::std::mem::size_of::<libz::z_stream>() as libc::c_ulong as libc::c_int,
+        ::std::mem::size_of::<libz::z_stream>() as u64 as libc::c_int,
     ) != 0i32
     {
         warn!("inflateInit() failed.");
@@ -2512,8 +2422,8 @@ unsafe extern "C" fn filter_row_TIFF2(
     let mut k: libc::c_int = 0;
     let mut inbits: libc::c_int = 0;
     let mut outbits: libc::c_int = 0;
-    col = new((parms.colors as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong) as u32)
+    col = new((parms.colors as u32 as u64)
+        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64) as u32)
         as *mut libc::c_uchar;
     memset(col as *mut libc::c_void, 0i32, parms.colors as _);
     outbuf = 0i32;
@@ -2574,12 +2484,12 @@ unsafe extern "C" fn filter_decoded(
     let mut bytes_per_pixel: libc::c_int = (bits_per_pixel + 7i32) / 8i32;
     let mut length: libc::c_int = (parms.columns * bits_per_pixel + 7i32) / 8i32;
     let mut error: libc::c_int = 0i32;
-    prev = new((length as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong)
-        as u32) as *mut libc::c_uchar;
-    buf = new((length as u32 as libc::c_ulong)
-        .wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as libc::c_ulong) as u32)
-        as *mut libc::c_uchar;
+    prev = new(
+        (length as u32 as u64).wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64) as u32,
+    ) as *mut libc::c_uchar;
+    buf = new(
+        (length as u32 as u64).wrapping_mul(::std::mem::size_of::<libc::c_uchar>() as u64) as u32,
+    ) as *mut libc::c_uchar;
     memset(prev as *mut libc::c_void, 0i32, length as _);
     let mut current_block_77: u64;
     match parms.predictor {
@@ -2825,7 +2735,7 @@ unsafe extern "C" fn pdf_add_stream_flate_filtered(
     if libz::inflateInit_(
         &mut z,
         b"1.2.11\x00" as *const u8 as *const i8,
-        ::std::mem::size_of::<libz::z_stream>() as libc::c_ulong as libc::c_int,
+        ::std::mem::size_of::<libz::z_stream>() as u64 as libc::c_int,
     ) != 0i32
     {
         warn!("inflateInit() failed.");
@@ -2964,7 +2874,7 @@ unsafe extern "C" fn pdf_stream_uncompress(mut src: *mut pdf_obj) -> *mut pdf_ob
     pdf_concat_stream(dst, src);
     dst
 }
-unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, mut handle: rust_output_handle_t) {
+unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, handle: OutputHandleWrapper) {
     if object.is_null() {
         write_null(handle);
         return;
@@ -3008,8 +2918,7 @@ unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, mut handle: rust_ou
     };
 }
 /* Write the object to the file */
-unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, mut handle: rust_output_handle_t) {
-    let mut length: i32 = 0;
+unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, handle: OutputHandleWrapper) {
     /*
      * Record file position
      */
@@ -3019,26 +2928,18 @@ unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, mut handle: rust_ou
         pdf_output_file_position as u32,
         (*object).generation,
     );
-    length = sprintf(
+    let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
         b"%u %hu obj\n\x00" as *const u8 as *const i8,
         (*object).label,
         (*object).generation as i32,
-    );
+    ) as usize;
     enc_mode = doc_enc_mode as i32 != 0 && (*object).flags & 1i32 << 1i32 == 0;
     pdf_enc_set_label((*object).label);
     pdf_enc_set_generation((*object).generation as u32);
-    pdf_out(
-        handle,
-        format_buffer.as_mut_ptr() as *const libc::c_void,
-        length,
-    );
+    pdf_out(handle, &format_buffer[..length]);
     pdf_write_obj(object, handle);
-    pdf_out(
-        handle,
-        b"\nendobj\n\x00" as *const u8 as *const i8 as *const libc::c_void,
-        8i32,
-    );
+    pdf_out(handle, b"\nendobj\n");
 }
 unsafe extern "C" fn pdf_add_objstm(objstm: *mut pdf_obj, mut object: *mut pdf_obj) -> i32 {
     let mut data: *mut i32 = 0 as *mut i32;
@@ -3061,8 +2962,9 @@ unsafe extern "C" fn pdf_add_objstm(objstm: *mut pdf_obj, mut object: *mut pdf_o
     /* redirect output into objstm */
     output_stream = objstm;
     enc_mode = false;
-    pdf_write_obj(object, pdf_output_handle);
-    pdf_out_char(pdf_output_handle, '\n' as i32 as i8);
+    let handle = pdf_output_handle.unwrap();
+    pdf_write_obj(object, handle);
+    pdf_out_char(handle, b'\n');
     output_stream = 0 as *mut pdf_obj;
     pos
 }
@@ -3130,7 +3032,7 @@ pub unsafe extern "C" fn pdf_release_obj(mut object: *mut pdf_obj) {
             (*object).typ,
             (*object).refcount,
         );
-        pdf_write_obj(object, ttstub_output_open_stdout());
+        pdf_write_obj(object, ttstub_output_open_stdout().unwrap());
         panic!("pdf_release_obj:  Called with invalid object.");
     }
     (*object).refcount = (*object).refcount.wrapping_sub(1_u32);
@@ -3139,13 +3041,14 @@ pub unsafe extern "C" fn pdf_release_obj(mut object: *mut pdf_obj) {
          * Nothing is using this object so it's okay to remove it.
          * Nonzero "label" means object needs to be written before it's destroyed.
          */
-        if (*object).label != 0 && !pdf_output_handle.is_null() {
+        if (*object).label != 0 && pdf_output_handle.is_some() {
             if do_objstm == 0
                 || (*object).flags & 1i32 << 0i32 != 0
                 || doc_enc_mode as i32 != 0 && (*object).flags & 1i32 << 1i32 != 0
                 || (*object).generation as i32 != 0
             {
-                pdf_flush_obj(object, pdf_output_handle);
+                let handle = pdf_output_handle.unwrap();
+                pdf_flush_obj(object, handle);
             } else {
                 if current_objstm.is_null() {
                     let mut data: *mut i32 = new(((2i32 * 200i32 + 2i32) as u32 as u64)
@@ -3335,6 +3238,7 @@ unsafe extern "C" fn parse_trailer(mut pf: *mut pdf_file) -> *mut pdf_obj {
         1024i32
     };
     nread = ttstub_input_read((*pf).handle, work_buffer.as_mut_ptr(), nmax as size_t) as i32;
+    //nread = InputHandleWrapper((*pf).handle).read(&mut work_buffer[..nmax]);
     if nread == 0i32
         || strstartswith(
             work_buffer.as_mut_ptr(),
@@ -4587,8 +4491,8 @@ pub unsafe extern "C" fn pdf_compare_reference(
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_obj_reset_global_state() {
-    pdf_output_handle = 0 as *mut libc::c_void;
-    pdf_output_file_position = 0i32;
-    pdf_output_line_position = 0i32;
+    pdf_output_handle = None;
+    pdf_output_file_position = 0;
+    pdf_output_line_position = 0;
     compression_saved = 0i32;
 }

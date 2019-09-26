@@ -33,7 +33,7 @@ use libc::{fseek, ftell, rewind, FILE};
 pub type __off_t = i64;
 pub type __off64_t = i64;
 pub type size_t = u64;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 unsafe extern "C" fn os_error() {
     panic!("io:  An OS command failed that should not have.\n");
 }

@@ -54,7 +54,7 @@ use libc::{free, memcmp, memcpy, strlen, strncmp, strncpy};
 
 pub type size_t = u64;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 /* quasi-hack to get the primary input */
 
 pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;

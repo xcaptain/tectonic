@@ -46,7 +46,7 @@ pub type ssize_t = __ssize_t;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 /* Don't forget fontmap reading now requires information
  * from SFD files. You must initialize at least sfd_file_
  * cache before starting loading of fontmaps.

@@ -46,7 +46,6 @@ use libc::{free, memcpy};
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
 pub type Fixed = u32;
 pub type FWord = i16;
 

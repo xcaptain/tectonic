@@ -56,7 +56,7 @@ pub type ssize_t = __ssize_t;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type fixword = i32;
 pub type spt_t = i32;
 #[derive(Copy, Clone)]

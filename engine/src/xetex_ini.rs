@@ -8,6 +8,9 @@
     unused_mut
 )]
 
+use std::ffi::CStr;
+use std::io::Write;
+
 use super::xetex_texmfmp::get_date_and_time;
 use crate::core_memory::{mfree, xcalloc, xmalloc};
 use crate::xetex_errors::{confusion, error, overflow};
@@ -39,7 +42,7 @@ use crate::xetex_xetex0::{
 };
 use crate::{
     ttstub_input_close, ttstub_input_open, ttstub_input_read, ttstub_output_close,
-    ttstub_output_flush, ttstub_output_open, ttstub_output_open_stdout, ttstub_output_write,
+    ttstub_output_open, ttstub_output_open_stdout,
 };
 use bridge::_tt_abort;
 use dpx::dpx_pdfobj::{pdf_files_close, pdf_files_init};
@@ -56,8 +59,8 @@ pub type ssize_t = __ssize_t;
 
 use crate::{TTHistory, TTInputFormat};
 
-pub type rust_output_handle_t = *mut libc::c_void;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
+use bridge::OutputHandleWrapper;
 /* quasi-hack to get the primary input */
 /* tectonic/xetex-core.h: core XeTeX types and #includes.
    Copyright 2016 the Tectonic Project
@@ -483,9 +486,9 @@ pub static mut init_pool_ptr: pool_pointer = 0;
 #[no_mangle]
 pub static mut init_str_ptr: str_number = 0;
 #[no_mangle]
-pub static mut rust_stdout: rust_output_handle_t = 0 as *const libc::c_void as *mut libc::c_void;
+pub static mut rust_stdout: Option<OutputHandleWrapper> = None;
 #[no_mangle]
-pub static mut log_file: rust_output_handle_t = 0 as *const libc::c_void as *mut libc::c_void;
+pub static mut log_file: Option<OutputHandleWrapper> = None;
 #[no_mangle]
 pub static mut selector: Selector = Selector::FILE_0;
 #[no_mangle]
@@ -1045,8 +1048,7 @@ pub static mut long_help_seen: bool = false;
 #[no_mangle]
 pub static mut format_ident: str_number = 0;
 #[no_mangle]
-pub static mut write_file: [rust_output_handle_t; 16] =
-    [0 as *const libc::c_void as *mut libc::c_void; 16];
+pub static mut write_file: [Option<OutputHandleWrapper>; 16] = [None; 16];
 #[no_mangle]
 pub static mut write_open: [bool; 18] = [false; 18];
 #[no_mangle]
@@ -1248,19 +1250,19 @@ unsafe extern "C" fn do_dump(
     mut p: *mut i8,
     mut item_size: size_t,
     mut nitems: size_t,
-    mut out_file: rust_output_handle_t,
+    mut out_file: OutputHandleWrapper,
 ) {
     swap_items(p, nitems, item_size);
-    let mut r: ssize_t =
-        ttstub_output_write(out_file, p, item_size.wrapping_mul(nitems)) as ssize_t;
-    if r < 0i32 as i64 || r as size_t != item_size.wrapping_mul(nitems) {
-        _tt_abort(
-            b"could not write %zu %zu-byte item(s) to %s\x00" as *const u8 as *const i8,
-            nitems,
-            item_size,
-            name_of_file,
-        );
+    let mut v = Vec::new();
+    for i in 0..(item_size * nitems) as isize {
+        v.push(*p.offset(i) as u8);
     }
+    out_file.write(&v).expect(&format!(
+        "could not write {} {}-byte item(s) to {}",
+        nitems,
+        item_size,
+        CStr::from_ptr(name_of_file).to_string_lossy(),
+    ));
     /* Have to restore the old contents of memory, since some of it might
     get used again.  */
     swap_items(p, nitems, item_size);
@@ -3763,7 +3765,6 @@ unsafe extern "C" fn store_fmt_file() {
     let mut p: i32 = 0;
     let mut q: i32 = 0;
     let mut x: i32 = 0;
-    let mut fmt_out: rust_output_handle_t = 0 as *mut libc::c_void;
     if save_ptr != 0i32 {
         if file_line_error_style_p != 0 {
             print_file_line();
@@ -3781,7 +3782,7 @@ unsafe extern "C" fn store_fmt_file() {
         }
         history = TTHistory::FATAL_ERROR;
         close_files_and_terminate();
-        ttstub_output_flush(rust_stdout);
+        rust_stdout.unwrap().flush().unwrap();
         panic!("\\dump inside a group");
     }
     selector = Selector::NEW_STRING;
@@ -3897,13 +3898,14 @@ unsafe extern "C" fn store_fmt_file() {
     }
     format_ident = make_string();
     pack_job_name(b".fmt\x00" as *const u8 as *const i8);
-    fmt_out = ttstub_output_open(name_of_file, 0i32);
-    if fmt_out.is_null() {
+    let fmt_out = ttstub_output_open(name_of_file, 0i32);
+    if fmt_out.is_none() {
         _tt_abort(
             b"cannot open format output file \"%s\"\x00" as *const u8 as *const i8,
             name_of_file,
         );
     }
+    let fmt_out = fmt_out.unwrap();
     print_nl_cstr(b"Beginning to dump on file \x00" as *const u8 as *const i8);
     print(make_name_string());
     str_ptr -= 1;

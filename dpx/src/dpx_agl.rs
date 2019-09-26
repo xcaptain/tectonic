@@ -50,7 +50,7 @@ pub type ssize_t = __ssize_t;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct agl_name {

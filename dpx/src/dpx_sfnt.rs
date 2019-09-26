@@ -43,7 +43,7 @@ use libc::{free, memcpy};
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct sfnt_table {

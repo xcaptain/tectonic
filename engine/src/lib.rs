@@ -75,7 +75,7 @@ pub unsafe extern "C" fn bibtex_simple_main(
 }
 
 mod core_memory {
-    use bridge::{size_t, ssize_t};
+    use bridge::size_t;
     /* tectonic/core-memory.c: basic C dynamic memory helpers
 
     Copyright 1993, 1994, 1995, 2008, 2009, 2010, 2011 Karl Berry.
