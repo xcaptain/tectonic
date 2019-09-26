@@ -16,6 +16,11 @@ extern crate tectonic_dvipdfmx as dpx;
 
 pub use bridge::*;
 
+// For the msg_send macro
+#[cfg(target_os = "macos")]
+#[macro_use]
+extern crate objc;
+
 //use log::{info, warn};
 
 pub type __off_t = i64;

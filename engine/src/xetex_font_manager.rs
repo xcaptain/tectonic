@@ -24,9 +24,10 @@ use crate::core_memory::xmalloc;
 
 use crate::xetex_layout_interface::collection_types::*;
 
+#[cfg(target_os = "macos")]
+use crate::xetex_layout_interface::__CTFontDescriptor;
+
 extern "C" {
-    #[cfg(target_os = "macos")]
-    pub type __CTFontDescriptor;
     /* ************************************************************************/
     /* ************************************************************************/
     /*                                                                       */
@@ -2567,9 +2568,9 @@ pub unsafe extern "C" fn XeTeXFontMgr_prependToList(
             false
         }
     }
-    
+
     remove_first_occur(&mut *list, CStr::from_ptr(str));
-    
+
     CppStdListOfString_prepend_copy_const_char_ptr(list, str);
 }
 #[no_mangle]
