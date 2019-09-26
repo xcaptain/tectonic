@@ -1579,7 +1579,7 @@ unsafe extern "C" fn XeTeXFontMgrFamily_create() -> *mut XeTeXFontMgrFamily {
     (*self_0).maxWidth = 0i32 as uint16_t;
     (*self_0).minSlant = 0i32 as int16_t;
     (*self_0).maxSlant = 0i32 as int16_t;
-    (*self_0).styles = CppStdMapStringToFontPtr_create();
+    (*self_0).styles = CppStdMap_create();
     return self_0;
 }
 #[inline]
@@ -1750,10 +1750,10 @@ pub unsafe extern "C" fn XeTeXFontMgr_delete(mut self_0: *mut XeTeXFontMgr) {
     if (*self_0).m_subdtor.is_some() {
         (*self_0).m_subdtor.expect("non-null function pointer")(self_0);
     }
-    CppStdMapStringToFontPtr_delete((*self_0).m_nameToFont);
+    CppStdMap_delete((*self_0).m_nameToFont);
     CppStdMap_delete((*self_0).m_nameToFamily);
     CppStdMap_delete((*self_0).m_platformRefToFont);
-    CppStdMapStringToFontPtr_delete((*self_0).m_psNameToFont);
+    CppStdMap_delete((*self_0).m_psNameToFont);
     free(self_0 as *mut libc::c_void);
 }
 #[no_mangle]
@@ -1777,8 +1777,8 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
     // SIDE EFFECT: edits /variant/ string in-place removing /B or /I
     // ptSize is in TeX points, or negative for 'scaled' factor
     // "variant" string will be shortened (in-place) by removal of /B and /I if present
-    let mut nameStr: *mut CppStdString = CppStdString_create();
-    CppStdString_assign_from_const_char_ptr(nameStr, name);
+    let mut nameStr = CString::default();
+    CppStdString_assign_from_const_char_ptr(&mut nameStr, name);
     let mut font: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
     let mut dsize: libc::c_int = 100i32;
     loaded_font_design_size = 655360i64 as Fixed;
@@ -1786,7 +1786,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
     while pass < 2i32 {
         // try full name as given
         let mut i: CppStdMapStringToFontPtr_Iter =
-            CppStdMapStringToFontPtr_find((*self_0).m_nameToFont, nameStr);
+            CppStdMapStringToFontPtr_find((*self_0).m_nameToFont, &mut nameStr);
         if CppStdMapStringToFontPtr_Iter_neq(
             i,
             CppStdMapStringToFontPtr_end((*self_0).m_nameToFont),
@@ -1798,7 +1798,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             break;
         } else {
             // if there's a hyphen, split there and try Family-Style
-            let mut nameStr_cstr: *const libc::c_char = CppStdString_cstr(nameStr);
+            let mut nameStr_cstr: *const libc::c_char = CppStdString_cstr(&mut nameStr);
             let mut nameStr_len: libc::c_int = strlen(nameStr_cstr) as libc::c_int;
             let mut hyph_pos: *const libc::c_char = strchr(nameStr_cstr, '-' as i32);
             let mut hyph: libc::c_int = (if !hyph_pos.is_null() {
@@ -1807,15 +1807,9 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                 -1i32 as libc::c_long
             }) as libc::c_int;
             if hyph > 0i32 && hyph < nameStr_len - 1i32 {
-                let mut family: *mut CppStdString = CppStdString_create();
-                CppStdString_assign_n_chars(family, nameStr_cstr, hyph as size_t);
-                let mut f: CppStdMapStringToFamilyPtr_Iter =
-                    CppStdMapStringToFamilyPtr_find((*self_0).m_nameToFamily, family);
-                CppStdString_delete(family);
-                if CppStdMapStringToFamilyPtr_Iter_neq(
-                    f,
-                    CppStdMapStringToFamilyPtr_end((*self_0).m_nameToFamily),
-                ) {
+                let mut family = CString::default();
+                CppStdString_assign_n_chars(&mut family, nameStr_cstr, hyph as size_t);
+                if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&family).cloned() {
                     let mut style: *mut CppStdString = CppStdString_create();
                     CppStdString_assign_n_chars(
                         style,
@@ -1823,15 +1817,10 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                         (nameStr_len - hyph - 1i32) as size_t,
                     );
                     CppStdString_delete(style);
-                    i = CppStdMapStringToFontPtr_find(
-                        (*CppStdMapStringToFamilyPtr_Iter_second(f)).styles,
-                        style,
-                    );
+                    i = CppStdMapStringToFontPtr_find((*family_ptr.as_ptr()).styles, style);
                     if CppStdMapStringToFontPtr_Iter_neq(
                         i,
-                        CppStdMapStringToFontPtr_end(
-                            (*CppStdMapStringToFamilyPtr_Iter_second(f)).styles,
-                        ),
+                        CppStdMapStringToFontPtr_end((*family_ptr.as_ptr()).styles),
                     ) {
                         font = CppStdMapStringToFontPtr_Iter_second(i);
                         if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
@@ -1842,7 +1831,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                 }
             }
             // try as PostScript name
-            i = CppStdMapStringToFontPtr_find((*self_0).m_psNameToFont, nameStr);
+            i = CppStdMapStringToFontPtr_find((*self_0).m_psNameToFont, &mut nameStr);
             if CppStdMapStringToFontPtr_Iter_neq(
                 i,
                 CppStdMapStringToFontPtr_end((*self_0).m_psNameToFont),
@@ -1854,22 +1843,14 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                 break;
             } else {
                 // try for the name as a family name
-                let mut f_0: CppStdMapStringToFamilyPtr_Iter =
-                    CppStdMapStringToFamilyPtr_find((*self_0).m_nameToFamily, nameStr);
-                if CppStdMapStringToFamilyPtr_Iter_neq(
-                    f_0,
-                    CppStdMapStringToFamilyPtr_end((*self_0).m_nameToFamily),
-                ) {
+                if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&nameStr).cloned() {
+                    let f_0 = family_ptr.as_ptr();
                     // look for a family member with the "regular" bit set in OS/2
                     let mut regFonts: libc::c_int = 0i32;
-                    i = CppStdMapStringToFontPtr_begin(
-                        (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                    );
+                    i = CppStdMapStringToFontPtr_begin((*(f_0)).styles);
                     while CppStdMapStringToFontPtr_Iter_neq(
                         i,
-                        CppStdMapStringToFontPtr_end(
-                            (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                        ),
+                        CppStdMapStringToFontPtr_end((*(f_0)).styles),
                     ) {
                         if (*CppStdMapStringToFontPtr_Iter_second(i)).isReg {
                             if regFonts == 0i32 {
@@ -1884,50 +1865,42 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                     if font.is_null() || regFonts > 1i32 {
                         // try for style "Regular", "Plain", "Normal", "Roman"
                         i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                            (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
+                            (*(f_0)).styles,
                             b"Regular\x00" as *const u8 as *const libc::c_char,
                         );
                         if CppStdMapStringToFontPtr_Iter_neq(
                             i,
-                            CppStdMapStringToFontPtr_end(
-                                (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                            ),
+                            CppStdMapStringToFontPtr_end((*(f_0)).styles),
                         ) {
                             font = CppStdMapStringToFontPtr_Iter_second(i)
                         } else {
                             i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
+                                (*(f_0)).styles,
                                 b"Plain\x00" as *const u8 as *const libc::c_char,
                             );
                             if CppStdMapStringToFontPtr_Iter_neq(
                                 i,
-                                CppStdMapStringToFontPtr_end(
-                                    (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                                ),
+                                CppStdMapStringToFontPtr_end((*(f_0)).styles),
                             ) {
                                 font = CppStdMapStringToFontPtr_Iter_second(i)
                             } else {
                                 i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                    (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
+                                    (*(f_0)).styles,
                                     b"Normal\x00" as *const u8 as *const libc::c_char,
                                 );
                                 if CppStdMapStringToFontPtr_Iter_neq(
                                     i,
-                                    CppStdMapStringToFontPtr_end(
-                                        (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                                    ),
+                                    CppStdMapStringToFontPtr_end((*(f_0)).styles),
                                 ) {
                                     font = CppStdMapStringToFontPtr_Iter_second(i)
                                 } else {
                                     i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                        (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
+                                        (*(f_0)).styles,
                                         b"Roman\x00" as *const u8 as *const libc::c_char,
                                     );
                                     if CppStdMapStringToFontPtr_Iter_neq(
                                         i,
-                                        CppStdMapStringToFontPtr_end(
-                                            (*CppStdMapStringToFamilyPtr_Iter_second(f_0)).styles,
-                                        ),
+                                        CppStdMapStringToFontPtr_end((*(f_0)).styles),
                                     ) {
                                         font = CppStdMapStringToFontPtr_Iter_second(i)
                                     }
@@ -1937,13 +1910,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                     }
                     if font.is_null() {
                         // look through the family for the (weight, width, slant) nearest to (80, 100, 0)
-                        font = XeTeXFontMgr_bestMatchFromFamily(
-                            self_0,
-                            CppStdMapStringToFamilyPtr_Iter_second(f_0),
-                            80i32,
-                            100i32,
-                            0i32,
-                        )
+                        font = XeTeXFontMgr_bestMatchFromFamily(self_0, (f_0), 80i32, 100i32, 0i32)
                     }
                     if !font.is_null() {
                         break;
@@ -1953,13 +1920,12 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                     // didn't find it in our caches, so do a platform search (may be relatively expensive);
                     // this will update the caches with any fonts that seem to match the name given,
                     // so that the second pass might find it
-                    XeTeXFontMgr_searchForHostPlatformFonts(self_0, CppStdString_cstr(nameStr));
+                    XeTeXFontMgr_searchForHostPlatformFonts(self_0, nameStr.as_ptr());
                 }
                 pass += 1
             }
         }
     }
-    CppStdString_delete(nameStr);
     if font.is_null() {
         return 0 as PlatformFontRef;
     }
@@ -2340,25 +2306,20 @@ pub unsafe extern "C" fn XeTeXFontMgr_getFullName(
 ) -> *const libc::c_char {
     // return the full name of the font, suitable for use in XeTeX source
     // without requiring style qualifiers
-    let mut i: CppStdMapFontRefToFontPtr_Iter =
-        CppStdMapFontRefToFontPtr_find((*self_0).m_platformRefToFont, font);
-    if CppStdMapFontRefToFontPtr_Iter_eq(
-        i,
-        CppStdMapFontRefToFontPtr_end((*self_0).m_platformRefToFont),
-    ) {
+    let font_ptr = if let Some(font_ptr) = (*(*self_0).m_platformRefToFont).get(&font).cloned() {
+        font_ptr
+    } else {
         _tt_abort(
             b"internal error %d in XeTeXFontMgr\x00" as *const u8 as *const libc::c_char,
             2i32,
         );
-    }
-    if !(*CppStdMapFontRefToFontPtr_Iter_second(i))
-        .m_fullName
-        .is_null()
-    {
-        return CppStdString_cstr((*CppStdMapFontRefToFontPtr_Iter_second(i)).m_fullName);
-    } else {
-        return CppStdString_cstr((*CppStdMapFontRefToFontPtr_Iter_second(i)).m_psName);
     };
+    let font_ptr = font_ptr.as_ptr();
+
+    if !(*font_ptr).m_fullName.is_null() {
+        return CppStdString_cstr((*font_ptr).m_fullName);
+    }
+    return CppStdString_cstr((*font_ptr).m_psName);
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_weightAndWidthDiff(
@@ -2543,7 +2504,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_appendToList(
     if has_occur(&*list, CStr::from_ptr(str)) {
         return;
     }
-    CppStdListOfString_append_copy_const_char_ptr(list, str);
+    (*list).push_back(CStr::from_ptr(str).to_owned());
 }
 // prepend a name, removing it from later in the list if present
 #[no_mangle]
@@ -2570,8 +2531,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_prependToList(
     }
 
     remove_first_occur(&mut *list, CStr::from_ptr(str));
-
-    CppStdListOfString_prepend_copy_const_char_ptr(list, str);
+    (*list).push_front(CStr::from_ptr(str).to_owned());
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(
@@ -2579,10 +2539,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(
     mut platformFont: PlatformFontRef,
     mut names: *const XeTeXFontMgrNameCollection,
 ) {
-    if CppStdMapFontRefToFontPtr_Iter_neq(
-        CppStdMapFontRefToFontPtr_find((*self_0).m_platformRefToFont, platformFont),
-        CppStdMapFontRefToFontPtr_end((*self_0).m_platformRefToFont),
-    ) {
+    if (*(*self_0).m_platformRefToFont).contains_key(&platformFont) {
         return;
     }
     if CppStdString_length((*names).m_psName) == 0 {
@@ -2609,19 +2566,16 @@ pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(
         platformFont,
         thisFont_nonnull,
     );
-    if CppStdListOfString_size((*names).m_fullNames) > 0 {
-        (*thisFont).m_fullName =
-            CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_fullNames))
+    if !(*(*names).m_fullNames).is_empty() {
+        (*thisFont).m_fullName = CppStdString_clone(&(*(*names).m_fullNames)[0]);
     }
-    if CppStdListOfString_size((*names).m_familyNames) > 0 {
-        (*thisFont).m_familyName =
-            CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_familyNames))
+    if !(*(*names).m_familyNames).is_empty() {
+        (*thisFont).m_familyName = CppStdString_clone(&(*(*names).m_familyNames)[0]);
     } else {
-        (*thisFont).m_familyName = CppStdString_clone((*names).m_psName)
+        (*thisFont).m_familyName = CppStdString_clone((*names).m_psName);
     }
-    if CppStdListOfString_size((*names).m_styleNames) > 0 {
-        (*thisFont).m_styleName =
-            CppStdString_clone_from_iter(CppStdListOfString_begin((*names).m_styleNames))
+    if !(*(*names).m_styleNames).is_empty() {
+        (*thisFont).m_styleName = CppStdString_clone(&(*(*names).m_styleNames)[0]);
     } else {
         (*thisFont).m_styleName = CppStdString_create()
     }
@@ -2702,8 +2656,8 @@ pub unsafe extern "C" fn XeTeXFontMgr_base_ctor(mut self_0: *mut XeTeXFontMgr) {
     );
     (*self_0).m_memfnSearchForHostPlatformFonts = None;
     (*self_0).m_memfnReadNames = None;
-    (*self_0).m_nameToFont = CppStdMapStringToFontPtr_create();
+    (*self_0).m_nameToFont = CppStdMap_create();
     (*self_0).m_nameToFamily = CppStdMap_create();
     (*self_0).m_platformRefToFont = CppStdMap_create();
-    (*self_0).m_psNameToFont = CppStdMapStringToFontPtr_create();
+    (*self_0).m_psNameToFont = CppStdMap_create();
 }

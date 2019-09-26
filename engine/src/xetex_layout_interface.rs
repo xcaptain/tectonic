@@ -550,6 +550,7 @@ pub mod collection_types {
     use super::{GlyphBBox, GlyphId, PlatformFontRef, XeTeXFontMgrFamily, XeTeXFontMgrFont};
     use core::ptr::NonNull;
     use std::collections::{BTreeMap, LinkedList, VecDeque};
+    use std::ffi::CStr;
     use std::ffi::CString;
 
     pub type CppStdString = CString;
@@ -589,122 +590,6 @@ pub mod collection_types {
 
     extern "C" {
         #[no_mangle]
-        pub fn CppStdListOfString_Iter_neq(
-            lhs: CppStdListOfString_Iter,
-            rhs: CppStdListOfString_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdListOfString_append_copy_CppStdString(
-            list: *mut CppStdListOfString,
-            val: *mut CppStdString,
-        );
-        #[no_mangle]
-        pub fn CppStdListOfString_append_copy_const_char_ptr(
-            self_0: *const CppStdListOfString,
-            val: *const libc::c_char,
-        );
-        #[no_mangle]
-        pub fn CppStdListOfString_begin(self_0: *mut CppStdListOfString)
-            -> CppStdListOfString_Iter;
-        #[no_mangle]
-        pub fn CppStdListOfString_contains_const_char_ptr(
-            self_0: *const CppStdListOfString,
-            val: *const libc::c_char,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdListOfString_end(self_0: *mut CppStdListOfString) -> CppStdListOfString_Iter;
-        #[no_mangle]
-        pub fn CppStdListOfString_erase(
-            self_0: *mut CppStdListOfString,
-            item: CppStdListOfString_Iter,
-        );
-        #[no_mangle]
-        pub fn CppStdListOfString_front_const_char_ptr(
-            self_0: *const CppStdListOfString,
-        ) -> *const libc::c_char;
-        #[no_mangle]
-        pub fn CppStdListOfString_prepend_copy_const_char_ptr(
-            self_0: *const CppStdListOfString,
-            val: *const libc::c_char,
-        );
-        #[no_mangle]
-        pub fn CppStdListOfString_size(self_0: *const CppStdListOfString) -> size_t;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_Iter_eq(
-            lhs: CppStdMapFontRefToFontPtr_Iter,
-            rhs: CppStdMapFontRefToFontPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_Iter_neq(
-            lhs: CppStdMapFontRefToFontPtr_Iter,
-            rhs: CppStdMapFontRefToFontPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_Iter_second(
-            self_0: CppStdMapFontRefToFontPtr_Iter,
-        ) -> *mut XeTeXFontMgrFont;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_contains(
-            self_0: *const CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
-            val: PlatformFontRef,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_end(
-            self_0: *mut CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
-        ) -> CppStdMapFontRefToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapFontRefToFontPtr_find(
-            self_0: *mut CppStdMap<PlatformFontRef, NonNull<XeTeXFontMgrFont>>,
-            val: PlatformFontRef,
-        ) -> CppStdMapFontRefToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_Iter_eq(
-            lhs: CppStdMapGlyphIdToInt_Iter,
-            rhs: CppStdMapGlyphIdToInt_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_Iter_second(self_0: CppStdMapGlyphIdToInt_Iter)
-            -> libc::c_int;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_create() -> *mut CppStdMap<GlyphId, libc::c_int>;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_end(
-            self_0: *mut CppStdMap<GlyphId, libc::c_int>,
-        ) -> CppStdMapGlyphIdToInt_Iter;
-        #[no_mangle]
-        pub fn CppStdMapGlyphIdToInt_find(
-            self_0: *mut CppStdMap<GlyphId, libc::c_int>,
-            id: GlyphId,
-        ) -> CppStdMapGlyphIdToInt_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_Iter_eq(
-            lhs: CppStdMapStringToFamilyPtr_Iter,
-            rhs: CppStdMapStringToFamilyPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_Iter_neq(
-            lhs: CppStdMapStringToFamilyPtr_Iter,
-            rhs: CppStdMapStringToFamilyPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_Iter_second(
-            self_0: CppStdMapStringToFamilyPtr_Iter,
-        ) -> *mut XeTeXFontMgrFamily;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_end(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFamily>>,
-        ) -> CppStdMapStringToFamilyPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFamilyPtr_find(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFamily>>,
-            val: *mut CppStdString,
-        ) -> CppStdMapStringToFamilyPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_Iter_eq(
-            lhs: CppStdMapStringToFontPtr_Iter,
-            rhs: CppStdMapStringToFontPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
         pub fn CppStdMapStringToFontPtr_Iter_inc(iter: *mut CppStdMapStringToFontPtr_Iter);
         #[no_mangle]
         pub fn CppStdMapStringToFontPtr_Iter_neq(
@@ -720,13 +605,6 @@ pub mod collection_types {
             self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapStringToFontPtr_Iter;
         #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_create(
-        ) -> *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_delete(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
-        );
-        #[no_mangle]
         pub fn CppStdMapStringToFontPtr_end(
             self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
         ) -> CppStdMapStringToFontPtr_Iter;
@@ -740,52 +618,6 @@ pub mod collection_types {
             self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
             val: *const libc::c_char,
         ) -> CppStdMapStringToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_Iter_eq(
-            lhs: CppStdMapU32ToGlyphBBox_Iter,
-            rhs: CppStdMapU32ToGlyphBBox_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_Iter_second(
-            self_0: CppStdMapU32ToGlyphBBox_Iter,
-        ) -> GlyphBBox;
-        #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_end(
-            self_0: *mut CppStdMap<u32, GlyphBBox>,
-        ) -> CppStdMapU32ToGlyphBBox_Iter;
-        #[no_mangle]
-        pub fn CppStdMapU32ToGlyphBBox_find(
-            self_0: *mut CppStdMap<u32, GlyphBBox>,
-            key: u32,
-        ) -> CppStdMapU32ToGlyphBBox_Iter;
-        #[no_mangle]
-        pub fn CppStdString_append_const_char_ptr(
-            self_0: *mut CppStdString,
-            val: *const libc::c_char,
-        );
-        #[no_mangle]
-        pub fn CppStdString_assign_from_const_char_ptr(
-            self_0: *mut CppStdString,
-            val: *const libc::c_char,
-        );
-        #[no_mangle]
-        pub fn CppStdString_assign_n_chars(
-            self_0: *mut CppStdString,
-            val: *const libc::c_char,
-            count: size_t,
-        );
-        #[no_mangle]
-        pub fn CppStdString_clone_from_iter(self_0: CppStdListOfString_Iter) -> *mut CppStdString;
-        #[no_mangle]
-        pub fn CppStdString_const_char_ptr_equal_const_char_ptr(
-            lhs: *const libc::c_char,
-            rhs: *const libc::c_char,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdString_equal_const_char_ptr(
-            lhs: *mut CppStdString,
-            rhs: *const libc::c_char,
-        ) -> bool;
     }
 
     pub fn CppStdString_create() -> *mut CppStdString {
@@ -844,9 +676,41 @@ pub mod collection_types {
         let val = &*self_0;
         *val.to_bytes().last().expect("must not be empty") as libc::c_char
     }
-    pub unsafe fn CppStdString_clone(self_0: *mut CppStdString) -> *mut CppStdString {
+    pub unsafe fn CppStdString_clone(self_0: *const CppStdString) -> *mut CppStdString {
         let v: Box<CppStdString> = Box::new((*self_0).clone());
         Box::into_raw(v)
+    }
+
+    pub unsafe fn CppStdString_append_const_char_ptr(
+        self_0: *mut CppStdString,
+        val: *const libc::c_char,
+    ) {
+        use std::mem::swap;
+        let o: &mut CppStdString = &mut *self_0;
+        let mut v: CppStdString = Default::default();
+        swap(o, &mut v);
+        let mut u = v.into_bytes();
+        u.extend(CStr::from_ptr(val).to_bytes());
+        v = CString::from_vec_unchecked(u);
+        swap(o, &mut v);
+    }
+
+    pub unsafe fn CppStdString_assign_from_const_char_ptr(
+        self_0: *mut CppStdString,
+        val: *const libc::c_char,
+    ) {
+        let o: &mut CppStdString = &mut *self_0;
+        *o = CStr::from_ptr(val).to_owned();
+    }
+
+    pub unsafe fn CppStdString_assign_n_chars(
+        self_0: *mut CppStdString,
+        val: *const libc::c_char,
+        count: usize,
+    ) {
+        let o: &mut CppStdString = &mut *self_0;
+        let slice = std::slice::from_raw_parts(val as *const u8, count);
+        *o = CString::from_vec_unchecked(slice.to_owned());
     }
 }
 
@@ -2434,14 +2298,14 @@ pub unsafe extern "C" fn getProtrusionFactor(mut side: libc::c_int) -> *mut Prot
     match side {
         0 => {
             if leftProt.is_null() {
-                leftProt = CppStdMapGlyphIdToInt_create()
+                leftProt = CppStdMap_create()
             }
             container = leftProt
             // we should not reach here
         }
         1 => {
             if rightProt.is_null() {
-                rightProt = CppStdMapGlyphIdToInt_create()
+                rightProt = CppStdMap_create()
             }
             container = rightProt
         }
@@ -2493,11 +2357,7 @@ pub unsafe extern "C" fn get_cp_code(
 ) -> libc::c_int {
     let mut id: GlyphId = GlyphId_create(fontNum, code);
     let mut container: *mut ProtrusionFactor = getProtrusionFactor(side);
-    let mut it: CppStdMapGlyphIdToInt_Iter = CppStdMapGlyphIdToInt_find(container, id);
-    if CppStdMapGlyphIdToInt_Iter_eq(it, CppStdMapGlyphIdToInt_end(container)) {
-        return 0i32;
-    }
-    return CppStdMapGlyphIdToInt_Iter_second(it);
+    (*container).get(&id).cloned().unwrap_or(0)
 }
 /* ******************************************************************/
 #[no_mangle]
