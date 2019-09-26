@@ -549,7 +549,7 @@ pub mod collection_types {
     use super::size_t;
     use super::{GlyphBBox, GlyphId, PlatformFontRef, XeTeXFontMgrFamily, XeTeXFontMgrFont};
     use core::ptr::NonNull;
-    use std::collections::{BTreeMap, VecDeque, LinkedList};
+    use std::collections::{BTreeMap, LinkedList, VecDeque};
     use std::ffi::CString;
 
     pub type CppStdString = CString;
