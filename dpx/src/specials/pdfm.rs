@@ -46,9 +46,7 @@ use crate::dpx_fontmap::{
 };
 use crate::dpx_mem::new;
 use crate::dpx_mfileio::work_buffer_u8 as work_buffer;
-use crate::dpx_pdfcolor::{
-    pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set,
-};
+use crate::dpx_pdfcolor::{pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set};
 use crate::dpx_pdfdev::pdf_sprint_matrix;
 use crate::dpx_pdfdev::{
     pdf_dev_get_coord, pdf_dev_pop_coord, pdf_dev_push_coord, pdf_dev_reset_color,

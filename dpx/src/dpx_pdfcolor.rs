@@ -61,7 +61,7 @@ pub struct pdf_color {
 pub const WHITE: pdf_color = pdf_color {
     num_components: 1,
     spot_color_name: None,
-    values: [1.0, 0.0, 0.0, 0.0]
+    values: [1.0, 0.0, 0.0, 0.0],
 };
 
 impl pdf_color {
@@ -1241,7 +1241,8 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_get_colorspace_reference(mut cspc_id: i32) -> *mut pdf_obj {
-    let mut colorspace = &mut *cspc_cache.colorspaces.offset(cspc_id as isize) as *mut pdf_colorspace;
+    let mut colorspace =
+        &mut *cspc_cache.colorspaces.offset(cspc_id as isize) as *mut pdf_colorspace;
     if (*colorspace).reference.is_null() {
         (*colorspace).reference = pdf_ref_obj((*colorspace).resource);
         pdf_release_obj((*colorspace).resource);

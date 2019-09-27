@@ -32,8 +32,8 @@ use crate::dpx_pdfdev::{pdf_tmatrix, transform_info};
 use crate::dpx_pdfparse::skip_white;
 use crate::mfree;
 use crate::streq_ptr;
-use libc::{atof, free, memcmp, strcasecmp, strcmp, strlen};
 use lazy_static::lazy_static;
+use libc::{atof, free, memcmp, strcasecmp, strcmp, strlen};
 use std::ffi::CStr;
 
 /* tectonic/core-memory.h: basic dynamic memory helpers
@@ -1048,27 +1048,33 @@ struct Colordef {
 
 impl Colordef {
     const fn new(key: &'static str, color: pdf_color) -> Self {
-        Colordef {
-            key, color
-        }
+        Colordef { key, color }
     }
 }
 
 // TODO: Make const when possible
-lazy_static!{
-static ref colordefs: [Colordef; 68] = 
-    [
-        Colordef::new("GreenYellow", pdf_color::cmyk(0.15, 0.0, 0.69, 0.0).unwrap()),
+lazy_static! {
+    static ref colordefs: [Colordef; 68] = [
+        Colordef::new(
+            "GreenYellow",
+            pdf_color::cmyk(0.15, 0.0, 0.69, 0.0).unwrap()
+        ),
         Colordef::new("Yellow", pdf_color::cmyk(0.0, 0.0, 1.0, 0.0).unwrap()),
         Colordef::new("Goldenrod", pdf_color::cmyk(0.0, 0.1, 0.84, 0.0).unwrap()),
         Colordef::new("Dandelion", pdf_color::cmyk(0.0, 0.29, 0.84, 0.0).unwrap()),
         Colordef::new("Apricot", pdf_color::cmyk(0.0, 0.32, 0.52, 0.0).unwrap()),
         Colordef::new("Peach", pdf_color::cmyk(0.0, 0.5, 0.7, 0.0).unwrap()),
         Colordef::new("Melon", pdf_color::cmyk(0.0, 0.46, 0.5, 0.0).unwrap()),
-        Colordef::new("YellowOrange", pdf_color::cmyk(0.0, 0.42, 1.0, 0.0).unwrap()),
+        Colordef::new(
+            "YellowOrange",
+            pdf_color::cmyk(0.0, 0.42, 1.0, 0.0).unwrap()
+        ),
         Colordef::new("Orange", pdf_color::cmyk(0.0, 0.61, 0.87, 0.0).unwrap()),
         Colordef::new("BurntOrange", pdf_color::cmyk(0.0, 0.51, 1.0, 0.0).unwrap()),
-        Colordef::new("Bittersweet", pdf_color::cmyk(0.0, 0.75, 1.0, 0.24).unwrap()),
+        Colordef::new(
+            "Bittersweet",
+            pdf_color::cmyk(0.0, 0.75, 1.0, 0.24).unwrap()
+        ),
         Colordef::new("RedOrange", pdf_color::cmyk(0.0, 0.77, 0.87, 0.0).unwrap()),
         Colordef::new("Mahogany", pdf_color::cmyk(0.0, 0.85, 0.87, 0.35).unwrap()),
         Colordef::new("Maroon", pdf_color::cmyk(0.0, 0.87, 0.68, 0.32).unwrap()),
@@ -1076,9 +1082,15 @@ static ref colordefs: [Colordef; 68] =
         Colordef::new("Red", pdf_color::cmyk(0.0, 1.0, 1.0, 0.0).unwrap()),
         Colordef::new("OrangeRed", pdf_color::cmyk(0.0, 1.0, 0.5, 0.0).unwrap()),
         Colordef::new("RubineRed", pdf_color::cmyk(0.0, 1.0, 0.13, 0.0).unwrap()),
-        Colordef::new("WildStrawberry", pdf_color::cmyk(0.0, 0.96, 0.39, 0.0).unwrap()),
+        Colordef::new(
+            "WildStrawberry",
+            pdf_color::cmyk(0.0, 0.96, 0.39, 0.0).unwrap()
+        ),
         Colordef::new("Salmon", pdf_color::cmyk(0.0, 0.53, 0.38, 0.0).unwrap()),
-        Colordef::new("CarnationPink", pdf_color::cmyk(0.0, 0.63, 0.0, 0.0).unwrap()),
+        Colordef::new(
+            "CarnationPink",
+            pdf_color::cmyk(0.0, 0.63, 0.0, 0.0).unwrap()
+        ),
         Colordef::new("Magenta", pdf_color::cmyk(0.0, 1.0, 0.0, 0.0).unwrap()),
         Colordef::new("VioletRed", pdf_color::cmyk(0.0, 0.81, 0.0, 0.0).unwrap()),
         Colordef::new("Rhodamine", pdf_color::cmyk(0.0, 0.82, 0.0, 0.0).unwrap()),
@@ -1093,11 +1105,20 @@ static ref colordefs: [Colordef; 68] =
         Colordef::new("Plum", pdf_color::cmyk(0.50, 1.0, 0.0, 0.0).unwrap()),
         Colordef::new("Violet", pdf_color::cmyk(0.79, 0.88, 0.0, 0.0).unwrap()),
         Colordef::new("RoyalPurple", pdf_color::cmyk(0.75, 0.9, 0.0, 0.0).unwrap()),
-        Colordef::new("BlueViolet", pdf_color::cmyk(0.86, 0.91, 0.0, 0.04).unwrap()),
+        Colordef::new(
+            "BlueViolet",
+            pdf_color::cmyk(0.86, 0.91, 0.0, 0.04).unwrap()
+        ),
         Colordef::new("Periwinkle", pdf_color::cmyk(0.57, 0.55, 0.0, 0.0).unwrap()),
         Colordef::new("CadetBlue", pdf_color::cmyk(0.62, 0.57, 0.23, 0.0).unwrap()),
-        Colordef::new("CornflowerBlue", pdf_color::cmyk(0.65, 0.13, 0.0, 0.0).unwrap()),
-        Colordef::new("MidnightBlue", pdf_color::cmyk(0.98, 0.13, 0.0, 0.43).unwrap()),
+        Colordef::new(
+            "CornflowerBlue",
+            pdf_color::cmyk(0.65, 0.13, 0.0, 0.0).unwrap()
+        ),
+        Colordef::new(
+            "MidnightBlue",
+            pdf_color::cmyk(0.98, 0.13, 0.0, 0.43).unwrap()
+        ),
         Colordef::new("NavyBlue", pdf_color::cmyk(0.94, 0.54, 0.0, 0.0).unwrap()),
         Colordef::new("RoyalBlue", pdf_color::cmyk(1.0, 0.5, 0.0, 0.0).unwrap()),
         Colordef::new("Blue", pdf_color::cmyk(1.0, 1.0, 0.0, 0.0).unwrap()),
@@ -1110,15 +1131,30 @@ static ref colordefs: [Colordef; 68] =
         Colordef::new("Aquamarine", pdf_color::cmyk(0.82, 0.0, 0.3, 0.0).unwrap()),
         Colordef::new("BlueGreen", pdf_color::cmyk(0.85, 0.0, 0.33, 0.0).unwrap()),
         Colordef::new("Emerald", pdf_color::cmyk(1.0, 0.0, 0.5, 0.0).unwrap()),
-        Colordef::new("JungleGreen", pdf_color::cmyk(0.99, 0.0, 0.52, 0.0).unwrap()),
+        Colordef::new(
+            "JungleGreen",
+            pdf_color::cmyk(0.99, 0.0, 0.52, 0.0).unwrap()
+        ),
         Colordef::new("SeaGreen", pdf_color::cmyk(0.69, 0.0, 0.5, 0.0).unwrap()),
         Colordef::new("Green", pdf_color::cmyk(1.0, 0.0, 1.0, 0.00f64).unwrap()),
-        Colordef::new("ForestGreen", pdf_color::cmyk(0.91, 0.0, 0.88, 0.12).unwrap()),
+        Colordef::new(
+            "ForestGreen",
+            pdf_color::cmyk(0.91, 0.0, 0.88, 0.12).unwrap()
+        ),
         Colordef::new("PineGreen", pdf_color::cmyk(0.92, 0.0, 0.59, 0.25).unwrap()),
         Colordef::new("LimeGreen", pdf_color::cmyk(0.5, 0.0, 1.0, 0.0).unwrap()),
-        Colordef::new("YellowGreen", pdf_color::cmyk(0.44, 0.0, 0.74, 0.0).unwrap()),
-        Colordef::new("SpringGreen", pdf_color::cmyk(0.26, 0.0, 0.76, 0.0).unwrap()),
-        Colordef::new("OliveGreen", pdf_color::cmyk(0.64, 0.0, 0.95, 0.40).unwrap()),
+        Colordef::new(
+            "YellowGreen",
+            pdf_color::cmyk(0.44, 0.0, 0.74, 0.0).unwrap()
+        ),
+        Colordef::new(
+            "SpringGreen",
+            pdf_color::cmyk(0.26, 0.0, 0.76, 0.0).unwrap()
+        ),
+        Colordef::new(
+            "OliveGreen",
+            pdf_color::cmyk(0.64, 0.0, 0.95, 0.40).unwrap()
+        ),
         Colordef::new("RawSienna", pdf_color::cmyk(0.0, 0.72, 1.0, 0.45).unwrap()),
         Colordef::new("Sepia", pdf_color::cmyk(0.0, 0.83, 1.0, 0.7).unwrap()),
         Colordef::new("Brown", pdf_color::cmyk(0.0, 0.81, 1.0, 0.6).unwrap()),
@@ -1131,7 +1167,8 @@ static ref colordefs: [Colordef; 68] =
 
 /* From pdfcolor.c */
 unsafe extern "C" fn pdf_color_namedcolor(name: &str) -> Option<pdf_color> {
-    colordefs.as_ref()
+    colordefs
+        .as_ref()
         .iter()
         .find(|&colordef| colordef.key == name)
         .map(|colordef| colordef.color.clone())
