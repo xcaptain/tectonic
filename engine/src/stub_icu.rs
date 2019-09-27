@@ -260,9 +260,7 @@ extern_and_forward_stub! {
         status: *mut UErrorCode
     ) -> ();
     pub fn ucnv_open => tt_ucnv_open(converterName: *const i8, err: *mut UErrorCode) -> *mut UConverter;
-    #[no_mangle]
     pub fn ucnv_close => tt_ucnv_close(converter: *mut UConverter) -> ();
-    #[no_mangle]
     pub fn ucnv_toAlgorithmic => tt_ucnv_toAlgorithmic(
         algorithmicType: UConverterType,
         cnv: *mut UConverter,
@@ -270,6 +268,22 @@ extern_and_forward_stub! {
         targetCapacity: i32,
         source: *const i8,
         sourceLength: i32,
+        pErrorCode: *mut UErrorCode
+    ) -> i32;
+    pub fn ucnv_fromUChars => tt_ucnv_fromUChars (
+        cnv: *mut UConverter,
+        dest: *mut i8,
+        destCapacity: i32,
+        src: *const UChar,
+        srcLength: i32,
+        pErrorCode: *mut UErrorCode
+    ) -> i32;
+    pub fn ucnv_toUChars => tt_ucnv_toUChars (
+        cnv: *mut UConverter,
+        dest: *mut UChar,
+        destCapacity: i32,
+        src: *const i8,
+        srcLength: i32,
         pErrorCode: *mut UErrorCode
     ) -> i32;
 }

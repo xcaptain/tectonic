@@ -16,6 +16,11 @@ extern crate tectonic_dvipdfmx as dpx;
 
 pub use bridge::*;
 
+// For the msg_send macro
+#[cfg(target_os = "macos")]
+#[macro_use]
+extern crate objc;
+
 //use log::{info, warn};
 
 pub type __off_t = i64;
@@ -186,4 +191,8 @@ pub(crate) unsafe extern "C" fn streq_ptr(s1: *const i8, s2: *const i8) -> bool 
     false
 }
 
+mod xetex_font_info;
+mod xetex_font_manager;
 mod xetex_layout_engine;
+mod xetex_layout_interface;
+mod xetex_opentype_math;

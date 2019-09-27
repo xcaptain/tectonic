@@ -35,7 +35,14 @@ int32_t tt_ucnv_toAlgorithmic(UConverterType algorithmicType,
                    char *target, int32_t targetCapacity,
                    const char *source, int32_t sourceLength,
                    UErrorCode *pErrorCode);
-
+int32_t tt_ucnv_fromUChars(UConverter *cnv,
+                char *dest, int32_t destCapacity,
+                const UChar *src, int32_t srcLength,
+                UErrorCode *pErrorCode);
+int32_t tt_ucnv_toUChars(UConverter *cnv,
+              UChar *dest, int32_t destCapacity,
+              const char *src, int32_t srcLength,
+              UErrorCode *pErrorCode);
 /* stubs */
 
 UBiDi * tt_ubidi_open(void) {
@@ -106,4 +113,24 @@ int32_t tt_ucnv_toAlgorithmic(UConverterType algorithmicType,
     return ucnv_toAlgorithmic(algorithmicType,
                    cnv, target, targetCapacity,
                    source, sourceLength, pErrorCode);
+}
+
+int32_t tt_ucnv_fromUChars(UConverter *cnv,
+                char *dest, int32_t destCapacity,
+                const UChar *src, int32_t srcLength,
+                UErrorCode *pErrorCode) {
+	return ucnv_fromUChars(cnv,
+                dest, destCapacity,
+                src, srcLength,
+                pErrorCode);
+}
+
+int32_t tt_ucnv_toUChars(UConverter *cnv,
+              UChar *dest, int32_t destCapacity,
+              const char *src, int32_t srcLength,
+              UErrorCode *pErrorCode) {
+	return ucnv_toUChars(cnv,
+              dest, destCapacity,
+              src, srcLength,
+              pErrorCode);
 }
