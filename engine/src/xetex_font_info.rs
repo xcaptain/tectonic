@@ -635,11 +635,6 @@ extern "C" {
         destroy: hb_destroy_func_t,
     );
     #[no_mangle]
-    fn XeTeXFontInst_unitsToPoints(
-        self_0: *const XeTeXFontInst,
-        units: libc::c_float,
-    ) -> libc::c_float;
-    #[no_mangle]
     fn Fix2D(f: Fixed) -> libc::c_double;
     /* *************************************************************************
      *
@@ -2957,4 +2952,28 @@ pub unsafe extern "C" fn XeTeXFontInst_getLastCharCode(mut self_0: *mut XeTeXFon
         ch = FT_Get_Next_Char((*self_0).m_ftFace, ch as FT_ULong, &mut gindex) as UChar32
     }
     return prev;
+}
+
+#[no_mangle]
+//#[inline]
+pub unsafe extern "C" fn XeTeXFontInst_getHbFont(self_0: *const XeTeXFontInst) -> *mut hb_font_t {
+    (*self_0).m_hbFont
+}
+
+#[no_mangle]
+//#[inline]
+pub unsafe extern "C" fn XeTeXFontInst_unitsToPoints(
+        self_0: *const XeTeXFontInst,
+        units: libc::c_float,
+    ) -> libc::c_float {
+    (units * (*self_0).m_pointSize) / ((*self_0).m_unitsPerEM as libc::c_float)
+}
+
+#[no_mangle]
+//#[inline]
+pub unsafe extern "C" fn XeTeXFontInst_pointsToUnits(
+    self_0: *const XeTeXFontInst,
+    points: libc::c_float,
+) -> libc::c_float {
+    (points * ((*self_0).m_unitsPerEM as libc::c_float)) / (*self_0).m_pointSize
 }
