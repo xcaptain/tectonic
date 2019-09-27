@@ -193,7 +193,7 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
     let mut new_fc: pdf_color = pdf_color::new();
     let (_sc, fc) = pdf_color_get_current();
     new_fc = fc.brighten(g);
-    pdf_dev_set_color(&mut new_fc, 0x20_i8, 0i32);
+    pdf_dev_set_color(&new_fc, 0x20, 0);
     0i32
 }
 unsafe extern "C" fn set_styles(

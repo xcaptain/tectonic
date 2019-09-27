@@ -2546,7 +2546,7 @@ unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
     saved_content = (*currentpage).contents;
     (*currentpage).contents = (*currentpage).background;
     pdf_dev_gsave();
-    pdf_dev_set_color(&mut bgcolor, 0x20_i8, 0i32);
+    pdf_dev_set_color(&bgcolor, 0x20, 0);
     pdf_dev_rectfill(r.llx, r.lly, r.urx - r.llx, r.ury - r.lly);
     pdf_dev_grestore();
     (*currentpage).contents = saved_content;

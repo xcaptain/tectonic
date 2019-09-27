@@ -3390,8 +3390,8 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             /* Not handled properly */
             if error == 0 {
                 color = pdf_color::cmyk(values[0], values[1], values[2], values[3]).unwrap();
-                pdf_dev_set_color(&mut color, 0_i8, 0i32);
-                pdf_dev_set_color(&mut color, 0x20_i8, 0i32);
+                pdf_dev_set_color(&color, 0, 0);
+                pdf_dev_set_color(&color, 0x20, 0);
             }
         }
         70 => {
@@ -3399,16 +3399,16 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             error = pop_get_numbers(values.as_mut_ptr(), 1i32); /* This does pdf_release_obj() */
             if error == 0 {
                 color = pdf_color::gray(values[0]).unwrap();
-                pdf_dev_set_color(&mut color, 0_i8, 0i32);
-                pdf_dev_set_color(&mut color, 0x20_i8, 0i32);
+                pdf_dev_set_color(&color, 0, 0);
+                pdf_dev_set_color(&color, 0x20, 0);
             }
         }
         71 => {
             error = pop_get_numbers(values.as_mut_ptr(), 3i32);
             if error == 0 {
                 color = pdf_color::rgb(values[0], values[1], values[2]).unwrap();
-                pdf_dev_set_color(&mut color, 0_i8, 0i32);
-                pdf_dev_set_color(&mut color, 0x20_i8, 0i32);
+                pdf_dev_set_color(&color, 0, 0);
+                pdf_dev_set_color(&color, 0x20, 0);
             }
         }
         49 => {}

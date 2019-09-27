@@ -1478,8 +1478,8 @@ pub unsafe extern "C" fn pdf_dev_reset_fonts(mut newpage: i32) {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_reset_color(mut force: i32) {
     let (sc, fc) = pdf_color_get_current();
-    pdf_dev_set_color(sc, 0_i8, force);
-    pdf_dev_set_color(fc, 0x20_i8, force);
+    pdf_dev_set_color(sc, 0, force);
+    pdf_dev_set_color(fc, 0x20, force);
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_bop(M: &pdf_tmatrix) {

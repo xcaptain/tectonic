@@ -153,8 +153,9 @@ impl pdf_color {
 
     pub fn is_valid(&self) -> bool {
         let mut n = self.num_components;
-        if let 1 | 2 | 3 | 4 = n {
-            return false;
+        match n {
+            1 | 2 | 3 | 4 => {}
+            _ => return false,
         }
         if let Some(value) = self
             .values
@@ -339,49 +340,21 @@ pub unsafe extern "C" fn pdf_color_set_verbose(mut level: i32) {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_color_compare(color1: &pdf_color, color2: &pdf_color) -> i32 {
     let mut n = color1.num_components;
-    let mut current_block_1: u64;
     match n {
-        1 => {
-            current_block_1 = 715039052867723359;
-        }
-        2 => {
-            /* Spot */
-            current_block_1 = 1982130065057554431;
-        }
-        3 => {
-            current_block_1 = 1982130065057554431;
-        }
-        4 => {
-            current_block_1 = 15718257842624222162;
-        }
-        _ => return -1i32,
-    }
-    match current_block_1 {
-        1982130065057554431 =>
-        /* RGB */
-        {
-            current_block_1 = 15718257842624222162;
-        }
-        _ => {}
-    }
-    match current_block_1 {
-        15718257842624222162 =>
-            /* CMYK */
-            {}
-        _ => {}
+        1 | 2 | 3 | 4 => {}
+        _ => return -1,
     }
     if n != color2.num_components {
-        return -1i32;
+        return -1;
     }
-    loop {
-        let fresh2 = n;
-        n = n - 1;
-        if !(fresh2 != 0) {
-            break;
-        }
-        if color1.values[n as usize] != color2.values[n as usize] {
-            return -1i32;
-        }
+    if color1
+        .values
+        .iter()
+        .zip(color2.values.iter())
+        .take(n as usize)
+        .any(|(value1, value2)| value1 != value2)
+    {
+        return -1;
     }
     if color1.spot_color_name.is_some() && color2.spot_color_name.is_some() {
         return strcmp(
@@ -389,7 +362,7 @@ pub unsafe extern "C" fn pdf_color_compare(color1: &pdf_color, color2: &pdf_colo
             color2.spot_color_name.as_ref().unwrap().as_ptr(),
         );
     }
-    0i32
+    0
 }
 
 /*static mut color_stack: ColorStack = ColorStack {
@@ -642,14 +615,13 @@ unsafe extern "C" fn iccp_unpack_header(
     mut proflen: i32,
     mut check_size: i32,
 ) -> i32 {
-    let mut p: *const u8 = 0 as *const u8;
     if check_size != 0 {
         if profile.is_null() || proflen < 128i32 || proflen % 4i32 != 0i32 {
             warn!("Profile size: {}", proflen);
             return -1i32;
         }
     }
-    p = profile as *const u8;
+    let mut p = profile as *const u8;
     let endptr = p.offset(128);
     icch.size = (*p.offset(0) as i32) << 24i32
         | (*p.offset(1) as i32) << 16i32
@@ -1269,4 +1241,16 @@ pub unsafe extern "C" fn pdf_close_colors() {
         mfree(cspc_cache.colorspaces as *mut libc::c_void) as *mut pdf_colorspace;
     cspc_cache.capacity = 0_u32;
     cspc_cache.count = cspc_cache.capacity;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn is_valid() {
+        assert!(WHITE.is_valid());
+        assert!(pdf_color::rgb(0.5, 0.5, 0.5).unwrap().is_valid());
+        assert!(pdf_color::cmyk(0.3, 0.4, 0.5, 0.6).unwrap().is_valid());
+    }
 }
