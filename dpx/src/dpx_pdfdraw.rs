@@ -30,7 +30,7 @@
 
 use crate::warn;
 
-use super::dpx_pdfcolor::{pdf_color_compare, ColorspaceType};
+use super::dpx_pdfcolor::{ColorspaceType, pdf_color};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_get_param, pdf_dev_reset_fonts, pdf_sprint_coord, pdf_sprint_length,
     pdf_sprint_matrix, pdf_sprint_rect,
@@ -41,8 +41,6 @@ use super::dpx_pdfdoc::pdf_doc_add_page_content;
 static mut gs_stack: Vec<pdf_gstate> = Vec::new();
 
 use crate::shims::sprintf;
-
-pub use super::dpx_pdfcolor::pdf_color;
 
 use super::dpx_pdfdev::{pdf_coord, pdf_rect, pdf_tmatrix};
 
@@ -886,7 +884,7 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
         &mut gs.strokecolor
     };
     assert!(color.is_valid());
-    if !(pdf_dev_get_param(2i32) != 0 && (force != 0 || pdf_color_compare(color, current) != 0)) {
+    if pdf_dev_get_param(2) == 0 || (force == 0 && color == current) {
         /* If "color" is already the current color, then do nothing
          * unless a color operator is forced
          */

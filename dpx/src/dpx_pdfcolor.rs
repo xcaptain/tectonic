@@ -55,6 +55,7 @@ pub enum ColorspaceType {
 pub struct pdf_color {
     num_components: usize,
     pub spot_color_name: Option<CString>,
+    // TODO: Use an enum to have the correct length. The PartialEq can then also be derived.
     pub values: [f64; 4],
 }
 
@@ -244,6 +245,25 @@ impl pdf_color {
     }
 }
 
+impl PartialEq for pdf_color {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO: Is this necessary?
+        match self.num_components {
+            1 | 2 | 3 | 4 => {}
+            _ => return false,
+        }
+
+        self.num_components == other.num_components &&
+        self
+            .values
+            .iter()
+            .zip(other.values.iter())
+            .take(self.num_components as usize)
+            .all(|(value1, value2)| value1 == value2) &&
+        self.spot_color_name == other.spot_color_name
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct pdf_colorspace {
@@ -332,37 +352,6 @@ static mut verbose: i32 = 0i32;
 #[no_mangle]
 pub unsafe extern "C" fn pdf_color_set_verbose(mut level: i32) {
     verbose = level;
-}
-
-/*
- * This routine is not a real color matching.
- */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_compare(color1: &pdf_color, color2: &pdf_color) -> i32 {
-    let mut n = color1.num_components;
-    match n {
-        1 | 2 | 3 | 4 => {}
-        _ => return -1,
-    }
-    if n != color2.num_components {
-        return -1;
-    }
-    if color1
-        .values
-        .iter()
-        .zip(color2.values.iter())
-        .take(n as usize)
-        .any(|(value1, value2)| value1 != value2)
-    {
-        return -1;
-    }
-    if color1.spot_color_name.is_some() && color2.spot_color_name.is_some() {
-        return strcmp(
-            color1.spot_color_name.as_ref().unwrap().as_ptr(),
-            color2.spot_color_name.as_ref().unwrap().as_ptr(),
-        );
-    }
-    0
 }
 
 /*static mut color_stack: ColorStack = ColorStack {
