@@ -1782,148 +1782,98 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
     let mut font: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
     let mut dsize: libc::c_int = 100i32;
     loaded_font_design_size = 655360i64 as Fixed;
-    let mut pass: libc::c_int = 0i32;
-    while pass < 2i32 {
+    for pass in 0..2i32 {
         // try full name as given
-        let mut i: CppStdMapStringToFontPtr_Iter =
-            CppStdMapStringToFontPtr_find((*self_0).m_nameToFont, &mut nameStr);
-        if CppStdMapStringToFontPtr_Iter_neq(
-            i,
-            CppStdMapStringToFontPtr_end((*self_0).m_nameToFont),
-        ) {
-            font = CppStdMapStringToFontPtr_Iter_second(i);
+        if let Some(name_font_ptr) = (*(*self_0).m_nameToFont).get(&nameStr).cloned() {
+            font = name_font_ptr.as_ptr();
             if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
                 dsize = (*font).opSizeInfo.designSize as libc::c_int
             }
             break;
+        }
+        // if there's a hyphen, split there and try Family-Style
+        let mut nameStr_cstr: *const libc::c_char = CppStdString_cstr(&mut nameStr);
+        let mut nameStr_len: libc::c_int = strlen(nameStr_cstr) as libc::c_int;
+        let mut hyph_pos: *const libc::c_char = strchr(nameStr_cstr, '-' as i32);
+        let mut hyph: libc::c_int = (if !hyph_pos.is_null() {
+            hyph_pos.wrapping_offset_from(nameStr_cstr) as libc::c_long
         } else {
-            // if there's a hyphen, split there and try Family-Style
-            let mut nameStr_cstr: *const libc::c_char = CppStdString_cstr(&mut nameStr);
-            let mut nameStr_len: libc::c_int = strlen(nameStr_cstr) as libc::c_int;
-            let mut hyph_pos: *const libc::c_char = strchr(nameStr_cstr, '-' as i32);
-            let mut hyph: libc::c_int = (if !hyph_pos.is_null() {
-                hyph_pos.wrapping_offset_from(nameStr_cstr) as libc::c_long
-            } else {
-                -1i32 as libc::c_long
-            }) as libc::c_int;
-            if hyph > 0i32 && hyph < nameStr_len - 1i32 {
-                let mut family = CString::default();
-                CppStdString_assign_n_chars(&mut family, nameStr_cstr, hyph as size_t);
-                if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&family).cloned() {
-                    let mut style: *mut CppStdString = CppStdString_create();
-                    CppStdString_assign_n_chars(
-                        style,
-                        nameStr_cstr.offset(hyph as isize).offset(1),
-                        (nameStr_len - hyph - 1i32) as size_t,
-                    );
-                    CppStdString_delete(style);
-                    i = CppStdMapStringToFontPtr_find((*family_ptr.as_ptr()).styles, style);
-                    if CppStdMapStringToFontPtr_Iter_neq(
-                        i,
-                        CppStdMapStringToFontPtr_end((*family_ptr.as_ptr()).styles),
-                    ) {
-                        font = CppStdMapStringToFontPtr_Iter_second(i);
-                        if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
-                            dsize = (*font).opSizeInfo.designSize as libc::c_int
-                        }
-                        break;
+            -1i32 as libc::c_long
+        }) as libc::c_int;
+        if hyph > 0i32 && hyph < nameStr_len - 1i32 {
+            let mut family = CString::default();
+            CppStdString_assign_n_chars(&mut family, nameStr_cstr, hyph as size_t);
+            if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&family).cloned() {
+                let mut style = CString::default();
+                CppStdString_assign_n_chars(
+                    &mut style,
+                    nameStr_cstr.offset(hyph as isize).offset(1),
+                    (nameStr_len - hyph - 1i32) as size_t,
+                );
+                if let Some(style_font_ptr) = (*(*family_ptr.as_ptr()).styles).get(&style).cloned()
+                {
+                    font = style_font_ptr.as_ptr();
+                    if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
+                        dsize = (*font).opSizeInfo.designSize as libc::c_int
+                    }
+                    break;
+                }
+            }
+        }
+        // try as PostScript name
+        if let Some(ps_font_ptr) = (*(*self_0).m_psNameToFont).get(&nameStr).cloned() {
+            font = ps_font_ptr.as_ptr();
+            if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
+                dsize = (*font).opSizeInfo.designSize as libc::c_int
+            }
+            break;
+        }
+        // try for the name as a family name
+        if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&nameStr).cloned() {
+            let family_ptr = family_ptr.as_ptr();
+            // look for a family member with the "regular" bit set in OS/2
+            let mut regFonts: libc::c_int = 0i32;
+            for (k, v) in (*(*family_ptr).styles).iter() {
+                if v.as_ref().isReg {
+                    if regFonts == 0i32 {
+                        font = v.as_ptr();
+                    }
+                    regFonts += 1
+                }
+            }
+            // families with Ornament or similar fonts may flag those as Regular,
+            // which confuses the search above... so try some known names
+            if font.is_null() || regFonts > 1i32 {
+                // try for style "Regular", "Plain", "Normal", "Roman"
+                let regular_style_names = [
+                    &b"Regular\x00"[..],
+                    &b"Plain\x00"[..],
+                    &b"Normal\x00"[..],
+                    &b"Roman\x00"[..],
+                ];
+                'style_name_loop: for style in &regular_style_names {
+                    use std::ffi::CStr;
+                    let style: &[u8] = *style;
+                    let style = CStr::from_ptr(style.as_ptr() as *const i8);
+                    if let Some(style_font_ptr) = (*(*family_ptr).styles).get(style) {
+                        font = style_font_ptr.as_ptr();
+                        break 'style_name_loop;
                     }
                 }
             }
-            // try as PostScript name
-            i = CppStdMapStringToFontPtr_find((*self_0).m_psNameToFont, &mut nameStr);
-            if CppStdMapStringToFontPtr_Iter_neq(
-                i,
-                CppStdMapStringToFontPtr_end((*self_0).m_psNameToFont),
-            ) {
-                font = CppStdMapStringToFontPtr_Iter_second(i);
-                if (*font).opSizeInfo.designSize != 0i32 as libc::c_uint {
-                    dsize = (*font).opSizeInfo.designSize as libc::c_int
-                }
+            if font.is_null() {
+                // look through the family for the (weight, width, slant) nearest to (80, 100, 0)
+                font = XeTeXFontMgr_bestMatchFromFamily(self_0, family_ptr, 80i32, 100i32, 0i32)
+            }
+            if !font.is_null() {
                 break;
-            } else {
-                // try for the name as a family name
-                if let Some(family_ptr) = (*(*self_0).m_nameToFamily).get(&nameStr).cloned() {
-                    let f_0 = family_ptr.as_ptr();
-                    // look for a family member with the "regular" bit set in OS/2
-                    let mut regFonts: libc::c_int = 0i32;
-                    i = CppStdMapStringToFontPtr_begin((*(f_0)).styles);
-                    while CppStdMapStringToFontPtr_Iter_neq(
-                        i,
-                        CppStdMapStringToFontPtr_end((*(f_0)).styles),
-                    ) {
-                        if (*CppStdMapStringToFontPtr_Iter_second(i)).isReg {
-                            if regFonts == 0i32 {
-                                font = CppStdMapStringToFontPtr_Iter_second(i)
-                            }
-                            regFonts += 1
-                        }
-                        CppStdMapStringToFontPtr_Iter_inc(&mut i);
-                    }
-                    // families with Ornament or similar fonts may flag those as Regular,
-                    // which confuses the search above... so try some known names
-                    if font.is_null() || regFonts > 1i32 {
-                        // try for style "Regular", "Plain", "Normal", "Roman"
-                        i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                            (*(f_0)).styles,
-                            b"Regular\x00" as *const u8 as *const libc::c_char,
-                        );
-                        if CppStdMapStringToFontPtr_Iter_neq(
-                            i,
-                            CppStdMapStringToFontPtr_end((*(f_0)).styles),
-                        ) {
-                            font = CppStdMapStringToFontPtr_Iter_second(i)
-                        } else {
-                            i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                (*(f_0)).styles,
-                                b"Plain\x00" as *const u8 as *const libc::c_char,
-                            );
-                            if CppStdMapStringToFontPtr_Iter_neq(
-                                i,
-                                CppStdMapStringToFontPtr_end((*(f_0)).styles),
-                            ) {
-                                font = CppStdMapStringToFontPtr_Iter_second(i)
-                            } else {
-                                i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                    (*(f_0)).styles,
-                                    b"Normal\x00" as *const u8 as *const libc::c_char,
-                                );
-                                if CppStdMapStringToFontPtr_Iter_neq(
-                                    i,
-                                    CppStdMapStringToFontPtr_end((*(f_0)).styles),
-                                ) {
-                                    font = CppStdMapStringToFontPtr_Iter_second(i)
-                                } else {
-                                    i = CppStdMapStringToFontPtr_find_const_char_ptr(
-                                        (*(f_0)).styles,
-                                        b"Roman\x00" as *const u8 as *const libc::c_char,
-                                    );
-                                    if CppStdMapStringToFontPtr_Iter_neq(
-                                        i,
-                                        CppStdMapStringToFontPtr_end((*(f_0)).styles),
-                                    ) {
-                                        font = CppStdMapStringToFontPtr_Iter_second(i)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if font.is_null() {
-                        // look through the family for the (weight, width, slant) nearest to (80, 100, 0)
-                        font = XeTeXFontMgr_bestMatchFromFamily(self_0, (f_0), 80i32, 100i32, 0i32)
-                    }
-                    if !font.is_null() {
-                        break;
-                    }
-                }
-                if pass == 0i32 {
-                    // didn't find it in our caches, so do a platform search (may be relatively expensive);
-                    // this will update the caches with any fonts that seem to match the name given,
-                    // so that the second pass might find it
-                    XeTeXFontMgr_searchForHostPlatformFonts(self_0, nameStr.as_ptr());
-                }
-                pass += 1
             }
+        }
+        if pass == 0i32 {
+            // didn't find it in our caches, so do a platform search (may be relatively expensive);
+            // this will update the caches with any fonts that seem to match the name given,
+            // so that the second pass might find it
+            XeTeXFontMgr_searchForHostPlatformFonts(self_0, nameStr.as_ptr());
         }
     }
     if font.is_null() {
@@ -2066,9 +2016,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
         }
         strcpy(variant, CppStdString_cstr(varString));
         CppStdString_delete(varString);
-        let mut i_0: CppStdMapStringToFontPtr_Iter = CppStdMapStringToFontPtr_Iter {
-            dummy: 0 as *mut libc::c_void,
-        };
         if reqItal {
             let mut bestMatch: *mut XeTeXFontMgrFont = font;
             if ((*font).slant as libc::c_int) < (*parent).maxSlant as libc::c_int {
@@ -2097,23 +2044,13 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             {
                 // try again using the bold flag, as we can't trust weight values
                 let mut newBest: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
-                i_0 = CppStdMapStringToFontPtr_begin((*parent).styles);
-                while CppStdMapStringToFontPtr_Iter_neq(
-                    i_0,
-                    CppStdMapStringToFontPtr_end((*parent).styles),
-                ) {
-                    if (*CppStdMapStringToFontPtr_Iter_second(i_0)).isBold as libc::c_int
-                        == (*font).isBold as libc::c_int
-                    {
-                        if newBest.is_null()
-                            && (*CppStdMapStringToFontPtr_Iter_second(i_0)).isItalic as libc::c_int
-                                != (*font).isItalic as libc::c_int
-                        {
-                            newBest = CppStdMapStringToFontPtr_Iter_second(i_0);
+                for (_, v) in (*(*parent).styles).iter() {
+                    if v.as_ref().isBold == (*font).isBold {
+                        if newBest.is_null() && v.as_ref().isItalic != (*font).isItalic {
+                            newBest = v.as_ptr();
                             break;
                         }
                     }
-                    CppStdMapStringToFontPtr_Iter_inc(&mut i_0);
                 }
                 if !newBest.is_null() {
                     bestMatch = newBest
@@ -2122,37 +2059,25 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             if bestMatch == font {
                 // maybe slant values weren't present; try the style bits as a fallback
                 bestMatch = 0 as *mut XeTeXFontMgrFont;
-                i_0 = CppStdMapStringToFontPtr_begin((*parent).styles);
-                while CppStdMapStringToFontPtr_Iter_neq(
-                    i_0,
-                    CppStdMapStringToFontPtr_end((*parent).styles),
-                ) {
-                    if (*CppStdMapStringToFontPtr_Iter_second(i_0)).isItalic as libc::c_int
-                        == !(*font).isItalic as libc::c_int
-                    {
-                        if (*parent).minWeight as libc::c_int != (*parent).maxWeight as libc::c_int
-                        {
+                for (_, v) in (*(*parent).styles).iter() {
+                    let style_font_ptr = v.as_ptr();
+                    if (*style_font_ptr).isItalic == !(*font).isItalic {
+                        if (*parent).minWeight != (*parent).maxWeight {
                             // weight info was available, so try to match that
                             if bestMatch.is_null()
-                                || XeTeXFontMgr_weightAndWidthDiff(
-                                    self_0,
-                                    CppStdMapStringToFontPtr_Iter_second(i_0),
-                                    font,
-                                ) < XeTeXFontMgr_weightAndWidthDiff(self_0, bestMatch, font)
+                                || XeTeXFontMgr_weightAndWidthDiff(self_0, style_font_ptr, font)
+                                    < XeTeXFontMgr_weightAndWidthDiff(self_0, bestMatch, font)
                             {
-                                bestMatch = CppStdMapStringToFontPtr_Iter_second(i_0)
+                                bestMatch = style_font_ptr;
                             }
-                        } else if bestMatch.is_null()
-                            && (*CppStdMapStringToFontPtr_Iter_second(i_0)).isBold as libc::c_int
-                                == (*font).isBold as libc::c_int
+                        } else if bestMatch.is_null() && (*style_font_ptr).isBold == (*font).isBold
                         {
-                            bestMatch = CppStdMapStringToFontPtr_Iter_second(i_0);
+                            bestMatch = style_font_ptr;
                             break;
                             // no weight info, so try matching style bits
                             // found a match, no need to look further as we can't distinguish!
                         }
                     }
-                    CppStdMapStringToFontPtr_Iter_inc(&mut i_0);
                 }
             }
             if !bestMatch.is_null() {
@@ -2177,18 +2102,13 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                 if (*parent).minSlant as libc::c_int == (*parent).maxSlant as libc::c_int {
                     // double-check the italic flag, as we can't trust slant values
                     let mut newBest_0: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
-                    i_0 = CppStdMapStringToFontPtr_begin((*parent).styles);
-                    while CppStdMapStringToFontPtr_Iter_neq(
-                        i_0,
-                        CppStdMapStringToFontPtr_end((*parent).styles),
-                    ) {
-                        if (*CppStdMapStringToFontPtr_Iter_second(i_0)).isItalic as libc::c_int
-                            == (*font).isItalic as libc::c_int
-                        {
+                    for (_, v) in (*(*parent).styles).iter() {
+                        let style_font_ptr = v.as_ptr();
+                        if (*style_font_ptr).isItalic == (*font).isItalic {
                             if newBest_0.is_null()
                                 || XeTeXFontMgr_weightAndWidthDiff(
                                     self_0,
-                                    CppStdMapStringToFontPtr_Iter_second(i_0),
+                                    style_font_ptr,
                                     bestMatch_0,
                                 ) < XeTeXFontMgr_weightAndWidthDiff(
                                     self_0,
@@ -2196,10 +2116,9 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                                     bestMatch_0,
                                 )
                             {
-                                newBest_0 = CppStdMapStringToFontPtr_Iter_second(i_0)
+                                newBest_0 = style_font_ptr;
                             }
                         }
-                        CppStdMapStringToFontPtr_Iter_inc(&mut i_0);
                     }
                     if !newBest_0.is_null() {
                         bestMatch_0 = newBest_0
@@ -2207,19 +2126,11 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                 }
             }
             if bestMatch_0 == font && !(*font).isBold {
-                i_0 = CppStdMapStringToFontPtr_begin((*parent).styles);
-                while CppStdMapStringToFontPtr_Iter_neq(
-                    i_0,
-                    CppStdMapStringToFontPtr_end((*parent).styles),
-                ) {
-                    if (*CppStdMapStringToFontPtr_Iter_second(i_0)).isItalic as libc::c_int
-                        == (*font).isItalic as libc::c_int
-                        && (*CppStdMapStringToFontPtr_Iter_second(i_0)).isBold as libc::c_int != 0
-                    {
-                        bestMatch_0 = CppStdMapStringToFontPtr_Iter_second(i_0);
+                for (_, v) in (*(*parent).styles).iter() {
+                    let style_font_ptr = v.as_ptr();
+                    if (*style_font_ptr).isItalic == (*font).isItalic && (*style_font_ptr).isBold {
+                        bestMatch_0 = style_font_ptr;
                         break;
-                    } else {
-                        CppStdMapStringToFontPtr_Iter_inc(&mut i_0);
                     }
                 }
             }
@@ -2239,36 +2150,21 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
         );
         if bestMismatch > 0.0f64 {
             let mut bestMatch_1: *mut XeTeXFontMgrFont = font;
-            let mut i_1: CppStdMapStringToFontPtr_Iter =
-                CppStdMapStringToFontPtr_begin((*parent).styles);
-            while CppStdMapStringToFontPtr_Iter_neq(
-                i_1,
-                CppStdMapStringToFontPtr_end((*parent).styles),
-            ) {
-                if !((*CppStdMapStringToFontPtr_Iter_second(i_1))
-                    .opSizeInfo
-                    .subFamilyID
-                    != (*font).opSizeInfo.subFamilyID)
-                {
+            for (_, v) in (*(*parent).styles).iter() {
+                let style_font_ptr = v.as_ptr();
+                if !((*style_font_ptr).opSizeInfo.subFamilyID != (*font).opSizeInfo.subFamilyID) {
                     let mut mismatch: libc::c_double = my_fmax(
-                        (*CppStdMapStringToFontPtr_Iter_second(i_1))
-                            .opSizeInfo
-                            .minSize as libc::c_double
-                            - ptSize,
-                        ptSize
-                            - (*CppStdMapStringToFontPtr_Iter_second(i_1))
-                                .opSizeInfo
-                                .maxSize as libc::c_double,
+                        (*style_font_ptr).opSizeInfo.minSize as libc::c_double - ptSize,
+                        ptSize - (*style_font_ptr).opSizeInfo.maxSize as libc::c_double,
                     );
                     if mismatch < bestMismatch {
-                        bestMatch_1 = CppStdMapStringToFontPtr_Iter_second(i_1);
+                        bestMatch_1 = style_font_ptr;
                         bestMismatch = mismatch
                     }
                     if bestMismatch <= 0.0f64 {
                         break;
                     }
                 }
-                CppStdMapStringToFontPtr_Iter_inc(&mut i_1);
             }
             font = bestMatch_1
         }
@@ -2371,20 +2267,13 @@ pub unsafe extern "C" fn XeTeXFontMgr_bestMatchFromFamily(
     mut slant: libc::c_int,
 ) -> *mut XeTeXFontMgrFont {
     let mut bestMatch: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
-    let mut s: CppStdMapStringToFontPtr_Iter = CppStdMapStringToFontPtr_begin((*fam).styles);
-    while CppStdMapStringToFontPtr_Iter_neq(s, CppStdMapStringToFontPtr_end((*fam).styles)) {
+    for (_, v) in (*(*fam).styles).iter() {
         if bestMatch.is_null()
-            || XeTeXFontMgr_styleDiff(
-                self_0,
-                CppStdMapStringToFontPtr_Iter_second(s),
-                wt,
-                wd,
-                slant,
-            ) < XeTeXFontMgr_styleDiff(self_0, bestMatch, wt, wd, slant)
+            || XeTeXFontMgr_styleDiff(self_0, v.as_ptr(), wt, wd, slant)
+                < XeTeXFontMgr_styleDiff(self_0, bestMatch, wt, wd, slant)
         {
-            bestMatch = CppStdMapStringToFontPtr_Iter_second(s)
+            bestMatch = v.as_ptr()
         }
-        CppStdMapStringToFontPtr_Iter_inc(&mut s);
     }
     return bestMatch;
 }
@@ -2545,10 +2434,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(
     if CppStdString_length((*names).m_psName) == 0 {
         return;
     }
-    if CppStdMapStringToFontPtr_Iter_neq(
-        CppStdMapStringToFontPtr_find((*self_0).m_psNameToFont, (*names).m_psName),
-        CppStdMapStringToFontPtr_end((*self_0).m_psNameToFont),
-    ) {
+    if (*(*self_0).m_psNameToFont).contains_key(&*(*names).m_psName) {
         return;
     }
     let mut thisFont_nonnull: NonNull<XeTeXFontMgrFont> =

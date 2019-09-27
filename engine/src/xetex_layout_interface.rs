@@ -557,69 +557,6 @@ pub mod collection_types {
     pub type CppStdListOfString = VecDeque<CString>;
     pub type CppStdMap<K, V> = BTreeMap<K, V>;
 
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdListOfString_Iter {
-        pub dummy: *mut libc::c_void,
-    }
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdMapStringToFontPtr_Iter {
-        pub dummy: *mut libc::c_void,
-    }
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdMapStringToFamilyPtr_Iter {
-        pub dummy: *mut libc::c_void,
-    }
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdMapFontRefToFontPtr_Iter {
-        pub dummy: *mut libc::c_void,
-    }
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdMapU32ToGlyphBBox_Iter {
-        pub unused: *mut libc::c_void,
-    }
-    #[derive(Copy, Clone)]
-    #[repr(C)]
-    pub struct CppStdMapGlyphIdToInt_Iter {
-        pub unused: *mut libc::c_void,
-    }
-
-    extern "C" {
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_Iter_inc(iter: *mut CppStdMapStringToFontPtr_Iter);
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_Iter_neq(
-            lhs: CppStdMapStringToFontPtr_Iter,
-            rhs: CppStdMapStringToFontPtr_Iter,
-        ) -> bool;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_Iter_second(
-            self_0: CppStdMapStringToFontPtr_Iter,
-        ) -> *mut XeTeXFontMgrFont;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_begin(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
-        ) -> CppStdMapStringToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_end(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
-        ) -> CppStdMapStringToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_find(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
-            val: *mut CppStdString,
-        ) -> CppStdMapStringToFontPtr_Iter;
-        #[no_mangle]
-        pub fn CppStdMapStringToFontPtr_find_const_char_ptr(
-            self_0: *mut CppStdMap<CString, NonNull<XeTeXFontMgrFont>>,
-            val: *const libc::c_char,
-        ) -> CppStdMapStringToFontPtr_Iter;
-    }
-
     pub fn CppStdString_create() -> *mut CppStdString {
         Box::into_raw(Box::new(CString::default()))
     }
