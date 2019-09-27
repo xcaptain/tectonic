@@ -578,11 +578,10 @@ pub unsafe extern "C" fn iccp_check_colorspace(
     mut proflen: i32,
 ) -> i32 {
     let mut colorspace: iccSig;
-    let mut p: *const u8 = 0 as *const u8;
     if profile.is_null() || proflen < 128i32 {
         return -1i32;
     }
-    p = profile as *const u8;
+    let mut p = profile as *const u8;
     colorspace = str2iccSig(p.offset(16) as *const libc::c_void);
     match colortype {
         3 | -3 => {
@@ -615,13 +614,11 @@ pub unsafe extern "C" fn iccp_get_rendering_intent(
     mut profile: *const libc::c_void,
     mut proflen: i32,
 ) -> *mut pdf_obj {
-    let mut p: *const u8 = 0 as *const u8;
-    let mut intent: i32 = 0;
     if profile.is_null() || proflen < 128i32 {
         return 0 as *mut pdf_obj;
     }
-    p = profile as *const u8;
-    intent = (*p.offset(64) as i32) << 24i32
+    let mut p = profile as *const u8;
+    let intent = (*p.offset(64) as i32) << 24i32
         | (*p.offset(65) as i32) << 16i32
         | (*p.offset(66) as i32) << 8i32
         | *p.offset(67) as i32;
@@ -646,7 +643,6 @@ unsafe extern "C" fn iccp_unpack_header(
     mut check_size: i32,
 ) -> i32 {
     let mut p: *const u8 = 0 as *const u8;
-    let mut endptr: *const u8 = 0 as *const u8;
     if check_size != 0 {
         if profile.is_null() || proflen < 128i32 || proflen % 4i32 != 0i32 {
             warn!("Profile size: {}", proflen);
@@ -654,7 +650,7 @@ unsafe extern "C" fn iccp_unpack_header(
         }
     }
     p = profile as *const u8;
-    endptr = p.offset(128);
+    let endptr = p.offset(128);
     icch.size = (*p.offset(0) as i32) << 24i32
         | (*p.offset(1) as i32) << 16i32
         | (*p.offset(2) as i32) << 8i32
