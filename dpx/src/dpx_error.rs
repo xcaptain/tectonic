@@ -49,10 +49,9 @@ pub unsafe extern "C" fn shut_up(mut quietness: i32) {
 static mut _dpx_message_handle: Option<OutputHandleWrapper> = None;
 
 static mut _dpx_message_buf: [u8; 1024] = [0; 1024];
-pub unsafe extern "C" fn _dpx_ensure_output_handle() -> OutputHandleWrapper {
+pub unsafe extern "C" fn _dpx_ensure_output_handle() {
     if let Some(handle) = ttstub_output_open_stdout() {
         _dpx_message_handle = Some(handle);
-        handle
     } else {
         panic!("xdvipdfmx cannot get output logging handle?!");
     }
@@ -81,7 +80,11 @@ unsafe extern "C" fn _dpx_print_to_stdout(
             _dpx_message_buf.as_mut_ptr() as *mut i8,
         );
     }
-    _dpx_ensure_output_handle().write(&_dpx_message_buf[..n as usize]);
+    _dpx_ensure_output_handle();
+    _dpx_message_handle
+        .as_mut()
+        .unwrap()
+        .write(&_dpx_message_buf[..n as usize]);
 }
 
 #[no_mangle]
@@ -101,11 +104,14 @@ pub unsafe extern "C" fn dpx_warning(mut fmt: *const i8, mut args: ...) {
         return;
     }
     if _last_message_type as u32 == DPX_MESG_INFO as i32 as u32 {
-        _dpx_ensure_output_handle().write(b"\n");
+        _dpx_ensure_output_handle();
+        _dpx_message_handle.as_mut().unwrap().write(b"\n");
     }
-    _dpx_ensure_output_handle().write(b"warning: ");
+    _dpx_ensure_output_handle();
+    _dpx_message_handle.as_mut().unwrap().write(b"warning: ");
     argp = args.clone();
     _dpx_print_to_stdout(fmt, argp.as_va_list(), true);
-    _dpx_ensure_output_handle().write(b"\n");
+    _dpx_ensure_output_handle();
+    _dpx_message_handle.as_mut().unwrap().write(b"\n");
     _last_message_type = DPX_MESG_WARN;
 }

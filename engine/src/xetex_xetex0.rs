@@ -7209,7 +7209,7 @@ pub unsafe extern "C" fn get_next() {
                             if cur_input.name >= 19i32 {
                                 print_char(')' as i32);
                                 open_parens -= 1;
-                                rust_stdout.unwrap().flush().unwrap();
+                                rust_stdout.as_mut().unwrap().flush().unwrap();
                             }
                             force_eof = false;
                             end_file_reading();
@@ -13286,7 +13286,7 @@ pub unsafe extern "C" fn pseudo_start() {
         cur_input.name = 19i32;
         print_cstr(b"( \x00" as *const u8 as *const i8);
         open_parens += 1;
-        rust_stdout.unwrap().flush().unwrap();
+        rust_stdout.as_mut().unwrap().flush().unwrap();
     } else {
         cur_input.name = 18i32;
         cur_input.synctex_tag = 0i32
@@ -15453,7 +15453,7 @@ pub unsafe extern "C" fn start_input(mut primary_input_name: *const i8) {
     print_char('(' as i32);
     open_parens += 1;
     print(*full_source_filename_stack.offset(in_open as isize));
-    rust_stdout.unwrap().flush().unwrap();
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     cur_input.state = 33_u16;
     synctex_start_input();
     line = 1i32;
@@ -25997,7 +25997,7 @@ pub unsafe extern "C" fn issue_message() {
             print_char(' ' as i32);
         }
         print(s);
-        rust_stdout.unwrap().flush().unwrap();
+        rust_stdout.as_mut().unwrap().flush().unwrap();
     } else {
         if file_line_error_style_p != 0 {
             print_file_line();
@@ -30168,16 +30168,16 @@ pub unsafe extern "C" fn close_files_and_terminate() {
     k = 0i32;
     while k <= 15i32 {
         if write_open[k as usize] {
-            ttstub_output_close(write_file[k as usize].unwrap());
+            ttstub_output_close(write_file[k as usize].take().unwrap());
         }
         k += 1
     }
     finalize_dvi_file();
     synctex_terminate(log_opened);
     if log_opened {
-        let lg = log_file.unwrap();
-        ttstub_output_putc(lg, '\n' as i32);
-        ttstub_output_close(lg);
+        ttstub_output_putc(log_file.as_mut().unwrap(), '\n' as i32);
+        ttstub_output_close(log_file.take().unwrap());
+        log_file = None;
         selector = u8::from(selector).wrapping_sub(2).into();
         if selector == Selector::TERM_ONLY {
             print_nl_cstr(b"Transcript written on \x00" as *const u8 as *const i8);

@@ -371,7 +371,7 @@ pub unsafe extern "C" fn pdf_out_init(
             panic!("Unable to open file.");
         }
     }
-    let handle = pdf_output_handle.unwrap();
+    let handle = pdf_output_handle.as_mut().unwrap();
     pdf_out(handle, b"%PDF-1.");
     let v = [b'0' + (pdf_version as u8)];
     pdf_out(handle, &v[..]);
@@ -381,7 +381,7 @@ pub unsafe extern "C" fn pdf_out_init(
     doc_enc_mode = do_encryption;
 }
 unsafe extern "C" fn dump_xref_table() {
-    let handle = pdf_output_handle.unwrap();
+    let handle = pdf_output_handle.as_mut().unwrap();
     pdf_out(handle, b"xref\n");
     let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
@@ -418,7 +418,7 @@ unsafe extern "C" fn dump_xref_table() {
     }
 }
 unsafe extern "C" fn dump_trailer_dict() {
-    let handle = pdf_output_handle.unwrap();
+    let handle = pdf_output_handle.as_mut().unwrap();
     pdf_out(handle, b"trailer\n");
     enc_mode = false;
     write_dict((*trailer_dict).data as *mut pdf_dict, handle);
@@ -479,7 +479,7 @@ unsafe extern "C" fn dump_xref_stream() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_out_flush() {
-    if let Some(handle) = pdf_output_handle {
+    if let Some(handle) = pdf_output_handle.as_mut() {
         /* Flush current object stream */
         if !current_objstm.is_null() {
             release_objstm(current_objstm);
@@ -525,8 +525,7 @@ pub unsafe extern "C" fn pdf_out_flush() {
                 );
             }
         }
-        ttstub_output_close(handle);
-        pdf_output_handle = None
+        ttstub_output_close(pdf_output_handle.take().unwrap());
     };
 }
 #[no_mangle]
@@ -535,9 +534,8 @@ pub unsafe extern "C" fn pdf_error_cleanup() {
      * This routine is the cleanup required for an abnormal exit.
      * For now, simply close the file.
      */
-    if let Some(handle) = pdf_output_handle {
-        ttstub_output_close(handle);
-        pdf_output_handle = None
+    if pdf_output_handle.is_some() {
+        ttstub_output_close(pdf_output_handle.take().unwrap());
     };
 }
 #[no_mangle]
@@ -573,8 +571,8 @@ pub unsafe extern "C" fn pdf_set_encrypt(mut encrypt: *mut pdf_obj) {
     }
     (*encrypt).flags |= 1i32 << 1i32;
 }
-unsafe extern "C" fn pdf_out_char(handle: OutputHandleWrapper, mut c: u8) {
-    if !output_stream.is_null() && Some(handle) == pdf_output_handle {
+unsafe extern "C" fn pdf_out_char(handle: &mut OutputHandleWrapper, mut c: u8) {
+    if !output_stream.is_null() && handle == pdf_output_handle.as_mut().unwrap() {
         pdf_add_stream(
             output_stream,
             &mut c as *mut u8 as *mut i8 as *const libc::c_void,
@@ -583,7 +581,7 @@ unsafe extern "C" fn pdf_out_char(handle: OutputHandleWrapper, mut c: u8) {
     } else {
         ttstub_output_putc(handle, c as i32);
         /* Keep tallys for xref table *only* if writing a pdf file. */
-        if Some(handle) == pdf_output_handle {
+        if pdf_output_handle.is_some() {
             pdf_output_file_position += 1;
             if c == b'\n' {
                 pdf_output_line_position = 0
@@ -595,9 +593,9 @@ unsafe extern "C" fn pdf_out_char(handle: OutputHandleWrapper, mut c: u8) {
 }
 const xchar: &[u8; 17] = b"0123456789abcdef\x00";
 
-unsafe extern "C" fn pdf_out(mut handle: OutputHandleWrapper, buffer: &[u8]) {
+unsafe extern "C" fn pdf_out(handle: &mut OutputHandleWrapper, buffer: &[u8]) {
     let length = buffer.len();
-    if !output_stream.is_null() && Some(handle) == pdf_output_handle {
+    if !output_stream.is_null() && handle == pdf_output_handle.as_mut().unwrap() {
         pdf_add_stream(
             output_stream,
             buffer.as_ptr() as *const libc::c_void,
@@ -627,8 +625,8 @@ unsafe extern "C" fn pdf_need_white(mut type1: i32, mut type2: i32) -> i32 {
         || type2 == 5i32
         || type2 == 6i32) as i32;
 }
-unsafe extern "C" fn pdf_out_white(mut handle: OutputHandleWrapper) {
-    if Some(handle) == pdf_output_handle && pdf_output_line_position >= 80 {
+unsafe extern "C" fn pdf_out_white(handle: &mut OutputHandleWrapper) {
+    if handle == pdf_output_handle.as_mut().unwrap() && pdf_output_line_position >= 80 {
         pdf_out_char(handle, b'\n');
     } else {
         pdf_out_char(handle, b' ');
@@ -699,7 +697,7 @@ pub unsafe extern "C" fn pdf_ref_obj(mut object: *mut pdf_obj) -> *mut pdf_obj {
     }
     if (*object).refcount == 0_u32 {
         info!("\nTrying to refer already released object!!!\n");
-        pdf_write_obj(object, ttstub_output_open_stdout().unwrap());
+        pdf_write_obj(object, ttstub_output_open_stdout().as_mut().unwrap());
         panic!("Cannot continue...");
     }
     if !object.is_null() && (*object).is_indirect() {
@@ -711,7 +709,10 @@ pub unsafe extern "C" fn pdf_ref_obj(mut object: *mut pdf_obj) -> *mut pdf_obj {
 unsafe extern "C" fn release_indirect(mut data: *mut pdf_indirect) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_indirect(mut indirect: *mut pdf_indirect, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_indirect(
+    mut indirect: *mut pdf_indirect,
+    handle: &mut OutputHandleWrapper,
+) {
     assert!((*indirect).pf.is_null());
     let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
@@ -738,7 +739,7 @@ pub unsafe extern "C" fn pdf_new_null() -> *mut pdf_obj {
     (*result).data = 0 as *mut libc::c_void;
     result
 }
-unsafe extern "C" fn write_null(mut handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_null(handle: &mut OutputHandleWrapper) {
     pdf_out(handle, b"null");
 }
 #[no_mangle]
@@ -755,7 +756,7 @@ pub unsafe extern "C" fn pdf_new_boolean(mut value: i8) -> *mut pdf_obj {
 unsafe extern "C" fn release_boolean(mut data: *mut pdf_obj) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_boolean(mut data: *mut pdf_boolean, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_boolean(mut data: *mut pdf_boolean, handle: &mut OutputHandleWrapper) {
     if (*data).value != 0 {
         pdf_out(handle, b"true");
     } else {
@@ -794,7 +795,7 @@ pub unsafe extern "C" fn pdf_new_number(mut value: f64) -> *mut pdf_obj {
 unsafe extern "C" fn release_number(mut data: *mut pdf_number) {
     free(data as *mut libc::c_void);
 }
-unsafe extern "C" fn write_number(mut number: *mut pdf_number, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_number(mut number: *mut pdf_number, handle: &mut OutputHandleWrapper) {
     let count = pdf_sprint_number(&mut format_buffer[..], (*number).value) as usize;
     pdf_out(handle, &format_buffer[..count]);
 }
@@ -962,7 +963,7 @@ pub unsafe extern "C" fn pdfobj_escape_str(
     }
     result
 }
-unsafe extern "C" fn write_string(mut str: *mut pdf_string, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_string(mut str: *mut pdf_string, handle: &mut OutputHandleWrapper) {
     let mut s: *mut u8 = 0 as *mut u8;
     let mut wbuf = [0_u8; 4096];
     let mut nescc: i32 = 0i32;
@@ -1103,7 +1104,7 @@ pub unsafe fn pdf_copy_name(name: *const i8) -> *mut pdf_obj {
     result
 }
 
-unsafe extern "C" fn write_name(mut name: *mut pdf_name, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_name(mut name: *mut pdf_name, handle: &mut OutputHandleWrapper) {
     let mut s: *mut i8 = 0 as *mut i8;
     let mut length: i32 = 0;
     s = (*name).name;
@@ -1171,7 +1172,7 @@ pub unsafe extern "C" fn pdf_new_array() -> *mut pdf_obj {
     (*result).data = data as *mut libc::c_void;
     result
 }
-unsafe extern "C" fn write_array(mut array: *mut pdf_array, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_array(mut array: *mut pdf_array, handle: &mut OutputHandleWrapper) {
     pdf_out_char(handle, b'[');
     if (*array).size > 0_u32 {
         let mut type1: i32 = 10i32;
@@ -1309,7 +1310,7 @@ unsafe extern "C" fn pdf_unshift_array(mut array: *mut pdf_obj, mut object: *mut
     *fresh14 = object;
     (*data).size = (*data).size.wrapping_add(1);
 }
-unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_dict(mut dict: *mut pdf_dict, handle: &mut OutputHandleWrapper) {
     pdf_out(handle, b"<<");
     while !(*dict).key.is_null() {
         pdf_write_obj((*dict).key, handle);
@@ -1984,7 +1985,7 @@ unsafe extern "C" fn filter_create_predictor_dict(
     pdf_add_dict(parms, "Predictor", pdf_new_number(predictor as f64));
     return parms;
 }
-unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, handle: OutputHandleWrapper) {
+unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, handle: &mut OutputHandleWrapper) {
     let mut filtered: *mut u8 = 0 as *mut u8;
     let mut filtered_length: u32 = 0;
     /*
@@ -2874,7 +2875,7 @@ unsafe extern "C" fn pdf_stream_uncompress(mut src: *mut pdf_obj) -> *mut pdf_ob
     pdf_concat_stream(dst, src);
     dst
 }
-unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, handle: OutputHandleWrapper) {
+unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, handle: &mut OutputHandleWrapper) {
     if object.is_null() {
         write_null(handle);
         return;
@@ -2918,7 +2919,7 @@ unsafe extern "C" fn pdf_write_obj(mut object: *mut pdf_obj, handle: OutputHandl
     };
 }
 /* Write the object to the file */
-unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, handle: OutputHandleWrapper) {
+unsafe extern "C" fn pdf_flush_obj(mut object: *mut pdf_obj, handle: &mut OutputHandleWrapper) {
     /*
      * Record file position
      */
@@ -2962,7 +2963,7 @@ unsafe extern "C" fn pdf_add_objstm(objstm: *mut pdf_obj, mut object: *mut pdf_o
     /* redirect output into objstm */
     output_stream = objstm;
     enc_mode = false;
-    let handle = pdf_output_handle.unwrap();
+    let handle = pdf_output_handle.as_mut().unwrap();
     pdf_write_obj(object, handle);
     pdf_out_char(handle, b'\n');
     output_stream = 0 as *mut pdf_obj;
@@ -3032,7 +3033,7 @@ pub unsafe extern "C" fn pdf_release_obj(mut object: *mut pdf_obj) {
             (*object).typ,
             (*object).refcount,
         );
-        pdf_write_obj(object, ttstub_output_open_stdout().unwrap());
+        pdf_write_obj(object, ttstub_output_open_stdout().as_mut().unwrap());
         panic!("pdf_release_obj:  Called with invalid object.");
     }
     (*object).refcount = (*object).refcount.wrapping_sub(1_u32);
@@ -3047,7 +3048,7 @@ pub unsafe extern "C" fn pdf_release_obj(mut object: *mut pdf_obj) {
                 || doc_enc_mode as i32 != 0 && (*object).flags & 1i32 << 1i32 != 0
                 || (*object).generation as i32 != 0
             {
-                let handle = pdf_output_handle.unwrap();
+                let handle = pdf_output_handle.as_mut().unwrap();
                 pdf_flush_obj(object, handle);
             } else {
                 if current_objstm.is_null() {

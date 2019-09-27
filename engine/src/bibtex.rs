@@ -393,15 +393,15 @@ static mut min_crossrefs: i32 = 0;
 /*12: *//*3: */
 
 unsafe extern "C" fn putc_log(c: i32) {
-    ttstub_output_putc(log_file.unwrap(), c); /* note: global! */
-    ttstub_output_putc(standard_output.unwrap(), c);
+    ttstub_output_putc(log_file.as_mut().unwrap(), c); /* note: global! */
+    ttstub_output_putc(standard_output.as_mut().unwrap(), c);
 }
 
 macro_rules! log {
     ($($arg:tt)*) => {{
         use std::io::Write;
-        log_file.unwrap().write_fmt(format_args!($($arg)*)).unwrap();
-        standard_output.unwrap().write_fmt(format_args!($($arg)*)).unwrap();
+        log_file.as_mut().unwrap().write_fmt(format_args!($($arg)*)).unwrap();
+        standard_output.as_mut().unwrap().write_fmt(format_args!($($arg)*)).unwrap();
     }}
 }
 
@@ -483,7 +483,7 @@ unsafe extern "C" fn input_ln(mut peekable: *mut peekable_input_t) -> bool {
     }
     true
 }
-unsafe extern "C" fn out_pool_str(handle: OutputHandleWrapper, mut s: str_number) {
+unsafe extern "C" fn out_pool_str(handle: &mut OutputHandleWrapper, mut s: str_number) {
     let mut i: pool_pointer = 0;
     if s < 0i32 || s >= str_ptr + 3i32 || s >= max_strings {
         log!("Illegal string number:{}", s);
@@ -497,8 +497,8 @@ unsafe extern "C" fn out_pool_str(handle: OutputHandleWrapper, mut s: str_number
     }
 }
 unsafe extern "C" fn print_a_pool_str(mut s: str_number) {
-    out_pool_str(standard_output.unwrap(), s);
-    out_pool_str(log_file.unwrap(), s);
+    out_pool_str(standard_output.as_mut().unwrap(), s);
+    out_pool_str(log_file.as_mut().unwrap(), s);
 }
 unsafe extern "C" fn pool_overflow() {
     str_pool = xrealloc(
@@ -508,14 +508,14 @@ unsafe extern "C" fn pool_overflow() {
     ) as *mut u8;
     pool_size = (pool_size as i64 + 65000) as i32;
 }
-unsafe extern "C" fn out_token(handle: OutputHandleWrapper) {
+unsafe extern "C" fn out_token(handle: &mut OutputHandleWrapper) {
     for i in buf_ptr1..buf_ptr2 {
         ttstub_output_putc(handle, *buffer.offset(i as isize) as i32);
     }
 }
 unsafe extern "C" fn print_a_token() {
-    out_token(standard_output.unwrap());
-    out_token(log_file.unwrap());
+    out_token(standard_output.as_mut().unwrap());
+    out_token(log_file.as_mut().unwrap());
 }
 unsafe extern "C" fn print_bad_input_line() {
     let mut bf_ptr: buf_pointer = 0;
@@ -567,7 +567,7 @@ unsafe extern "C" fn print_skipping_whatever_remains() {
     log!("I\'m skipping whatever remains of this ");
 }
 unsafe extern "C" fn sam_wrong_file_name_print() {
-    let mut output = standard_output.unwrap();
+    let mut output = standard_output.as_mut().unwrap();
     write!(output, "I couldn\'t open file name `").unwrap();
     name_ptr = 0i32;
     while name_ptr <= name_length {
@@ -583,7 +583,7 @@ unsafe extern "C" fn print_aux_name() {
     putc_log('\n' as i32);
 }
 unsafe extern "C" fn log_pr_aux_name() {
-    let lg = log_file.unwrap();
+    let lg = log_file.as_mut().unwrap();
     out_pool_str(lg, aux_list[aux_ptr as usize]);
     ttstub_output_putc(lg, '\n' as i32);
 }
@@ -626,7 +626,7 @@ unsafe extern "C" fn print_bib_name() {
     putc_log('\n' as i32);
 }
 unsafe extern "C" fn log_pr_bib_name() {
-    let lg = log_file.unwrap();
+    let lg = log_file.as_mut().unwrap();
     out_pool_str(lg, *bib_list.offset(bib_ptr as isize));
     out_pool_str(lg, s_bib_extension);
     ttstub_output_putc(lg, '\n' as i32);
@@ -637,7 +637,7 @@ unsafe extern "C" fn print_bst_name() {
     putc_log('\n' as i32);
 }
 unsafe extern "C" fn log_pr_bst_name() {
-    let lg = log_file.unwrap();
+    let lg = log_file.as_mut().unwrap();
     out_pool_str(lg, bst_str);
     out_pool_str(lg, s_bst_extension);
     ttstub_output_putc(lg, '\n' as i32);
@@ -991,7 +991,7 @@ unsafe extern "C" fn print_lit(mut stk_lt: i32, mut stk_tp: stk_type) {
     };
 }
 unsafe extern "C" fn output_bbl_line() {
-    let bbl = bbl_file.unwrap();
+    let bbl = bbl_file.as_mut().unwrap();
     if out_buf_length != 0i32 {
         while out_buf_length > 0i32 {
             if !(lex_class[*out_buf.offset((out_buf_length - 1i32) as isize) as usize] as i32
@@ -5470,7 +5470,7 @@ unsafe extern "C" fn aux_bib_style_command() {
         log!("The style file: ");
         print_bst_name();
     } else {
-        write!(log_file.unwrap(), "The style file: ").unwrap();
+        write!(log_file.as_mut().unwrap(), "The style file: ").unwrap();
         log_pr_bst_name();
     };
 }
@@ -6733,7 +6733,12 @@ unsafe extern "C" fn bst_read_command() {
             log!("Database file #{}: ", bib_ptr + 1,);
             print_bib_name();
         } else {
-            write!(log_file.unwrap(), "Database file #{}: ", bib_ptr as i64 + 1).unwrap();
+            write!(
+                log_file.as_mut().unwrap(),
+                "Database file #{}: ",
+                bib_ptr as i64 + 1
+            )
+            .unwrap();
             log_pr_bib_name();
         }
         bib_line_num = 0i32;
@@ -7522,10 +7527,14 @@ pub unsafe extern "C" fn bibtex_main(mut aux_file_name: *const i8) -> TTHistory 
         if verbose != 0 {
             log!("This is BibTeX, Version 0.99d\n");
         } else {
-            write!(log_file.unwrap(), "This is BibTeX, Version 0.99d\n").unwrap();
+            write!(
+                log_file.as_mut().unwrap(),
+                "This is BibTeX, Version 0.99d\n"
+            )
+            .unwrap();
         }
         write!(
-            log_file.unwrap(),
+            log_file.as_mut().unwrap(),
             "Capacity: max_strings={}, hash_size={}, hash_prime={}\n",
             max_strings as i64,
             hash_size as i64,
@@ -7536,7 +7545,7 @@ pub unsafe extern "C" fn bibtex_main(mut aux_file_name: *const i8) -> TTHistory 
             log!("The top-level auxiliary file: ");
             print_aux_name();
         } else {
-            write!(log_file.unwrap(), "The top-level auxiliary file: ").unwrap();
+            write!(log_file.as_mut().unwrap(), "The top-level auxiliary file: ").unwrap();
             log_pr_aux_name();
         }
         loop {
@@ -7565,7 +7574,7 @@ pub unsafe extern "C" fn bibtex_main(mut aux_file_name: *const i8) -> TTHistory 
             peekable_close(bst_file);
             bst_file = 0 as *mut peekable_input_t
         }
-        ttstub_output_close(bbl_file.unwrap());
+        ttstub_output_close(bbl_file.take().unwrap());
     });
     panic::set_hook(prev_hook);
 
@@ -7594,6 +7603,6 @@ pub unsafe extern "C" fn bibtex_main(mut aux_file_name: *const i8) -> TTHistory 
             log!("(That was a fatal error)\n");
         }
     }
-    ttstub_output_close(log_file.unwrap());
+    ttstub_output_close(log_file.take().unwrap());
     history
 }

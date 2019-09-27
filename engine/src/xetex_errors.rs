@@ -59,7 +59,7 @@ unsafe extern "C" fn post_error_message(mut need_to_print_it: i32) {
     }
     history = TTHistory::FATAL_ERROR;
     close_files_and_terminate();
-    rust_stdout.unwrap().flush().unwrap();
+    rust_stdout.as_mut().unwrap().flush().unwrap();
 }
 #[no_mangle]
 pub unsafe extern "C" fn error() {
@@ -109,7 +109,7 @@ pub unsafe extern "C" fn fatal_error(mut s: *const i8) -> ! {
     print_cstr(b"Emergency stop\x00" as *const u8 as *const i8);
     print_nl_cstr(s);
     close_files_and_terminate();
-    rust_stdout.unwrap().flush().unwrap();
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     _tt_abort(b"%s\x00" as *const u8 as *const i8, s);
 }
 #[no_mangle]

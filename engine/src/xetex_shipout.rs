@@ -350,7 +350,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         }
         k = k.wrapping_add(1)
     }
-    rust_stdout.unwrap().flush().unwrap();
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     if (*eqtb.offset(
         (1i32
             + (0x10ffffi32 + 1i32)
@@ -1243,7 +1243,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         print_char(']' as i32);
     }
     dead_cycles = 0i32;
-    rust_stdout.unwrap().flush().unwrap();
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     flush_node_list(p);
     synctex_teehs();
 }
@@ -2879,7 +2879,7 @@ pub unsafe extern "C" fn out_what(mut p: i32) {
                     write_out(p);
                 } else {
                     if write_open[j as usize] {
-                        ttstub_output_close(write_file[j as usize].unwrap());
+                        ttstub_output_close(write_file[j as usize].take().unwrap());
                     }
                     if (*mem.offset(p as isize)).b16.s0 as i32 == 2i32 {
                         write_open[j as usize] = false
@@ -3570,7 +3570,7 @@ pub unsafe extern "C" fn finalize_dvi_file() {
     if dvi_ptr > 0i32 {
         write_to_dvi(0i32, dvi_ptr - 1i32);
     }
-    k = ttstub_output_close(dvi_file.unwrap()) as u8;
+    k = ttstub_output_close(dvi_file.take().unwrap()) as u8;
     if k as i32 == 0i32 {
         print_nl_cstr(b"Output written on \x00" as *const u8 as *const i8);
         print(output_file_name);
@@ -3603,6 +3603,7 @@ unsafe extern "C" fn write_to_dvi(mut a: i32, mut b: i32) {
         v.push(*dvi_buf.offset((a + i) as isize));
     }
     dvi_file
+        .as_mut()
         .unwrap()
         .write(&v)
         .expect("failed to write data to XDV file");

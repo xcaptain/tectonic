@@ -43,23 +43,23 @@ pub type small_number = i16;
 pub unsafe extern "C" fn print_ln() {
     match selector {
         Selector::TERM_AND_LOG => {
-            ttstub_output_putc(rust_stdout.unwrap(), '\n' as i32);
-            ttstub_output_putc(log_file.unwrap(), '\n' as i32);
+            ttstub_output_putc(rust_stdout.as_mut().unwrap(), '\n' as i32);
+            ttstub_output_putc(log_file.as_mut().unwrap(), '\n' as i32);
             term_offset = 0i32;
             file_offset = 0i32
         }
         Selector::LOG_ONLY => {
-            ttstub_output_putc(log_file.unwrap(), '\n' as i32);
+            ttstub_output_putc(log_file.as_mut().unwrap(), '\n' as i32);
             file_offset = 0i32
         }
         Selector::TERM_ONLY => {
-            ttstub_output_putc(rust_stdout.unwrap(), '\n' as i32);
+            ttstub_output_putc(rust_stdout.as_mut().unwrap(), '\n' as i32);
             term_offset = 0i32
         }
         Selector::NO_PRINT | Selector::PSEUDO | Selector::NEW_STRING => {}
         _ => {
             ttstub_output_putc(
-                write_file[u8::from(selector) as usize].unwrap(),
+                write_file[u8::from(selector) as usize].as_mut().unwrap(),
                 '\n' as i32,
             );
         }
@@ -69,8 +69,8 @@ pub unsafe extern "C" fn print_ln() {
 pub unsafe extern "C" fn print_raw_char(mut s: UTF16_code, mut incr_offset: bool) {
     match selector {
         Selector::TERM_AND_LOG => {
-            let stdout = rust_stdout.unwrap();
-            let lg = log_file.unwrap();
+            let stdout = rust_stdout.as_mut().unwrap();
+            let lg = log_file.as_mut().unwrap();
             ttstub_output_putc(stdout, s as i32);
             ttstub_output_putc(lg, s as i32);
             if incr_offset {
@@ -87,7 +87,7 @@ pub unsafe extern "C" fn print_raw_char(mut s: UTF16_code, mut incr_offset: bool
             }
         }
         Selector::LOG_ONLY => {
-            ttstub_output_putc(log_file.unwrap(), s as i32);
+            ttstub_output_putc(log_file.as_mut().unwrap(), s as i32);
             if incr_offset {
                 file_offset += 1
             }
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn print_raw_char(mut s: UTF16_code, mut incr_offset: bool
             }
         }
         Selector::TERM_ONLY => {
-            ttstub_output_putc(rust_stdout.unwrap(), s as i32);
+            ttstub_output_putc(rust_stdout.as_mut().unwrap(), s as i32);
             if incr_offset {
                 term_offset += 1
             }
@@ -117,7 +117,10 @@ pub unsafe extern "C" fn print_raw_char(mut s: UTF16_code, mut incr_offset: bool
             }
         }
         _ => {
-            ttstub_output_putc(write_file[u8::from(selector) as usize].unwrap(), s as i32);
+            ttstub_output_putc(
+                write_file[u8::from(selector) as usize].as_mut().unwrap(),
+                s as i32,
+            );
         }
     }
     tally += 1;

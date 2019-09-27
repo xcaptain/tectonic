@@ -22,7 +22,7 @@ pub type ssize_t = i64;
 pub type rust_output_handle_t = *mut libc::c_void;
 pub type rust_input_handle_t = *mut libc::c_void;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(PartialEq)]
 pub struct OutputHandleWrapper(rust_output_handle_t);
 
 impl Write for OutputHandleWrapper {
@@ -255,7 +255,7 @@ pub unsafe extern "C" fn ttstub_output_open_stdout() -> Option<OutputHandleWrapp
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn ttstub_output_putc(handle: OutputHandleWrapper, mut c: i32) -> i32 {
+pub unsafe extern "C" fn ttstub_output_putc(handle: &mut OutputHandleWrapper, mut c: i32) -> i32 {
     (*tectonic_global_bridge)
         .output_putc
         .expect("non-null function pointer")((*tectonic_global_bridge).context, handle.0, c)

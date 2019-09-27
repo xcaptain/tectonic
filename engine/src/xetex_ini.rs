@@ -1048,7 +1048,9 @@ pub static mut long_help_seen: bool = false;
 #[no_mangle]
 pub static mut format_ident: str_number = 0;
 #[no_mangle]
-pub static mut write_file: [Option<OutputHandleWrapper>; 16] = [None; 16];
+pub static mut write_file: [Option<OutputHandleWrapper>; 16] = [
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+];
 #[no_mangle]
 pub static mut write_open: [bool; 18] = [false; 18];
 #[no_mangle]
@@ -1250,7 +1252,7 @@ unsafe extern "C" fn do_dump(
     mut p: *mut i8,
     mut item_size: size_t,
     mut nitems: size_t,
-    mut out_file: OutputHandleWrapper,
+    mut out_file: &mut OutputHandleWrapper,
 ) {
     swap_items(p, nitems, item_size);
     let mut v = Vec::new();
@@ -3782,7 +3784,7 @@ unsafe extern "C" fn store_fmt_file() {
         }
         history = TTHistory::FATAL_ERROR;
         close_files_and_terminate();
-        rust_stdout.unwrap().flush().unwrap();
+        rust_stdout.as_mut().unwrap().flush().unwrap();
         panic!("\\dump inside a group");
     }
     selector = Selector::NEW_STRING;
@@ -3905,7 +3907,8 @@ unsafe extern "C" fn store_fmt_file() {
             name_of_file,
         );
     }
-    let fmt_out = fmt_out.unwrap();
+    let mut fmt_out_owner = fmt_out.unwrap();
+    let fmt_out = &mut fmt_out_owner;
     print_nl_cstr(b"Beginning to dump on file \x00" as *const u8 as *const i8);
     print(make_name_string());
     str_ptr -= 1;
@@ -5046,7 +5049,7 @@ unsafe extern "C" fn store_fmt_file() {
     ))
     .b32
     .s1 = 0i32;
-    ttstub_output_close(fmt_out);
+    ttstub_output_close(fmt_out_owner);
 }
 unsafe extern "C" fn pack_buffered_name(mut n: small_number, mut a: i32, mut b: i32) {
     free(name_of_file as *mut libc::c_void);
