@@ -46,12 +46,14 @@ pub static mut _dpx_quietness: i32 = 0i32;
 pub unsafe extern "C" fn shut_up(mut quietness: i32) {
     _dpx_quietness = quietness;
 }
-static mut _dpx_message_handle: Option<OutputHandleWrapper> = None;
+pub static mut _dpx_message_handle: Option<OutputHandleWrapper> = None;
 
 static mut _dpx_message_buf: [u8; 1024] = [0; 1024];
-pub unsafe extern "C" fn _dpx_ensure_output_handle() {
-    if let Some(handle) = ttstub_output_open_stdout() {
-        _dpx_message_handle = Some(handle);
+pub fn _dpx_ensure_output_handle() {
+    if let Some(handle) = unsafe { ttstub_output_open_stdout() } {
+        unsafe {
+            _dpx_message_handle = Some(handle);
+        }
     } else {
         panic!("xdvipdfmx cannot get output logging handle?!");
     }

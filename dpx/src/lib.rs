@@ -15,26 +15,47 @@ use bridge::*;
 
 #[macro_export]
 macro_rules! info(
-    ($($arg:tt)*) => {
-        if !(unsafe{crate::dpx_error::_dpx_quietness} > 0) {
-            print!($($arg)*);
-            unsafe{crate::dpx_error::_last_message_type = crate::dpx_error::DPX_MESG_INFO;}
+    ($($arg:tt)*) => {{
+        use crate::dpx_error::{
+            _dpx_ensure_output_handle,
+            _dpx_message_handle,
+            _dpx_quietness,
+            _last_message_type,
+            DPX_MESG_INFO
+        };
+        use std::io::Write;
+        if !(unsafe{_dpx_quietness} > 0) {
+            _dpx_ensure_output_handle();
+            _dpx_message_handle.as_mut().unwrap().write_fmt(format_args!($($arg)*)).unwrap();
+            unsafe{_last_message_type = DPX_MESG_INFO;}
         }
-    };
+    }};
 );
 
 #[macro_export]
 macro_rules! warn(
-    ($($arg:tt)*) => {
-        if !(unsafe{crate::dpx_error::_dpx_quietness} > 1) {
-            if unsafe{crate::dpx_error::_last_message_type as u32 == crate::dpx_error::DPX_MESG_INFO as u32} {
-                println!("");
+    ($($arg:tt)*) => {{
+        use crate::dpx_error::{
+            _dpx_ensure_output_handle,
+            _dpx_message_handle,
+            _dpx_quietness,
+            _last_message_type,
+            DPX_MESG_INFO,
+            DPX_MESG_WARN,
+        };
+        use std::io::Write;
+        if !(unsafe{_dpx_quietness} > 1) {
+            _dpx_ensure_output_handle();
+            let handle = unsafe { _dpx_message_handle.as_mut().unwrap() };
+            if unsafe{_last_message_type as u32 == DPX_MESG_INFO as u32} {
+                writeln!(handle).unwrap();
             }
-            print!("warning: ");
-            println!($($arg)*);
-            unsafe{crate::dpx_error::_last_message_type = crate::dpx_error::DPX_MESG_WARN;}
+            write!(handle, "warning: ").unwrap();
+            handle.write_fmt(format_args!($($arg)*)).unwrap();
+            writeln!(handle).unwrap();
+            unsafe{_last_message_type = DPX_MESG_WARN;}
         }
-    };
+    }};
 );
 
 trait DisplayExt {
