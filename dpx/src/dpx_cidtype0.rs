@@ -1354,7 +1354,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     for i in 0..(cffont.num_glyphs as i32 + 7i32) / 8i32 {
         let mut c: i32 = 0;
         c = *used_chars.offset(i as isize) as i32;
-        for j in (0..7).rev() {
+        for j in (0..8).rev() {
             if c & 1i32 << j != 0 {
                 num_glyphs = num_glyphs.wrapping_add(1);
                 last_cid = ((i + 1i32) * 8i32 - j - 1i32) as u16
@@ -2260,7 +2260,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1dofont(mut font: *mut CIDFont) {
     for i in 0..(cffont.num_glyphs as i32 + 7i32) / 8i32 {
         let mut c: i32 = 0;
         c = *used_chars.offset(i as isize) as i32;
-        for j in (0..7).rev() {
+        for j in (0..8).rev() {
             if c & 1i32 << j != 0 {
                 num_glyphs += 1;
                 last_cid = ((i + 1i32) * 8i32 - j - 1i32) as u16
