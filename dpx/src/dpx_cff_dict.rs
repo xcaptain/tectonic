@@ -39,7 +39,8 @@ use crate::mfree;
 use crate::streq_ptr;
 use crate::stub_errno as errno;
 use crate::warn;
-use libc::{free, memset, sprintf, strcmp, strtod};
+use libc::{free, memset, strcmp, strtod};
+use crate::shims::sprintf;
 
 pub type rust_input_handle_t = *mut libc::c_void;
 pub type l_offset = u32;

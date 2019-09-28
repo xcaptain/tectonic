@@ -72,7 +72,8 @@ use crate::dpx_pdfparse::{
     parse_ident, parse_number, parse_pdf_array, parse_pdf_dict, parse_pdf_name, parse_pdf_string,
     pdfparse_skip_line, skip_white,
 };
-use libc::{atof, fread, free, rewind, sprintf, strchr, strcpy, strlen, strtod};
+use libc::{atof, fread, free, rewind, strchr, strcpy, strlen, strtod};
+use crate::shims::sprintf;
 
 pub type __off_t = i64;
 pub type __off64_t = i64;

@@ -48,7 +48,8 @@ use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_array, pdf_new_dict,
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
 };
-use libc::{fclose, fgetc, fopen, fread, free, memset, sprintf};
+use libc::{fclose, fgetc, fopen, fread, free, memset};
+use crate::shims::sprintf;
 
 use crate::dpx_numbers::{
     get_positive_quad, get_signed_byte, get_signed_pair, get_signed_quad, get_unsigned_byte,

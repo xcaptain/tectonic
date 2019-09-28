@@ -68,7 +68,8 @@ use super::specials::dvips::{
 };
 use crate::dpx_pdfobj::{pdf_new_number, pdf_obj, pdf_ref_obj};
 use bridge::vsnprintf;
-use libc::{atoi, memcmp, sprintf, strcmp, strlen};
+use libc::{atoi, memcmp, strcmp, strlen};
+use crate::shims::sprintf;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

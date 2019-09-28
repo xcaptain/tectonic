@@ -89,7 +89,8 @@ use crate::{
     ttstub_input_close, ttstub_input_get_size, ttstub_input_getc, ttstub_input_open,
     ttstub_input_read, ttstub_input_seek, ttstub_input_ungetc,
 };
-use libc::{atof, free, memcmp, memset, sprintf, strcmp, strlen, strncpy, strtol};
+use libc::{atof, free, memcmp, memset, strcmp, strlen, strncpy, strtol};
+use crate::shims::sprintf;
 
 use crate::TTInputFormat;
 

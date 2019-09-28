@@ -35,7 +35,8 @@ use crate::warn;
 
 use super::dpx_dpxutil::xtoi;
 use super::dpx_mem::new;
-use libc::{free, memcmp, memcpy, sprintf, strcpy, strlen, strtod, strtol};
+use libc::{free, memcmp, memcpy, strcpy, strlen, strtod, strtol};
+use crate::shims::sprintf;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

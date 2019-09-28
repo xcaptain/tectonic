@@ -50,7 +50,8 @@ use crate::{
     ttstub_output_putc, ttstub_output_write,
 };
 use bridge::_tt_abort;
-use libc::{atof, atoi, free, memcmp, memset, sprintf, sscanf, strlen, strtoul};
+use libc::{atof, atoi, free, memcmp, memset, strlen, strtoul};
+use crate::shims::{sprintf, sscanf};
 
 use libz_sys as libz;
 

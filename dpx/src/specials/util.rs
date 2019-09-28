@@ -40,7 +40,8 @@ use crate::dpx_pdfdev::{pdf_tmatrix, transform_info};
 use crate::dpx_pdfparse::skip_white;
 use crate::mfree;
 use crate::streq_ptr;
-use libc::{atof, free, memcmp, strcasecmp, strcmp, strlen};
+use libc::{atof, free, memcmp, strcmp, strlen};
+use crate::shims::strcasecmp;
 
 /* Color names */
 #[derive(Clone)]

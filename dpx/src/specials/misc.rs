@@ -38,7 +38,8 @@ use crate::dpx_pdfparse::skip_white;
 use crate::dpx_pdfximage::pdf_ximage_findresource;
 use crate::TTInputFormat;
 use crate::{ttstub_input_close, ttstub_input_open};
-use libc::{memcpy, sscanf, strlen, strncmp};
+use libc::{memcpy, strlen, strncmp};
+use crate::shims::sscanf;
 
 pub type size_t = u64;
 

@@ -121,22 +121,6 @@ extern "C" {
         s: *mut *mut FcChar8,
     ) -> FcResult;
     #[no_mangle]
-    #[cfg(not(target_os = "macos"))]
-    fn __assert_fail(
-        __assertion: *const libc::c_char,
-        __file: *const libc::c_char,
-        __line: libc::c_uint,
-        __function: *const libc::c_char,
-    ) -> !;
-    #[no_mangle]
-    #[cfg(target_os = "macos")]
-    fn __assert_rtn(
-        _: *const libc::c_char,
-        _: *const libc::c_char,
-        _: libc::c_int,
-        _: *const libc::c_char,
-    ) -> !;
-    #[no_mangle]
     fn hb_tag_from_string(str: *const libc::c_char, len: libc::c_int) -> hb_tag_t;
     #[no_mangle]
     fn hb_language_from_string(str: *const libc::c_char, len: libc::c_int) -> hb_language_t;
@@ -2247,30 +2231,7 @@ pub unsafe extern "C" fn getProtrusionFactor(mut side: libc::c_int) -> *mut Prot
             container = rightProt
         }
         _ => {
-            #[cfg(not(target_os = "macos"))]
-            {
-                __assert_fail(
-                    b"0\x00" as *const u8 as *const libc::c_char,
-                    b"xetex-XeTeXLayoutInterface.c\x00" as *const u8 as *const libc::c_char,
-                    175i32 as libc::c_uint,
-                    (*::std::mem::transmute::<&[u8; 43], &[libc::c_char; 43]>(
-                        b"ProtrusionFactor *getProtrusionFactor(int)\x00",
-                    ))
-                    .as_ptr(),
-                );
-            }
-            #[cfg(target_os = "macos")]
-            {
-                __assert_rtn(
-                    (*::std::mem::transmute::<&[u8; 20], &[libc::c_char; 20]>(
-                        b"getProtrusionFactor\x00",
-                    ))
-                    .as_ptr(),
-                    b"xetex-XeTeXLayoutInterface.c\x00" as *const u8 as *const libc::c_char,
-                    175i32,
-                    b"0\x00" as *const u8 as *const libc::c_char,
-                );
-            }
+            unreachable!();
         }
     }
     return container;
@@ -2453,7 +2414,7 @@ unsafe extern "C" fn getLargerScriptListTable(
     );
     scriptListSub = xcalloc(
         scriptCountSub as size_t,
-        ::std::mem::size_of::<*mut hb_tag_t>() as libc::c_ulong,
+        ::std::mem::size_of::<*mut hb_tag_t>() as _,
     ) as *mut hb_tag_t;
     hb_ot_layout_table_get_script_tags(
         face,
@@ -2477,7 +2438,7 @@ unsafe extern "C" fn getLargerScriptListTable(
     );
     scriptListPos = xcalloc(
         scriptCountPos as size_t,
-        ::std::mem::size_of::<*mut hb_tag_t>() as libc::c_ulong,
+        ::std::mem::size_of::<*mut hb_tag_t>() as _,
     ) as *mut hb_tag_t;
     hb_ot_layout_table_get_script_tags(
         face,
@@ -2590,7 +2551,7 @@ pub unsafe extern "C" fn getIndLanguage(
                 );
                 langList = xcalloc(
                     langCount as size_t,
-                    ::std::mem::size_of::<*mut hb_tag_t>() as libc::c_ulong,
+                    ::std::mem::size_of::<*mut hb_tag_t>() as _,
                 ) as *mut hb_tag_t;
                 hb_ot_layout_script_get_language_tags(
                     face,
@@ -2621,7 +2582,7 @@ pub unsafe extern "C" fn getIndLanguage(
                     );
                     langList = xcalloc(
                         langCount as size_t,
-                        ::std::mem::size_of::<*mut hb_tag_t>() as libc::c_ulong,
+                        ::std::mem::size_of::<*mut hb_tag_t>() as _,
                     ) as *mut hb_tag_t;
                     hb_ot_layout_script_get_language_tags(
                         face,
@@ -2743,7 +2704,7 @@ pub unsafe extern "C" fn getIndFeature(
                 );
                 let mut featList: *mut hb_tag_t = xcalloc(
                     featCount as size_t,
-                    ::std::mem::size_of::<*mut hb_tag_t>() as libc::c_ulong,
+                    ::std::mem::size_of::<*mut hb_tag_t>() as _,
                 ) as *mut hb_tag_t;
                 hb_ot_layout_language_get_feature_tags(
                     face,
@@ -3155,7 +3116,7 @@ pub unsafe extern "C" fn layoutChars(
         // fails, we set the shaper list to just include it.
         (*engine).ShaperList = xcalloc(
             2i32 as size_t,
-            ::std::mem::size_of::<*mut libc::c_char>() as libc::c_ulong,
+            ::std::mem::size_of::<*mut libc::c_char>() as _,
         ) as *mut *mut libc::c_char;
         let ref mut fresh0 = *(*engine).ShaperList.offset(0);
         *fresh0 = b"ot\x00" as *const u8 as *const libc::c_char as *mut libc::c_char;

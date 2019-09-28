@@ -2152,7 +2152,7 @@ unsafe extern "C" fn _get_glyph_advance(
     let mut advance: FT_Fixed = 0;
     let mut flags: libc::c_int = (1i64 << 0i32) as libc::c_int;
     if vertical {
-        flags = (flags as libc::c_long | 1i64 << 4i32) as libc::c_int
+        flags = (flags as libc::c_long | 1 << 4i32) as libc::c_int
     }
     error = FT_Get_Advance(face, gid, flags, &mut advance);
     if error != 0 {
@@ -2478,7 +2478,7 @@ unsafe extern "C" fn _get_table(
         &mut length,
     );
     if error == 0 {
-        table = xmalloc(length.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong))
+        table = xmalloc(length.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _)
             as *mut FT_Byte;
         if !table.is_null() {
             error = FT_Load_Sfnt_Table(face, tag as FT_ULong, 0i32 as FT_Long, table, &mut length);
@@ -2544,12 +2544,12 @@ pub unsafe extern "C" fn XeTeXFontInst_initialize(
         index as FT_Long,
         &mut (*self_0).m_ftFace,
     );
-    if (*(*self_0).m_ftFace).face_flags & 1i64 << 0i32 == 0 {
+    if (*(*self_0).m_ftFace).face_flags & 1 << 0i32 == 0 {
         *status = 1i32;
         return;
     }
     /* for non-sfnt-packaged fonts (presumably Type 1), see if there is an AFM file we can attach */
-    if index == 0i32 && (*(*self_0).m_ftFace).face_flags & 1i64 << 3i32 == 0 {
+    if index == 0i32 && (*(*self_0).m_ftFace).face_flags & 1 << 3i32 == 0 {
         // Tectonic: this code used to use kpse_find_file and FT_Attach_File
         // to try to find metrics for this font. Thanks to the existence of
         // FT_Attach_Stream we can emulate this behavior while going through
@@ -2673,7 +2673,7 @@ pub unsafe extern "C" fn XeTeXFontInst_getFontTable(
         return 0 as *mut libc::c_void;
     }
     let mut table: *mut libc::c_void =
-        xmalloc(tmpLength.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong));
+        xmalloc(tmpLength.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _);
     if !table.is_null() {
         error = FT_Load_Sfnt_Table(
             (*self_0).m_ftFace,
@@ -2922,7 +2922,7 @@ pub unsafe extern "C" fn XeTeXFontInst_getGlyphName(
     mut gid: GlyphID,
     mut nameLen: *mut libc::c_int,
 ) -> *const libc::c_char {
-    if (*(*self_0).m_ftFace).face_flags & 1i64 << 9i32 != 0 {
+    if (*(*self_0).m_ftFace).face_flags & 1 << 9i32 != 0 {
         static mut buffer: [libc::c_char; 256] = [0; 256];
         FT_Get_Glyph_Name(
             (*self_0).m_ftFace,

@@ -63,7 +63,8 @@ use crate::dpx_pdfobj::{
 use crate::mfree;
 use crate::streq_ptr;
 use crate::{info, warn};
-use libc::{free, memset, rand, snprintf, sprintf, srand, strcpy, strlen, strstr};
+use libc::{free, memset, rand, srand, strcpy, strlen, strstr};
+use crate::shims::{sprintf, snprintf};
 
 /* Options */
 use super::dpx_fontmap::fontmap_rec;

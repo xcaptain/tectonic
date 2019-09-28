@@ -174,6 +174,7 @@ pub mod dpx_type1c;
 pub mod dpx_unicode;
 pub mod dpx_vf;
 pub mod specials;
+mod shims;
 
 pub use crate::dpx_dvipdfmx::dvipdfmx_main;
 

@@ -56,7 +56,8 @@ use crate::dpx_pdfobj::{
     pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_pdfparse::parse_val_ident;
-use libc::{atof, free, memcmp, sprintf, strlen};
+use libc::{atof, free, memcmp, strlen};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

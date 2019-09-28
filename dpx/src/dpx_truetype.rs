@@ -69,7 +69,8 @@ use crate::dpx_pdfobj::{
     PdfObjType,
 };
 use crate::ttstub_input_close;
-use libc::{atoi, free, memcpy, memmove, memset, sprintf, strchr, strcpy, strlen, strncpy};
+use libc::{atoi, free, memcpy, memmove, memset, strchr, strcpy, strlen, strncpy};
+use crate::shims::sprintf;
 
 pub type rust_input_handle_t = *mut libc::c_void;
 
