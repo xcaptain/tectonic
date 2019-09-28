@@ -20,7 +20,7 @@ extern "C" {
 pub type size_t = u64;
 pub type ssize_t = i64;
 
-pub type rust_output_handle_t = *mut libc::c_void;
+type rust_output_handle_t = *mut libc::c_void;
 pub type rust_input_handle_t = *mut libc::c_void;
 
 #[derive(PartialEq)]
