@@ -19,3 +19,6 @@ chrono = "0.4.9"
 [features]
 default = ['libz-sys']
 legacy-libz = ['libz-sys']
+
+[build-dependencies]
+cc = "^1.0"

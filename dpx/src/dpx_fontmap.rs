@@ -48,9 +48,10 @@ use super::dpx_mfileio::tt_mfgets;
 use super::dpx_subfont::{release_sfd_record, sfd_get_subfont_ids};
 use crate::ttstub_input_close;
 use libc::{
-    atof, atoi, free, memcmp, memcpy, sprintf, strcat, strchr, strcmp, strcpy, strlen, strstr,
+    atof, atoi, free, memcmp, memcpy, strcat, strchr, strcmp, strcpy, strlen, strstr,
     strtol, strtoul,
 };
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

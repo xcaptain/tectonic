@@ -42,9 +42,10 @@ use crate::dpx_pdfobj::{
 };
 use crate::mfree;
 use crate::{info, warn};
-use libc::{free, memcmp, memcpy, memset, sprintf, strcmp, strcpy, strlen};
+use libc::{free, memcmp, memcpy, memset, strcmp, strcpy, strlen};
 use md5::{Digest, Md5};
 use std::slice::from_raw_parts;
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

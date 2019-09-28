@@ -44,7 +44,7 @@ use super::dpx_pdfdoc::pdf_doc_add_page_content;
 // TODO move to context structure
 static mut gs_stack: Vec<pdf_gstate> = Vec::new();
 
-use libc::sprintf;
+use crate::shims::sprintf;
 
 pub use super::dpx_pdfcolor::pdf_color;
 

@@ -77,7 +77,8 @@ use crate::dpx_pdfobj::{
     pdf_string_value, PdfObjType,
 };
 use crate::{ttstub_input_close, ttstub_input_open};
-use libc::{free, memcpy, sprintf, strcmp, strcpy, strlen, strncmp, strncpy};
+use libc::{free, memcpy, strcmp, strcpy, strlen, strncmp, strncpy};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

@@ -2288,7 +2288,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_getOpSize(
     }
     let mut face: *mut hb_face_t = hb_font_get_face(hbFont);
     let mut pSizeRec: *mut XeTeXFontMgrOpSizeRec =
-        xmalloc(::std::mem::size_of::<XeTeXFontMgrOpSizeRec>() as libc::c_ulong)
+        xmalloc(::std::mem::size_of::<XeTeXFontMgrOpSizeRec>() as _)
             as *mut XeTeXFontMgrOpSizeRec;
     let mut ok: bool = hb_ot_layout_get_size_params(
         face,

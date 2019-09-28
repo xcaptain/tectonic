@@ -57,7 +57,8 @@ use super::dpx_pdfximage::{
 use super::modf;
 use crate::dpx_pdfobj::{pdf_link_obj, pdf_obj, pdf_release_obj, pdfobj_escape_str};
 use crate::streq_ptr;
-use libc::{free, sprintf, strcpy, strlen};
+use libc::{free, strcpy, strlen};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

@@ -68,7 +68,8 @@ use crate::dpx_pdfobj::pdf_obj;
 use crate::dpx_truetype::sfnt_table_info;
 use crate::mfree;
 use crate::{ttstub_input_close, ttstub_input_seek};
-use libc::{free, memcpy, memset, sprintf, strcpy, strlen};
+use libc::{free, memcpy, memset, strcpy, strlen};
+use crate::shims::sprintf;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;

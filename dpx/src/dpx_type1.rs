@@ -60,7 +60,8 @@ use crate::dpx_pdfobj::{
     pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
 use crate::{ttstub_input_close, ttstub_input_open};
-use libc::{free, memset, sprintf, strlen, strstr};
+use libc::{free, memset, strlen, strstr};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 

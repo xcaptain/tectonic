@@ -62,7 +62,8 @@ use crate::dpx_pdfobj::{
     pdf_release_obj, pdf_stream_length,
 };
 use crate::ttstub_input_close;
-use libc::{free, memmove, memset, sprintf, strcat, strcmp, strcpy, strlen, strncpy, strstr};
+use libc::{free, memmove, memset, strcat, strcmp, strcpy, strlen, strncpy, strstr};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 pub type rust_input_handle_t = *mut libc::c_void;

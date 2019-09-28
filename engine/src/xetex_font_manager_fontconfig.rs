@@ -1799,7 +1799,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
     /* this string is *not* null-terminated! */
     /* in bytes                              */
     // for sfnt containers, we'll read the name table ourselves, not rely on Fontconfig
-    if (*face).face_flags & 1i64 << 3i32 != 0 {
+    if (*face).face_flags & 1 << 3i32 != 0 {
         let mut i: libc::c_uint = 0;
         let mut familyNames: *mut CppStdListOfString = CppStdListOfString_create();
         let mut subFamilyNames: *mut CppStdListOfString = CppStdListOfString_create();

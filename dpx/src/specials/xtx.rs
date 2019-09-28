@@ -51,7 +51,8 @@ use crate::dpx_pdfdraw::{
 };
 use crate::dpx_pdfparse::{parse_ident, parse_val_ident, skip_white};
 use crate::streq_ptr;
-use libc::{free, memcmp, sprintf, strlen, strncmp, strncpy};
+use libc::{free, memcmp, strlen, strncmp, strncpy};
+use crate::shims::sprintf;
 
 pub type size_t = u64;
 
