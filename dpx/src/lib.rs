@@ -9,6 +9,7 @@
     unused_mut,
     unused_unsafe
 )]
+#![deny(clippy::reverse_range_loop)]
 
 extern crate tectonic_bridge as bridge;
 use bridge::*;

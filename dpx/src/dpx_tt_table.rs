@@ -527,14 +527,13 @@ pub unsafe extern "C" fn tt_read_longMetrics(
     mut numExSideBearings: u16,
 ) -> *mut tt_longMetrics {
     let mut m: *mut tt_longMetrics = 0 as *mut tt_longMetrics;
-    let mut gid: u16 = 0;
     let mut last_adv: u16 = 0_u16;
     let mut last_esb: i16 = 0_i16;
     m = new(
         (numGlyphs as u32 as u64).wrapping_mul(::std::mem::size_of::<tt_longMetrics>() as u64)
             as u32,
     ) as *mut tt_longMetrics;
-    for _ in 0..numGlyphs {
+    for gid in 0..numGlyphs {
         if (gid as i32) < numLongMetrics as i32 {
             last_adv = tt_get_unsigned_pair((*sfont).handle)
         }
