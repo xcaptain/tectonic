@@ -1688,7 +1688,7 @@ unsafe extern "C" fn dev_sprint_line(
         } else {
             8i32
         },
-        &mut format_buffer[len..],
+        &mut buf[len..],
     );
     buf[len] = b' ';
     len += 1;
