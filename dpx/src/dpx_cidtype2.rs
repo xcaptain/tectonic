@@ -66,7 +66,7 @@ use libc::{free, memmove, memset, strcat, strcmp, strcpy, strlen, strncpy, strst
 use crate::shims::sprintf;
 
 pub type size_t = u64;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 use super::dpx_cid::{cid_opt, CIDFont, CIDSysInfo};
 

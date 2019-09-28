@@ -33,7 +33,7 @@ use dpx::dpx_pdfobj::{pdf_close, pdf_file, pdf_obj, pdf_open, pdf_release_obj};
 use dpx::dpx_pngimage::{check_for_png, png_get_bbox};
 use libc::{free, memcpy, strlen};
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type scaled_t = i32;
 pub type Fixed = scaled_t;
 pub type str_number = i32;

@@ -67,7 +67,7 @@ pub type size_t = u64;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 use super::dpx_cff::cff_index;
 /* quasi-hack to get the primary input */

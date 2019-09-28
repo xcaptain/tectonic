@@ -72,7 +72,7 @@ use crate::ttstub_input_close;
 use libc::{atoi, free, memcpy, memmove, memset, strchr, strcpy, strlen, strncpy};
 use crate::shims::sprintf;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 use super::dpx_sfnt::{put_big_endian, sfnt};
 
@@ -1120,7 +1120,6 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     let mut fontfile: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
     let mut sfont: *mut sfnt = 0 as *mut sfnt;
-    let mut i: i32 = 0;
     let mut error: i32 = 0i32;
     if !pdf_font_is_in_use(font) {
         return 0i32;

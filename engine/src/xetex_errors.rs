@@ -8,7 +8,8 @@
     unused_mut
 )]
 
-use crate::ttstub_output_flush;
+use std::io::Write;
+
 use crate::xetex_ini::{
     error_count, file_line_error_style_p, halt_on_error_p, help_line, help_ptr, history,
     interaction, job_name, log_opened, rust_stdout, selector, use_err_help,
@@ -20,8 +21,6 @@ use crate::xetex_xetex0::{close_files_and_terminate, give_err_help, open_log_fil
 use bridge::_tt_abort;
 
 use crate::TTHistory;
-
-pub type rust_output_handle_t = *mut libc::c_void;
 
 use super::xetex_ini::Selector;
 
@@ -60,7 +59,7 @@ unsafe extern "C" fn post_error_message(mut need_to_print_it: i32) {
     }
     history = TTHistory::FATAL_ERROR;
     close_files_and_terminate();
-    ttstub_output_flush(rust_stdout);
+    rust_stdout.as_mut().unwrap().flush().unwrap();
 }
 #[no_mangle]
 pub unsafe extern "C" fn error() {
@@ -110,7 +109,7 @@ pub unsafe extern "C" fn fatal_error(mut s: *const i8) -> ! {
     print_cstr(b"Emergency stop\x00" as *const u8 as *const i8);
     print_nl_cstr(s);
     close_files_and_terminate();
-    ttstub_output_flush(rust_stdout);
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     _tt_abort(b"%s\x00" as *const u8 as *const i8, s);
 }
 #[no_mangle]

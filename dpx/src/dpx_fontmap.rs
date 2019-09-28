@@ -57,7 +57,7 @@ pub type size_t = u64;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fontmap_opt {

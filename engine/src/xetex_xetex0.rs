@@ -8,6 +8,8 @@
     unused_mut
 )]
 
+use std::io::Write;
+
 use super::xetex_io::{
     bytesFromUTF8, make_utf16_name, name_of_input_file, offsetsFromUTF8, tt_xetex_open_input,
     u_open_in,
@@ -95,7 +97,7 @@ use crate::xetex_texmfmp::{
 use crate::xetex_xetexd::{is_char_node, is_non_discardable_node, print_c_string};
 use crate::{
     ttstub_input_close, ttstub_input_getc, ttstub_issue_warning, ttstub_output_close,
-    ttstub_output_flush, ttstub_output_open, ttstub_output_putc,
+    ttstub_output_open, ttstub_output_putc,
 };
 use bridge::_tt_abort;
 use libc::{free, memcpy, strcat, strcpy, strlen};
@@ -108,8 +110,7 @@ pub type size_t = u64;
 
 use crate::{TTHistory, TTInputFormat};
 
-pub type rust_output_handle_t = *mut libc::c_void;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type scaled_t = i32;
 pub type Fixed = scaled_t;
 pub type CFDictionaryRef = *mut libc::c_void;
@@ -7208,7 +7209,7 @@ pub unsafe extern "C" fn get_next() {
                             if cur_input.name >= 19i32 {
                                 print_char(')' as i32);
                                 open_parens -= 1;
-                                ttstub_output_flush(rust_stdout);
+                                rust_stdout.as_mut().unwrap().flush().unwrap();
                             }
                             force_eof = false;
                             end_file_reading();
@@ -13285,7 +13286,7 @@ pub unsafe extern "C" fn pseudo_start() {
         cur_input.name = 19i32;
         print_cstr(b"( \x00" as *const u8 as *const i8);
         open_parens += 1;
-        ttstub_output_flush(rust_stdout);
+        rust_stdout.as_mut().unwrap().flush().unwrap();
     } else {
         cur_input.name = 18i32;
         cur_input.synctex_tag = 0i32
@@ -15142,7 +15143,7 @@ pub unsafe extern "C" fn open_log_file() {
     }
     pack_job_name(b".log\x00" as *const u8 as *const i8);
     log_file = ttstub_output_open(name_of_file, 0i32);
-    if log_file.is_null() {
+    if log_file.is_none() {
         _tt_abort(
             b"cannot open log file output \"%s\"\x00" as *const u8 as *const i8,
             name_of_file,
@@ -15452,7 +15453,7 @@ pub unsafe extern "C" fn start_input(mut primary_input_name: *const i8) {
     print_char('(' as i32);
     open_parens += 1;
     print(*full_source_filename_stack.offset(in_open as isize));
-    ttstub_output_flush(rust_stdout);
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     cur_input.state = 33_u16;
     synctex_start_input();
     line = 1i32;
@@ -25996,7 +25997,7 @@ pub unsafe extern "C" fn issue_message() {
             print_char(' ' as i32);
         }
         print(s);
-        ttstub_output_flush(rust_stdout);
+        rust_stdout.as_mut().unwrap().flush().unwrap();
     } else {
         if file_line_error_style_p != 0 {
             print_file_line();
@@ -30167,15 +30168,16 @@ pub unsafe extern "C" fn close_files_and_terminate() {
     k = 0i32;
     while k <= 15i32 {
         if write_open[k as usize] {
-            ttstub_output_close(write_file[k as usize]);
+            ttstub_output_close(write_file[k as usize].take().unwrap());
         }
         k += 1
     }
     finalize_dvi_file();
     synctex_terminate(log_opened);
     if log_opened {
-        ttstub_output_putc(log_file, '\n' as i32);
-        ttstub_output_close(log_file);
+        ttstub_output_putc(log_file.as_mut().unwrap(), '\n' as i32);
+        ttstub_output_close(log_file.take().unwrap());
+        log_file = None;
         selector = u8::from(selector).wrapping_sub(2).into();
         if selector == Selector::TERM_ONLY {
             print_nl_cstr(b"Transcript written on \x00" as *const u8 as *const i8);

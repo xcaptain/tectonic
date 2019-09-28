@@ -94,7 +94,7 @@ use crate::shims::sprintf;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 pub type fixword = i32;
 /* quasi-hack to get the primary input */
 

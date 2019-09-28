@@ -8,6 +8,8 @@
     unused_mut
 )]
 
+use std::io::Write;
+
 use crate::core_memory::xmalloc;
 use crate::xetex_errors::{confusion, error, fatal_error, overflow};
 use crate::xetex_ext::{
@@ -45,12 +47,12 @@ use crate::xetex_xetex0::{
     scan_toks, show_box, show_token_list, token_show,
 };
 use crate::xetex_xetexd::{is_char_node, print_c_string};
-use crate::{ttstub_output_close, ttstub_output_flush, ttstub_output_open, ttstub_output_write};
+use crate::{ttstub_output_close, ttstub_output_open};
 use bridge::_tt_abort;
 use libc::{free, strerror, strlen};
 
 pub type size_t = u64;
-pub type rust_output_handle_t = *mut libc::c_void;
+use bridge::OutputHandleWrapper;
 pub type scaled_t = i32;
 
 /* tectonic/xetex-xetexd.h -- many, many XeTeX symbol definitions
@@ -62,7 +64,6 @@ pub type scaled_t = i32;
 /*11:*/
 /*18: */
 pub type UTF16_code = u16;
-pub type eight_bits = u8;
 pub type pool_pointer = i32;
 pub type str_number = i32;
 pub type packed_UTF16_code = u16;
@@ -149,9 +150,9 @@ unsafe extern "C" fn cur_length() -> pool_pointer {
     pool_ptr - *str_start.offset((str_ptr - 65536i32) as isize)
 }
 /* DVI code */
-static mut dvi_file: rust_output_handle_t = 0 as *const libc::c_void as *mut libc::c_void;
+static mut dvi_file: Option<OutputHandleWrapper> = None;
 static mut output_file_name: str_number = 0;
-static mut dvi_buf: *mut eight_bits = 0 as *const eight_bits as *mut eight_bits;
+static mut dvi_buf: *mut u8 = 0 as *const u8 as *mut u8;
 static mut dvi_limit: i32 = 0;
 static mut g: i32 = 0;
 static mut lq: i32 = 0;
@@ -168,9 +169,8 @@ static mut cur_s: i32 = 0;
 #[no_mangle]
 pub unsafe extern "C" fn initialize_shipout_variables() {
     output_file_name = 0i32;
-    dvi_buf = xmalloc(
-        ((16384i32 + 1i32) as u64).wrapping_mul(::std::mem::size_of::<eight_bits>() as u64),
-    ) as *mut eight_bits;
+    dvi_buf = xmalloc(((16384i32 + 1i32) as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64))
+        as *mut u8;
     dvi_limit = 16384i32;
     dvi_ptr = 0i32;
     dvi_offset = 0i32;
@@ -182,10 +182,10 @@ pub unsafe extern "C" fn initialize_shipout_variables() {
 #[no_mangle]
 pub unsafe extern "C" fn deinitialize_shipout_variables() {
     free(dvi_buf as *mut libc::c_void);
-    dvi_buf = 0 as *mut eight_bits;
+    dvi_buf = 0 as *mut u8;
 }
 #[inline]
-unsafe extern "C" fn dvi_out(mut c: eight_bits) {
+unsafe extern "C" fn dvi_out(mut c: u8) {
     let fresh1 = dvi_ptr;
     dvi_ptr = dvi_ptr + 1;
     *dvi_buf.offset(fresh1 as isize) = c;
@@ -350,7 +350,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         }
         k = k.wrapping_add(1)
     }
-    ttstub_output_flush(rust_stdout);
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     if (*eqtb.offset(
         (1i32
             + (0x10ffffi32 + 1i32)
@@ -896,7 +896,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
             }
             pack_job_name(output_file_extension);
             dvi_file = ttstub_output_open(name_of_file, 0i32);
-            if dvi_file.is_null() {
+            if dvi_file.is_none() {
                 _tt_abort(
                     b"cannot open output file \"%s\"\x00" as *const u8 as *const i8,
                     name_of_file,
@@ -906,11 +906,11 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         }
         /* First page? Emit preamble items. */
         if total_pages == 0i32 {
-            dvi_out(247i32 as eight_bits); /* magic values: conversion ratio for sp */
+            dvi_out(247i32 as u8); /* magic values: conversion ratio for sp */
             if semantic_pagination_enabled {
-                dvi_out(100i32 as eight_bits); /* magic values: conversion ratio for sp */
+                dvi_out(100i32 as u8); /* magic values: conversion ratio for sp */
             } else {
-                dvi_out(7i32 as eight_bits);
+                dvi_out(7i32 as u8);
             }
             dvi_four(25400000i64 as i32);
             dvi_four(473628672i64 as i32);
@@ -950,13 +950,13 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
             dvi_out(l);
             s = 0i32;
             while s < l as i32 {
-                dvi_out(*output_comment.offset(s as isize) as eight_bits);
+                dvi_out(*output_comment.offset(s as isize) as u8);
                 s += 1
             }
         }
         /* ... resuming 662 ... Emit per-page preamble. */
         page_loc = dvi_offset + dvi_ptr;
-        dvi_out(139i32 as eight_bits);
+        dvi_out(139i32 as u8);
         k = 0_u8;
         while (k as i32) < 10i32 {
             dvi_four(
@@ -1143,11 +1143,11 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
             print_cstr(b"pt\x00" as *const u8 as *const i8);
         }
         selector = old_setting;
-        dvi_out(239i32 as eight_bits);
-        dvi_out(cur_length() as eight_bits);
+        dvi_out(239i32 as u8);
+        dvi_out(cur_length() as u8);
         s = *str_start.offset((str_ptr - 65536i32) as isize);
         while s < pool_ptr {
-            dvi_out(*str_pool.offset(s as isize) as eight_bits);
+            dvi_out(*str_pool.offset(s as isize) as u8);
             s += 1
         }
         pool_ptr = *str_start.offset((str_ptr - 65536i32) as isize);
@@ -1191,7 +1191,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         } else {
             hlist_out();
         }
-        dvi_out(140i32 as eight_bits);
+        dvi_out(140i32 as u8);
         total_pages += 1;
         cur_s = -1i32
     }
@@ -1243,7 +1243,7 @@ pub unsafe extern "C" fn ship_out(mut p: i32) {
         print_char(']' as i32);
     }
     dead_cycles = 0i32;
-    ttstub_output_flush(rust_stdout);
+    rust_stdout.as_mut().unwrap().flush().unwrap();
     flush_node_list(p);
     synctex_teehs();
 }
@@ -1554,7 +1554,7 @@ unsafe extern "C" fn hlist_out() {
     p = (*mem.offset((this_box + 5i32) as isize)).b32.s1; /* this is list_offset, the offset of the box list pointer */
     cur_s += 1;
     if cur_s > 0i32 {
-        dvi_out(141i32 as eight_bits);
+        dvi_out(141i32 as u8);
     }
     if cur_s > max_push {
         max_push = cur_s
@@ -1603,11 +1603,11 @@ unsafe extern "C" fn hlist_out() {
                  {
                 if is_char_node(p) {
                     if cur_h != dvi_h {
-                        movement(cur_h - dvi_h, 143i32 as eight_bits);
+                        movement(cur_h - dvi_h, 143i32 as u8);
                         dvi_h = cur_h
                     }
                     if cur_v != dvi_v {
-                        movement(cur_v - dvi_v, 157i32 as eight_bits);
+                        movement(cur_v - dvi_v, 157i32 as u8);
                         dvi_v = cur_v
                     }
                     loop  {
@@ -1631,14 +1631,14 @@ unsafe extern "C" fn hlist_out() {
                                 *font_used.offset(f as isize) = true
                             }
                             if f <= 64i32 {
-                                dvi_out((f + 171i32 - 1i32) as eight_bits);
+                                dvi_out((f + 171i32 - 1i32) as u8);
                             } else if f <= 256i32 {
-                                dvi_out(235i32 as eight_bits);
-                                dvi_out((f - 1i32) as eight_bits);
+                                dvi_out(235i32 as u8);
+                                dvi_out((f - 1i32) as u8);
                             } else {
-                                dvi_out((235i32 + 1i32) as eight_bits);
-                                dvi_out(((f - 1i32) / 256i32) as eight_bits);
-                                dvi_out(((f - 1i32) % 256i32) as eight_bits);
+                                dvi_out((235i32 + 1i32) as u8);
+                                dvi_out(((f - 1i32) / 256i32) as u8);
+                                dvi_out(((f - 1i32) % 256i32) as u8);
                             }
                             dvi_f = f
                         }
@@ -1653,9 +1653,9 @@ unsafe extern "C" fn hlist_out() {
                                        i32 > 0i32 {
                                     /* if (char_exists(orig_char_info(f)(c))) */
                                     if c as i32 >= 128i32 {
-                                        dvi_out(128i32 as eight_bits);
+                                        dvi_out(128i32 as u8);
                                     }
-                                    dvi_out(c as eight_bits);
+                                    dvi_out(c as u8);
                                     cur_h +=
                                         (*font_info.offset((*width_base.offset(f
                                                                                    as
@@ -1741,13 +1741,13 @@ unsafe extern "C" fn hlist_out() {
                                     if cur_h != dvi_h {
                                         movement(cur_h - dvi_h,
                                                  143i32 as
-                                                     eight_bits); /* glyph count */
+                                                     u8); /* glyph count */
                                         dvi_h = cur_h
                                     } /* x offset, as fixed-point */
                                     if cur_v != dvi_v {
                                         movement(cur_v - dvi_v,
                                                  157i32 as
-                                                     eight_bits); /* y offset, as fixed-point */
+                                                     u8); /* y offset, as fixed-point */
                                         dvi_v = cur_v
                                     } /* end of WHATSIT_NODE case */
                                     f =
@@ -1762,23 +1762,23 @@ unsafe extern "C" fn hlist_out() {
                                         }
                                         if f <= 64i32 {
                                             dvi_out((f + 170i32) as
-                                                        eight_bits);
+                                                        u8);
                                         } else if f <= 256i32 {
-                                            dvi_out(235i32 as eight_bits);
-                                            dvi_out((f - 1i32) as eight_bits);
+                                            dvi_out(235i32 as u8);
+                                            dvi_out((f - 1i32) as u8);
                                         } else {
                                             dvi_out((235i32 + 1i32) as
-                                                        eight_bits);
+                                                        u8);
                                             dvi_out(((f - 1i32) / 256i32) as
-                                                        eight_bits);
+                                                        u8);
                                             dvi_out(((f - 1i32) % 256i32) as
-                                                        eight_bits);
+                                                        u8);
                                         }
                                         dvi_f = f
                                     }
                                     if (*mem.offset(p as isize)).b16.s0 as
                                            i32 == 42i32 {
-                                        dvi_out(253i32 as eight_bits);
+                                        dvi_out(253i32 as u8);
                                         dvi_four((*mem.offset((p + 1i32) as
                                                                   isize)).b32.s1);
                                         dvi_two(1i32 as UTF16_code);
@@ -1798,7 +1798,7 @@ unsafe extern "C" fn hlist_out() {
                                                    !(*mem.offset((p + 5i32) as
                                                                      isize)).ptr.is_null()
                                                {
-                                                dvi_out(254i32 as eight_bits);
+                                                dvi_out(254i32 as u8);
                                                 len =
                                                     (*mem.offset((p + 4i32) as
                                                                      isize)).b16.s1
@@ -1833,14 +1833,14 @@ unsafe extern "C" fn hlist_out() {
                                                                                    as
                                                                                    isize)
                                                                 as
-                                                                eight_bits);
+                                                                u8);
                                                     k += 1
                                                 }
                                             }
                                         } else if !(*mem.offset((p + 5i32) as
                                                                     isize)).ptr.is_null()
                                          {
-                                            dvi_out(253i32 as eight_bits);
+                                            dvi_out(253i32 as u8);
                                             len =
                                                 makeXDVGlyphArrayData(&mut *mem.offset(p
                                                                                            as
@@ -1854,7 +1854,7 @@ unsafe extern "C" fn hlist_out() {
                                                 dvi_out(*xdv_buffer.offset(k
                                                                                as
                                                                                isize)
-                                                            as eight_bits);
+                                                            as u8);
                                                 k += 1
                                             }
                                         }
@@ -2136,12 +2136,12 @@ unsafe extern "C" fn hlist_out() {
                             /*650: "Output a leader box at cur_h, then advance cur_h by leader_wd + lx" */
                             cur_v = base_line + (*mem.offset((leader_box + 4i32) as isize)).b32.s1;
                             if cur_v != dvi_v {
-                                movement(cur_v - dvi_v, 157i32 as eight_bits);
+                                movement(cur_v - dvi_v, 157i32 as u8);
                                 dvi_v = cur_v
                             }
                             save_v = dvi_v;
                             if cur_h != dvi_h {
-                                movement(cur_h - dvi_h, 143i32 as eight_bits);
+                                movement(cur_h - dvi_h, 143i32 as u8);
                                 dvi_h = cur_h
                             }
                             save_h = dvi_h;
@@ -2192,15 +2192,15 @@ unsafe extern "C" fn hlist_out() {
                 rule_ht += rule_dp;
                 if rule_ht > 0i32 && rule_wd > 0i32 {
                     if cur_h != dvi_h {
-                        movement(cur_h - dvi_h, 143i32 as eight_bits);
+                        movement(cur_h - dvi_h, 143i32 as u8);
                         dvi_h = cur_h
                     }
                     cur_v = base_line + rule_dp;
                     if cur_v != dvi_v {
-                        movement(cur_v - dvi_v, 157i32 as eight_bits);
+                        movement(cur_v - dvi_v, 157i32 as u8);
                         dvi_v = cur_v
                     }
-                    dvi_out(132i32 as eight_bits);
+                    dvi_out(132i32 as u8);
                     dvi_four(rule_ht);
                     dvi_four(rule_wd);
                     cur_v = base_line;
@@ -2281,7 +2281,7 @@ unsafe extern "C" fn vlist_out() {
     upwards = (*mem.offset(this_box as isize)).b16.s0 as i32 == 1i32;
     cur_s += 1;
     if cur_s > 0i32 {
-        dvi_out(141i32 as eight_bits);
+        dvi_out(141i32 as u8);
     }
     if cur_s > max_push {
         max_push = cur_s
@@ -2328,7 +2328,7 @@ unsafe extern "C" fn vlist_out() {
                             cur_v += (*mem.offset((p + 3i32) as isize)).b32.s1
                         }
                         if cur_v != dvi_v {
-                            movement(cur_v - dvi_v, 157i32 as eight_bits);
+                            movement(cur_v - dvi_v, 157i32 as u8);
                             dvi_v = cur_v
                         }
                         save_h = dvi_h;
@@ -2368,11 +2368,11 @@ unsafe extern "C" fn vlist_out() {
                             cur_v = cur_v + (*mem.offset((p + 3i32) as isize)).b32.s1;
                             cur_h = left_edge;
                             if cur_h != dvi_h {
-                                movement(cur_h - dvi_h, 143i32 as eight_bits);
+                                movement(cur_h - dvi_h, 143i32 as u8);
                                 dvi_h = cur_h
                             }
                             if cur_v != dvi_v {
-                                movement(cur_v - dvi_v, 157i32 as eight_bits);
+                                movement(cur_v - dvi_v, 157i32 as u8);
                                 dvi_v = cur_v
                             }
                             f = (*mem.offset((p + 4i32) as isize)).b16.s2 as internal_font_number;
@@ -2383,18 +2383,18 @@ unsafe extern "C" fn vlist_out() {
                                     *font_used.offset(f as isize) = true
                                 } /* glyph count */
                                 if f <= 64i32 {
-                                    dvi_out((f + 170i32) as eight_bits); /* x offset as fixed-point */
+                                    dvi_out((f + 170i32) as u8); /* x offset as fixed-point */
                                 } else if f <= 256i32 {
-                                    dvi_out(235i32 as eight_bits); /* y offset as fixed-point */
-                                    dvi_out((f - 1i32) as eight_bits);
+                                    dvi_out(235i32 as u8); /* y offset as fixed-point */
+                                    dvi_out((f - 1i32) as u8);
                                 } else {
-                                    dvi_out((235i32 + 1i32) as eight_bits);
-                                    dvi_out(((f - 1i32) / 256i32) as eight_bits);
-                                    dvi_out(((f - 1i32) % 256i32) as eight_bits);
+                                    dvi_out((235i32 + 1i32) as u8);
+                                    dvi_out(((f - 1i32) / 256i32) as u8);
+                                    dvi_out(((f - 1i32) % 256i32) as u8);
                                 }
                                 dvi_f = f
                             }
-                            dvi_out(253i32 as eight_bits);
+                            dvi_out(253i32 as u8);
                             dvi_four(0i32);
                             dvi_two(1i32 as UTF16_code);
                             dvi_four(0i32);
@@ -2498,13 +2498,13 @@ unsafe extern "C" fn vlist_out() {
                                             + (*mem.offset((leader_box + 4i32) as isize)).b32.s1
                                     }
                                     if cur_h != dvi_h {
-                                        movement(cur_h - dvi_h, 143i32 as eight_bits);
+                                        movement(cur_h - dvi_h, 143i32 as u8);
                                         dvi_h = cur_h
                                     }
                                     save_h = dvi_h;
                                     cur_v += (*mem.offset((leader_box + 3i32) as isize)).b32.s1;
                                     if cur_v != dvi_v {
-                                        movement(cur_v - dvi_v, 157i32 as eight_bits);
+                                        movement(cur_v - dvi_v, 157i32 as u8);
                                         dvi_v = cur_v
                                     }
                                     save_v = dvi_v;
@@ -2577,14 +2577,14 @@ unsafe extern "C" fn vlist_out() {
                             cur_h -= rule_wd
                         }
                         if cur_h != dvi_h {
-                            movement(cur_h - dvi_h, 143i32 as eight_bits);
+                            movement(cur_h - dvi_h, 143i32 as u8);
                             dvi_h = cur_h
                         }
                         if cur_v != dvi_v {
-                            movement(cur_v - dvi_v, 157i32 as eight_bits);
+                            movement(cur_v - dvi_v, 157i32 as u8);
                             dvi_v = cur_v
                         }
-                        dvi_out(137i32 as eight_bits);
+                        dvi_out(137i32 as u8);
                         dvi_four(rule_ht);
                         dvi_four(rule_wd);
                         cur_h = left_edge
@@ -2879,7 +2879,7 @@ pub unsafe extern "C" fn out_what(mut p: i32) {
                     write_out(p);
                 } else {
                     if write_open[j as usize] {
-                        ttstub_output_close(write_file[j as usize]);
+                        ttstub_output_close(write_file[j as usize].take().unwrap());
                     }
                     if (*mem.offset(p as isize)).b16.s0 as i32 == 2i32 {
                         write_open[j as usize] = false
@@ -2892,7 +2892,7 @@ pub unsafe extern "C" fn out_what(mut p: i32) {
                         }
                         pack_file_name(cur_name, cur_area, cur_ext);
                         write_file[j as usize] = ttstub_output_open(name_of_file, 0i32);
-                        if write_file[j as usize].is_null() {
+                        if write_file[j as usize].is_none() {
                             _tt_abort(
                                 b"cannot open output file \"%s\"\x00" as *const u8 as *const i8,
                                 name_of_file,
@@ -2960,12 +2960,12 @@ pub unsafe extern "C" fn out_what(mut p: i32) {
 unsafe extern "C" fn dvi_native_font_def(mut f: internal_font_number) {
     let mut font_def_length: i32 = 0;
     let mut i: i32 = 0;
-    dvi_out(252i32 as eight_bits);
+    dvi_out(252i32 as u8);
     dvi_four(f - 1i32);
     font_def_length = make_font_def(f);
     i = 0i32;
     while i < font_def_length {
-        dvi_out(*xdv_buffer.offset(i as isize) as eight_bits);
+        dvi_out(*xdv_buffer.offset(i as isize) as u8);
         i += 1
     }
 }
@@ -2978,20 +2978,20 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
         dvi_native_font_def(f);
     } else {
         if f <= 256i32 {
-            dvi_out(243i32 as eight_bits);
-            dvi_out((f - 1i32) as eight_bits);
+            dvi_out(243i32 as u8);
+            dvi_out((f - 1i32) as u8);
         } else {
-            dvi_out((243i32 + 1i32) as eight_bits);
-            dvi_out(((f - 1i32) / 256i32) as eight_bits);
-            dvi_out(((f - 1i32) % 256i32) as eight_bits);
+            dvi_out((243i32 + 1i32) as u8);
+            dvi_out(((f - 1i32) / 256i32) as u8);
+            dvi_out(((f - 1i32) % 256i32) as u8);
         }
-        dvi_out((*font_check.offset(f as isize)).s3 as eight_bits);
-        dvi_out((*font_check.offset(f as isize)).s2 as eight_bits);
-        dvi_out((*font_check.offset(f as isize)).s1 as eight_bits);
-        dvi_out((*font_check.offset(f as isize)).s0 as eight_bits);
+        dvi_out((*font_check.offset(f as isize)).s3 as u8);
+        dvi_out((*font_check.offset(f as isize)).s2 as u8);
+        dvi_out((*font_check.offset(f as isize)).s1 as u8);
+        dvi_out((*font_check.offset(f as isize)).s0 as u8);
         dvi_four(*font_size.offset(f as isize));
         dvi_four(*font_dsize.offset(f as isize));
-        dvi_out(length(*font_area.offset(f as isize)) as eight_bits);
+        dvi_out(length(*font_area.offset(f as isize)) as u8);
         l = 0i32;
         k = *str_start.offset((*font_name.offset(f as isize) as i64 - 65536) as isize);
         while l == 0i32
@@ -3006,7 +3006,7 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
         if l == 0i32 {
             l = length(*font_name.offset(f as isize))
         }
-        dvi_out(l as eight_bits);
+        dvi_out(l as u8);
         let mut for_end: i32 = 0;
         k = *str_start.offset((*font_area.offset(f as isize) as i64 - 65536) as isize);
         for_end = *str_start
@@ -3014,7 +3014,7 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
             - 1i32;
         if k <= for_end {
             loop {
-                dvi_out(*str_pool.offset(k as isize) as eight_bits);
+                dvi_out(*str_pool.offset(k as isize) as u8);
                 let fresh6 = k;
                 k = k + 1;
                 if !(fresh6 < for_end) {
@@ -3028,7 +3028,7 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
             *str_start.offset((*font_name.offset(f as isize) as i64 - 65536) as isize) + l - 1i32;
         if k <= for_end_0 {
             loop {
-                dvi_out(*str_pool.offset(k as isize) as eight_bits);
+                dvi_out(*str_pool.offset(k as isize) as u8);
                 let fresh7 = k;
                 k = k + 1;
                 if !(fresh7 < for_end_0) {
@@ -3038,7 +3038,7 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
         }
     };
 }
-unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
+unsafe extern "C" fn movement(mut w: scaled_t, mut o: u8) {
     let mut current_block: u64;
     let mut mstate: small_number = 0;
     let mut p: i32 = 0;
@@ -3078,7 +3078,7 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
                                 k = k + 16384i32
                             }
                             *dvi_buf.offset(k as isize) =
-                                (*dvi_buf.offset(k as isize) as i32 + 10i32) as eight_bits;
+                                (*dvi_buf.offset(k as isize) as i32 + 10i32) as u8;
                             (*mem.offset(p as isize)).b32.s0 = 2i32;
                             current_block = 8542251818650148540;
                             break;
@@ -3093,7 +3093,7 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
                                     k = k + 16384i32
                                 }
                                 *dvi_buf.offset(k as isize) =
-                                    (*dvi_buf.offset(k as isize) as i32 + 5i32) as eight_bits;
+                                    (*dvi_buf.offset(k as isize) as i32 + 5i32) as u8;
                                 (*mem.offset(p as isize)).b32.s0 = 1i32;
                                 current_block = 8542251818650148540;
                                 break;
@@ -3112,7 +3112,7 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
                         k = k + 16384i32
                     }
                     *dvi_buf.offset(k as isize) =
-                        (*dvi_buf.offset(k as isize) as i32 + 10i32) as eight_bits;
+                        (*dvi_buf.offset(k as isize) as i32 + 10i32) as u8;
                     (*mem.offset(p as isize)).b32.s0 = 2i32;
                     current_block = 8542251818650148540;
                     break;
@@ -3147,7 +3147,7 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
             /*629:*/
             (*mem.offset(q as isize)).b32.s0 = (*mem.offset(p as isize)).b32.s0; /*634:*/
             if (*mem.offset(q as isize)).b32.s0 == 1i32 {
-                dvi_out((o as i32 + 4i32) as eight_bits); /* max_selector enum */
+                dvi_out((o as i32 + 4i32) as u8); /* max_selector enum */
                 while (*mem.offset(q as isize)).b32.s1 != p {
                     q = (*mem.offset(q as isize)).b32.s1;
                     match (*mem.offset(q as isize)).b32.s0 {
@@ -3157,7 +3157,7 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
                     }
                 }
             } else {
-                dvi_out((o as i32 + 9i32) as eight_bits);
+                dvi_out((o as i32 + 9i32) as u8);
                 while (*mem.offset(q as isize)).b32.s1 != p {
                     q = (*mem.offset(q as isize)).b32.s1;
                     match (*mem.offset(q as isize)).b32.s0 {
@@ -3172,20 +3172,20 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
         _ => {
             (*mem.offset(q as isize)).b32.s0 = 3i32;
             if w.abs() >= 0x800000i32 {
-                dvi_out((o as i32 + 3i32) as eight_bits);
+                dvi_out((o as i32 + 3i32) as u8);
                 dvi_four(w);
                 return;
             }
             if w.abs() >= 0x8000i32 {
-                dvi_out((o as i32 + 2i32) as eight_bits);
+                dvi_out((o as i32 + 2i32) as u8);
                 if w < 0i32 {
                     w = w + 0x1000000i32
                 }
-                dvi_out((w / 0x10000i32) as eight_bits);
+                dvi_out((w / 0x10000i32) as u8);
                 w = w % 0x10000i32;
                 current_block = 14567512515169274304;
             } else if w.abs() >= 128i32 {
-                dvi_out((o as i32 + 1i32) as eight_bits);
+                dvi_out((o as i32 + 1i32) as u8);
                 if w < 0i32 {
                     w = w + 0x10000i32
                 }
@@ -3199,11 +3199,11 @@ unsafe extern "C" fn movement(mut w: scaled_t, mut o: eight_bits) {
             }
             match current_block {
                 14567512515169274304 => {
-                    dvi_out((w / 256i32) as eight_bits);
+                    dvi_out((w / 256i32) as u8);
                 }
                 _ => {}
             }
-            dvi_out((w % 256i32) as eight_bits);
+            dvi_out((w % 256i32) as u8);
             return;
         }
     };
@@ -3230,11 +3230,11 @@ unsafe extern "C" fn prune_movements(mut l: i32) {
 unsafe extern "C" fn special_out(mut p: i32) {
     let mut k: pool_pointer = 0;
     if cur_h != dvi_h {
-        movement(cur_h - dvi_h, 143i32 as eight_bits);
+        movement(cur_h - dvi_h, 143i32 as u8);
         dvi_h = cur_h
     }
     if cur_v != dvi_v {
-        movement(cur_v - dvi_v, 157i32 as eight_bits);
+        movement(cur_v - dvi_v, 157i32 as u8);
         dvi_v = cur_v
     }
     doing_special = true;
@@ -3255,10 +3255,10 @@ unsafe extern "C" fn special_out(mut p: i32) {
         );
     }
     if cur_length() < 256i32 {
-        dvi_out(239i32 as eight_bits);
-        dvi_out(cur_length() as eight_bits);
+        dvi_out(239i32 as u8);
+        dvi_out(cur_length() as u8);
     } else {
-        dvi_out(242i32 as eight_bits);
+        dvi_out(242i32 as u8);
         dvi_four(cur_length());
     }
     let mut for_end: i32 = 0;
@@ -3266,7 +3266,7 @@ unsafe extern "C" fn special_out(mut p: i32) {
     for_end = pool_ptr - 1i32;
     if k <= for_end {
         loop {
-            dvi_out(*str_pool.offset(k as isize) as eight_bits);
+            dvi_out(*str_pool.offset(k as isize) as u8);
             let fresh8 = k;
             k = k + 1;
             if !(fresh8 < for_end) {
@@ -3402,11 +3402,11 @@ unsafe extern "C" fn pic_out(mut p: i32) {
     let mut i: i32 = 0;
     let mut k: pool_pointer = 0;
     if cur_h != dvi_h {
-        movement(cur_h - dvi_h, 143i32 as eight_bits);
+        movement(cur_h - dvi_h, 143i32 as u8);
         dvi_h = cur_h
     }
     if cur_v != dvi_v {
-        movement(cur_v - dvi_v, 157i32 as eight_bits);
+        movement(cur_v - dvi_v, 157i32 as u8);
         dvi_v = cur_v
     }
     let old_setting = selector;
@@ -3459,15 +3459,15 @@ unsafe extern "C" fn pic_out(mut p: i32) {
     print(')' as i32);
     selector = old_setting;
     if cur_length() < 256i32 {
-        dvi_out(239i32 as eight_bits);
-        dvi_out(cur_length() as eight_bits);
+        dvi_out(239i32 as u8);
+        dvi_out(cur_length() as u8);
     } else {
-        dvi_out(242i32 as eight_bits);
+        dvi_out(242i32 as u8);
         dvi_four(cur_length());
     }
     k = *str_start.offset((str_ptr - 65536i32) as isize);
     while k < pool_ptr {
-        dvi_out(*str_pool.offset(k as isize) as eight_bits);
+        dvi_out(*str_pool.offset(k as isize) as u8);
         k += 1
     }
     pool_ptr = *str_start.offset((str_ptr - 65536i32) as isize);
@@ -3484,9 +3484,9 @@ pub unsafe extern "C" fn finalize_dvi_file() {
     let mut k: u8 = 0;
     while cur_s > -1i32 {
         if cur_s > 0i32 {
-            dvi_out(142i32 as eight_bits);
+            dvi_out(142i32 as u8);
         } else {
-            dvi_out(140i32 as eight_bits);
+            dvi_out(140i32 as u8);
             total_pages += 1
         }
         cur_s -= 1
@@ -3499,7 +3499,7 @@ pub unsafe extern "C" fn finalize_dvi_file() {
         /* This happens when the DVI gets too big; a message has already been printed */
         return;
     } /* magic values: conversion ratio for sp */
-    dvi_out(248i32 as eight_bits); /* magic values: conversion ratio for sp */
+    dvi_out(248i32 as u8); /* magic values: conversion ratio for sp */
     dvi_four(last_bop);
     last_bop = dvi_offset + dvi_ptr - 5i32;
     dvi_four(25400000i64 as i32);
@@ -3538,26 +3538,26 @@ pub unsafe extern "C" fn finalize_dvi_file() {
     );
     dvi_four(max_v);
     dvi_four(max_h);
-    dvi_out((max_push / 256i32) as eight_bits);
-    dvi_out((max_push % 256i32) as eight_bits);
-    dvi_out((total_pages / 256i32 % 256i32) as eight_bits);
-    dvi_out((total_pages % 256i32) as eight_bits);
+    dvi_out((max_push / 256i32) as u8);
+    dvi_out((max_push % 256i32) as u8);
+    dvi_out((total_pages / 256i32 % 256i32) as u8);
+    dvi_out((total_pages % 256i32) as u8);
     while font_ptr > 0i32 {
         if *font_used.offset(font_ptr as isize) {
             dvi_font_def(font_ptr);
         }
         font_ptr -= 1
     }
-    dvi_out(249i32 as eight_bits);
+    dvi_out(249i32 as u8);
     dvi_four(last_bop);
     if semantic_pagination_enabled {
-        dvi_out(100i32 as eight_bits);
+        dvi_out(100i32 as u8);
     } else {
-        dvi_out(7i32 as eight_bits);
+        dvi_out(7i32 as u8);
     }
     k = (4i32 + (16384i32 - dvi_ptr) % 4i32) as u8;
     while k as i32 > 0i32 {
-        dvi_out(223i32 as eight_bits);
+        dvi_out(223i32 as u8);
         k = k.wrapping_sub(1)
     }
     if dvi_limit == 8192i32 {
@@ -3570,7 +3570,7 @@ pub unsafe extern "C" fn finalize_dvi_file() {
     if dvi_ptr > 0i32 {
         write_to_dvi(0i32, dvi_ptr - 1i32);
     }
-    k = ttstub_output_close(dvi_file) as u8;
+    k = ttstub_output_close(dvi_file.take().unwrap()) as u8;
     if k as i32 == 0i32 {
         print_nl_cstr(b"Output written on \x00" as *const u8 as *const i8);
         print(output_file_name);
@@ -3597,15 +3597,16 @@ pub unsafe extern "C" fn finalize_dvi_file() {
     };
 }
 unsafe extern "C" fn write_to_dvi(mut a: i32, mut b: i32) {
-    let mut n: i32 = b - a + 1i32;
-    assert!(
-        ttstub_output_write(
-            dvi_file,
-            &mut *dvi_buf.offset(a as isize) as *mut eight_bits as *mut i8,
-            n as size_t,
-        ) == n as size_t,
-        "failed to write data to XDV file"
-    );
+    let mut n: i32 = b - a + 1;
+    let mut v = Vec::<u8>::new();
+    for i in 0..n {
+        v.push(*dvi_buf.offset((a + i) as isize));
+    }
+    dvi_file
+        .as_mut()
+        .unwrap()
+        .write(&v)
+        .expect("failed to write data to XDV file");
 }
 unsafe extern "C" fn dvi_swap() {
     if dvi_ptr > 0x7fffffffi32 - dvi_offset {
@@ -3625,26 +3626,26 @@ unsafe extern "C" fn dvi_swap() {
 }
 unsafe extern "C" fn dvi_four(mut x: i32) {
     if x >= 0i32 {
-        dvi_out((x / 0x1000000i32) as eight_bits);
+        dvi_out((x / 0x1000000i32) as u8);
     } else {
         x = x + 0x40000000i32;
         x = x + 0x40000000i32;
-        dvi_out((x / 0x1000000i32 + 128i32) as eight_bits);
+        dvi_out((x / 0x1000000i32 + 128i32) as u8);
     }
     x = x % 0x1000000i32;
-    dvi_out((x / 0x10000i32) as eight_bits);
+    dvi_out((x / 0x10000i32) as u8);
     x = x % 0x10000i32;
-    dvi_out((x / 0x100i32) as eight_bits);
-    dvi_out((x % 0x100i32) as eight_bits);
+    dvi_out((x / 0x100i32) as u8);
+    dvi_out((x % 0x100i32) as u8);
 }
 unsafe extern "C" fn dvi_two(mut s: UTF16_code) {
-    dvi_out((s as i32 / 0x100i32) as eight_bits);
-    dvi_out((s as i32 % 0x100i32) as eight_bits);
+    dvi_out((s as i32 / 0x100i32) as u8);
+    dvi_out((s as i32 % 0x100i32) as u8);
 }
 unsafe extern "C" fn dvi_pop(mut l: i32) {
     if l == dvi_offset + dvi_ptr && dvi_ptr > 0i32 {
         dvi_ptr -= 1
     } else {
-        dvi_out(142i32 as eight_bits);
+        dvi_out(142i32 as u8);
     };
 }

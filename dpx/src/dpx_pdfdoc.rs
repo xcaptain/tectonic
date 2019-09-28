@@ -84,7 +84,7 @@ pub type size_t = u64;
 
 use crate::TTInputFormat;
 
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 pub use super::dpx_pdfcolor::pdf_color;
 

@@ -51,7 +51,6 @@ use libc::{free, memset, strchr, strcpy, strlen, strncpy};
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
 pub type Fixed = u32;
 
 use super::dpx_sfnt::sfnt;

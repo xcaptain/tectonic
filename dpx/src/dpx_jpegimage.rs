@@ -51,7 +51,7 @@ use libc::{free, memcmp, memset};
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
-pub type rust_input_handle_t = *mut libc::c_void;
+use bridge::rust_input_handle_t;
 
 use crate::dpx_pdfximage::{pdf_ximage, ximage_info};
 pub const JM_SOI: JPEG_marker = 216;
