@@ -197,11 +197,8 @@ pub unsafe extern "C" fn put_big_endian(mut s: *mut libc::c_void, mut q: i32, mu
 /* Convert four-byte number to big endianess
  * in a machine independent way.
  */
-unsafe extern "C" fn convert_tag(tag: &mut [u8; 4], mut u_tag: u32) {
-    for i in 3..=0 {
-        tag[i] = (u_tag % 256) as u8;
-        u_tag = u_tag / 256;
-    }
+fn convert_tag(tag: &mut [u8; 4], u_tag: u32) {
+    *tag = u_tag.to_be_bytes();
 }
 
 /*
