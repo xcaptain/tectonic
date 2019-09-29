@@ -20,10 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -136,7 +132,7 @@ unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut misc_handlers: [spc_handler; 6] = [
+static mut MISC_HANDLERS: [spc_handler; 6] = [
     {
         let mut init = spc_handler {
             key: b"postscriptbox\x00" as *const u8 as *const i8,
@@ -203,11 +199,11 @@ pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size:
     for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if size as usize >= strlen(misc_handlers[i as usize].key)
+        if size as usize >= strlen(MISC_HANDLERS[i as usize].key)
             && strncmp(
                 p,
-                misc_handlers[i as usize].key,
-                strlen(misc_handlers[i as usize].key),
+                MISC_HANDLERS[i as usize].key,
+                strlen(MISC_HANDLERS[i as usize].key),
             ) == 0
         {
             return true;
@@ -237,13 +233,13 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
     for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if keylen as usize == strlen(misc_handlers[i as usize].key)
-            && strncmp(key, misc_handlers[i as usize].key, keylen as _) == 0
+        if keylen as usize == strlen(MISC_HANDLERS[i as usize].key)
+            && strncmp(key, MISC_HANDLERS[i as usize].key, keylen as _) == 0
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = misc_handlers[i as usize].key;
+            (*args).command = MISC_HANDLERS[i as usize].key;
             (*handle).key = b"???:\x00" as *const u8 as *const i8;
-            (*handle).exec = misc_handlers[i as usize].exec;
+            (*handle).exec = MISC_HANDLERS[i as usize].exec;
             return 0i32;
         }
     }

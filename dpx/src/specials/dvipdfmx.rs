@@ -20,10 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -47,7 +43,7 @@ unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut dvipdfmx_handlers: [spc_handler; 1] = [{
+static mut DVIPDFMX_HANDLERS: [spc_handler; 1] = [{
     let mut init = spc_handler {
         key: b"config\x00" as *const u8 as *const i8,
         exec: Some(
@@ -107,10 +103,10 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
         for i in 0..(::std::mem::size_of::<[spc_handler; 1]>() as u64)
             .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
-            if streq_ptr(q, dvipdfmx_handlers[i as usize].key) {
-                (*ap).command = dvipdfmx_handlers[i as usize].key;
+            if streq_ptr(q, DVIPDFMX_HANDLERS[i as usize].key) {
+                (*ap).command = DVIPDFMX_HANDLERS[i as usize].key;
                 (*sph).key = b"dvipdfmx:\x00" as *const u8 as *const i8;
-                (*sph).exec = dvipdfmx_handlers[i as usize].exec;
+                (*sph).exec = DVIPDFMX_HANDLERS[i as usize].exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

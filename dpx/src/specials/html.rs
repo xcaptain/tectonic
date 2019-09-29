@@ -20,10 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-mutable_transmutes,
 non_camel_case_types,
 non_snake_case,
-non_upper_case_globals,
 unused_mut
 )]
 
@@ -92,7 +90,7 @@ use crate::dpx_pdfdev::pdf_coord;
 /* Note that we explicitly do *not* change this on Windows. For maximum
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
-static mut _html_state: spc_html_ = {
+static mut _HTML_STATE: spc_html_ = {
     let mut init = spc_html_ {
         opts: {
             let mut init = C2RustUnnamed_0 { extensions: 0i32 };
@@ -767,7 +765,7 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
 }
 /* ENABLE_HTML_IMG_SUPPORT */
 unsafe extern "C" fn spc_handler_html_default(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_html_ = &mut _html_state; /* treat "open" same as "empty" */
+    let mut sd: *mut spc_html_ = &mut _HTML_STATE; /* treat "open" same as "empty" */
     let mut name: [i8; 128] = [0; 128]; /* treat "open" same as "empty" */
     let mut type_0: i32 = 1i32;
     if (*ap).curptr >= (*ap).endptr {
@@ -832,7 +830,7 @@ unsafe extern "C" fn cvt_a_to_tmatrix(
 ) -> i32 {
     let mut p: *const i8 = ptr;
     let mut v: [f64; 6] = [0.; 6];
-    static mut _tkeys: [*const i8; 7] = [
+    static mut _TKEYS: [*const i8; 7] = [
         b"matrix\x00" as *const u8 as *const i8,
         b"translate\x00" as *const u8 as *const i8,
         b"scale\x00" as *const u8 as *const i8,
@@ -850,7 +848,7 @@ unsafe extern "C" fn cvt_a_to_tmatrix(
     }
     /* parsed transformation key */
     let mut k = 0;
-    while !_tkeys[k].is_null() && strcmp(q, _tkeys[k]) != 0 {
+    while !_TKEYS[k].is_null() && strcmp(q, _TKEYS[k]) != 0 {
         k += 1
     }
     free(q as *mut libc::c_void);
@@ -965,25 +963,25 @@ unsafe extern "C" fn cvt_a_to_tmatrix(
 /* ENABLE_HTML_SVG_TRANSFORM */
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_begin_document() -> i32 {
-    let mut sd: *mut spc_html_ = &mut _html_state;
+    let mut sd: *mut spc_html_ = &mut _HTML_STATE;
     spc_handler_html__init(sd as *mut libc::c_void)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_begin_page() -> i32 {
-    let mut sd: *mut spc_html_ = &mut _html_state;
+    let mut sd: *mut spc_html_ = &mut _HTML_STATE;
     spc_handler_html__bophook(0 as *mut spc_env, sd as *mut libc::c_void)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_end_page() -> i32 {
-    let mut sd: *mut spc_html_ = &mut _html_state;
+    let mut sd: *mut spc_html_ = &mut _HTML_STATE;
     spc_handler_html__eophook(0 as *mut spc_env, sd as *mut libc::c_void)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_at_end_document() -> i32 {
-    let mut sd: *mut spc_html_ = &mut _html_state;
+    let mut sd: *mut spc_html_ = &mut _HTML_STATE;
     spc_handler_html__clean(0 as *mut spc_env, sd as *mut libc::c_void)
 }
 

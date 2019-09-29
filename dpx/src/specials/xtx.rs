@@ -20,10 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -38,7 +36,7 @@ use crate::dpx_fontmap::{
     pdf_remove_fontmap_record,
 };
 use crate::dpx_mem::{new, xrealloc};
-use crate::dpx_mfileio::work_buffer_u8 as work_buffer;
+use crate::dpx_mfileio::work_buffer_u8 as WORK_BUFFER;
 use crate::dpx_pdfdev::{pdf_dev_reset_color, pdf_dev_reset_fonts};
 use crate::dpx_pdfdoc::{
     pdf_doc_add_page_content, pdf_doc_add_page_content_ptr, pdf_doc_set_bgcolor,
@@ -115,15 +113,15 @@ unsafe extern "C" fn spc_handler_xtx_scale(mut spe: *mut spc_env, mut args: *mut
     );
 }
 /* Scaling without gsave/grestore. */
-static mut scaleFactors: *mut pdf_coord = 0 as *const pdf_coord as *mut pdf_coord;
-static mut scaleFactorCount: i32 = -1i32;
+static mut SCALE_FACTORS: *mut pdf_coord = 0 as *const pdf_coord as *mut pdf_coord;
+static mut SCALE_FACTOR_COUNT: i32 = -1i32;
 unsafe extern "C" fn spc_handler_xtx_bscale(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut values: [f64; 2] = [0.; 2];
-    scaleFactorCount += 1;
-    if scaleFactorCount & 0xfi32 == 0 {
-        scaleFactors = xrealloc(
-            scaleFactors as *mut libc::c_void,
-            ((scaleFactorCount + 16i32) as u64)
+    SCALE_FACTOR_COUNT += 1;
+    if SCALE_FACTOR_COUNT & 0xfi32 == 0 {
+        SCALE_FACTORS = xrealloc(
+            SCALE_FACTORS as *mut libc::c_void,
+            ((SCALE_FACTOR_COUNT + 16i32) as u64)
                 .wrapping_mul(::std::mem::size_of::<pdf_coord>() as u64),
         ) as *mut pdf_coord
     }
@@ -133,8 +131,8 @@ unsafe extern "C" fn spc_handler_xtx_bscale(mut spe: *mut spc_env, mut args: *mu
     if values[0].abs() < 1.0e-7f64 || values[1].abs() < 1.0e-7f64 {
         return -1i32;
     }
-    (*scaleFactors.offset(scaleFactorCount as isize)).x = 1i32 as f64 / values[0];
-    (*scaleFactors.offset(scaleFactorCount as isize)).y = 1i32 as f64 / values[1];
+    (*SCALE_FACTORS.offset(SCALE_FACTOR_COUNT as isize)).x = 1i32 as f64 / values[0];
+    (*SCALE_FACTORS.offset(SCALE_FACTOR_COUNT as isize)).y = 1i32 as f64 / values[1];
     (*args).curptr = (*args).endptr;
     return spc_handler_xtx_do_transform(
         (*spe).x_user,
@@ -148,9 +146,9 @@ unsafe extern "C" fn spc_handler_xtx_bscale(mut spe: *mut spc_env, mut args: *mu
     );
 }
 unsafe extern "C" fn spc_handler_xtx_escale(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let fresh0 = scaleFactorCount;
-    scaleFactorCount = scaleFactorCount - 1;
-    let mut factor: pdf_coord = *scaleFactors.offset(fresh0 as isize);
+    let fresh0 = SCALE_FACTOR_COUNT;
+    SCALE_FACTOR_COUNT = SCALE_FACTOR_COUNT - 1;
+    let mut factor: pdf_coord = *SCALE_FACTORS.offset(fresh0 as isize);
     (*args).curptr = (*args).endptr;
     return spc_handler_xtx_do_transform(
         (*spe).x_user,
@@ -241,7 +239,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = 0i32;
-    static mut buffer: [i8; 1024] = [0; 1024];
+    static mut BUFFER: [i8; 1024] = [0; 1024];
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
         spc_warn(
@@ -271,7 +269,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
         }
         _ => {
             let mut p = (*ap).curptr;
-            let mut q = buffer.as_mut_ptr();
+            let mut q = BUFFER.as_mut_ptr();
             while p < (*ap).endptr {
                 let fresh1 = p;
                 p = p.offset(1);
@@ -285,9 +283,9 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
             pdf_init_fontmap_record(mrec);
             error = pdf_read_fontmap_line(
                 mrec,
-                buffer.as_mut_ptr(),
+                BUFFER.as_mut_ptr(),
                 (*ap).endptr.wrapping_offset_from((*ap).curptr) as i64 as i32,
-                is_pdfm_mapline(buffer.as_mut_ptr()),
+                is_pdfm_mapline(BUFFER.as_mut_ptr()),
             );
             if error != 0 {
                 spc_warn(spe, b"Invalid fontmap line.\x00" as *const u8 as *const i8);
@@ -335,7 +333,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapfile(
         pdf_load_fontmap_file(mapfile, mode)
     }
 }
-static mut overlay_name: [i8; 256] = [0; 256];
+static mut OVERLAY_NAME: [i8; 256] = [0; 256];
 unsafe extern "C" fn spc_handler_xtx_initoverlay(
     mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
@@ -345,11 +343,11 @@ unsafe extern "C" fn spc_handler_xtx_initoverlay(
         return -1i32;
     }
     strncpy(
-        overlay_name.as_mut_ptr(),
+        OVERLAY_NAME.as_mut_ptr(),
         (*args).curptr,
         (*args).endptr.wrapping_offset_from((*args).curptr) as _,
     );
-    overlay_name[(*args).endptr.wrapping_offset_from((*args).curptr) as i64 as usize] = 0_i8;
+    OVERLAY_NAME[(*args).endptr.wrapping_offset_from((*args).curptr) as i64 as usize] = 0_i8;
     (*args).curptr = (*args).endptr;
     0i32
 }
@@ -364,9 +362,9 @@ unsafe extern "C" fn spc_handler_xtx_clipoverlay(
     pdf_dev_grestore();
     pdf_dev_gsave();
     if strncmp(
-        overlay_name.as_mut_ptr(),
+        OVERLAY_NAME.as_mut_ptr(),
         (*args).curptr,
-        strlen(overlay_name.as_mut_ptr()),
+        strlen(OVERLAY_NAME.as_mut_ptr()),
     ) != 0i32
         && strncmp(
             b"all\x00" as *const u8 as *const i8,
@@ -396,12 +394,12 @@ unsafe extern "C" fn spc_handler_xtx_renderingmode(
         return -1i32;
     }
     sprintf(
-        work_buffer.as_mut_ptr() as *mut i8,
+        WORK_BUFFER.as_mut_ptr() as *mut i8,
         b" %d Tr\x00" as *const u8 as *const i8,
         value as i32,
     );
     pdf_doc_add_page_content(
-        CStr::from_bytes_with_nul(&work_buffer[..])
+        CStr::from_bytes_with_nul(&WORK_BUFFER[..])
             .unwrap()
             .to_bytes(),
     );
@@ -439,7 +437,7 @@ unsafe extern "C" fn spc_handler_xtx_unsupported(
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut xtx_handlers: [spc_handler; 21] = {
+static mut XTX_HANDLERS: [spc_handler; 21] = {
     [
         {
             let mut init = spc_handler {
@@ -700,10 +698,10 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
         for i in 0..(::std::mem::size_of::<[spc_handler; 21]>() as u64)
             .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
-            if streq_ptr(q, xtx_handlers[i as usize].key) {
-                (*ap).command = xtx_handlers[i as usize].key;
+            if streq_ptr(q, XTX_HANDLERS[i as usize].key) {
+                (*ap).command = XTX_HANDLERS[i as usize].key;
                 (*sph).key = b"x:\x00" as *const u8 as *const i8;
-                (*sph).exec = xtx_handlers[i as usize].exec;
+                (*sph).exec = XTX_HANDLERS[i as usize].exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

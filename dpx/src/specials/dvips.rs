@@ -20,10 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -59,12 +57,12 @@ pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *m
 use super::spc_handler;
 
 use crate::dpx_pdfximage::load_options;
-static mut block_pending: i32 = 0i32;
-static mut pending_x: f64 = 0.0f64;
-static mut pending_y: f64 = 0.0f64;
-static mut position_set: i32 = 0i32;
-static mut ps_headers: *mut *mut i8 = 0 as *const *mut i8 as *mut *mut i8;
-static mut num_ps_headers: i32 = 0i32;
+static mut BLOCK_PENDING: i32 = 0i32;
+static mut PENDING_X: f64 = 0.0f64;
+static mut PENDING_Y: f64 = 0.0f64;
+static mut POSITION_SET: i32 = 0i32;
+static mut PS_HEADERS: *mut *mut i8 = 0 as *const *mut i8 as *mut *mut i8;
+static mut NUM_PS_HEADERS: i32 = 0i32;
 unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr.offset(1) >= (*args).endptr || *(*args).curptr.offset(0) as i32 != '=' as i32
@@ -97,15 +95,15 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
         return -1i32;
     }
     ttstub_input_close(ps_header as rust_input_handle_t);
-    if num_ps_headers & 0xfi32 == 0 {
-        ps_headers = xrealloc(
-            ps_headers as *mut libc::c_void,
-            (::std::mem::size_of::<*mut i8>() as u64).wrapping_mul((num_ps_headers + 16i32) as u64),
+    if NUM_PS_HEADERS & 0xfi32 == 0 {
+        PS_HEADERS = xrealloc(
+            PS_HEADERS as *mut libc::c_void,
+            (::std::mem::size_of::<*mut i8>() as u64).wrapping_mul((NUM_PS_HEADERS + 16i32) as u64),
         ) as *mut *mut i8
     }
-    let fresh0 = num_ps_headers;
-    num_ps_headers = num_ps_headers + 1;
-    let ref mut fresh1 = *ps_headers.offset(fresh0 as isize);
+    let fresh0 = NUM_PS_HEADERS;
+    NUM_PS_HEADERS = NUM_PS_HEADERS + 1;
+    let ref mut fresh1 = *PS_HEADERS.offset(fresh0 as isize);
     *fresh1 = pro;
     (*args).curptr = (*args).endptr;
     0i32
@@ -249,12 +247,12 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         <= (*args).endptr
         && !strstartswith((*args).curptr, b":[begin]\x00" as *const u8 as *const i8).is_null()
     {
-        block_pending += 1;
-        position_set = 1i32;
-        pending_x = (*spe).x_user;
-        x_user = pending_x;
-        pending_y = (*spe).y_user;
-        y_user = pending_y;
+        BLOCK_PENDING += 1;
+        POSITION_SET = 1i32;
+        PENDING_X = (*spe).x_user;
+        x_user = PENDING_X;
+        PENDING_Y = (*spe).y_user;
+        y_user = PENDING_Y;
         (*args).curptr = (*args)
             .curptr
             .offset(strlen(b":[begin]\x00" as *const u8 as *const i8) as isize)
@@ -264,38 +262,38 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         <= (*args).endptr
         && !strstartswith((*args).curptr, b":[end]\x00" as *const u8 as *const i8).is_null()
     {
-        if block_pending <= 0i32 {
+        if BLOCK_PENDING <= 0i32 {
             spc_warn(
                 spe,
                 b"No corresponding ::[begin] found.\x00" as *const u8 as *const i8,
             );
             return -1i32;
         }
-        block_pending -= 1;
-        position_set = 0i32;
-        x_user = pending_x;
-        y_user = pending_y;
+        BLOCK_PENDING -= 1;
+        POSITION_SET = 0i32;
+        x_user = PENDING_X;
+        y_user = PENDING_Y;
         (*args).curptr = (*args)
             .curptr
             .offset(strlen(b":[end]\x00" as *const u8 as *const i8) as isize)
     } else if (*args).curptr < (*args).endptr && *(*args).curptr.offset(0) as i32 == ':' as i32 {
-        x_user = if position_set != 0 {
-            pending_x
+        x_user = if POSITION_SET != 0 {
+            PENDING_X
         } else {
             (*spe).x_user
         };
-        y_user = if position_set != 0 {
-            pending_y
+        y_user = if POSITION_SET != 0 {
+            PENDING_Y
         } else {
             (*spe).y_user
         };
         (*args).curptr = (*args).curptr.offset(1)
     } else {
-        position_set = 1i32;
-        pending_x = (*spe).x_user;
-        x_user = pending_x;
-        pending_y = (*spe).y_user;
-        y_user = pending_y
+        POSITION_SET = 1i32;
+        PENDING_X = (*spe).x_user;
+        x_user = PENDING_X;
+        PENDING_Y = (*spe).y_user;
+        y_user = PENDING_Y
     }
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
@@ -390,7 +388,7 @@ unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mu
     pdf_dev_grestore();
     error
 }
-static mut dvips_handlers: [spc_handler; 10] = [
+static mut DVIPS_HANDLERS: [spc_handler; 10] = [
     {
         let mut init = spc_handler {
             key: b"header\x00" as *const u8 as *const i8,
@@ -500,12 +498,12 @@ pub unsafe extern "C" fn spc_dvips_at_begin_document() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvips_at_end_document() -> i32 {
-    if !ps_headers.is_null() {
-        while num_ps_headers > 0i32 {
-            num_ps_headers -= 1;
-            free(*ps_headers.offset(num_ps_headers as isize) as *mut libc::c_void);
+    if !PS_HEADERS.is_null() {
+        while NUM_PS_HEADERS > 0i32 {
+            NUM_PS_HEADERS -= 1;
+            free(*PS_HEADERS.offset(NUM_PS_HEADERS as isize) as *mut libc::c_void);
         }
-        ps_headers = mfree(ps_headers as *mut libc::c_void) as *mut *mut i8
+        PS_HEADERS = mfree(PS_HEADERS as *mut libc::c_void) as *mut *mut i8
     }
     0i32
 }
@@ -531,11 +529,11 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
     for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if len as usize >= strlen(dvips_handlers[i as usize].key)
+        if len as usize >= strlen(DVIPS_HANDLERS[i as usize].key)
             && memcmp(
                 p as *const libc::c_void,
-                dvips_handlers[i as usize].key as *const libc::c_void,
-                strlen(dvips_handlers[i as usize].key),
+                DVIPS_HANDLERS[i as usize].key as *const libc::c_void,
+                strlen(DVIPS_HANDLERS[i as usize].key),
             ) == 0
         {
             return true;
@@ -582,13 +580,13 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if keylen as usize == strlen(dvips_handlers[i as usize].key)
-            && strncmp(key, dvips_handlers[i as usize].key, keylen as usize) == 0
+        if keylen as usize == strlen(DVIPS_HANDLERS[i as usize].key)
+            && strncmp(key, DVIPS_HANDLERS[i as usize].key, keylen as usize) == 0
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = dvips_handlers[i as usize].key;
+            (*args).command = DVIPS_HANDLERS[i as usize].key;
             (*handle).key = b"ps:\x00" as *const u8 as *const i8;
-            (*handle).exec = dvips_handlers[i as usize].exec;
+            (*handle).exec = DVIPS_HANDLERS[i as usize].exec;
             return 0i32;
         }
     }

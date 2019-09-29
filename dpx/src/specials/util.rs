@@ -20,10 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -462,7 +460,7 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
     t: &mut transform_info,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    static mut _dtkeys: [*const i8; 15] = [
+    const _DTKEYS: [*const i8; 15] = [
         b"hoffset\x00" as *const u8 as *const i8,
         b"voffset\x00" as *const u8 as *const i8,
         b"hsize\x00" as *const u8 as *const i8,
@@ -492,10 +490,10 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
             break;
         }
         let mut k = 0;
-        while !_dtkeys[k].is_null() && strcmp(kp, _dtkeys[k]) != 0 {
+        while !_DTKEYS[k].is_null() && strcmp(kp, _DTKEYS[k]) != 0 {
             k += 1
         }
-        if _dtkeys[k as usize].is_null() {
+        if _DTKEYS[k as usize].is_null() {
             spc_warn(
                 spe,
                 b"Unrecognized dimension/transformation key: %s\x00" as *const u8 as *const i8,
@@ -607,7 +605,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
     p: &mut transform_info,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut _dtkeys: [*const i8; 12] = [
+    const _DTKEYS: [*const i8; 12] = [
         b"width\x00" as *const u8 as *const i8,
         b"height\x00" as *const u8 as *const i8,
         b"depth\x00" as *const u8 as *const i8,
@@ -640,7 +638,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         let mut k = 0;
-        while !_dtkeys[k].is_null() && strcmp(_dtkeys[k], kp) != 0 {
+        while !_DTKEYS[k].is_null() && strcmp(_DTKEYS[k], kp) != 0 {
             k += 1
         }
         match k {
@@ -820,7 +818,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
     mut bbox_type: *mut i32,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut _dtkeys: [*const i8; 14] = [
+    const _DTKEYS: [*const i8; 14] = [
         b"width\x00" as *const u8 as *const i8,
         b"height\x00" as *const u8 as *const i8,
         b"depth\x00" as *const u8 as *const i8,
@@ -855,7 +853,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         let mut k = 0;
-        while !_dtkeys[k].is_null() && strcmp(_dtkeys[k], kp) != 0 {
+        while !_DTKEYS[k].is_null() && strcmp(_DTKEYS[k], kp) != 0 {
             k += 1
         }
         match k {
@@ -1035,7 +1033,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
     }
     error
 }
-static mut colordefs: [colordef_; 69] = [
+static mut COLORDEFS: [colordef_; 69] = [
     {
         let mut init = colordef_ {
             key: b"GreenYellow\x00" as *const u8 as *const i8,
@@ -2006,11 +2004,11 @@ static mut colordefs: [colordef_; 69] = [
 /* From pdfcolor.c */
 unsafe extern "C" fn pdf_color_namedcolor(color: &mut pdf_color, mut name: *const i8) -> i32 {
     let mut i = 0;
-    while !colordefs[i].key.is_null() {
-        if streq_ptr(colordefs[i].key, name) {
+    while !COLORDEFS[i].key.is_null() {
+        if streq_ptr(COLORDEFS[i].key, name) {
             pdf_color_copycolor(
                 color,
-                &mut (*colordefs.as_mut_ptr().offset(i as isize)).color,
+                &mut (*COLORDEFS.as_mut_ptr().offset(i as isize)).color,
             );
             return 0i32;
         }

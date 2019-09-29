@@ -20,10 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 
@@ -47,7 +45,7 @@ use crate::dpx_fontmap::{
     pdf_remove_fontmap_record,
 };
 use crate::dpx_mem::new;
-use crate::dpx_mfileio::work_buffer_u8 as work_buffer;
+use crate::dpx_mfileio::work_buffer_u8 as WORK_BUFFER;
 use crate::dpx_pdfcolor::{
     pdf_color_copycolor, pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set,
 };
@@ -141,7 +139,7 @@ use crate::dpx_pdfdev::pdf_coord;
 /* Note that we explicitly do *not* change this on Windows. For maximum
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
-static mut _pdf_stat: spc_pdf_ = {
+static mut _PDF_STAT: spc_pdf_ = {
     let mut init = spc_pdf_ {
         annot_dict: 0 as *const pdf_obj as *mut pdf_obj,
         lowest_level: 255i32,
@@ -202,7 +200,7 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     /* The folllowing dictionary entry keys are considered as keys for
      * text strings. Be sure that string object is NOT always a text string.
      */
-    static mut default_taintkeys: [*const i8; 12] = [
+    static mut DEFAULT_TAINTKEYS: [*const i8; 12] = [
         b"Title\x00" as *const u8 as *const i8,
         b"Author\x00" as *const u8 as *const i8,
         b"Subject\x00" as *const u8 as *const i8,
@@ -226,10 +224,10 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     );
     (*sd).cd.taintkeys = pdf_new_array();
     let mut i = 0;
-    while !default_taintkeys[i].is_null() {
+    while !DEFAULT_TAINTKEYS[i].is_null() {
         pdf_add_array(
             (*sd).cd.taintkeys,
-            pdf_copy_name(default_taintkeys[i]),
+            pdf_copy_name(DEFAULT_TAINTKEYS[i]),
         );
         i += 1
     }
@@ -254,12 +252,12 @@ unsafe extern "C" fn spc_handler_pdfm__clean(mut dp: *mut libc::c_void) -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_pdfm_at_begin_document() -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     spc_handler_pdfm__init(sd as *mut libc::c_void)
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_pdfm_at_end_document() -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     spc_handler_pdfm__clean(sd as *mut libc::c_void)
 }
 /* Dvipdfm specials */
@@ -669,7 +667,7 @@ unsafe extern "C" fn parse_pdf_dict_with_tounicode(
     dict
 }
 unsafe extern "C" fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut rect = pdf_rect::new();
     let mut ident: *mut i8 = 0 as *mut i8;
     let mut ti = transform_info::new();
@@ -745,7 +743,7 @@ unsafe extern "C" fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mu
 }
 /* NOTE: This can't have ident. See "Dvipdfm User's Manual". */
 unsafe extern "C" fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     if !(*sd).annot_dict.is_null() {
         spc_warn(
             spe,
@@ -776,7 +774,7 @@ unsafe extern "C" fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut
     spc_begin_annot(spe, (*sd).annot_dict)
 }
 unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     if (*sd).annot_dict.is_null() {
         spc_warn(
             spe,
@@ -896,7 +894,7 @@ unsafe extern "C" fn spc_handler_pdfm_outline(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut is_open: i32 = -1i32;
     skip_white(&mut (*args).curptr, (*args).endptr);
     /*
@@ -984,7 +982,7 @@ unsafe extern "C" fn spc_handler_pdfm_article(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     skip_white(&mut (*args).curptr, (*args).endptr);
     let ident = parse_opt_ident(&mut (*args).curptr, (*args).endptr);
     if ident.is_null() {
@@ -1009,7 +1007,7 @@ unsafe extern "C" fn spc_handler_pdfm_article(
     0i32
 }
 unsafe extern "C" fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let article_info;
     let mut rect = pdf_rect::new();
     let mut ti = transform_info::new();
@@ -1088,7 +1086,7 @@ unsafe extern "C" fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut
     0i32
 }
 unsafe extern "C" fn spc_handler_pdfm_image(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut ident: *mut i8 = 0 as *mut i8;
     let mut ti = transform_info::new();
     let mut options: load_options = {
@@ -1342,7 +1340,7 @@ unsafe extern "C" fn spc_handler_pdfm_docinfo(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if dict.is_null() {
         spc_warn(
@@ -1360,7 +1358,7 @@ unsafe extern "C" fn spc_handler_pdfm_docview(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if dict.is_null() {
         spc_warn(
@@ -1432,23 +1430,23 @@ unsafe extern "C" fn spc_handler_pdfm_content(
             e: (*spe).x_user,
             f: (*spe).y_user,
         };
-        work_buffer[len] = b' ';
+        WORK_BUFFER[len] = b' ';
         len += 1;
-        work_buffer[len] = b'q';
+        WORK_BUFFER[len] = b'q';
         len += 1;
-        work_buffer[len] = b' ';
+        WORK_BUFFER[len] = b' ';
         len += 1;
-        len += pdf_sprint_matrix(&mut work_buffer[len..], &mut M) as usize;
-        work_buffer[len] = b' ';
+        len += pdf_sprint_matrix(&mut WORK_BUFFER[len..], &mut M) as usize;
+        WORK_BUFFER[len] = b' ';
         len += 1;
-        work_buffer[len] = b'c';
+        WORK_BUFFER[len] = b'c';
         len += 1;
-        work_buffer[len] = b'm';
+        WORK_BUFFER[len] = b'm';
         len += 1;
-        work_buffer[len] = b' ';
+        WORK_BUFFER[len] = b' ';
         len += 1;
         /* op: Q */
-        pdf_doc_add_page_content(&work_buffer[..len]); /* op: q cm */
+        pdf_doc_add_page_content(&WORK_BUFFER[..len]); /* op: q cm */
         len = (*args).endptr.wrapping_offset_from((*args).curptr) as usize; /* op: ANY */
         pdf_doc_add_page_content_ptr((*args).curptr, len as u32); /* op: */
         pdf_doc_add_page_content(b" Q");
@@ -1629,7 +1627,7 @@ unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
             loop {
                 let nb_read = ttstub_input_read(
                     handle as rust_input_handle_t,
-                    work_buffer.as_mut_ptr() as *mut i8,
+                    WORK_BUFFER.as_mut_ptr() as *mut i8,
                     1024i32 as size_t,
                 );
                 if !(nb_read > 0i32 as i64) {
@@ -1637,7 +1635,7 @@ unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
                 }
                 pdf_add_stream(
                     fstream,
-                    work_buffer.as_mut_ptr() as *const libc::c_void,
+                    WORK_BUFFER.as_mut_ptr() as *const libc::c_void,
                     nb_read as i32,
                 );
             }
@@ -1829,7 +1827,7 @@ unsafe extern "C" fn spc_handler_pdfm_eform(mut _spe: *mut spc_env, mut args: *m
  * lower-left corner of the XObject will be put.
  */
 unsafe extern "C" fn spc_handler_pdfm_uxobj(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -1918,7 +1916,7 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
 }
 unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;
-    static mut buffer: [i8; 1024] = [0; 1024];
+    static mut BUFFER: [i8; 1024] = [0; 1024];
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
         spc_warn(spe, b"Empty mapline special?\x00" as *const u8 as *const i8);
@@ -1945,7 +1943,7 @@ unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mu
         }
         _ => {
             let mut p = (*ap).curptr;
-            let mut q = buffer.as_mut_ptr();
+            let mut q = BUFFER.as_mut_ptr();
             while p < (*ap).endptr {
                 let fresh11 = p;
                 p = p.offset(1);
@@ -1959,9 +1957,9 @@ unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mu
             pdf_init_fontmap_record(mrec);
             error = pdf_read_fontmap_line(
                 mrec,
-                buffer.as_mut_ptr(),
+                BUFFER.as_mut_ptr(),
                 (*ap).endptr.wrapping_offset_from((*ap).curptr) as i64 as i32,
-                is_pdfm_mapline(buffer.as_mut_ptr()),
+                is_pdfm_mapline(BUFFER.as_mut_ptr()),
             );
             if error != 0 {
                 spc_warn(spe, b"Invalid fontmap line.\x00" as *const u8 as *const i8);
@@ -2016,7 +2014,7 @@ unsafe extern "C" fn spc_handler_pdfm_tounicode(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut sd: *mut spc_pdf_ = &mut _pdf_stat;
+    let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     /* First clear */
     (*sd).cd.cmap_id = -1i32;
     (*sd).cd.unescape_backslash = 0i32;
@@ -2066,7 +2064,7 @@ unsafe extern "C" fn spc_handler_pdfm_tounicode(
     free(cmap_name as *mut libc::c_void);
     0i32
 }
-static mut pdfm_handlers: [spc_handler; 80] = {
+static mut PDFM_HANDLERS: [spc_handler; 80] = {
     [
         {
             let mut init = spc_handler {
@@ -2917,10 +2915,10 @@ pub unsafe extern "C" fn spc_pdfm_setup_handler(
         for i in 0..(::std::mem::size_of::<[spc_handler; 80]>() as u64)
             .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
-            if streq_ptr(q, pdfm_handlers[i as usize].key) {
-                (*ap).command = pdfm_handlers[i as usize].key;
+            if streq_ptr(q, PDFM_HANDLERS[i as usize].key) {
+                (*ap).command = PDFM_HANDLERS[i as usize].key;
                 (*sph).key = b"pdf:\x00" as *const u8 as *const i8;
-                (*sph).exec = pdfm_handlers[i as usize].exec;
+                (*sph).exec = PDFM_HANDLERS[i as usize].exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
