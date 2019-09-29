@@ -52,6 +52,12 @@ pub enum PdfColorError {
     EmptyName
 }
 
+impl PdfColorError {
+    pub fn warn(&self) {
+        warn!("{}", self);
+    }
+}
+
 impl fmt::Display for PdfColorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

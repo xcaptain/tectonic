@@ -144,7 +144,10 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            *colorspec = Some(PdfColor::from_rgb(cv[0], cv[1], cv[2]).unwrap());
+            match PdfColor::from_rgb(cv[0], cv[1], cv[2]) {
+                Ok(color) => *colorspec = Some(color),
+                Err(err) => err.warn(),
+            }
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
@@ -156,7 +159,10 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            *colorspec = Some(PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).unwrap());
+            match PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]){
+                Ok(color) => *colorspec = Some(color),
+                Err(err) => err.warn()
+            }
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
@@ -168,7 +174,10 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            *colorspec = Some(PdfColor::from_gray(cv[0]).unwrap());
+            match PdfColor::from_gray(cv[0]) {
+                Ok(color) => *colorspec = Some(color),
+                Err(err) => err.warn()
+            }
         }
     } else if streq_ptr(q, b"spot\x00" as *const u8 as *const i8) {
         /* Handle spot colors */
@@ -190,7 +199,10 @@ unsafe extern "C" fn spc_read_color_color(
             error = -1i32;
             free(color_name as *mut libc::c_void);
         } else {
-            *colorspec = Some(PdfColor::from_spot(CStr::from_ptr(color_name).to_owned(), cv[0]).unwrap());
+            match PdfColor::from_spot(CStr::from_ptr(color_name).to_owned(), cv[0]) {
+                Ok(color) => *colorspec = Some(color),
+                Err(err) => err.warn()
+            }
         }
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
@@ -201,8 +213,8 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            *colorspec = Some(rgb_color_from_hsv(cv[0], cv[1], cv[2]));
-            if let &PdfColor::Rgb(r, g, b) = colorspec.as_ref().unwrap() {
+            let color = rgb_color_from_hsv(cv[0], cv[1], cv[2]);
+            if let &PdfColor::Rgb(r, g, b) = &color {
                 spc_warn(
                     spe,
                     b"HSB color converted to RGB: hsb: <%g, %g, %g> ==> rgb: <%g, %g, %g>\x00"
@@ -217,6 +229,7 @@ unsafe extern "C" fn spc_read_color_color(
             } else {
                 unreachable!();
             }
+            *colorspec = Some(color);
         }
     } else {
         if let Ok(name) = CStr::from_ptr(q).to_str() {
