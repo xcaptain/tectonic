@@ -641,7 +641,6 @@ unsafe extern "C" fn pdf_dev__flushpath(
     let mut b = &mut fmt_buf; /* height... */
     let mut b_len = 1024; /* op: re */
     let mut r = pdf_rect::new(); /* op: m l c v y h */
-    let mut n_seg: i32 = 0; /* default to 1 in PDF */
     let mut len = 0_usize;
     let mut isrect: i32 = 0;
     assert!(b"fFsSbBW ".contains(&opchr));
