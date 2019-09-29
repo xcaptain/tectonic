@@ -19,7 +19,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
-#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
+#![allow(non_camel_case_types, non_snake_case, unused_mut)]
 
 pub mod color;
 pub mod dvipdfmx;
@@ -112,21 +112,21 @@ pub struct Special {
     pub setup_func:
         unsafe extern "C" fn(_: *mut spc_handler, _: *mut spc_env, _: *mut spc_arg) -> i32,
 }
-static mut verbose: i32 = 0i32;
+static mut VERBOSE: i32 = 0i32;
 pub unsafe fn spc_set_verbose(mut level: i32) {
-    verbose = level;
+    VERBOSE = level;
 }
 pub unsafe extern "C" fn spc_warn(mut _spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
     let mut ap: ::std::ffi::VaListImpl;
-    static mut buf: [u8; 1024] = [0; 1024];
+    static mut BUF: [u8; 1024] = [0; 1024];
     ap = args.clone();
     vsnprintf(
-        buf.as_mut_ptr() as *mut i8,
-        buf.len() as _,
+        BUF.as_mut_ptr() as *mut i8,
+        BUF.len() as _,
         fmt,
         ap.as_va_list(),
     );
-    warn!("{}", CStr::from_bytes_with_nul(&buf[..]).unwrap().display());
+    warn!("{}", CStr::from_bytes_with_nul(&BUF[..]).unwrap().display());
 }
 /* This is currently just to make other spc_xxx to not directly
  * call dvi_xxx.
@@ -150,9 +150,9 @@ pub unsafe extern "C" fn spc_suspend_annot(mut _spe: *mut spc_env) -> i32 {
     dvi_link_annot(0i32);
     0i32
 }
-static mut named_objects: *mut ht_table = 0 as *const ht_table as *mut ht_table;
+static mut NAMED_OBJECTS: *mut ht_table = 0 as *const ht_table as *mut ht_table;
 /* reserved keys */
-static mut _rkeys: [*const i8; 11] = [
+static mut _RKEYS: [*const i8; 11] = [
     b"xpos\x00" as *const u8 as *const i8,
     b"ypos\x00" as *const u8 as *const i8,
     b"thispage\x00" as *const u8 as *const i8,
@@ -192,12 +192,12 @@ unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
  * The following routine returns copies, not the original object.
  */
 pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_obj {
-    assert!(!named_objects.is_null());
+    assert!(!NAMED_OBJECTS.is_null());
     if key.is_null() {
         return 0 as *mut pdf_obj;
     }
     let mut k = 0;
-    while !_rkeys[k].is_null() && strcmp(key, _rkeys[k]) != 0 {
+    while !_RKEYS[k].is_null() && strcmp(key, _RKEYS[k]) != 0 {
         k += 1
     }
     let value = match k {
@@ -233,7 +233,7 @@ pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_ob
                 pdf_doc_ref_page(atoi(key.offset(4)) as u32)
             } else {
                 pdf_names_lookup_reference(
-                    named_objects,
+                    NAMED_OBJECTS,
                     key as *const libc::c_void,
                     strlen(key) as i32,
                 )
@@ -249,12 +249,12 @@ pub unsafe extern "C" fn spc_lookup_reference(mut key: *const i8) -> *mut pdf_ob
     value
 }
 pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
-    assert!(!named_objects.is_null());
+    assert!(!NAMED_OBJECTS.is_null());
     if key.is_null() {
         return 0 as *mut pdf_obj;
     }
     let mut k = 0i32;
-    while !_rkeys[k as usize].is_null() && strcmp(key, _rkeys[k as usize]) != 0 {
+    while !_RKEYS[k as usize].is_null() && strcmp(key, _RKEYS[k as usize]) != 0 {
         k += 1
     }
     let value;
@@ -277,7 +277,7 @@ pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
         9 => value = pdf_doc_get_dictionary(b"Info\x00" as *const u8 as *const i8),
         _ => {
             value = pdf_names_lookup_object(
-                named_objects,
+                NAMED_OBJECTS,
                 key as *const libc::c_void,
                 strlen(key) as i32,
             )
@@ -291,12 +291,12 @@ pub unsafe extern "C" fn spc_lookup_object(mut key: *const i8) -> *mut pdf_obj {
     return value; /* _FIXME_ */
 }
 pub unsafe extern "C" fn spc_push_object(mut key: *const i8, mut value: *mut pdf_obj) {
-    assert!(!named_objects.is_null());
+    assert!(!NAMED_OBJECTS.is_null());
     if key.is_null() || value.is_null() {
         return;
     }
     pdf_names_add_object(
-        named_objects,
+        NAMED_OBJECTS,
         key as *const libc::c_void,
         strlen(key) as i32,
         value,
@@ -304,14 +304,14 @@ pub unsafe extern "C" fn spc_push_object(mut key: *const i8, mut value: *mut pdf
 }
 pub unsafe extern "C" fn spc_flush_object(mut key: *const i8) {
     pdf_names_close_object(
-        named_objects,
+        NAMED_OBJECTS,
         key as *const libc::c_void,
         strlen(key) as i32,
     );
 }
 pub unsafe extern "C" fn spc_clear_objects() {
-    pdf_delete_name_tree(&mut named_objects);
-    named_objects = pdf_new_name_tree();
+    pdf_delete_name_tree(&mut NAMED_OBJECTS);
+    NAMED_OBJECTS = pdf_new_name_tree();
 }
 unsafe extern "C" fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     assert!(!spe.is_null() && !args.is_null());
@@ -354,7 +354,7 @@ unsafe fn check_garbage(mut args: &mut spc_arg) {
         dump((*args).curptr, (*args).endptr);
     };
 }
-const known_specials: [Special; 8] = [
+const KNOWN_SPECIALS: [Special; 8] = [
     Special {
         key: b"pdf:\x00" as *const u8 as *const i8,
         bodhk_func: Some(spc_pdfm_at_begin_document),
@@ -430,7 +430,7 @@ const known_specials: [Special; 8] = [
 ];
 pub unsafe extern "C" fn spc_exec_at_begin_page() -> i32 {
     let mut error: i32 = 0i32;
-    for spc in &known_specials {
+    for spc in &KNOWN_SPECIALS {
         if let Some(bophk) = spc.bophk_func {
             error = bophk();
         }
@@ -439,7 +439,7 @@ pub unsafe extern "C" fn spc_exec_at_begin_page() -> i32 {
 }
 pub unsafe extern "C" fn spc_exec_at_end_page() -> i32 {
     let mut error: i32 = 0i32;
-    for spc in &known_specials {
+    for spc in &KNOWN_SPECIALS {
         if let Some(eophk) = spc.eophk_func {
             error = eophk();
         }
@@ -448,9 +448,9 @@ pub unsafe extern "C" fn spc_exec_at_end_page() -> i32 {
 }
 pub unsafe extern "C" fn spc_exec_at_begin_document() -> i32 {
     let mut error: i32 = 0i32;
-    assert!(named_objects.is_null());
-    named_objects = pdf_new_name_tree();
-    for spc in &known_specials {
+    assert!(NAMED_OBJECTS.is_null());
+    NAMED_OBJECTS = pdf_new_name_tree();
+    for spc in &KNOWN_SPECIALS {
         if let Some(bodhk) = spc.bodhk_func {
             error = bodhk();
         }
@@ -460,13 +460,13 @@ pub unsafe extern "C" fn spc_exec_at_begin_document() -> i32 {
 pub unsafe extern "C" fn spc_exec_at_end_document() -> i32 {
     let mut error: i32 = 0i32;
 
-    for spc in &known_specials {
+    for spc in &KNOWN_SPECIALS {
         if let Some(eodhk) = spc.eodhk_func {
             error = eodhk();
         }
     }
-    if !named_objects.is_null() {
-        pdf_delete_name_tree(&mut named_objects);
+    if !NAMED_OBJECTS.is_null() {
+        pdf_delete_name_tree(&mut NAMED_OBJECTS);
     }
     error
 }
@@ -583,7 +583,7 @@ pub unsafe extern "C" fn spc_exec_special(
         key: 0 as *const i8,
         exec: None,
     };
-    if verbose > 3i32 {
+    if VERBOSE > 3i32 {
         dump(buffer, buffer.offset(size as isize));
     }
     init_special(
@@ -597,7 +597,7 @@ pub unsafe extern "C" fn spc_exec_special(
         mag,
     );
 
-    for spc in &known_specials {
+    for spc in &KNOWN_SPECIALS {
         let found = (spc.check_func)(buffer, size);
         if found {
             error = (spc.setup_func)(&mut special, &mut spe, &mut args);

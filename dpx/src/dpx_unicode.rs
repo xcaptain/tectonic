@@ -19,7 +19,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
-#![allow(dead_code,
+#![allow(
          mutable_transmutes,
          non_camel_case_types,
          non_snake_case,
@@ -238,7 +238,7 @@ pub unsafe extern "C" fn UC_UTF8_encode_char(
         *p.offset(3) = (0x80i32 | ucv >> 6i32 & 0x3fi32) as u8;
         *p.offset(4) = (0x80i32 | ucv & 0x3fi32) as u8;
         count = 5i32
-    } else if ucv <= 0x7fffffffi32 {
+    } else {
         if p >= endptr.offset(-6) {
             return 0i32 as size_t;
         }

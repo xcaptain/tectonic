@@ -20,12 +20,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -67,12 +65,10 @@ pub unsafe extern "C" fn spc_util_read_numbers(
     mut num_values: i32,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut count: i32 = 0;
-    let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*args).curptr, (*args).endptr);
-    count = 0i32;
+    let mut count = 0;
     while count < num_values && (*args).curptr < (*args).endptr {
-        q = parse_float_decimal(&mut (*args).curptr, (*args).endptr);
+        let q = parse_float_decimal(&mut (*args).curptr, (*args).endptr);
         if q.is_null() {
             break;
         }
@@ -84,25 +80,16 @@ pub unsafe extern "C" fn spc_util_read_numbers(
     count
 }
 unsafe extern "C" fn rgb_color_from_hsv(color: &mut pdf_color, mut h: f64, mut s: f64, mut v: f64) {
-    let mut r: f64 = 0.;
-    let mut g: f64 = 0.;
-    let mut b: f64 = 0.;
-    b = v;
-    g = b;
-    r = g;
+    let mut b = v;
+    let mut g = b;
+    let mut r = g;
     if s != 0.0f64 {
-        let mut h6: f64 = 0.;
-        let mut f: f64 = 0.;
-        let mut v1: f64 = 0.;
-        let mut v2: f64 = 0.;
-        let mut v3: f64 = 0.;
-        let mut i: i32 = 0;
-        h6 = h * 6i32 as f64;
-        i = h6 as i32;
-        f = h6 - i as f64;
-        v1 = v * (1i32 as f64 - s);
-        v2 = v * (1i32 as f64 - s * f);
-        v3 = v * (1i32 as f64 - s * (1i32 as f64 - f));
+        let h6 = h * 6i32 as f64;
+        let i = h6 as i32;
+        let f = h6 - i as f64;
+        let v1 = v * (1i32 as f64 - s);
+        let v2 = v * (1i32 as f64 - s * f);
+        let v3 = v * (1i32 as f64 - s * (1i32 as f64 - f));
         match i {
             0 => {
                 r = v;
@@ -149,11 +136,9 @@ unsafe extern "C" fn spc_read_color_color(
     colorspec: &mut pdf_color,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut q: *mut i8 = 0 as *mut i8;
     let mut cv: [f64; 4] = [0.; 4];
-    let mut nc: i32 = 0;
     let mut error: i32 = 0i32;
-    q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
         spc_warn(
             spe,
@@ -164,7 +149,7 @@ unsafe extern "C" fn spc_read_color_color(
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if streq_ptr(q, b"rgb\x00" as *const u8 as *const i8) {
         /* Handle rgb color */
-        nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
+        let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
             spc_warn(
                 spe,
@@ -176,7 +161,7 @@ unsafe extern "C" fn spc_read_color_color(
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
-        nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
+        let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
         if nc != 4i32 {
             spc_warn(
                 spe,
@@ -188,7 +173,7 @@ unsafe extern "C" fn spc_read_color_color(
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
-        nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
+        let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
             spc_warn(
                 spe,
@@ -209,7 +194,7 @@ unsafe extern "C" fn spc_read_color_color(
             return -1i32;
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
-        nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
+        let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
             spc_warn(
                 spe,
@@ -221,7 +206,7 @@ unsafe extern "C" fn spc_read_color_color(
             pdf_color_spotcolor(colorspec, color_name, cv[0]);
         }
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
-        nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
+        let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
             spc_warn(
                 spe,
@@ -267,17 +252,15 @@ unsafe extern "C" fn spc_read_color_pdf(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
-    let mut nc: i32 = 0;
     let mut isarry: i32 = 0i32;
     let mut error: i32 = 0i32;
-    let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if *(*ap).curptr.offset(0) as i32 == '[' as i32 {
         (*ap).curptr = (*ap).curptr.offset(1);
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         isarry = 1i32
     }
-    nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
+    let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
     match nc {
         1 => {
             pdf_color_graycolor(colorspec, cv[0]);
@@ -290,7 +273,7 @@ unsafe extern "C" fn spc_read_color_pdf(
         }
         _ => {
             /* Try to read the color names defined in dvipsname.def */
-            q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+            let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
             if q.is_null() {
                 spc_warn(
                     spe,
@@ -350,13 +333,12 @@ pub unsafe extern "C" fn spc_util_read_pdfcolor(
     mut ap: *mut spc_arg,
     defaultcolor: Option<&pdf_color>,
 ) -> i32 {
-    let mut error: i32 = 0i32;
     assert!(!spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
         return -1i32;
     }
-    error = spc_read_color_pdf(spe, colorspec, ap);
+    let mut error = spc_read_color_pdf(spe, colorspec, ap);
     if error < 0i32 {
         if let Some(dc) = defaultcolor {
             pdf_color_copycolor(colorspec, dc);
@@ -374,8 +356,6 @@ unsafe extern "C" fn spc_util_read_length(
     mut vp: *mut f64,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut q: *mut i8 = 0 as *mut i8; /* inverse magnify */
-    let mut v: f64 = 0.;
     let mut u: f64 = 1.0f64;
     let mut ukeys: [*const i8; 10] = [
         b"pt\x00" as *const u8 as *const i8,
@@ -389,16 +369,15 @@ unsafe extern "C" fn spc_util_read_length(
         b"sp\x00" as *const u8 as *const i8,
         0 as *const i8,
     ];
-    let mut k: i32 = 0;
     let mut error: i32 = 0i32;
-    q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+    let q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr); /* inverse magnify */
     if q.is_null() {
         return -1i32;
     }
-    v = atof(q);
+    let v = atof(q);
     free(q as *mut libc::c_void);
     skip_white(&mut (*ap).curptr, (*ap).endptr);
-    q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let mut q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
         let mut qq: *mut i8 = q;
         if strlen(q) >= strlen(b"true\x00" as *const u8 as *const i8)
@@ -422,8 +401,8 @@ unsafe extern "C" fn spc_util_read_length(
             }
         }
         if !q.is_null() {
-            k = 0i32;
-            while !ukeys[k as usize].is_null() && strcmp(ukeys[k as usize], q) != 0 {
+            let mut k = 0;
+            while !ukeys[k].is_null() && strcmp(ukeys[k], q) != 0 {
                 k += 1
             }
             match k {
@@ -500,28 +479,20 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
         b"rhi\x00" as *const u8 as *const i8,
         0 as *const i8,
     ];
-    let mut xoffset: f64 = 0.;
-    let mut yoffset: f64 = 0.;
-    let mut xscale: f64 = 0.;
-    let mut yscale: f64 = 0.;
-    let mut rotate: f64 = 0.;
     let mut error: i32 = 0i32;
-    rotate = 0.0f64;
-    yoffset = rotate;
-    xoffset = yoffset;
-    yscale = 1.0f64;
-    xscale = yscale;
+    let mut rotate = 0.0f64;
+    let mut yoffset = rotate;
+    let mut xoffset = yoffset;
+    let mut yscale = 1.0f64;
+    let mut xscale = yscale;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     while error == 0 && (*ap).curptr < (*ap).endptr {
-        let mut kp: *mut i8 = 0 as *mut i8;
-        let mut vp: *mut i8 = 0 as *mut i8;
-        let mut k: i32 = 0;
-        kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+        let kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
         if kp.is_null() {
             break;
         }
-        k = 0i32;
-        while !_dtkeys[k as usize].is_null() && strcmp(kp, _dtkeys[k as usize]) != 0 {
+        let mut k = 0;
+        while !_dtkeys[k].is_null() && strcmp(kp, _dtkeys[k]) != 0 {
             k += 1
         }
         if _dtkeys[k as usize].is_null() {
@@ -535,7 +506,7 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
             break;
         } else {
             skip_blank(&mut (*ap).curptr, (*ap).endptr);
-            if k == 7i32 {
+            if k == 7 {
                 t.flags |= 1i32 << 3i32;
                 free(kp as *mut libc::c_void);
             /* not key-value */
@@ -544,7 +515,7 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
                     (*ap).curptr = (*ap).curptr.offset(1);
                     skip_blank(&mut (*ap).curptr, (*ap).endptr);
                 }
-                vp = 0 as *mut i8;
+                let mut vp;
                 if *(*ap).curptr.offset(0) as i32 == '\'' as i32
                     || *(*ap).curptr.offset(0) as i32 == '\"' as i32
                 {
@@ -636,11 +607,6 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
     p: &mut transform_info,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut has_scale: i32 = 0; /* default: do clipping */
-    let mut has_xscale: i32 = 0; /* default: do clipping */
-    let mut has_yscale: i32 = 0;
-    let mut has_rotate: i32 = 0;
-    let mut has_matrix: i32 = 0;
     let mut _dtkeys: [*const i8; 12] = [
         b"width\x00" as *const u8 as *const i8,
         b"height\x00" as *const u8 as *const i8,
@@ -655,32 +621,26 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
         b"hide\x00" as *const u8 as *const i8,
         0 as *const i8,
     ];
-    let mut xscale: f64 = 0.;
-    let mut yscale: f64 = 0.;
-    let mut rotate: f64 = 0.;
     let mut error: i32 = 0i32;
-    has_matrix = 0i32;
-    has_rotate = has_matrix;
-    has_scale = has_rotate;
-    has_yscale = has_scale;
-    has_xscale = has_yscale;
-    yscale = 1.0f64;
-    xscale = yscale;
-    rotate = 0.0f64;
+    let mut has_matrix = 0i32;
+    let mut has_rotate = has_matrix;
+    let mut has_scale = has_rotate; /* default: do clipping */
+    let mut has_yscale = has_scale;
+    let mut has_xscale = has_yscale;
+    let mut yscale = 1.0f64;
+    let mut xscale = yscale;
+    let mut rotate = 0.0f64;
     p.flags |= 1i32 << 3i32;
     p.flags &= !(1i32 << 4i32);
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     while error == 0 && (*ap).curptr < (*ap).endptr {
-        let mut kp: *mut i8 = 0 as *mut i8;
-        let mut vp: *mut i8 = 0 as *mut i8;
-        let mut k: i32 = 0;
-        kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+        let kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
         if kp.is_null() {
             break;
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
-        k = 0i32;
-        while !_dtkeys[k as usize].is_null() && strcmp(_dtkeys[k as usize], kp) != 0 {
+        let mut k = 0;
+        while !_dtkeys[k].is_null() && strcmp(_dtkeys[k], kp) != 0 {
             k += 1
         }
         match k {
@@ -697,7 +657,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
                 p.flags |= 1i32 << 2i32
             }
             3 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -708,7 +668,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
                 }
             }
             4 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -718,7 +678,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
                 }
             }
             5 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -728,7 +688,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
                 }
             }
             6 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -764,7 +724,7 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
                 }
             }
             9 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -860,11 +820,6 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
     mut bbox_type: *mut i32,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut has_scale: i32 = 0; /* default: do clipping */
-    let mut has_xscale: i32 = 0; /* default: do clipping */
-    let mut has_yscale: i32 = 0;
-    let mut has_rotate: i32 = 0;
-    let mut has_matrix: i32 = 0;
     let mut _dtkeys: [*const i8; 14] = [
         b"width\x00" as *const u8 as *const i8,
         b"height\x00" as *const u8 as *const i8,
@@ -881,32 +836,26 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
         b"pagebox\x00" as *const u8 as *const i8,
         0 as *const i8,
     ];
-    let mut xscale: f64 = 0.;
-    let mut yscale: f64 = 0.;
-    let mut rotate: f64 = 0.;
     let mut error: i32 = 0i32;
-    has_matrix = 0i32;
-    has_rotate = has_matrix;
-    has_scale = has_rotate;
-    has_yscale = has_scale;
-    has_xscale = has_yscale;
-    yscale = 1.0f64;
-    xscale = yscale;
-    rotate = 0.0f64;
+    let mut has_matrix = 0i32; /* default: do clipping */
+    let mut has_rotate = has_matrix;
+    let mut has_scale = has_rotate;
+    let mut has_yscale = has_scale;
+    let mut has_xscale = has_yscale;
+    let mut yscale = 1.0f64;
+    let mut xscale = yscale;
+    let mut rotate = 0.0f64;
     p.flags |= 1i32 << 3i32;
     p.flags &= !(1i32 << 4i32);
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     while error == 0 && (*ap).curptr < (*ap).endptr {
-        let mut kp: *mut i8 = 0 as *mut i8;
-        let mut vp: *mut i8 = 0 as *mut i8;
-        let mut k: i32 = 0;
-        kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+        let kp = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
         if kp.is_null() {
             break;
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
-        k = 0i32;
-        while !_dtkeys[k as usize].is_null() && strcmp(_dtkeys[k as usize], kp) != 0 {
+        let mut k = 0;
+        while !_dtkeys[k].is_null() && strcmp(_dtkeys[k], kp) != 0 {
             k += 1
         }
         match k {
@@ -923,7 +872,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
                 p.flags |= 1i32 << 2i32
             }
             3 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -934,7 +883,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
                 }
             }
             4 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -944,7 +893,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
                 }
             }
             5 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -954,7 +903,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
                 }
             }
             6 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -990,7 +939,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
                 }
             }
             9 => {
-                vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
+                let vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                 if vp.is_null() {
                     error = -1i32
                 } else {
@@ -1012,8 +961,7 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
             }
             10 => p.flags |= 1i32 << 4i32,
             12 => {
-                let mut q: *mut i8 = 0 as *mut i8;
-                q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+                let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
                 if !q.is_null() {
                     if !bbox_type.is_null() {
                         if strcasecmp(q, b"cropbox\x00" as *const u8 as *const i8) == 0i32 {
@@ -2057,10 +2005,9 @@ static mut colordefs: [colordef_; 69] = [
 ];
 /* From pdfcolor.c */
 unsafe extern "C" fn pdf_color_namedcolor(color: &mut pdf_color, mut name: *const i8) -> i32 {
-    let mut i: i32 = 0;
-    i = 0i32;
-    while !colordefs[i as usize].key.is_null() {
-        if streq_ptr(colordefs[i as usize].key, name) {
+    let mut i = 0;
+    while !colordefs[i].key.is_null() {
+        if streq_ptr(colordefs[i].key, name) {
             pdf_color_copycolor(
                 color,
                 &mut (*colordefs.as_mut_ptr().offset(i as isize)).color,

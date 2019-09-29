@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -554,8 +553,8 @@ unsafe extern "C" fn check_version(p: &mut pdf_sec, mut version: i32) {
 unsafe extern "C" fn stringprep_profile(
     mut input: *const i8,
     mut output: *mut *mut i8,
-    mut profile: *const i8,
-    mut flags: Stringprep_profile_flags,
+    mut _profile: *const i8,
+    mut _flags: Stringprep_profile_flags,
 ) -> i32 {
     let mut p: *const i8 = 0 as *const i8;
     let mut endptr: *const i8 = 0 as *const i8;

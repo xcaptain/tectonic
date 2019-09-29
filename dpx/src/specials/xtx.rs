@@ -20,12 +20,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -221,13 +219,12 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut error: i32 = 0;
     let mut colorspec = pdf_color {
         num_components: 0,
         spot_color_name: None,
         values: [0.; 4],
     };
-    error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
+    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
     if error != 0 {
         spc_warn(
             spe,
@@ -243,13 +240,8 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut mrec: *mut fontmap_rec = 0 as *mut fontmap_rec;
-    let mut map_name: *mut i8 = 0 as *mut i8;
-    let mut opchr: i8 = 0;
     let mut error: i32 = 0i32;
     static mut buffer: [i8; 1024] = [0; 1024];
-    let mut p: *const i8 = 0 as *const i8;
-    let mut q: *mut i8 = 0 as *mut i8;
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
         spc_warn(
@@ -258,14 +250,14 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
         );
         return -1i32;
     }
-    opchr = *(*ap).curptr.offset(0);
+    let opchr = *(*ap).curptr.offset(0);
     if opchr as i32 == '-' as i32 || opchr as i32 == '+' as i32 {
         (*ap).curptr = (*ap).curptr.offset(1)
     }
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     match opchr as i32 {
         45 => {
-            map_name = parse_ident(&mut (*ap).curptr, (*ap).endptr);
+            let map_name = parse_ident(&mut (*ap).curptr, (*ap).endptr);
             if !map_name.is_null() {
                 pdf_remove_fontmap_record(map_name);
                 free(map_name as *mut libc::c_void);
@@ -278,8 +270,8 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
             }
         }
         _ => {
-            p = (*ap).curptr;
-            q = buffer.as_mut_ptr();
+            let mut p = (*ap).curptr;
+            let mut q = buffer.as_mut_ptr();
             while p < (*ap).endptr {
                 let fresh1 = p;
                 p = p.offset(1);
@@ -288,7 +280,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
                 *fresh2 = *fresh1
             }
             *q = '\u{0}' as i32 as i8;
-            mrec = new((1_u64).wrapping_mul(::std::mem::size_of::<fontmap_rec>() as u64) as u32)
+            let mrec = new((1_u64).wrapping_mul(::std::mem::size_of::<fontmap_rec>() as u64) as u32)
                 as *mut fontmap_rec;
             pdf_init_fontmap_record(mrec);
             error = pdf_read_fontmap_line(
@@ -317,35 +309,31 @@ unsafe extern "C" fn spc_handler_xtx_fontmapfile(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut mapfile: *mut i8 = 0 as *mut i8;
-    let mut mode: i32 = 0;
-    let mut error: i32 = 0i32;
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr >= (*args).endptr {
         return 0i32;
     }
-    match *(*args).curptr.offset(0) as i32 {
+    let mode = match *(*args).curptr.offset(0) as i32 {
         45 => {
-            mode = '-' as i32;
-            (*args).curptr = (*args).curptr.offset(1)
+            (*args).curptr = (*args).curptr.offset(1);
+            '-' as i32
         }
         43 => {
-            mode = '+' as i32;
-            (*args).curptr = (*args).curptr.offset(1)
+            (*args).curptr = (*args).curptr.offset(1);
+            '+' as i32
         }
-        _ => mode = 0i32,
-    }
-    mapfile = parse_val_ident(&mut (*args).curptr, (*args).endptr);
+        _ => 0,
+    };
+    let mapfile = parse_val_ident(&mut (*args).curptr, (*args).endptr);
     if mapfile.is_null() {
         spc_warn(
             spe,
             b"No fontmap file specified.\x00" as *const u8 as *const i8,
         );
-        return -1i32;
+        -1
     } else {
-        error = pdf_load_fontmap_file(mapfile, mode)
+        pdf_load_fontmap_file(mapfile, mode)
     }
-    error
 }
 static mut overlay_name: [i8; 256] = [0; 256];
 unsafe extern "C" fn spc_handler_xtx_initoverlay(
@@ -667,10 +655,8 @@ static mut xtx_handlers: [spc_handler; 21] = {
 };
 #[no_mangle]
 pub unsafe extern "C" fn spc_xtx_check_special(mut buf: *const i8, mut len: i32) -> bool {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    p = buf;
-    endptr = p.offset(len as isize);
+    let mut p = buf;
+    let endptr = p.offset(len as isize);
     skip_white(&mut p, endptr);
     if p.offset(strlen(b"x:\x00" as *const u8 as *const i8) as isize) <= endptr
         && memcmp(
@@ -690,7 +676,6 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap)
@@ -710,7 +695,7 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
         .curptr
         .offset(strlen(b"x:\x00" as *const u8 as *const i8) as isize);
     skip_white(&mut (*ap).curptr, (*ap).endptr);
-    q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
         for i in 0..(::std::mem::size_of::<[spc_handler; 21]>() as u64)
             .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)

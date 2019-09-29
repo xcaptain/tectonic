@@ -3,10 +3,6 @@
 #![feature(c_variadic)]
 #![feature(const_transmute)]
 #![allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut,
     unused_unsafe
 )]
 #![deny(clippy::reverse_range_loop)]
@@ -200,11 +196,11 @@ mod shims;
 
 pub use crate::dpx_dvipdfmx::dvipdfmx_main;
 
-pub type __compar_fn_t =
+pub type __ComparFn =
     Option<unsafe extern "C" fn(_: *const libc::c_void, _: *const libc::c_void) -> i32>;
 extern "C" {
     #[no_mangle]
-    fn qsort(__base: *mut libc::c_void, __nmemb: size_t, __size: size_t, __compar: __compar_fn_t);
+    fn qsort(__base: *mut libc::c_void, __nmemb: size_t, __size: size_t, __compar: __ComparFn);
     #[no_mangle]
     fn strtoll(_: *const i8, _: *mut *mut i8, _: i32) -> libc::c_longlong;
     #[no_mangle]
