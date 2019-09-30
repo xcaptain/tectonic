@@ -20,12 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -53,13 +47,12 @@ use libc::free;
  * implicitely.
  */
 unsafe extern "C" fn spc_handler_color_push(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut error: i32 = 0;
     let mut colorspec: pdf_color = pdf_color {
         num_components: 0,
         spot_color_name: None,
         values: [0.; 4],
     };
-    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         let color_clone = colorspec.clone();
         pdf_color_push(&mut colorspec, &color_clone);
@@ -77,13 +70,12 @@ unsafe extern "C" fn spc_handler_color_default(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut error: i32 = 0;
     let mut colorspec: pdf_color = pdf_color {
         num_components: 0,
         spot_color_name: None,
         values: [0.; 4],
     };
-    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         pdf_color_clear_stack();
         pdf_color_set(&colorspec, &colorspec);
@@ -92,13 +84,12 @@ unsafe extern "C" fn spc_handler_color_default(
 }
 /* This is from color special? */
 unsafe extern "C" fn spc_handler_background(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut error: i32 = 0;
     let mut colorspec = pdf_color {
         num_components: 0,
         spot_color_name: None,
         values: [0.; 4],
     };
-    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         pdf_doc_set_bgcolor(Some(&colorspec));
     }
@@ -114,13 +105,10 @@ unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
 #[no_mangle]
 pub unsafe extern "C" fn spc_color_check_special(mut buf: *const i8, mut len: i32) -> bool {
     let mut r: bool = false;
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    let mut q: *mut i8 = 0 as *mut i8;
-    p = buf;
-    endptr = p.offset(len as isize);
+    let mut p = buf;
+    let endptr = p.offset(len as isize);
     skip_blank(&mut p, endptr);
-    q = parse_c_ident(&mut p, endptr);
+    let q = parse_c_ident(&mut p, endptr);
     if q.is_null() {
         return false;
     } else {
@@ -139,11 +127,9 @@ pub unsafe extern "C" fn spc_color_setup_handler(
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
-    q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
         return -1i32;
     }
@@ -157,8 +143,8 @@ pub unsafe extern "C" fn spc_color_setup_handler(
     } else if streq_ptr(q, b"color\x00" as *const u8 as *const i8) {
         /* color */
         free(q as *mut libc::c_void); /* cmyk, rgb, ... */
-        p = (*ap).curptr;
-        q = parse_c_ident(&mut p, (*ap).endptr);
+        let mut p = (*ap).curptr;
+        let q = parse_c_ident(&mut p, (*ap).endptr);
         if q.is_null() {
             return -1i32;
         } else {

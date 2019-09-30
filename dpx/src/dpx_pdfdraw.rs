@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -222,9 +221,6 @@ impl PeType {
 
 static mut fmt_buf: [u8; 1024] = [0; 1024];
 
-fn clear_a_path(p: &mut pdf_path) {
-    p.path = vec![];
-}
 /* start new subpath */
 unsafe extern "C" fn pdf_path__moveto(
     pa: &mut pdf_path,
@@ -645,7 +641,6 @@ unsafe extern "C" fn pdf_dev__flushpath(
     let mut b = &mut fmt_buf; /* height... */
     let mut b_len = 1024; /* op: re */
     let mut r = pdf_rect::new(); /* op: m l c v y h */
-    let mut n_seg: i32 = 0; /* default to 1 in PDF */
     let mut len = 0_usize;
     let mut isrect: i32 = 0;
     assert!(b"fFsSbBW ".contains(&opchr));
@@ -855,7 +850,6 @@ pub extern "C" fn pdf_dev_current_depth() -> usize {
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_grestore_to(mut depth: usize) {
     let mut gss = unsafe { &mut gs_stack }; /* op: Q */
-    assert!(depth >= 0);
     if gss.len() > depth + 1 {
         warn!("Closing pending transformations at end of page/XObject.");
     }

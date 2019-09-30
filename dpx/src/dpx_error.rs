@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -86,7 +85,7 @@ unsafe extern "C" fn _dpx_print_to_stdout(
     _dpx_message_handle
         .as_mut()
         .unwrap()
-        .write(&_dpx_message_buf[..n as usize]);
+        .write(&_dpx_message_buf[..n as usize]).unwrap();
 }
 
 #[no_mangle]
@@ -107,13 +106,13 @@ pub unsafe extern "C" fn dpx_warning(mut fmt: *const i8, mut args: ...) {
     }
     if _last_message_type as u32 == DPX_MESG_INFO as i32 as u32 {
         _dpx_ensure_output_handle();
-        _dpx_message_handle.as_mut().unwrap().write(b"\n");
+        _dpx_message_handle.as_mut().unwrap().write(b"\n").unwrap();
     }
     _dpx_ensure_output_handle();
-    _dpx_message_handle.as_mut().unwrap().write(b"warning: ");
+    _dpx_message_handle.as_mut().unwrap().write(b"warning: ").unwrap();
     argp = args.clone();
     _dpx_print_to_stdout(fmt, argp.as_va_list(), true);
     _dpx_ensure_output_handle();
-    _dpx_message_handle.as_mut().unwrap().write(b"\n");
+    _dpx_message_handle.as_mut().unwrap().write(b"\n").unwrap();
     _last_message_type = DPX_MESG_WARN;
 }

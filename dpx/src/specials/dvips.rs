@@ -20,12 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
-    mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -61,15 +57,13 @@ pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *m
 use super::spc_handler;
 
 use crate::dpx_pdfximage::load_options;
-static mut block_pending: i32 = 0i32;
-static mut pending_x: f64 = 0.0f64;
-static mut pending_y: f64 = 0.0f64;
-static mut position_set: i32 = 0i32;
-static mut ps_headers: *mut *mut i8 = 0 as *const *mut i8 as *mut *mut i8;
-static mut num_ps_headers: i32 = 0i32;
+static mut BLOCK_PENDING: i32 = 0i32;
+static mut PENDING_X: f64 = 0.0f64;
+static mut PENDING_Y: f64 = 0.0f64;
+static mut POSITION_SET: i32 = 0i32;
+static mut PS_HEADERS: *mut *mut i8 = 0 as *const *mut i8 as *mut *mut i8;
+static mut NUM_PS_HEADERS: i32 = 0i32;
 unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut pro: *mut i8 = 0 as *mut i8;
-    let mut ps_header: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr.offset(1) >= (*args).endptr || *(*args).curptr.offset(0) as i32 != '=' as i32
     {
@@ -80,7 +74,7 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
         return -1i32;
     }
     (*args).curptr = (*args).curptr.offset(1);
-    pro = xmalloc(
+    let pro = xmalloc(
         ((*args).endptr.wrapping_offset_from((*args).curptr) as i64 + 1i32 as i64) as size_t,
     ) as *mut i8;
     strncpy(
@@ -89,7 +83,7 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
         (*args).endptr.wrapping_offset_from((*args).curptr) as _,
     );
     *pro.offset((*args).endptr.wrapping_offset_from((*args).curptr) as i64 as isize) = 0_i8;
-    ps_header =
+    let ps_header =
         ttstub_input_open(pro, TTInputFormat::TEX_PS_HEADER, 0i32) as *mut rust_input_handle_t;
     if ps_header.is_null() {
         spc_warn(
@@ -101,25 +95,22 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
         return -1i32;
     }
     ttstub_input_close(ps_header as rust_input_handle_t);
-    if num_ps_headers & 0xfi32 == 0 {
-        ps_headers = xrealloc(
-            ps_headers as *mut libc::c_void,
-            (::std::mem::size_of::<*mut i8>() as u64).wrapping_mul((num_ps_headers + 16i32) as u64),
+    if NUM_PS_HEADERS & 0xfi32 == 0 {
+        PS_HEADERS = xrealloc(
+            PS_HEADERS as *mut libc::c_void,
+            (::std::mem::size_of::<*mut i8>() as u64).wrapping_mul((NUM_PS_HEADERS + 16i32) as u64),
         ) as *mut *mut i8
     }
-    let fresh0 = num_ps_headers;
-    num_ps_headers = num_ps_headers + 1;
-    let ref mut fresh1 = *ps_headers.offset(fresh0 as isize);
+    let fresh0 = NUM_PS_HEADERS;
+    NUM_PS_HEADERS = NUM_PS_HEADERS + 1;
+    let ref mut fresh1 = *PS_HEADERS.offset(fresh0 as isize);
     *fresh1 = pro;
     (*args).curptr = (*args).endptr;
     0i32
 }
 unsafe extern "C" fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut i8 {
-    let mut r: *mut i8 = 0 as *mut i8;
-    let mut q: *const i8 = 0 as *const i8;
     let mut p: *const i8 = *pp;
-    let mut qchar: i8 = 0;
-    let mut n: i32 = 0;
+    let mut qchar;
     if p.is_null() || p >= endptr {
         return 0 as *mut i8;
     } else {
@@ -131,8 +122,8 @@ unsafe extern "C" fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i
             qchar = ' ' as i32 as i8
         }
     }
-    n = 0i32;
-    q = p;
+    let mut n = 0i32;
+    let q = p;
     while p < endptr && *p as i32 != qchar as i32 {
         /* nothing */
         n += 1;
@@ -147,7 +138,7 @@ unsafe extern "C" fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i
     if q.is_null() || n == 0i32 {
         return 0 as *mut i8;
     }
-    r = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+    let r = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
         as *mut i8;
     memcpy(r as *mut libc::c_void, q as *const libc::c_void, n as _);
     *r.offset(n as isize) = '\u{0}' as i32 as i8;
@@ -156,8 +147,6 @@ unsafe extern "C" fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i
 }
 /* =filename ... */
 unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut form_id: i32 = 0;
-    let mut filename: *mut i8 = 0 as *mut i8;
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -178,7 +167,7 @@ unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut s
         return -1i32;
     }
     (*args).curptr = (*args).curptr.offset(1);
-    filename = parse_filename(&mut (*args).curptr, (*args).endptr);
+    let filename = parse_filename(&mut (*args).curptr, (*args).endptr);
     if filename.is_null() {
         spc_warn(
             spe,
@@ -191,7 +180,7 @@ unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut s
         free(filename as *mut libc::c_void);
         return -1i32;
     }
-    form_id = pdf_ximage_findresource(filename, options);
+    let form_id = pdf_ximage_findresource(filename, options);
     if form_id < 0i32 {
         spc_warn(
             spe,
@@ -208,8 +197,6 @@ unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut s
 /* This isn't correct implementation but dvipdfm supports... */
 unsafe extern "C" fn spc_handler_ps_plotfile(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32; /* xscale = 1.0, yscale = -1.0 */
-    let mut form_id: i32 = 0;
-    let mut filename: *mut i8 = 0 as *mut i8;
     let mut p = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -225,7 +212,7 @@ unsafe extern "C" fn spc_handler_ps_plotfile(mut spe: *mut spc_env, mut args: *m
         b"\"ps: plotfile\" found (not properly implemented)\x00" as *const u8 as *const i8,
     );
     skip_white(&mut (*args).curptr, (*args).endptr);
-    filename = parse_filename(&mut (*args).curptr, (*args).endptr);
+    let filename = parse_filename(&mut (*args).curptr, (*args).endptr);
     if filename.is_null() {
         spc_warn(
             spe,
@@ -233,7 +220,7 @@ unsafe extern "C" fn spc_handler_ps_plotfile(mut spe: *mut spc_env, mut args: *m
         );
         return -1i32;
     }
-    form_id = pdf_ximage_findresource(filename, options);
+    let form_id = pdf_ximage_findresource(filename, options);
     if form_id < 0i32 {
         spc_warn(
             spe,
@@ -251,9 +238,8 @@ unsafe extern "C" fn spc_handler_ps_plotfile(mut spe: *mut spc_env, mut args: *m
 }
 unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;
-    let mut st_depth: i32 = 0;
-    let mut x_user: f64 = 0.;
-    let mut y_user: f64 = 0.;
+    let x_user;
+    let y_user;
     assert!(!spe.is_null() && !args.is_null() && (*args).curptr <= (*args).endptr);
     if (*args)
         .curptr
@@ -261,12 +247,12 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         <= (*args).endptr
         && !strstartswith((*args).curptr, b":[begin]\x00" as *const u8 as *const i8).is_null()
     {
-        block_pending += 1;
-        position_set = 1i32;
-        pending_x = (*spe).x_user;
-        x_user = pending_x;
-        pending_y = (*spe).y_user;
-        y_user = pending_y;
+        BLOCK_PENDING += 1;
+        POSITION_SET = 1i32;
+        PENDING_X = (*spe).x_user;
+        x_user = PENDING_X;
+        PENDING_Y = (*spe).y_user;
+        y_user = PENDING_Y;
         (*args).curptr = (*args)
             .curptr
             .offset(strlen(b":[begin]\x00" as *const u8 as *const i8) as isize)
@@ -276,42 +262,42 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         <= (*args).endptr
         && !strstartswith((*args).curptr, b":[end]\x00" as *const u8 as *const i8).is_null()
     {
-        if block_pending <= 0i32 {
+        if BLOCK_PENDING <= 0i32 {
             spc_warn(
                 spe,
                 b"No corresponding ::[begin] found.\x00" as *const u8 as *const i8,
             );
             return -1i32;
         }
-        block_pending -= 1;
-        position_set = 0i32;
-        x_user = pending_x;
-        y_user = pending_y;
+        BLOCK_PENDING -= 1;
+        POSITION_SET = 0i32;
+        x_user = PENDING_X;
+        y_user = PENDING_Y;
         (*args).curptr = (*args)
             .curptr
             .offset(strlen(b":[end]\x00" as *const u8 as *const i8) as isize)
     } else if (*args).curptr < (*args).endptr && *(*args).curptr.offset(0) as i32 == ':' as i32 {
-        x_user = if position_set != 0 {
-            pending_x
+        x_user = if POSITION_SET != 0 {
+            PENDING_X
         } else {
             (*spe).x_user
         };
-        y_user = if position_set != 0 {
-            pending_y
+        y_user = if POSITION_SET != 0 {
+            PENDING_Y
         } else {
             (*spe).y_user
         };
         (*args).curptr = (*args).curptr.offset(1)
     } else {
-        position_set = 1i32;
-        pending_x = (*spe).x_user;
-        x_user = pending_x;
-        pending_y = (*spe).y_user;
-        y_user = pending_y
+        POSITION_SET = 1i32;
+        PENDING_X = (*spe).x_user;
+        x_user = PENDING_X;
+        PENDING_Y = (*spe).y_user;
+        y_user = PENDING_Y
     }
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
-        st_depth = mps_stack_depth();
+        let st_depth = mps_stack_depth();
         let gs_depth = pdf_dev_current_depth();
         error = mps_exec_inline(&mut (*args).curptr, (*args).endptr, x_user, y_user);
         if error != 0 {
@@ -355,11 +341,9 @@ unsafe extern "C" fn spc_handler_ps_tricksobj(
     -1i32
 }
 unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut error: i32 = 0;
-    let mut st_depth: i32 = 0;
     assert!(!spe.is_null() && !args.is_null());
     pdf_dev_gsave();
-    st_depth = mps_stack_depth();
+    let st_depth = mps_stack_depth();
     let gs_depth = pdf_dev_current_depth();
     let mut M = pdf_tmatrix::new();
     M.d = 1.0f64;
@@ -369,7 +353,7 @@ unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mu
     M.e = (*spe).x_user;
     M.f = (*spe).y_user;
     pdf_dev_concat(&mut M);
-    error = mps_exec_inline(
+    let error = mps_exec_inline(
         &mut (*args).curptr,
         (*args).endptr,
         (*spe).x_user,
@@ -404,7 +388,7 @@ unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mu
     pdf_dev_grestore();
     error
 }
-static mut dvips_handlers: [spc_handler; 10] = [
+static mut DVIPS_HANDLERS: [spc_handler; 10] = [
     {
         let mut init = spc_handler {
             key: b"header\x00" as *const u8 as *const i8,
@@ -514,12 +498,12 @@ pub unsafe extern "C" fn spc_dvips_at_begin_document() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvips_at_end_document() -> i32 {
-    if !ps_headers.is_null() {
-        while num_ps_headers > 0i32 {
-            num_ps_headers -= 1;
-            free(*ps_headers.offset(num_ps_headers as isize) as *mut libc::c_void);
+    if !PS_HEADERS.is_null() {
+        while NUM_PS_HEADERS > 0i32 {
+            NUM_PS_HEADERS -= 1;
+            free(*PS_HEADERS.offset(NUM_PS_HEADERS as isize) as *mut libc::c_void);
         }
-        ps_headers = mfree(ps_headers as *mut libc::c_void) as *mut *mut i8
+        PS_HEADERS = mfree(PS_HEADERS as *mut libc::c_void) as *mut *mut i8
     }
     0i32
 }
@@ -535,10 +519,8 @@ pub unsafe extern "C" fn spc_dvips_at_end_page() -> i32 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i32) -> bool {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    p = buf;
-    endptr = p.offset(len as isize);
+    let mut p = buf;
+    let endptr = p.offset(len as isize);
     skip_white(&mut p, endptr);
     if p >= endptr {
         return false;
@@ -547,11 +529,11 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
     for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if len as usize >= strlen(dvips_handlers[i as usize].key)
+        if len as usize >= strlen(DVIPS_HANDLERS[i as usize].key)
             && memcmp(
                 p as *const libc::c_void,
-                dvips_handlers[i as usize].key as *const libc::c_void,
-                strlen(dvips_handlers[i as usize].key),
+                DVIPS_HANDLERS[i as usize].key as *const libc::c_void,
+                strlen(DVIPS_HANDLERS[i as usize].key),
             ) == 0
         {
             return true;
@@ -565,11 +547,9 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut key: *const i8 = 0 as *const i8;
-    let mut keylen: i32 = 0;
     assert!(!handle.is_null() && !spe.is_null() && !args.is_null());
     skip_white(&mut (*args).curptr, (*args).endptr);
-    key = (*args).curptr;
+    let key = (*args).curptr;
     while (*args).curptr < (*args).endptr && libc::isalpha(*(*args).curptr.offset(0) as _) != 0 {
         (*args).curptr = (*args).curptr.offset(1)
     }
@@ -592,7 +572,7 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     {
         (*args).curptr = (*args).curptr.offset(2)
     }
-    keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
+    let keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
     if keylen < 1i32 {
         spc_warn(spe, b"Not ps: special???\x00" as *const u8 as *const i8);
         return -1i32;
@@ -600,13 +580,13 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if keylen as usize == strlen(dvips_handlers[i as usize].key)
-            && strncmp(key, dvips_handlers[i as usize].key, keylen as usize) == 0
+        if keylen as usize == strlen(DVIPS_HANDLERS[i as usize].key)
+            && strncmp(key, DVIPS_HANDLERS[i as usize].key, keylen as usize) == 0
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = dvips_handlers[i as usize].key;
+            (*args).command = DVIPS_HANDLERS[i as usize].key;
             (*handle).key = b"ps:\x00" as *const u8 as *const i8;
-            (*handle).exec = dvips_handlers[i as usize].exec;
+            (*handle).exec = DVIPS_HANDLERS[i as usize].exec;
             return 0i32;
         }
     }

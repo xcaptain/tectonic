@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -105,7 +104,7 @@ unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi
     }
     dpi
 }
-unsafe extern "C" fn dpx_open_pk_font_at(mut ident: *const i8, mut dpi: u32) -> *mut FILE {
+unsafe extern "C" fn dpx_open_pk_font_at(_ident: *const i8, _dpi: u32) -> *mut FILE {
     let mut fp: *mut FILE = 0 as *mut FILE;
     let mut fqpn: *mut i8 = 0 as *mut i8;
     /*kpse_glyph_file_type kpse_file_info;*/

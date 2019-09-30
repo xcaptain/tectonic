@@ -20,12 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -43,8 +37,6 @@ use crate::shims::sscanf;
 
 pub type size_t = u64;
 
-use bridge::rust_input_handle_t;
-
 use super::{spc_arg, spc_env};
 
 pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
@@ -54,8 +46,6 @@ use crate::dpx_pdfximage::load_options;
 
 /* quasi-hack to get the primary input */
 unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut form_id: i32 = 0;
-    let mut len: i32 = 0;
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -67,7 +57,6 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     };
     let mut filename: [i8; 256] = [0; 256];
     let mut buf: [i8; 512] = [0; 512];
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
     assert!(!spe.is_null() && !ap.is_null());
     if (*ap).curptr >= (*ap).endptr {
         spc_warn(
@@ -78,8 +67,8 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
         return -1i32;
     }
     /* input is not NULL terminated */
-    len = (*ap).endptr.wrapping_offset_from((*ap).curptr) as i64 as i32;
-    len = if 511i32 < len { 511i32 } else { len };
+    let len = (*ap).endptr.wrapping_offset_from((*ap).curptr) as i64 as i32;
+    let len = if 511i32 < len { 511i32 } else { len };
     memcpy(
         buf.as_mut_ptr() as *mut libc::c_void,
         (*ap).curptr as *const libc::c_void,
@@ -105,7 +94,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     (*ap).curptr = (*ap).endptr;
     ti.width *= 72.0f64 / 72.27f64;
     ti.height *= 72.0f64 / 72.27f64;
-    handle = ttstub_input_open(filename.as_mut_ptr(), TTInputFormat::PICT, 0i32);
+    let handle = ttstub_input_open(filename.as_mut_ptr(), TTInputFormat::PICT, 0i32);
     if handle.is_null() {
         spc_warn(
             spe,
@@ -127,7 +116,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
         break;
     }
     ttstub_input_close(handle);
-    form_id = pdf_ximage_findresource(filename.as_mut_ptr(), options);
+    let form_id = pdf_ximage_findresource(filename.as_mut_ptr(), options);
     if form_id < 0i32 {
         spc_warn(
             spe,
@@ -143,7 +132,7 @@ unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut misc_handlers: [spc_handler; 6] = [
+static mut MISC_HANDLERS: [spc_handler; 6] = [
     {
         let mut init = spc_handler {
             key: b"postscriptbox\x00" as *const u8 as *const i8,
@@ -203,20 +192,18 @@ static mut misc_handlers: [spc_handler; 6] = [
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size: i32) -> bool {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    p = buffer;
-    endptr = p.offset(size as isize);
+    let mut p = buffer;
+    let endptr = p.offset(size as isize);
     skip_white(&mut p, endptr);
     size = endptr.wrapping_offset_from(p) as i64 as i32;
     for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if size as usize >= strlen(misc_handlers[i as usize].key)
+        if size as usize >= strlen(MISC_HANDLERS[i as usize].key)
             && strncmp(
                 p,
-                misc_handlers[i as usize].key,
-                strlen(misc_handlers[i as usize].key),
+                MISC_HANDLERS[i as usize].key,
+                strlen(MISC_HANDLERS[i as usize].key),
             ) == 0
         {
             return true;
@@ -230,31 +217,29 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut key: *const i8 = 0 as *const i8;
-    let mut keylen: i32 = 0;
     assert!(!handle.is_null() && !spe.is_null() && !args.is_null());
     skip_white(&mut (*args).curptr, (*args).endptr);
-    key = (*args).curptr;
+    let key = (*args).curptr;
     while (*args).curptr < (*args).endptr && libc::isalpha(*(*args).curptr.offset(0) as _) != 0 {
         (*args).curptr = (*args).curptr.offset(1)
     }
     if (*args).curptr < (*args).endptr && *(*args).curptr.offset(0) as i32 == ':' as i32 {
         (*args).curptr = (*args).curptr.offset(1)
     }
-    keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
+    let keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
     if keylen < 1i32 {
         return -1i32;
     }
     for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
         .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
     {
-        if keylen as usize == strlen(misc_handlers[i as usize].key)
-            && strncmp(key, misc_handlers[i as usize].key, keylen as _) == 0
+        if keylen as usize == strlen(MISC_HANDLERS[i as usize].key)
+            && strncmp(key, MISC_HANDLERS[i as usize].key, keylen as _) == 0
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = misc_handlers[i as usize].key;
+            (*args).command = MISC_HANDLERS[i as usize].key;
             (*handle).key = b"???:\x00" as *const u8 as *const i8;
-            (*handle).exec = misc_handlers[i as usize].exec;
+            (*handle).exec = MISC_HANDLERS[i as usize].exec;
             return 0i32;
         }
     }

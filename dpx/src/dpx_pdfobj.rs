@@ -20,7 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -335,7 +334,6 @@ pub unsafe extern "C" fn pdf_out_init(
     mut do_encryption: bool,
     mut enable_object_stream: bool,
 ) {
-    let mut v: i8 = 0;
     output_xref = 0 as *mut xref_entry;
     pdf_max_ind_objects = 0_u32;
     add_xref_entry(0_u32, 0_u8, 0_u32, 0xffff_u16);
@@ -602,7 +600,7 @@ unsafe extern "C" fn pdf_out(handle: &mut OutputHandleWrapper, buffer: &[u8]) {
             length as i32,
         );
     } else {
-        handle.write(buffer);
+        handle.write(buffer).unwrap();
         /* Keep tallys for xref table *only* if writing a pdf file */
         if pdf_output_handle.is_some() {
             pdf_output_file_position += length;

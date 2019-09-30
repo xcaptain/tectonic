@@ -20,12 +20,6 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 #![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -49,7 +43,7 @@ unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut dvipdfmx_handlers: [spc_handler; 1] = [{
+static mut DVIPDFMX_HANDLERS: [spc_handler; 1] = [{
     let mut init = spc_handler {
         key: b"config\x00" as *const u8 as *const i8,
         exec: Some(
@@ -61,10 +55,8 @@ static mut dvipdfmx_handlers: [spc_handler; 1] = [{
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvipdfmx_check_special(mut buf: *const i8, mut len: i32) -> bool {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    p = buf;
-    endptr = p.offset(len as isize);
+    let mut p = buf;
+    let endptr = p.offset(len as isize);
     skip_white(&mut p, endptr);
     if p.offset(strlen(b"dvipdfmx:\x00" as *const u8 as *const i8) as isize) <= endptr
         && memcmp(
@@ -84,7 +76,6 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
     mut ap: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = -1i32;
-    let mut q: *mut i8 = 0 as *mut i8;
     assert!(!sph.is_null() && !spe.is_null() && !ap.is_null());
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap)
@@ -107,15 +98,15 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
         .curptr
         .offset(strlen(b"dvipdfmx:\x00" as *const u8 as *const i8) as isize);
     skip_white(&mut (*ap).curptr, (*ap).endptr);
-    q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
         for i in 0..(::std::mem::size_of::<[spc_handler; 1]>() as u64)
             .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
         {
-            if streq_ptr(q, dvipdfmx_handlers[i as usize].key) {
-                (*ap).command = dvipdfmx_handlers[i as usize].key;
+            if streq_ptr(q, DVIPDFMX_HANDLERS[i as usize].key) {
+                (*ap).command = DVIPDFMX_HANDLERS[i as usize].key;
                 (*sph).key = b"dvipdfmx:\x00" as *const u8 as *const i8;
-                (*sph).exec = dvipdfmx_handlers[i as usize].exec;
+                (*sph).exec = DVIPDFMX_HANDLERS[i as usize].exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;
