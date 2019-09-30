@@ -262,7 +262,7 @@ unsafe extern "C" fn add_SimpleMetrics(
                 let width;
                 if tfm_id < 0i32 {
                     /* tfm is not found */
-                    width = scaling * *widths.offset(code as isize)
+                    // width = scaling * *widths.offset(code as isize) TODO: check
                 } else {
                     width = 1000.0f64 * tfm_get_width(tfm_id, code);
                     let diff = width - scaling * *widths.offset(code as isize);

@@ -5,6 +5,7 @@
 #![allow(
     unused_unsafe
 )]
+#![deny(unused_assignments)]
 #![deny(clippy::reverse_range_loop)]
 
 extern crate tectonic_bridge as bridge;

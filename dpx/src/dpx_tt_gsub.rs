@@ -1337,7 +1337,6 @@ unsafe extern "C" fn scan_otl_tag(
     /* Finally feature */
     if p.offset(4) <= endptr {
         strncpy(feature, p, endptr.wrapping_offset_from(p) as _);
-        p = endptr
     } else {
         warn!("No valid OTL feature tag specified.");
         return -1i32;

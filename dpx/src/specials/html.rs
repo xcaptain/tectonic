@@ -115,7 +115,6 @@ unsafe extern "C" fn parse_key_val(
         p = p.offset(1)
     }
     let mut v = 0 as *mut i8; /* Should be checked somewhere else */
-    let mut k = v; /* we may want to add '/' */
     let mut q = p; /* skip '="' */
     let mut n = 0i32; /* Assume this is URL */
     while p < endptr
@@ -133,8 +132,8 @@ unsafe extern "C" fn parse_key_val(
         *kp = *vp;
         return -1i32;
     }
-    k = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-        as *mut i8;
+    let mut k = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+        as *mut i8; /* we may want to add '/' */
     memcpy(k as *mut libc::c_void, q as *const libc::c_void, n as _);
     *k.offset(n as isize) = '\u{0}' as i32 as i8;
     if p.offset(2) >= endptr

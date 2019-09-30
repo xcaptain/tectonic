@@ -328,11 +328,11 @@ pub unsafe extern "C" fn tt_pack_maxp_table(mut table: *mut tt_maxp_table) -> *m
         (*table).maxComponentElements as i32,
         2i32,
     ) as isize);
-    p.offset(put_big_endian(
+    put_big_endian(
         p as *mut libc::c_void,
         (*table).maxComponentDepth as i32,
         2i32,
-    ) as isize);
+    );
     data
 }
 #[no_mangle]

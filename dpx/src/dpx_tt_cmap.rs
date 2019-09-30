@@ -1648,7 +1648,7 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
                 srange_max.as_mut_ptr(),
                 2i32 as size_t,
             );
-            tounicode_add_id = CMap_cache_add(tounicode_add)
+            CMap_cache_add(tounicode_add);
         }
         free(tounicode_add_name as *mut libc::c_void);
     } else {

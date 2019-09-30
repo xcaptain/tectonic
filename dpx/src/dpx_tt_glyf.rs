@@ -584,13 +584,13 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
         *fresh6 = 0 as *mut u8;
     }
     if (*head).indexToLocFormat as i32 == 0i32 {
-        q = q.offset(put_big_endian(
+        put_big_endian(
             q as *mut libc::c_void,
             offset.wrapping_div(2_u32) as u16 as i32,
-            2i32,
-        ) as isize)
+            2,
+        );
     } else {
-        q = q.offset(put_big_endian(q as *mut libc::c_void, offset as i32, 4i32) as isize)
+        put_big_endian(q as *mut libc::c_void, offset as i32, 4);
     }
     sfnt_set_table(
         sfont,
