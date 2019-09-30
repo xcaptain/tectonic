@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -189,8 +188,7 @@ unsafe extern "C" fn lookup_char(mut map: *const char_map, mut charcode: i32) ->
     };
 }
 unsafe extern "C" fn lookup_range(mut map: *const range_map, mut charcode: i32) -> i32 {
-    let mut idx: i32 = 0;
-    idx = (*map).num_coverages as i32 - 1i32;
+    let mut idx = (*map).num_coverages as i32 - 1i32;
     while idx >= 0i32 && charcode >= (*(*map).coverages.offset(idx as isize)).first_char {
         if charcode
             <= (*(*map).coverages.offset(idx as isize)).first_char
@@ -348,10 +346,6 @@ unsafe extern "C" fn tfm_get_sizes(
     tfm_check_size(tfm, tfm_file_size);
 }
 unsafe extern "C" fn tfm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut tfm_font) {
-    let mut charinfo: u32 = 0;
-    let mut width_index: u16 = 0;
-    let mut height_index: u8 = 0;
-    let mut depth_index: u8 = 0;
     (*fm).widths =
         new((256_u32 as u64).wrapping_mul(::std::mem::size_of::<fixword>() as u64) as u32)
             as *mut fixword;
@@ -367,18 +361,17 @@ unsafe extern "C" fn tfm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut t
         *(*fm).depths.offset(i as isize) = 0i32;
     }
     for i in (*tfm).bc..=(*tfm).ec {
-        charinfo = *(*tfm).char_info.offset(i.wrapping_sub((*tfm).bc) as isize);
-        width_index = (charinfo >> 24i32) as u16;
-        height_index = (charinfo >> 20i32 & 0xf_u32) as u8;
-        depth_index = (charinfo >> 16i32 & 0xf_u32) as u8;
+        let charinfo = *(*tfm).char_info.offset(i.wrapping_sub((*tfm).bc) as isize);
+        let width_index = (charinfo >> 24i32) as u16;
+        let height_index = (charinfo >> 20i32 & 0xf_u32) as u8;
+        let depth_index = (charinfo >> 16i32 & 0xf_u32) as u8;
         *(*fm).widths.offset(i as isize) = *(*tfm).width.offset(width_index as isize);
         *(*fm).heights.offset(i as isize) = *(*tfm).height.offset(height_index as isize);
         *(*fm).depths.offset(i as isize) = *(*tfm).depth.offset(depth_index as isize);
     }
 }
 unsafe extern "C" fn sput_bigendian(mut s: *mut i8, mut v: i32, mut n: i32) -> i32 {
-    let mut i: i32 = 0;
-    i = n - 1i32;
+    let mut i = n - 1i32;
     while i >= 0i32 {
         *s.offset(i as isize) = (v & 0xffi32) as i8;
         v >>= 8i32;
@@ -390,9 +383,7 @@ unsafe extern "C" fn tfm_unpack_header(mut fm: *mut font_metric, mut tfm: *mut t
     if (*tfm).wlenheader < 12_u32 {
         (*fm).codingscheme = 0 as *mut i8
     } else {
-        let mut len: i32 = 0;
-        let mut p: *mut i8 = 0 as *mut i8;
-        len = *(*tfm).header.offset(2) >> 24i32;
+        let len = *(*tfm).header.offset(2) >> 24i32;
         if len < 0i32 || len > 39i32 {
             panic!("Invalid TFM header.");
         }
@@ -400,7 +391,7 @@ unsafe extern "C" fn tfm_unpack_header(mut fm: *mut font_metric, mut tfm: *mut t
             (*fm).codingscheme = new((40_u32 as u64)
                 .wrapping_mul(::std::mem::size_of::<i8>() as u64)
                 as u32) as *mut i8;
-            p = (*fm).codingscheme;
+            let mut p = (*fm).codingscheme;
             p = p.offset(sput_bigendian(p, *(*tfm).header.offset(2), 3i32) as isize);
             for i in 1..=(len / 4) {
                 p = p.offset(
@@ -540,8 +531,7 @@ unsafe extern "C" fn ofm_do_char_info_zero(
     mut ofm_handle: rust_input_handle_t,
     mut tfm: *mut tfm_font,
 ) {
-    let mut num_chars: u32 = 0;
-    num_chars = (*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32);
+    let mut num_chars = (*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32);
     if num_chars != 0_u32 {
         (*tfm).width_index = new((num_chars as u64)
             .wrapping_mul(::std::mem::size_of::<u16>() as u64)
@@ -565,15 +555,11 @@ unsafe extern "C" fn ofm_do_char_info_one(
     mut ofm_handle: rust_input_handle_t,
     mut tfm: *mut tfm_font,
 ) {
-    let mut num_char_infos: u32 = 0;
-    let mut num_chars: u32 = 0;
-    num_char_infos = (*tfm)
+    let num_char_infos = (*tfm)
         .ncw
         .wrapping_div((3_u32).wrapping_add((*tfm).npc.wrapping_div(2_u32)));
-    num_chars = (*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32);
+    let mut num_chars = (*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32);
     if num_chars != 0_u32 {
-        let mut i: u32 = 0;
-        let mut char_infos_read: u32 = 0;
         (*tfm).width_index = new((num_chars as u64)
             .wrapping_mul(::std::mem::size_of::<u16>() as u64)
             as u32) as *mut u16;
@@ -583,16 +569,15 @@ unsafe extern "C" fn ofm_do_char_info_one(
         (*tfm).depth_index =
             new((num_chars as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32)
                 as *mut u8;
-        char_infos_read = 0_u32;
-        i = 0_u32;
+        let mut char_infos_read = 0;
+        let mut i = 0;
         while i < num_chars && char_infos_read < num_char_infos {
-            let mut repeats: u32 = 0;
             *(*tfm).width_index.offset(i as isize) = tt_get_unsigned_pair(ofm_handle);
             *(*tfm).height_index.offset(i as isize) = tt_get_unsigned_byte(ofm_handle);
             *(*tfm).depth_index.offset(i as isize) = tt_get_unsigned_byte(ofm_handle);
             /* Ignore next quad */
             tt_skip_bytes(4_u32, ofm_handle);
-            repeats = tt_get_unsigned_pair(ofm_handle) as u32;
+            let repeats = tt_get_unsigned_pair(ofm_handle) as u32;
             /* Skip params */
             for _ in 0..(*tfm).npc {
                 tt_get_unsigned_pair(ofm_handle);
@@ -602,7 +587,7 @@ unsafe extern "C" fn ofm_do_char_info_one(
                 tt_get_unsigned_pair(ofm_handle);
             }
             char_infos_read = char_infos_read.wrapping_add(1);
-            if i.wrapping_add(repeats) > num_chars {
+            if i + repeats > num_chars {
                 panic!("OFM \"repeats\" causes number of characters to be exceeded.");
             }
             for j in 0..repeats {
@@ -620,8 +605,8 @@ unsafe extern "C" fn ofm_do_char_info_one(
                     *(*tfm).depth_index.offset(i as isize);
             }
             /* Skip ahead because we have already handled repeats */
-            i = (i as u32).wrapping_add(repeats) as u32;
-            i = i.wrapping_add(1)
+            i += repeats;
+            i += 1;
         }
     };
 }
@@ -806,9 +791,7 @@ unsafe extern "C" fn read_tfm(
 pub unsafe extern "C" fn tfm_open(mut tfm_name: *const i8, mut must_exist: i32) -> i32 {
     let mut tfm_handle: rust_input_handle_t = 0 as *mut libc::c_void;
     let mut format: i32 = 1i32;
-    let mut tfm_file_size: off_t = 0;
-    let mut ofm_name: *mut i8 = 0 as *mut i8;
-    let mut suffix: *mut i8 = 0 as *mut i8;
+    let ofm_name;
     for i in 0..numfms {
         if streq_ptr(tfm_name, (*fms.offset(i as isize)).tex_name) {
             return i as i32;
@@ -832,7 +815,7 @@ pub unsafe extern "C" fn tfm_open(mut tfm_name: *const i8, mut must_exist: i32) 
      * I'll not explain this in detail... This change is mostly specific to
      * Japanese support."
      */
-    suffix = strrchr(tfm_name, '.' as i32);
+    let suffix = strrchr(tfm_name, '.' as i32);
     if suffix.is_null()
         || strcmp(suffix, b".tfm\x00" as *const u8 as *const i8) != 0i32
             && strcmp(suffix, b".ofm\x00" as *const u8 as *const i8) != 0i32
@@ -879,7 +862,7 @@ pub unsafe extern "C" fn tfm_open(mut tfm_name: *const i8, mut must_exist: i32) 
             info!("(OFM:{}", CStr::from_ptr(tfm_name).display());
         }
     }
-    tfm_file_size = ttstub_input_get_size(tfm_handle) as off_t;
+    let tfm_file_size = ttstub_input_get_size(tfm_handle) as off_t;
     if tfm_file_size as u64 > 0x1ffffffffu64 {
         panic!("TFM/OFM file size exceeds 33-bit");
     }
@@ -916,12 +899,11 @@ pub unsafe extern "C" fn tfm_close_all() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn tfm_get_fw_width(mut font_id: i32, mut ch: i32) -> fixword {
-    let mut fm: *mut font_metric = 0 as *mut font_metric;
-    let mut idx: i32 = 0i32;
+    let idx;
     if font_id < 0i32 || font_id as u32 >= numfms {
         panic!("TFM: Invalid TFM ID: {}", font_id);
     }
-    fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
+    let fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
     if ch >= (*fm).firstchar && ch <= (*fm).lastchar {
         match (*fm).charmap.type_0 {
             1 => {
@@ -945,12 +927,11 @@ pub unsafe extern "C" fn tfm_get_fw_width(mut font_id: i32, mut ch: i32) -> fixw
 }
 #[no_mangle]
 pub unsafe extern "C" fn tfm_get_fw_height(mut font_id: i32, mut ch: i32) -> fixword {
-    let mut fm: *mut font_metric = 0 as *mut font_metric;
-    let mut idx: i32 = 0i32;
+    let idx;
     if font_id < 0i32 || font_id as u32 >= numfms {
         panic!("TFM: Invalid TFM ID: {}", font_id);
     }
-    fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
+    let fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
     if ch >= (*fm).firstchar && ch <= (*fm).lastchar {
         match (*fm).charmap.type_0 {
             1 => {
@@ -974,12 +955,11 @@ pub unsafe extern "C" fn tfm_get_fw_height(mut font_id: i32, mut ch: i32) -> fix
 }
 #[no_mangle]
 pub unsafe extern "C" fn tfm_get_fw_depth(mut font_id: i32, mut ch: i32) -> fixword {
-    let mut fm: *mut font_metric = 0 as *mut font_metric;
-    let mut idx: i32 = 0i32;
+    let idx;
     if font_id < 0i32 || font_id as u32 >= numfms {
         panic!("TFM: Invalid TFM ID: {}", font_id);
     }
-    fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
+    let fm = &mut *fms.offset(font_id as isize) as *mut font_metric;
     if ch >= (*fm).firstchar && ch <= (*fm).lastchar {
         match (*fm).charmap.type_0 {
             1 => {
@@ -1036,13 +1016,12 @@ pub unsafe extern "C" fn tfm_get_design_size(mut font_id: i32) -> f64 {
 /* From TFM header */
 #[no_mangle]
 pub unsafe extern "C" fn tfm_exists(mut tfm_name: *const i8) -> bool {
-    let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
-    handle = ttstub_input_open(tfm_name, TTInputFormat::OFM, 0i32) as *mut rust_input_handle_t;
+    let handle = ttstub_input_open(tfm_name, TTInputFormat::OFM, 0i32) as *mut rust_input_handle_t;
     if !handle.is_null() {
         ttstub_input_close(handle as rust_input_handle_t);
         return true;
     }
-    handle = ttstub_input_open(tfm_name, TTInputFormat::TFM, 0i32) as *mut rust_input_handle_t;
+    let handle = ttstub_input_open(tfm_name, TTInputFormat::TFM, 0i32) as *mut rust_input_handle_t;
     if !handle.is_null() {
         ttstub_input_close(handle as rust_input_handle_t);
         return true;

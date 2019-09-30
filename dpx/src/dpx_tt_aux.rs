@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -50,10 +49,6 @@ pub type FWord = i16;
 
 use super::dpx_sfnt::sfnt;
 
-use super::dpx_tt_post::tt_post_table;
-
-use super::dpx_tt_table::tt_head_table;
-use super::dpx_tt_table::tt_os2__table;
 static mut verbose: i32 = 0i32;
 #[no_mangle]
 pub unsafe extern "C" fn tt_aux_set_verbose(mut level: i32) {
@@ -61,8 +56,6 @@ pub unsafe extern "C" fn tt_aux_set_verbose(mut level: i32) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn ttc_read_offset(mut sfont: *mut sfnt, mut ttc_idx: i32) -> u32 {
-    let mut offset: u32 = 0_u32;
-    let mut num_dirs: u32 = 0_u32;
     if sfont.is_null() || (*sfont).handle.is_null() {
         panic!("file not opened");
     }
@@ -72,13 +65,12 @@ pub unsafe extern "C" fn ttc_read_offset(mut sfont: *mut sfnt, mut ttc_idx: i32)
     ttstub_input_seek((*sfont).handle, 4i32 as ssize_t, 0i32);
     /* version = */
     tt_get_unsigned_quad((*sfont).handle);
-    num_dirs = tt_get_unsigned_quad((*sfont).handle);
+    let num_dirs = tt_get_unsigned_quad((*sfont).handle);
     if ttc_idx < 0i32 || ttc_idx as u32 > num_dirs.wrapping_sub(1_u32) {
         panic!("Invalid TTC index number");
     }
     ttstub_input_seek((*sfont).handle, (12i32 + ttc_idx * 4i32) as ssize_t, 0i32);
-    offset = tt_get_unsigned_quad((*sfont).handle);
-    offset
+    tt_get_unsigned_quad((*sfont).handle)
 }
 /* flag declared in dvipdfmx.c */
 /* TTC (TrueType Collection) */
@@ -92,25 +84,20 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     mut type_0: i32,
     mut fontname: *const i8,
 ) -> *mut pdf_obj {
-    let mut descriptor: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut bbox: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut flag: i32 = 1i32 << 2i32;
-    /* TrueType tables */
-    let mut head: *mut tt_head_table = 0 as *mut tt_head_table;
-    let mut os2: *mut tt_os2__table = 0 as *mut tt_os2__table;
-    let mut post: *mut tt_post_table = 0 as *mut tt_post_table;
     if sfont.is_null() {
         panic!("font file not opened");
     }
-    os2 = tt_read_os2__table(sfont);
-    head = tt_read_head_table(sfont);
-    post = tt_read_post_table(sfont);
+    /* TrueType tables */
+    let os2 = tt_read_os2__table(sfont);
+    let head = tt_read_head_table(sfont);
+    let post = tt_read_post_table(sfont);
     if post.is_null() {
         free(os2 as *mut libc::c_void);
         free(head as *mut libc::c_void);
         return 0 as *mut pdf_obj;
     }
-    descriptor = pdf_new_dict();
+    let descriptor = pdf_new_dict();
     pdf_add_dict(descriptor, "Type", pdf_new_name("FontDescriptor"));
     if *embed != 0 && !os2.is_null() {
         /*
@@ -245,7 +232,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
         }
     }
     /* BoundingBox (array) */
-    bbox = pdf_new_array();
+    let bbox = pdf_new_array();
     pdf_add_array(
         bbox,
         pdf_new_number(
@@ -327,7 +314,6 @@ pub unsafe extern "C" fn tt_get_fontdesc(
     /* insert panose if you want */
     if type_0 == 0i32 && !os2.is_null() {
         /* cid-keyed font - add panose */
-        let mut styledict: *mut pdf_obj = 0 as *mut pdf_obj;
         let mut panose: [u8; 12] = [0; 12];
         panose[0..2].copy_from_slice(&(*os2).sFamilyClass.to_be_bytes());
         memcpy(
@@ -335,7 +321,7 @@ pub unsafe extern "C" fn tt_get_fontdesc(
             (*os2).panose.as_mut_ptr() as *const libc::c_void,
             10,
         );
-        styledict = pdf_new_dict();
+        let styledict = pdf_new_dict();
         pdf_add_dict(
             styledict,
             "Panose",
