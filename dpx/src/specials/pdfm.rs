@@ -45,10 +45,8 @@ use crate::dpx_fontmap::{
     pdf_remove_fontmap_record,
 };
 use crate::dpx_mem::new;
-use crate::dpx_mfileio::work_buffer_u8 as WORK_BUFFER;
-use crate::dpx_pdfcolor::{
-    pdf_color_copycolor, pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set,
-};
+use crate::dpx_mfileio::work_buffer as WORK_BUFFER;
+use crate::dpx_pdfcolor::{pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set};
 use crate::dpx_pdfdev::pdf_sprint_matrix;
 use crate::dpx_pdfdev::{
     pdf_dev_get_coord, pdf_dev_pop_coord, pdf_dev_push_coord, pdf_dev_reset_color,
@@ -805,7 +803,7 @@ unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut
         if (*ap).curptr < (*ap).endptr {
             error = spc_util_read_pdfcolor(spe, &mut sc, ap, Some(psc))
         } else {
-            pdf_color_copycolor(&mut sc, &mut fc);
+            sc = fc.clone();
         }
     }
     if error != 0 {
@@ -840,7 +838,7 @@ unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut
         if (*ap).curptr < (*ap).endptr {
             error = spc_util_read_pdfcolor(spe, &mut sc, ap, Some(psc))
         } else {
-            pdf_color_copycolor(&mut sc, &mut fc);
+            sc = fc.clone();
         }
     }
     if error != 0 {

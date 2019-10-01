@@ -27,11 +27,7 @@
 
 use super::{spc_arg, spc_env, spc_warn};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
-pub use crate::dpx_pdfcolor::pdf_color;
-use crate::dpx_pdfcolor::{
-    pdf_color_cmykcolor, pdf_color_copycolor, pdf_color_graycolor, pdf_color_rgbcolor,
-    pdf_color_spotcolor,
-};
+use crate::dpx_pdfcolor::pdf_color;
 use crate::dpx_pdfdev::{pdf_tmatrix, transform_info};
 use crate::dpx_pdfparse::skip_white;
 use crate::mfree;
@@ -127,7 +123,7 @@ unsafe extern "C" fn rgb_color_from_hsv(color: &mut pdf_color, mut h: f64, mut s
             _ => {}
         }
     }
-    pdf_color_rgbcolor(color, r, g, b);
+    *color = pdf_color::rgb(r, g, b).unwrap();
 }
 unsafe extern "C" fn spc_read_color_color(
     mut spe: *mut spc_env,
@@ -155,7 +151,7 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            pdf_color_rgbcolor(colorspec, cv[0], cv[1], cv[2]);
+            *colorspec = pdf_color::rgb(cv[0], cv[1], cv[2]).unwrap();
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
@@ -167,7 +163,7 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            pdf_color_cmykcolor(colorspec, cv[0], cv[1], cv[2], cv[3]);
+            *colorspec = pdf_color::cmyk(cv[0], cv[1], cv[2], cv[3]).unwrap();
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
@@ -179,7 +175,7 @@ unsafe extern "C" fn spc_read_color_color(
             );
             error = -1i32
         } else {
-            pdf_color_graycolor(colorspec, cv[0]);
+            *colorspec = pdf_color::gray(cv[0]).unwrap();
         }
     } else if streq_ptr(q, b"spot\x00" as *const u8 as *const i8) {
         /* Handle spot colors */
@@ -201,7 +197,7 @@ unsafe extern "C" fn spc_read_color_color(
             error = -1i32;
             free(color_name as *mut libc::c_void);
         } else {
-            pdf_color_spotcolor(colorspec, color_name, cv[0]);
+            *colorspec = pdf_color::spot(color_name, cv[0]).unwrap();
         }
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
@@ -261,13 +257,13 @@ unsafe extern "C" fn spc_read_color_pdf(
     let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
     match nc {
         1 => {
-            pdf_color_graycolor(colorspec, cv[0]);
+            *colorspec = pdf_color::gray(cv[0]).unwrap();
         }
         3 => {
-            pdf_color_rgbcolor(colorspec, cv[0], cv[1], cv[2]);
+            *colorspec = pdf_color::rgb(cv[0], cv[1], cv[2]).unwrap();
         }
         4 => {
-            pdf_color_cmykcolor(colorspec, cv[0], cv[1], cv[2], cv[3]);
+            *colorspec = pdf_color::cmyk(cv[0], cv[1], cv[2], cv[3]).unwrap();
         }
         _ => {
             /* Try to read the color names defined in dvipsname.def */
@@ -339,7 +335,7 @@ pub unsafe extern "C" fn spc_util_read_pdfcolor(
     let mut error = spc_read_color_pdf(spe, colorspec, ap);
     if error < 0i32 {
         if let Some(dc) = defaultcolor {
-            pdf_color_copycolor(colorspec, dc);
+            *colorspec = dc.clone();
             error = 0i32
         }
     }
@@ -2003,13 +1999,11 @@ static mut COLORDEFS: [colordef_; 69] = [
 ];
 /* From pdfcolor.c */
 unsafe extern "C" fn pdf_color_namedcolor(color: &mut pdf_color, mut name: *const i8) -> i32 {
-    let mut i = 0;
-    while !COLORDEFS[i].key.is_null() {
-        if streq_ptr(COLORDEFS[i].key, name) {
-            pdf_color_copycolor(
-                color,
-                &mut (*COLORDEFS.as_mut_ptr().offset(i as isize)).color,
-            );
+    let mut i: i32 = 0;
+    i = 0i32;
+    while !COLORDEFS[i as usize].key.is_null() {
+        if streq_ptr(COLORDEFS[i as usize].key, name) {
+            *color = (*COLORDEFS.as_mut_ptr().offset(i as isize)).color.clone();
             return 0i32;
         }
         i += 1

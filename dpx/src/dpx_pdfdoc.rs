@@ -41,10 +41,7 @@ use super::dpx_dpxutil::{
 use super::dpx_dvipdfmx::is_xdv;
 use super::dpx_jpegimage::check_for_jpeg;
 use super::dpx_mem::{new, renew};
-use super::dpx_pdfcolor::{
-    pdf_close_colors, pdf_color_copycolor, pdf_color_graycolor, pdf_color_is_white,
-    pdf_color_set_verbose, pdf_init_colors,
-};
+use super::dpx_pdfcolor::{pdf_close_colors, pdf_color_set_verbose, pdf_init_colors};
 use super::dpx_pdfdev::{
     pdf_dev_bop, pdf_dev_eop, pdf_dev_get_coord, pdf_dev_get_param, pdf_dev_reset_color,
     pdf_dev_reset_fonts,
@@ -2530,11 +2527,11 @@ static mut bgcolor: pdf_color = {
 /* Similar to bop_content */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_doc_set_bgcolor(color: Option<&pdf_color>) {
-    if let Some(c) = color {
-        pdf_color_copycolor(&mut bgcolor, c);
+    bgcolor = if let Some(c) = color {
+        c.clone()
     } else {
         /* as clear... */
-        pdf_color_graycolor(&mut bgcolor, 1.0f64);
+        pdf_color::gray(1.0).unwrap()
     };
 }
 unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
@@ -2543,7 +2540,7 @@ unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
     let mut cm: i32 = 0;
     let mut saved_content: *mut pdf_obj = 0 as *mut pdf_obj;
     cm = pdf_dev_get_param(2i32);
-    if cm == 0 || pdf_color_is_white(&mut bgcolor) as i32 != 0 {
+    if cm == 0 || bgcolor.is_white() {
         return;
     }
     pdf_doc_get_mediabox(pdf_doc_current_page_number() as u32, &mut r);
