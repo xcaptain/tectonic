@@ -26,8 +26,9 @@
 )]
 
 use std::ffi::CStr;
+use crate::DisplayExt;
 
-use super::spc_warn;
+use crate::spc_warn;
 use super::util::{spc_util_read_colorspec, spc_util_read_numbers};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_fontmap::{
@@ -224,10 +225,7 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     };
     let error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
     if error != 0 {
-        spc_warn(
-            spe,
-            b"No valid color specified?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No valid color specified?");
     } else {
         pdf_doc_set_bgcolor(Some(&colorspec));
     }
@@ -242,10 +240,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
     static mut BUFFER: [i8; 1024] = [0; 1024];
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
-        spc_warn(
-            spe,
-            b"Empty fontmapline special?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Empty fontmapline special?");
         return -1i32;
     }
     let opchr = *(*ap).curptr.offset(0);
@@ -260,10 +255,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
                 pdf_remove_fontmap_record(map_name);
                 free(map_name as *mut libc::c_void);
             } else {
-                spc_warn(
-                    spe,
-                    b"Invalid fontmap line: Missing TFM name.\x00" as *const u8 as *const i8,
-                );
+                spc_warn!(spe, "Invalid fontmap line: Missing TFM name.");
                 error = -1i32
             }
         }
@@ -288,7 +280,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapline(
                 is_pdfm_mapline(BUFFER.as_mut_ptr()),
             );
             if error != 0 {
-                spc_warn(spe, b"Invalid fontmap line.\x00" as *const u8 as *const i8);
+                spc_warn!(spe, "Invalid fontmap line.");
             } else if opchr as i32 == '+' as i32 {
                 pdf_append_fontmap_record((*mrec).map_name, mrec);
             } else {
@@ -324,10 +316,7 @@ unsafe extern "C" fn spc_handler_xtx_fontmapfile(
     };
     let mapfile = parse_val_ident(&mut (*args).curptr, (*args).endptr);
     if mapfile.is_null() {
-        spc_warn(
-            spe,
-            b"No fontmap file specified.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No fontmap file specified.");
         -1
     } else {
         pdf_load_fontmap_file(mapfile, mode)
@@ -386,9 +375,9 @@ unsafe extern "C" fn spc_handler_xtx_renderingmode(
         return -1i32;
     }
     if (value as i32) < 0i32 || value as i32 > 7i32 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Invalid text rendering mode %d.\n\x00" as *const u8 as *const i8,
+            "Invalid text rendering mode {}.\n",
             value as i32,
         );
         return -1i32;
@@ -418,9 +407,11 @@ unsafe extern "C" fn spc_handler_xtx_unsupportedcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    spc_warn(spe,
-             b"xetex-style \\special{x:%s} is not supported by this driver;\nupdate document or driver to use \\special{color} instead.\x00"
-                 as *const u8 as *const i8, (*args).command);
+    spc_warn!(
+        spe,
+        "xetex-style \\special{{x:{}}} is not supported by this driver;\nupdate document or driver to use \\special{{color}} instead.",
+        CStr::from_ptr((*args).command).display(),
+    );
     (*args).curptr = (*args).endptr;
     0i32
 }
@@ -428,11 +419,10 @@ unsafe extern "C" fn spc_handler_xtx_unsupported(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    spc_warn(
+    spc_warn!(
         spe,
-        b"xetex-style \\special{x:%s} is not supported by this driver.\x00" as *const u8
-            as *const i8,
-        (*args).command,
+        "xetex-style \\special{{x:{}}} is not supported by this driver.",
+        CStr::from_ptr((*args).command).display(),
     );
     (*args).curptr = (*args).endptr;
     0i32
@@ -686,7 +676,7 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
             strlen(b"x:\x00" as *const u8 as *const i8),
         ) != 0
     {
-        spc_warn(spe, b"Not x: special???\x00" as *const u8 as *const i8);
+        spc_warn!(spe, "Not x: special???");
         return -1i32;
     }
     (*ap).curptr = (*ap)

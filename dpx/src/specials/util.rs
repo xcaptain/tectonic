@@ -25,7 +25,11 @@
     unused_mut
 )]
 
-use super::{spc_arg, spc_env, spc_warn};
+use std::ffi::CStr;
+use crate::spc_warn;
+use crate::DisplayExt;
+
+use super::{spc_arg, spc_env};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 pub use crate::dpx_pdfcolor::pdf_color;
 use crate::dpx_pdfcolor::{
@@ -138,10 +142,7 @@ unsafe extern "C" fn spc_read_color_color(
     let mut error: i32 = 0i32;
     let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
-        spc_warn(
-            spe,
-            b"No valid color specified?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No valid color specified?");
         return -1i32;
     }
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
@@ -149,10 +150,7 @@ unsafe extern "C" fn spc_read_color_color(
         /* Handle rgb color */
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
-            spc_warn(
-                spe,
-                b"Invalid value for RGB color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid value for RGB color specification.");
             error = -1i32
         } else {
             pdf_color_rgbcolor(colorspec, cv[0], cv[1], cv[2]);
@@ -161,10 +159,7 @@ unsafe extern "C" fn spc_read_color_color(
         /* Handle cmyk color */
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
         if nc != 4i32 {
-            spc_warn(
-                spe,
-                b"Invalid value for CMYK color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid value for CMYK color specification.");
             error = -1i32
         } else {
             pdf_color_cmykcolor(colorspec, cv[0], cv[1], cv[2], cv[3]);
@@ -173,10 +168,7 @@ unsafe extern "C" fn spc_read_color_color(
         /* Handle gray */
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
-            spc_warn(
-                spe,
-                b"Invalid value for gray color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid value for gray color specification.");
             error = -1i32
         } else {
             pdf_color_graycolor(colorspec, cv[0]);
@@ -185,19 +177,13 @@ unsafe extern "C" fn spc_read_color_color(
         /* Handle spot colors */
         let mut color_name: *mut i8 = parse_c_ident(&mut (*ap).curptr, (*ap).endptr); /* Must be a "named" color */
         if color_name.is_null() {
-            spc_warn(
-                spe,
-                b"No valid spot color name specified?\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "No valid spot color name specified?");
             return -1i32;
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
-            spc_warn(
-                spe,
-                b"Invalid value for spot color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid value for spot color specification.");
             error = -1i32;
             free(color_name as *mut libc::c_void);
         } else {
@@ -206,17 +192,13 @@ unsafe extern "C" fn spc_read_color_color(
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
-            spc_warn(
-                spe,
-                b"Invalid value for HSB color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid value for HSB color specification.");
             error = -1i32
         } else {
             rgb_color_from_hsv(colorspec, cv[0], cv[1], cv[2]);
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"HSB color converted to RGB: hsb: <%g, %g, %g> ==> rgb: <%g, %g, %g>\x00"
-                    as *const u8 as *const i8,
+                "HSB color converted to RGB: hsb: <{}, {}, {}> ==> rgb: <{}, {}, {}>",
                 cv[0],
                 cv[1],
                 cv[2],
@@ -228,10 +210,10 @@ unsafe extern "C" fn spc_read_color_color(
     } else {
         error = pdf_color_namedcolor(colorspec, q);
         if error != 0 {
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"Unrecognized color name: %s\x00" as *const u8 as *const i8,
-                q,
+                "Unrecognized color name: {}",
+                    CStr::from_ptr(q).display(),
             );
         }
     }
@@ -273,19 +255,15 @@ unsafe extern "C" fn spc_read_color_pdf(
             /* Try to read the color names defined in dvipsname.def */
             let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
             if q.is_null() {
-                spc_warn(
-                    spe,
-                    b"No valid color specified?\x00" as *const u8 as *const i8,
-                );
+                spc_warn!(spe, "No valid color specified?");
                 return -1i32;
             }
             error = pdf_color_namedcolor(colorspec, q);
             if error != 0 {
-                spc_warn(
+                spc_warn!(
                     spe,
-                    b"Unrecognized color name: %s, keep the current color\x00" as *const u8
-                        as *const i8,
-                    q,
+                    "Unrecognized color name: {}, keep the current color",
+                    CStr::from_ptr(q).display(),
                 );
             }
             free(q as *mut libc::c_void);
@@ -294,10 +272,7 @@ unsafe extern "C" fn spc_read_color_pdf(
     if isarry != 0 {
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         if (*ap).curptr >= (*ap).endptr || *(*ap).curptr.offset(0) as i32 != ']' as i32 {
-            spc_warn(
-                spe,
-                b"Unbalanced \'[\' and \']\' in color specification.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Unbalanced \'[\' and \']\' in color specification.");
             error = -1i32
         } else {
             (*ap).curptr = (*ap).curptr.offset(1)
@@ -414,20 +389,17 @@ unsafe extern "C" fn spc_util_read_length(
                 7 => u *= 12.0f64 * 1238.0f64 / 1157.0f64 * 72.0f64 / 72.27f64,
                 8 => u *= 72.0f64 / (72.27f64 * 65536i32 as f64),
                 _ => {
-                    spc_warn(
+                    spc_warn!(
                         spe,
-                        b"Unknown unit of measure: %s\x00" as *const u8 as *const i8,
-                        q,
+                        "Unknown unit of measure: {}",
+                        CStr::from_ptr(q).display(),
                     );
                     error = -1i32
                 }
             }
             free(qq as *mut libc::c_void);
         } else {
-            spc_warn(
-                spe,
-                b"Missing unit of measure after \"true\"\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Missing unit of measure after \"true\"");
             error = -1i32
         }
     }
@@ -494,10 +466,10 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
             k += 1
         }
         if _DTKEYS[k as usize].is_null() {
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"Unrecognized dimension/transformation key: %s\x00" as *const u8 as *const i8,
-                kp,
+                "Unrecognized dimension/transformation key: {}",
+                CStr::from_ptr(kp).display(),
             );
             error = -1i32;
             free(kp as *mut libc::c_void);
@@ -523,11 +495,7 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
                     vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                     skip_blank(&mut (*ap).curptr, (*ap).endptr);
                     if !vp.is_null() && qchr as i32 != *(*ap).curptr.offset(0) as i32 {
-                        spc_warn(
-                            spe,
-                            b"Syntax error in dimension/transformation specification.\x00"
-                                as *const u8 as *const i8,
-                        );
+                        spc_warn!(spe, "Syntax error in dimension/transformation specification.");
                         error = -1i32;
                         vp = mfree(vp as *mut libc::c_void) as *mut i8
                     }
@@ -536,11 +504,10 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
                     vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr)
                 }
                 if error == 0 && vp.is_null() {
-                    spc_warn(
+                    spc_warn!(
                         spe,
-                        b"Missing value for dimension/transformation: %s\x00" as *const u8
-                            as *const i8,
-                        kp,
+                        "Missing value for dimension/transformation: {}",
+                        CStr::from_ptr(kp).display(),
                     );
                     error = -1i32
                 }
@@ -738,11 +705,10 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
             _ => error = -1i32,
         }
         if error != 0 {
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"Unrecognized key or invalid value for dimension/transformation: %s\x00"
-                    as *const u8 as *const i8,
-                kp,
+                "Unrecognized key or invalid value for dimension/transformation: {}",
+                CStr::from_ptr(kp).display(),
             );
         } else {
             skip_blank(&mut (*ap).curptr, (*ap).endptr);
@@ -752,32 +718,18 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
     if error == 0 {
         /* Check consistency */
         if has_xscale != 0 && p.flags & 1i32 << 1i32 != 0 {
-            spc_warn(
-                spe,
-                b"Can\'t supply both width and xscale. Ignore xscale.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply both width and xscale. Ignore xscale.");
             xscale = 1.0f64
         } else if has_yscale != 0 && p.flags & 1i32 << 2i32 != 0 {
-            spc_warn(
-                spe,
-                b"Can\'t supply both height/depth and yscale. Ignore yscale.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply both height/depth and yscale. Ignore yscale.");
             yscale = 1.0f64
         } else if has_scale != 0 && (has_xscale != 0 || has_yscale != 0) {
-            spc_warn(
-                spe,
-                b"Can\'t supply overall scale along with axis scales.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply overall scale along with axis scales.");
             error = -1i32
         } else if has_matrix != 0
             && (has_scale != 0 || has_xscale != 0 || has_yscale != 0 || has_rotate != 0)
         {
-            spc_warn(spe,
-                     b"Can\'t supply transform matrix along with scales or rotate. Ignore scales and rotate.\x00"
-                         as *const u8 as *const i8);
+            spc_warn!(spe, "Can\'t supply transform matrix along with scales or rotate. Ignore scales and rotate.");
         }
     }
     if has_matrix == 0 {
@@ -982,11 +934,10 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
             _ => error = -1i32,
         }
         if error != 0 {
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"Unrecognized key or invalid value for dimension/transformation: %s\x00"
-                    as *const u8 as *const i8,
-                kp,
+                "Unrecognized key or invalid value for dimension/transformation: {}",
+                CStr::from_ptr(kp).display(),
             );
         } else {
             skip_blank(&mut (*ap).curptr, (*ap).endptr);
@@ -996,32 +947,18 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
     if error == 0 {
         /* Check consistency */
         if has_xscale != 0 && p.flags & 1i32 << 1i32 != 0 {
-            spc_warn(
-                spe,
-                b"Can\'t supply both width and xscale. Ignore xscale.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply both width and xscale. Ignore xscale.");
             xscale = 1.0f64
         } else if has_yscale != 0 && p.flags & 1i32 << 2i32 != 0 {
-            spc_warn(
-                spe,
-                b"Can\'t supply both height/depth and yscale. Ignore yscale.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply both height/depth and yscale. Ignore yscale.");
             yscale = 1.0f64
         } else if has_scale != 0 && (has_xscale != 0 || has_yscale != 0) {
-            spc_warn(
-                spe,
-                b"Can\'t supply overall scale along with axis scales.\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Can\'t supply overall scale along with axis scales.");
             error = -1i32
         } else if has_matrix != 0
             && (has_scale != 0 || has_xscale != 0 || has_yscale != 0 || has_rotate != 0)
         {
-            spc_warn(spe,
-                     b"Can\'t supply transform matrix along with scales or rotate. Ignore scales and rotate.\x00"
-                         as *const u8 as *const i8);
+            spc_warn!(spe, "Can\'t supply transform matrix along with scales or rotate. Ignore scales and rotate.");
         }
     }
     if has_matrix == 0 {

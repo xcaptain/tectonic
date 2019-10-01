@@ -31,7 +31,8 @@ use crate::warn;
 use crate::DisplayExt;
 use std::ffi::CStr;
 
-use super::{spc_arg, spc_env, spc_warn};
+use crate::spc_warn;
+use super::{spc_arg, spc_env};
 
 use crate::dpx_dpxutil::{parse_c_ident, parse_c_string, parse_float_decimal};
 use crate::dpx_mem::renew;
@@ -417,10 +418,7 @@ unsafe extern "C" fn spc_handler_tpic_pn(mut spe: *mut spc_env, mut ap: *mut spc
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     let q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
-        spc_warn(
-            spe,
-            b"Invalid pen size specified?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Invalid pen size specified?");
         return -1i32;
     }
     (*tp).pen_size = atof(q) * (0.072f64 / pdf_dev_scale());
@@ -437,10 +435,7 @@ unsafe extern "C" fn spc_handler_tpic_pa(mut spe: *mut spc_env, mut ap: *mut spc
     while i < 2 && (*ap).curptr < (*ap).endptr {
         let q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
         if q.is_null() {
-            spc_warn(
-                spe,
-                b"Missing numbers for TPIC \"pa\" command.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Missing numbers for TPIC \"pa\" command.");
             return -1i32;
         }
         v[i] = atof(q);
@@ -449,10 +444,7 @@ unsafe extern "C" fn spc_handler_tpic_pa(mut spe: *mut spc_env, mut ap: *mut spc
         i += 1
     }
     if i != 2 {
-        spc_warn(
-            spe,
-            b"Invalid arg for TPIC \"pa\" command.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Invalid arg for TPIC \"pa\" command.");
         return -1i32;
     }
     if (*tp).num_points >= (*tp).max_points {
@@ -474,10 +466,7 @@ unsafe extern "C" fn spc_handler_tpic_fp(mut spe: *mut spc_env, mut ap: *mut spc
     let mut pg: i32 = 0;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
     if (*tp).num_points <= 1i32 {
-        spc_warn(
-            spe,
-            b"Too few points (< 2) for polyline path.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Too few points (< 2) for polyline path.");
         return -1i32;
     }
     let mut cp = spc_currentpoint(spe, &mut pg);
@@ -489,10 +478,7 @@ unsafe extern "C" fn spc_handler_tpic_ip(mut spe: *mut spc_env, mut ap: *mut spc
     let mut pg: i32 = 0;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
     if (*tp).num_points <= 1i32 {
-        spc_warn(
-            spe,
-            b"Too few points (< 2) for polyline path.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Too few points (< 2) for polyline path.");
         return -1i32;
     }
     let mut cp = spc_currentpoint(spe, &mut pg);
@@ -511,10 +497,7 @@ unsafe extern "C" fn spc_handler_tpic_da(mut spe: *mut spc_env, mut ap: *mut spc
         free(q as *mut libc::c_void);
     }
     if (*tp).num_points <= 1i32 {
-        spc_warn(
-            spe,
-            b"Too few points (< 2) for polyline path.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Too few points (< 2) for polyline path.");
         return -1i32;
     }
     let mut cp = spc_currentpoint(spe, &mut pg);
@@ -533,10 +516,7 @@ unsafe extern "C" fn spc_handler_tpic_dt(mut spe: *mut spc_env, mut ap: *mut spc
         free(q as *mut libc::c_void);
     }
     if (*tp).num_points <= 1i32 {
-        spc_warn(
-            spe,
-            b"Too few points (< 2) for polyline path.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Too few points (< 2) for polyline path.");
         return -1i32;
     }
     let mut cp = spc_currentpoint(spe, &mut pg);
@@ -555,10 +535,7 @@ unsafe extern "C" fn spc_handler_tpic_sp(mut spe: *mut spc_env, mut ap: *mut spc
         free(q as *mut libc::c_void);
     }
     if (*tp).num_points <= 2i32 {
-        spc_warn(
-            spe,
-            b"Too few points (< 3) for spline path.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Too few points (< 3) for spline path.");
         return -1i32;
     }
     let mut cp = spc_currentpoint(spe, &mut pg);
@@ -575,10 +552,7 @@ unsafe extern "C" fn spc_handler_tpic_ar(mut spe: *mut spc_env, mut ap: *mut spc
     while i < 6 && (*ap).curptr < (*ap).endptr {
         let q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
         if q.is_null() {
-            spc_warn(
-                spe,
-                b"Invalid args. in TPIC \"ar\" command.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid args. in TPIC \"ar\" command.");
             return -1i32;
         }
         v[i] = atof(q);
@@ -587,10 +561,7 @@ unsafe extern "C" fn spc_handler_tpic_ar(mut spe: *mut spc_env, mut ap: *mut spc
         i += 1
     }
     if i != 6 {
-        spc_warn(
-            spe,
-            b"Invalid arg for TPIC \"ar\" command.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Invalid arg for TPIC \"ar\" command.");
         return -1i32;
     }
     v[0] *= 0.072f64 / pdf_dev_scale();
@@ -613,10 +584,7 @@ unsafe extern "C" fn spc_handler_tpic_ia(mut spe: *mut spc_env, mut ap: *mut spc
     while i < 6 && (*ap).curptr < (*ap).endptr {
         let q = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
         if q.is_null() {
-            spc_warn(
-                spe,
-                b"Invalid args. in TPIC \"ia\" command.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Invalid args. in TPIC \"ia\" command.");
             return -1i32;
         }
         v[i] = atof(q);
@@ -625,10 +593,7 @@ unsafe extern "C" fn spc_handler_tpic_ia(mut spe: *mut spc_env, mut ap: *mut spc
         i += 1
     }
     if i != 6 {
-        spc_warn(
-            spe,
-            b"Invalid arg for TPIC \"ia\" command.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Invalid arg for TPIC \"ia\" command.");
         return -1i32;
     }
     v[0] *= 0.072f64 / pdf_dev_scale();
@@ -680,10 +645,7 @@ unsafe extern "C" fn spc_handler_tpic_tx(mut spe: *mut spc_env, mut ap: *mut spc
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE; /* NULL terminate */
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
-    spc_warn(
-        spe,
-        b"TPIC command \"tx\" not supported.\x00" as *const u8 as *const i8,
-    );
+    spc_warn!(spe, "TPIC command \"tx\" not supported.");
     -1i32
 }
 unsafe extern "C" fn spc_handler_tpic__init(
@@ -698,10 +660,7 @@ unsafe extern "C" fn spc_handler_tpic__init(
     (*tp).num_points = 0i32;
     (*tp).max_points = 0i32;
     if (*tp).mode.fill != 0i32 && pdf_get_version() < 4_u32 {
-        spc_warn(
-            spe,
-            b"Tpic shading support requires PDF version 1.4.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Tpic shading support requires PDF version 1.4.");
         (*tp).mode.fill = 0i32
     }
     0i32
@@ -719,10 +678,7 @@ unsafe extern "C" fn spc_handler_tpic__eophook(
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     assert!(!tp.is_null());
     if (*tp).num_points > 0i32 {
-        spc_warn(
-            spe,
-            b"Unflushed tpic path at end of the page.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Unflushed tpic path at end of the page.");
     }
     tpic__clear(tp);
     0i32
@@ -734,10 +690,7 @@ unsafe extern "C" fn spc_handler_tpic__clean(
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     assert!(!tp.is_null());
     if (*tp).num_points > 0i32 {
-        spc_warn(
-            spe,
-            b"Unflushed tpic path at end of the document.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Unflushed tpic path at end of the document.");
     }
     tpic__clear(tp);
     0i32
@@ -867,10 +820,7 @@ unsafe extern "C" fn spc_handler_tpic__setopts(mut spe: *mut spc_env, mut ap: *m
     );
     if error == 0 {
         if (*tp).mode.fill != 0i32 && pdf_get_version() < 4_u32 {
-            spc_warn(
-                spe,
-                b"Transparent fill mode requires PDF version 1.4.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Transparent fill mode requires PDF version 1.4.");
             (*tp).mode.fill = 0i32
         }
     }

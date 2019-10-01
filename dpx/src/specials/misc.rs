@@ -23,7 +23,9 @@
     unused_mut
 )]
 
-use super::spc_warn;
+use std::ffi::CStr;
+use crate::DisplayExt;
+use crate::spc_warn;
 use crate::dpx_mfileio::tt_mfgets;
 use crate::dpx_mpost::mps_scan_bbox;
 use crate::dpx_pdfdev::{pdf_dev_put_image, transform_info, transform_info_clear};
@@ -59,11 +61,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     let mut buf: [i8; 512] = [0; 512];
     assert!(!spe.is_null() && !ap.is_null());
     if (*ap).curptr >= (*ap).endptr {
-        spc_warn(
-            spe,
-            b"No width/height/filename given for postscriptbox special.\x00" as *const u8
-                as *const i8,
-        );
+        spc_warn!(spe, "No width/height/filename given for postscriptbox special.");
         return -1i32;
     }
     /* input is not NULL terminated */
@@ -76,7 +74,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     );
     buf[len as usize] = '\u{0}' as i32 as i8;
     transform_info_clear(&mut ti);
-    spc_warn(spe, b"%s\x00" as *const u8 as *const i8, buf.as_mut_ptr());
+    spc_warn!(spe, "{}", CStr::from_ptr(buf.as_mut_ptr()).display());
     if sscanf(
         buf.as_mut_ptr(),
         b"{%lfpt}{%lfpt}{%255[^}]}\x00" as *const u8 as *const i8,
@@ -85,10 +83,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
         filename.as_mut_ptr(),
     ) != 3i32
     {
-        spc_warn(
-            spe,
-            b"Syntax error in postscriptbox special?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Syntax error in postscriptbox special?");
         return -1i32;
     }
     (*ap).curptr = (*ap).endptr;
@@ -96,10 +91,10 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     ti.height *= 72.0f64 / 72.27f64;
     let handle = ttstub_input_open(filename.as_mut_ptr(), TTInputFormat::PICT, 0i32);
     if handle.is_null() {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Could not open image file: %s\x00" as *const u8 as *const i8,
-            filename.as_mut_ptr(),
+            "Could not open image file: {}",
+            CStr::from_ptr(filename.as_mut_ptr()).display(),
         );
         return -1i32;
     }
@@ -118,10 +113,10 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     ttstub_input_close(handle);
     let form_id = pdf_ximage_findresource(filename.as_mut_ptr(), options);
     if form_id < 0i32 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Failed to load image file: %s\x00" as *const u8 as *const i8,
-            filename.as_mut_ptr(),
+            "Failed to load image file: {}",
+            CStr::from_ptr(filename.as_mut_ptr()).display(),
         );
         return -1i32;
     }
