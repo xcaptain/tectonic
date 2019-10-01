@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -140,8 +139,6 @@ pub mod sfnt_table_info {
     pub const CMAP: Tag = b"cmap";
 }
 
-use super::dpx_tt_glyf::tt_glyphs;
-
 /* Acoid conflict with CHAR ... from <winnt.h>.  */
 /* Data Types as described in Apple's TTRefMan */
 /* Order of lookup should be
@@ -155,7 +152,6 @@ pub struct glyph_mapper {
     pub sfont: *mut sfnt,
     pub nametogid: *mut tt_post_table,
 }
-use super::dpx_agl::agl_name;
 /* tectonic/core-strutils.h: miscellaneous C string utilities
    Copyright 2016-2018 the Tectonic Project
    Licensed under the MIT License.
@@ -168,30 +164,21 @@ use super::dpx_agl::agl_name;
 /* Modifying this has no effect :P */
 #[no_mangle]
 pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 {
-    let mut ident: *mut i8 = 0 as *mut i8; /* Must be embedded. */
-    let mut index: i32 = 0;
-    let mut encoding_id: i32 = 0;
-    let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut descriptor: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut sfont: *mut sfnt = 0 as *mut sfnt;
     let mut embedding: i32 = 1i32;
-    let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
-    let mut length: i32 = 0;
-    let mut error: i32 = 0i32;
     assert!(!font.is_null());
-    ident = pdf_font_get_ident(font);
-    index = pdf_font_get_index(font);
+    let ident = pdf_font_get_ident(font); /* Must be embedded. */
+    let index = pdf_font_get_index(font);
     assert!(!ident.is_null());
-    handle = dpx_open_truetype_file(ident) as *mut rust_input_handle_t;
-    if handle.is_null() {
+    let mut handle = dpx_open_truetype_file(ident) as *mut rust_input_handle_t;
+    let sfont = if handle.is_null() {
         handle = dpx_open_dfont_file(ident) as *mut rust_input_handle_t;
         if handle.is_null() {
             return -1i32;
         }
-        sfont = dfont_open(handle as rust_input_handle_t, index)
+        dfont_open(handle as rust_input_handle_t, index)
     } else {
-        sfont = sfnt_open(handle as rust_input_handle_t)
-    }
+        sfnt_open(handle as rust_input_handle_t)
+    };
     if sfont.is_null() {
         warn!(
             "Could not open TrueType font: {}",
@@ -200,16 +187,15 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         ttstub_input_close(handle as rust_input_handle_t);
         return -1i32;
     }
-    if (*sfont).type_0 == 1i32 << 4i32 {
-        let mut offset: u32 = 0;
-        offset = ttc_read_offset(sfont, index);
+    let error = if (*sfont).type_0 == 1i32 << 4i32 {
+        let offset = ttc_read_offset(sfont, index);
         if offset == 0_u32 {
             panic!("Invalid TTC index in {}.", CStr::from_ptr(ident).display());
         }
-        error = sfnt_read_table_directory(sfont, offset)
+        sfnt_read_table_directory(sfont, offset)
     } else {
-        error = sfnt_read_table_directory(sfont, (*sfont).offset)
-    }
+        sfnt_read_table_directory(sfont, (*sfont).offset)
+    };
     if error != 0 {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
@@ -219,15 +205,14 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
     /* Reading fontdict before checking fonttype conflicts with PKFONT
      * because pdf_font_get_resource() always makes a dictionary.
      */
-    encoding_id = pdf_font_get_encoding(font);
-    fontdict = pdf_font_get_resource(font);
-    descriptor = pdf_font_get_descriptor(font);
+    let encoding_id = pdf_font_get_encoding(font);
+    let fontdict = pdf_font_get_resource(font);
+    let descriptor = pdf_font_get_descriptor(font);
     /* ENABLE_NOEMBED */
     assert!(!fontdict.is_null() && !descriptor.is_null());
     let mut fontname: [i8; 256] = [0; 256];
-    let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     memset(fontname.as_mut_ptr() as *mut libc::c_void, 0i32, 256);
-    length = tt_get_ps_fontname(sfont, fontname.as_mut_ptr(), 255_u16) as i32;
+    let mut length = tt_get_ps_fontname(sfont, fontname.as_mut_ptr(), 255_u16) as i32;
     if length < 1i32 {
         length = (if strlen(ident) < 255 {
             strlen(ident) as _
@@ -256,7 +241,7 @@ pub unsafe extern "C" fn pdf_font_open_truetype(mut font: *mut pdf_font) -> i32 
         );
     }
     pdf_font_set_fontname(font, fontname.as_mut_ptr());
-    tmp = tt_get_fontdesc(sfont, &mut embedding, -1i32, 1i32, fontname.as_mut_ptr());
+    let tmp = tt_get_fontdesc(sfont, &mut embedding, -1i32, 1i32, fontname.as_mut_ptr());
     if tmp.is_null() {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
@@ -310,17 +295,11 @@ const required_table: [SfntTableInfo; 12] = {
 };
 
 unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
-    let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut tmparray: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut firstchar: i32 = 0;
-    let mut lastchar: i32 = 0;
-    let mut tfm_id: i32 = 0;
-    let mut usedchars: *mut i8 = 0 as *mut i8;
-    fontdict = pdf_font_get_resource(font);
-    usedchars = pdf_font_get_usedchars(font);
-    tmparray = pdf_new_array();
-    firstchar = 255i32;
-    lastchar = 0i32;
+    let fontdict = pdf_font_get_resource(font);
+    let usedchars = pdf_font_get_usedchars(font);
+    let tmparray = pdf_new_array();
+    let mut firstchar = 255i32;
+    let mut lastchar = 0i32;
     for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
             if code < firstchar {
@@ -336,16 +315,15 @@ unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
         pdf_release_obj(tmparray);
         return;
     }
-    tfm_id = tfm_open(pdf_font_get_mapname(font), 0i32);
+    let tfm_id = tfm_open(pdf_font_get_mapname(font), 0i32);
     for code in firstchar..=lastchar {
         if *usedchars.offset(code as isize) != 0 {
-            let mut width: f64 = 0.;
-            if tfm_id < 0i32 {
+            let width = if tfm_id < 0i32 {
                 /* tfm is not found */
-                width = *widths.offset(code as isize)
+                *widths.offset(code as isize)
             } else {
-                width = 1000.0f64 * tfm_get_width(tfm_id, code)
-            }
+                1000. * tfm_get_width(tfm_id, code)
+            };
             pdf_add_array(
                 tmparray,
                 pdf_new_number((width / 0.1f64 + 0.5f64).floor() * 0.1f64),
@@ -375,19 +353,13 @@ unsafe extern "C" fn do_builtin_encoding(
     mut usedchars: *const i8,
     mut sfont: *mut sfnt,
 ) -> i32 {
-    let mut glyphs: *mut tt_glyphs = 0 as *mut tt_glyphs;
-    let mut cmap_table: *mut i8 = 0 as *mut i8;
-    let mut ttcm: *mut tt_cmap = 0 as *mut tt_cmap;
-    let mut gid: u16 = 0;
-    let mut idx: u16 = 0;
-    let mut count: i32 = 0;
     let mut widths: [f64; 256] = [0.; 256];
-    ttcm = tt_cmap_read(sfont, 1_u16, 0_u16);
+    let ttcm = tt_cmap_read(sfont, 1_u16, 0_u16);
     if ttcm.is_null() {
         warn!("Could not read Mac-Roman TrueType cmap table...");
         return -1i32;
     }
-    cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+    let cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     memset(cmap_table as *mut libc::c_void, 0i32, 274);
     put_big_endian(cmap_table as *mut libc::c_void, 0i32, 2i32);
     /* Version  */
@@ -405,17 +377,18 @@ unsafe extern "C" fn do_builtin_encoding(
     /* Length   */
     put_big_endian(cmap_table.offset(16) as *mut libc::c_void, 0i32, 2i32);
     /* Language */
-    glyphs = tt_build_init(); /* .notdef */
+    let glyphs = tt_build_init(); /* .notdef */
     if verbose > 2i32 {
         info!("[glyphs:/.notdef");
     }
-    count = 1i32;
+    let mut count = 1;
     for code in 0..256 {
         if !(*usedchars.offset(code as isize) == 0) {
             if verbose > 2i32 {
                 info!("/.c0x{:02x}", code);
             }
-            gid = tt_cmap_lookup(ttcm, code as u32);
+            let mut idx;
+            let gid = tt_cmap_lookup(ttcm, code as u32);
             if gid as i32 == 0i32 {
                 warn!(
                     "Glyph for character code=0x{:02x} missing in font font-file=\"{}\".",
@@ -446,7 +419,7 @@ unsafe extern "C" fn do_builtin_encoding(
     }
     for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
-            idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
+            let idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
             widths[code as usize] = (1000.0f64
                 * (*(*glyphs).gd.offset(idx as isize)).advw as i32 as f64
                 / (*glyphs).emsize as i32 as f64
@@ -478,10 +451,8 @@ unsafe extern "C" fn agl_decompose_glyphname(
     mut size: i32,
     mut suffix: *mut *mut i8,
 ) -> i32 {
-    let mut q: *mut i8 = 0 as *mut i8; /* chop every thing after *first* dot */
     let mut p: *mut i8 = glyphname; /* _FIXME_ */
-    let mut n: i32 = 0;
-    q = strchr(p, '.' as i32);
+    let mut q = strchr(p, '.' as i32); /* chop every thing after *first* dot */
     if q.is_null() {
         *suffix = 0 as *mut i8
     } else {
@@ -491,7 +462,7 @@ unsafe extern "C" fn agl_decompose_glyphname(
     }
     let ref mut fresh0 = *nptrs.offset(0);
     *fresh0 = p;
-    n = 1i32;
+    let mut n = 1;
     while !p.is_null() && *p as i32 != 0 {
         p = strchr(p, '_' as i32);
         if p.is_null() || *p.offset(1) as i32 == '\u{0}' as i32 {
@@ -509,13 +480,11 @@ unsafe extern "C" fn agl_decompose_glyphname(
     n
 }
 unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper) -> i32 {
-    let mut idx: i32 = 0;
-    let mut error: i32 = 0i32;
     if feat.is_null() || *feat as i32 == 0i32 || gm.is_null() || (*gm).gsub.is_null() {
         return -1i32;
     }
     /* First treat as is */
-    idx = otl_gsub_select(
+    let idx = otl_gsub_select(
         (*gm).gsub,
         b"*\x00" as *const u8 as *const i8,
         b"*\x00" as *const u8 as *const i8,
@@ -530,7 +499,7 @@ unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper)
             CStr::from_ptr(feat).display()
         );
     }
-    error = otl_gsub_add_feat(
+    let error = otl_gsub_add_feat(
         (*gm).gsub,
         b"*\x00" as *const u8 as *const i8,
         b"*\x00" as *const u8 as *const i8,
@@ -538,7 +507,7 @@ unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper)
         (*gm).sfont,
     );
     if error == 0 {
-        idx = otl_gsub_select(
+        let idx = otl_gsub_select(
             (*gm).gsub,
             b"*\x00" as *const u8 as *const i8,
             b"*\x00" as *const u8 as *const i8,
@@ -555,22 +524,18 @@ unsafe extern "C" fn selectglyph(
     mut gm: *mut glyph_mapper,
     mut out: *mut u16,
 ) -> i32 {
-    let mut s: *mut i8 = 0 as *mut i8;
-    let mut q: *mut i8 = 0 as *mut i8;
     let mut t: [i8; 5] = [0; 5];
-    let mut r: *const i8 = 0 as *const i8;
-    let mut n: i32 = 0;
-    let mut error: i32 = 0i32;
+    let mut error;
     assert!(!suffix.is_null() && !gm.is_null() && !out.is_null());
     assert!(!suffix.is_null() && *suffix as i32 != 0i32);
-    s = new((strlen(suffix).wrapping_add(1) as u32 as u64)
+    let s = new((strlen(suffix).wrapping_add(1) as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     strcpy(s, suffix);
     /* First try converting suffix to feature tag.
      * agl.c currently only knows less ambiguos cases;
      * e.g., 'sc', 'superior', etc.
      */
-    r = agl_suffix_to_otltag(s); /* 'suffix' may represent feature tag. */
+    let r = agl_suffix_to_otltag(s); /* 'suffix' may represent feature tag. */
     if !r.is_null() {
         /* We found feature tag for 'suffix'. */
         error = select_gsub(r, gm); /* no fallback for this */
@@ -602,7 +567,7 @@ unsafe extern "C" fn selectglyph(
             error = otl_gsub_apply((*gm).gsub, &mut in_0)
         } else {
             /* other case: alt1, nalt10... (alternates) */
-            q = s.offset(strlen(s) as isize).offset(-1);
+            let mut q = s.offset(strlen(s) as isize).offset(-1);
             while q > s && *q as i32 >= '0' as i32 && *q as i32 <= '9' as i32 {
                 q = q.offset(-1)
             }
@@ -610,7 +575,7 @@ unsafe extern "C" fn selectglyph(
                 error = -1i32
             } else {
                 /* starting at 1 */
-                n = atoi(q.offset(1)) - 1i32;
+                let n = atoi(q.offset(1)) - 1i32;
                 *q.offset(1) = '\u{0}' as i32 as i8;
                 if strlen(s) > 4 {
                     error = -1i32
@@ -643,7 +608,6 @@ unsafe extern "C" fn composeglyph(
     mut gm: *mut glyph_mapper,
     mut gid: *mut u16,
 ) -> i32 {
-    let mut error: i32 = 0i32;
     let mut t: [i8; 5] = [
         ' ' as i32 as i8,
         ' ' as i32 as i8,
@@ -652,22 +616,22 @@ unsafe extern "C" fn composeglyph(
         0_i8,
     ];
     assert!(!glyphs.is_null() && n_glyphs > 0i32 && !gm.is_null() && !gid.is_null());
-    if feat.is_null() || *feat.offset(0) as i32 == '\u{0}' as i32 {
+    let mut error = if feat.is_null() || *feat.offset(0) as i32 == '\u{0}' as i32 {
         /* meaning "Unknown" */
-        error = select_gsub(
+        select_gsub(
             b"(?lig|lig?|?cmp|cmp?|frac|afrc)\x00" as *const u8 as *const i8,
             gm,
         )
     } else if strlen(feat) > 4 {
-        error = -1i32
+        -1
     } else {
         memcpy(
             t.as_mut_ptr() as *mut libc::c_void,
             feat as *const libc::c_void,
             strlen(feat),
         );
-        error = select_gsub(t.as_mut_ptr(), gm)
-    }
+        select_gsub(t.as_mut_ptr(), gm)
+    };
     if error == 0 {
         error = otl_gsub_apply_lig((*gm).gsub, glyphs, n_glyphs as u16, gid)
     }
@@ -681,15 +645,13 @@ unsafe extern "C" fn composeuchar(
     mut gm: *mut glyph_mapper,
     mut gid: *mut u16,
 ) -> i32 {
-    let mut gids: *mut u16 = 0 as *mut u16;
-    let mut i: i32 = 0;
     let mut error: i32 = 0i32;
     if (*gm).codetogid.is_null() {
         return -1i32;
     }
-    gids = new((n_unicodes as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32)
+    let gids = new((n_unicodes as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32)
         as *mut u16;
-    i = 0i32;
+    let mut i = 0;
     while error == 0 && i < n_unicodes {
         *gids.offset(i as isize) =
             tt_cmap_lookup((*gm).codetogid, *unicodes.offset(i as isize) as u32);
@@ -729,38 +691,34 @@ unsafe extern "C" fn findcomposite(
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
 ) -> i32 {
-    let mut gname: *mut i8 = 0 as *mut i8; /* first try composing glyph */
     let mut suffix: *mut i8 = 0 as *mut i8;
     let mut gids: [u16; 32] = [0; 32];
     let mut nptrs: [*mut i8; 32] = [0 as *mut i8; 32];
-    let mut i: i32 = 0;
-    let mut n_comp: i32 = 0;
-    let mut error: i32 = 0i32;
-    error = findposttable(glyphname, gid, gm);
+    let error = findposttable(glyphname, gid, gm);
     if error == 0 {
         return 0i32;
     }
-    gname = new((strlen(glyphname).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
-        as *mut i8;
+    let gname = new((strlen(glyphname).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
+        as *mut i8; /* first try composing glyph */
     strcpy(gname, glyphname);
     memset(
         gids.as_mut_ptr() as *mut libc::c_void,
         0i32,
         (32usize).wrapping_mul(::std::mem::size_of::<u16>()),
     );
-    n_comp = agl_decompose_glyphname(gname, nptrs.as_mut_ptr(), 32i32, &mut suffix);
-    error = 0i32;
-    i = 0i32;
-    while error == 0 && i < n_comp {
+    let n_comp = agl_decompose_glyphname(gname, nptrs.as_mut_ptr(), 32i32, &mut suffix);
+    let mut error = 0i32;
+    let mut i = 0;
+    while error == 0 && i < n_comp as usize {
         error = resolve_glyph(
-            nptrs[i as usize],
+            nptrs[i],
             &mut *gids.as_mut_ptr().offset(i as isize),
             gm,
         );
         if error != 0 {
             warn!(
                 "Could not resolve glyph \"{}\" ({}th component of glyph \"{}\").",
-                CStr::from_ptr(nptrs[i as usize]).display(),
+                CStr::from_ptr(nptrs[i]).display(),
                 i,
                 CStr::from_ptr(glyphname).display(),
             );
@@ -794,10 +752,9 @@ unsafe extern "C" fn findparanoiac(
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
 ) -> i32 {
-    let mut agln: *mut agl_name = 0 as *mut agl_name;
     let mut idx: u16 = 0_u16;
-    let mut error: i32 = 0i32;
-    agln = agl_lookup_list(glyphname);
+    let mut error;
+    let mut agln = agl_lookup_list(glyphname);
     while !agln.is_null() && idx as i32 == 0i32 {
         if !(*agln).suffix.is_null() {
             error = findparanoiac((*agln).name, &mut idx, gm);
@@ -812,7 +769,7 @@ unsafe extern "C" fn findparanoiac(
                     CStr::from_ptr((*agln).name).display(),
                 );
                 warn!("Using glyph name without suffix instead...");
-                error = 0i32
+                //error = 0i32
                 /* ignore */
             }
         } else if (*agln).n_components == 1i32 {
@@ -898,10 +855,7 @@ unsafe extern "C" fn resolve_glyph(
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
 ) -> i32 {
-    let mut error: i32 = 0i32;
-    let mut name: *mut i8 = 0 as *mut i8;
     let mut suffix: *mut i8 = 0 as *mut i8;
-    let mut ucv: i32 = 0;
     assert!(!glyphname.is_null());
     /* Boooo */
     /*
@@ -910,24 +864,24 @@ unsafe extern "C" fn resolve_glyph(
      * in the post table, then we try Unicode if Windows-Unicode TrueType
      * cmap is available.
      */
-    error = findposttable(glyphname, gid, gm);
+    let error = findposttable(glyphname, gid, gm);
     if error == 0 {
         return 0i32;
     }
     if (*gm).codetogid.is_null() {
         return -1i32;
     }
-    name = agl_chop_suffix(glyphname, &mut suffix);
-    if name.is_null() {
+    let name = agl_chop_suffix(glyphname, &mut suffix);
+    let mut error = if name.is_null() {
         /* .notdef, .foo */
-        error = -1i32
+        -1
     } else if agl_name_is_unicode(name) {
-        ucv = agl_name_convert_unicode(name);
+        let ucv = agl_name_convert_unicode(name);
         *gid = tt_cmap_lookup((*gm).codetogid, ucv as u32);
-        error = if *gid as i32 == 0i32 { -1i32 } else { 0i32 }
+        if *gid as i32 == 0i32 { -1 } else { 0 }
     } else {
-        error = findparanoiac(name, gid, gm)
-    }
+        findparanoiac(name, gid, gm)
+    };
     if error == 0 && !suffix.is_null() {
         error = selectglyph(*gid, suffix, gm, gid);
         if error != 0 {
@@ -984,9 +938,6 @@ unsafe extern "C" fn do_custom_encoding(
     mut usedchars: *const i8,
     mut sfont: *mut sfnt,
 ) -> i32 {
-    let mut glyphs: *mut tt_glyphs = 0 as *mut tt_glyphs;
-    let mut cmap_table: *mut i8 = 0 as *mut i8;
-    let mut count: i32 = 0;
     let mut widths: [f64; 256] = [0.; 256];
     let mut gm: glyph_mapper = glyph_mapper {
         codetogid: 0 as *mut tt_cmap,
@@ -994,11 +945,8 @@ unsafe extern "C" fn do_custom_encoding(
         sfont: 0 as *mut sfnt,
         nametogid: 0 as *mut tt_post_table,
     };
-    let mut idx: u16 = 0;
-    let mut gid: u16 = 0;
-    let mut error: i32 = 0i32;
     assert!(!font.is_null() && !encoding.is_null() && !usedchars.is_null() && !sfont.is_null());
-    error = setup_glyph_mapper(&mut gm, sfont);
+    let error = setup_glyph_mapper(&mut gm, sfont);
     if error != 0 {
         warn!(
             "No post table nor Unicode cmap found in font: {}",
@@ -1007,7 +955,7 @@ unsafe extern "C" fn do_custom_encoding(
         warn!(">> I can\'t find glyphs without this!");
         return -1i32;
     }
-    cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+    let cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     memset(cmap_table as *mut libc::c_void, 0i32, 274);
     put_big_endian(cmap_table as *mut libc::c_void, 0i32, 2i32);
     /* Version  */
@@ -1025,10 +973,12 @@ unsafe extern "C" fn do_custom_encoding(
     /* Length   */
     put_big_endian(cmap_table.offset(16) as *mut libc::c_void, 0i32, 2i32);
     /* Language */
-    glyphs = tt_build_init(); /* +1 for .notdef */
-    count = 1i32;
+    let glyphs = tt_build_init(); /* +1 for .notdef */
+    let mut count = 1;
     for code in 0..256 {
         if !(*usedchars.offset(code as isize) == 0) {
+            let mut gid: u16 = 0;
+            let mut idx;
             if (*encoding.offset(code as isize)).is_null()
                 || streq_ptr(
                     *encoding.offset(code as isize),
@@ -1041,11 +991,11 @@ unsafe extern "C" fn do_custom_encoding(
                 warn!(">> Maybe incorrect encoding specified?");
                 idx = 0_u16
             } else {
-                if !strchr(*encoding.offset(code as isize), '_' as i32).is_null() {
-                    error = findcomposite(*encoding.offset(code as isize), &mut gid, &mut gm)
+                let error = if !strchr(*encoding.offset(code as isize), '_' as i32).is_null() {
+                    findcomposite(*encoding.offset(code as isize), &mut gid, &mut gm)
                 } else {
-                    error = resolve_glyph(*encoding.offset(code as isize), &mut gid, &mut gm)
-                }
+                    resolve_glyph(*encoding.offset(code as isize), &mut gid, &mut gm)
+                };
                 /*
                  * Older versions of gs had problem with glyphs (other than .notdef)
                  * mapped to gid = 0.
@@ -1082,7 +1032,7 @@ unsafe extern "C" fn do_custom_encoding(
     }
     for code in 0..256 {
         if *usedchars.offset(code as isize) != 0 {
-            idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
+            let idx = tt_get_index(glyphs, *cmap_table.offset((18i32 + code) as isize) as u16);
             widths[code as usize] = (1000.0f64
                 * (*(*glyphs).gd.offset(idx as isize)).advw as i32 as f64
                 / (*glyphs).emsize as i32 as f64
@@ -1115,17 +1065,12 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     let mut usedchars: *mut i8 = pdf_font_get_usedchars(font);
     /* ENABLE_NOEMBED */
     let mut index: i32 = pdf_font_get_index(font); /* Should find *truetype* here */
-    let mut enc_vec: *mut *mut i8 = 0 as *mut *mut i8;
-    let mut fontfile: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
-    let mut sfont: *mut sfnt = 0 as *mut sfnt;
-    let mut error: i32 = 0i32;
     if !pdf_font_is_in_use(font) {
         return 0i32;
     }
     verbose = pdf_font_get_verbose();
-    handle = dpx_open_truetype_file(ident) as *mut rust_input_handle_t;
-    if handle.is_null() {
+    let mut handle = dpx_open_truetype_file(ident) as *mut rust_input_handle_t;
+    let sfont = if handle.is_null() {
         handle = dpx_open_dfont_file(ident) as *mut rust_input_handle_t;
         if handle.is_null() {
             panic!(
@@ -1133,10 +1078,10 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
                 CStr::from_ptr(ident).display(),
             );
         }
-        sfont = dfont_open(handle as rust_input_handle_t, index)
+        dfont_open(handle as rust_input_handle_t, index)
     } else {
-        sfont = sfnt_open(handle as rust_input_handle_t)
-    }
+        sfnt_open(handle as rust_input_handle_t)
+    };
     if sfont.is_null() {
         ttstub_input_close(handle as rust_input_handle_t);
         panic!(
@@ -1156,16 +1101,15 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
             );
         }
     }
-    if (*sfont).type_0 == 1i32 << 4i32 {
-        let mut offset: u32 = 0;
-        offset = ttc_read_offset(sfont, index);
+    let error = if (*sfont).type_0 == 1i32 << 4i32 {
+        let offset = ttc_read_offset(sfont, index);
         if offset == 0_u32 {
             panic!("Invalid TTC index in {}.", CStr::from_ptr(ident).display());
         }
-        error = sfnt_read_table_directory(sfont, offset)
+        sfnt_read_table_directory(sfont, offset)
     } else {
-        error = sfnt_read_table_directory(sfont, (*sfont).offset)
-    }
+        sfnt_read_table_directory(sfont, (*sfont).offset)
+    };
     if error != 0 {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
@@ -1177,12 +1121,12 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     /*
      * Create new TrueType cmap table with MacRoman encoding.
      */
-    if encoding_id < 0i32 {
-        error = do_builtin_encoding(font, usedchars, sfont)
+    let error = if encoding_id < 0i32 {
+        do_builtin_encoding(font, usedchars, sfont)
     } else {
-        enc_vec = pdf_encoding_get_encoding(encoding_id);
-        error = do_custom_encoding(font, enc_vec, usedchars, sfont)
-    }
+        let enc_vec = pdf_encoding_get_encoding(encoding_id);
+        do_custom_encoding(font, enc_vec, usedchars, sfont)
+    };
     if error != 0 {
         sfnt_close(sfont);
         ttstub_input_close(handle as rust_input_handle_t);
@@ -1210,7 +1154,7 @@ pub unsafe extern "C" fn pdf_font_load_truetype(mut font: *mut pdf_font) -> i32 
     /*
      * FontFile2
      */
-    fontfile = sfnt_create_FontFile_stream(sfont); /* XXX */
+    let fontfile = sfnt_create_FontFile_stream(sfont); /* XXX */
     if fontfile.is_null() {
         panic!(
             "Could not created FontFile stream for \"{}\".",

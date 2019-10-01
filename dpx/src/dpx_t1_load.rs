@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -129,7 +128,7 @@ unsafe extern "C" fn get_next_key(mut start: *mut *mut u8, mut end: *mut u8) -> 
             key = pst_getSV(tok) as *mut i8;
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             break;
         } else if !tok.is_null() {
@@ -165,7 +164,7 @@ unsafe extern "C" fn seek_operator(
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     0i32
 }
@@ -174,8 +173,7 @@ unsafe extern "C" fn parse_svalue(
     mut end: *mut u8,
     mut value: *mut *mut i8,
 ) -> i32 {
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    tok = pst_get_token(start, end);
+    let tok = pst_get_token(start, end);
     if tok.is_null() {
         return -1i32;
     } else {
@@ -184,14 +182,14 @@ unsafe extern "C" fn parse_svalue(
         } else {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             return -1i32;
         }
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     1i32
 }
@@ -200,8 +198,7 @@ unsafe extern "C" fn parse_bvalue(
     mut end: *mut u8,
     mut value: *mut f64,
 ) -> i32 {
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    tok = pst_get_token(start, end);
+    let tok = pst_get_token(start, end);
     if tok.is_null() {
         return -1i32;
     } else {
@@ -210,14 +207,14 @@ unsafe extern "C" fn parse_bvalue(
         } else {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             return -1i32;
         }
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     1i32
 }
@@ -228,8 +225,7 @@ unsafe extern "C" fn parse_nvalue(
     mut max: i32,
 ) -> i32 {
     let mut argn: i32 = 0i32;
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    tok = pst_get_token(start, end);
+    let mut tok = pst_get_token(start, end);
     if tok.is_null() {
         return -1i32;
     }
@@ -284,7 +280,7 @@ unsafe extern "C" fn parse_nvalue(
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     argn
 }
@@ -812,12 +808,10 @@ unsafe extern "C" fn try_put_or_putinterval(
     mut start: *mut *mut u8,
     mut end: *mut u8,
 ) -> i32 {
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    let mut i: i32 = 0;
     let mut num1: i32 = 0;
     let mut num2: i32 = 0;
     let mut num3: i32 = 0;
-    tok = pst_get_token(start, end);
+    let mut tok = pst_get_token(start, end);
     if tok.is_null()
         || !(pst_type_of(tok) == 2i32)
         || {
@@ -828,13 +822,13 @@ unsafe extern "C" fn try_put_or_putinterval(
     {
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         return -1i32;
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     tok = pst_get_token(start, end);
     if tok.is_null() {
@@ -851,7 +845,7 @@ unsafe extern "C" fn try_put_or_putinterval(
             /* dup num exch num get put */
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if tok.is_null()
@@ -864,13 +858,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -883,13 +877,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -902,13 +896,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             free(*enc_vec.offset(num1 as isize) as *mut libc::c_void);
             let ref mut fresh6 = *enc_vec.offset(num1 as isize);
@@ -922,7 +916,7 @@ unsafe extern "C" fn try_put_or_putinterval(
         {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -935,13 +929,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if tok.is_null()
@@ -954,13 +948,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -973,13 +967,13 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -992,16 +986,15 @@ unsafe extern "C" fn try_put_or_putinterval(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
-            i = 0i32;
-            while i < num2 {
+            for i in 0..num2 {
                 if !(*enc_vec.offset((num1 + i) as isize)).is_null() {
                     /* num1 + i < 256 here */
                     let ref mut fresh7 = *enc_vec.offset((num3 + i) as isize);
@@ -1010,12 +1003,11 @@ unsafe extern "C" fn try_put_or_putinterval(
                     let ref mut fresh8 = *enc_vec.offset((num3 + i) as isize);
                     *fresh8 = xstrdup(*enc_vec.offset((num1 + i) as isize))
                 }
-                i += 1
             }
         } else {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             return -1i32;
         }
@@ -1027,7 +1019,6 @@ unsafe extern "C" fn parse_encoding(
     mut start: *mut *mut u8,
     mut end: *mut u8,
 ) -> i32 {
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     let mut code: i32 = 0;
     /*
      *  StandardEncoding def
@@ -1039,7 +1030,7 @@ unsafe extern "C" fn parse_encoding(
      *  ...
      *  [readonly] def
      */
-    tok = pst_get_token(start, end);
+    let mut tok = pst_get_token(start, end);
     if !tok.is_null()
         && pst_type_of(tok) < 0i32
         && !strstartswith(
@@ -1050,7 +1041,7 @@ unsafe extern "C" fn parse_encoding(
     {
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         if !enc_vec.is_null() {
             code = 0i32;
@@ -1086,7 +1077,7 @@ unsafe extern "C" fn parse_encoding(
     {
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         if !enc_vec.is_null() {
             code = 0i32;
@@ -1128,7 +1119,7 @@ unsafe extern "C" fn parse_encoding(
             warn!("ExpertEncoding not supported.");
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             return -1i32;
         }
@@ -1166,7 +1157,7 @@ unsafe extern "C" fn parse_encoding(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 break;
             } else if !(!tok.is_null()
@@ -1184,7 +1175,7 @@ unsafe extern "C" fn parse_encoding(
             } else {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 /* cmctt10.pfb for examples contains the following PS code
                  *     dup num num getinterval num exch putinterval
@@ -1224,7 +1215,7 @@ unsafe extern "C" fn parse_encoding(
                 } else {
                     if !tok.is_null() {
                         pst_release_obj(tok);
-                        tok = 0 as *mut pst_obj
+                        //tok = 0 as *mut pst_obj
                     }
                     tok = pst_get_token(start, end);
                     if tok.is_null() || !(pst_type_of(tok) == 6i32) {
@@ -1240,7 +1231,7 @@ unsafe extern "C" fn parse_encoding(
                         }
                         if !tok.is_null() {
                             pst_release_obj(tok);
-                            tok = 0 as *mut pst_obj
+                            //tok = 0 as *mut pst_obj
                         }
                         tok = pst_get_token(start, end);
                         if !(!tok.is_null()
@@ -1276,35 +1267,30 @@ unsafe extern "C" fn parse_subrs(
     mut lenIV: i32,
     mut mode: i32,
 ) -> i32 {
-    let mut subrs: *mut cff_index = 0 as *mut cff_index;
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    let mut i: i32 = 0;
-    let mut count: i32 = 0;
-    let mut offset: i32 = 0;
-    let mut max_size: i32 = 0;
-    let mut offsets: *mut i32 = 0 as *mut i32;
-    let mut lengths: *mut i32 = 0 as *mut i32;
-    let mut data: *mut u8 = 0 as *mut u8;
-    tok = pst_get_token(start, end);
+    let mut max_size;
+    let mut offsets;
+    let mut lengths;
+    let mut data;
+    let tok = pst_get_token(start, end);
     if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 {
         warn!("Parsing Subrs failed.");
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         return -1i32;
     }
-    count = pst_getIV(tok);
+    let count = pst_getIV(tok);
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     if count == 0i32 {
         let ref mut fresh15 = *font.subrs.offset(0);
         *fresh15 = 0 as *mut cff_index;
         return 0i32;
     }
-    tok = pst_get_token(start, end);
+    let mut tok = pst_get_token(start, end);
     if !(!tok.is_null()
         && pst_type_of(tok) < 0i32
         && !strstartswith(
@@ -1315,13 +1301,13 @@ unsafe extern "C" fn parse_subrs(
     {
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         return -1i32;
     }
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     if mode != 1i32 {
         max_size = 65536i32;
@@ -1349,12 +1335,10 @@ unsafe extern "C" fn parse_subrs(
         offsets = 0 as *mut i32;
         lengths = 0 as *mut i32
     }
-    offset = 0i32;
+    let mut offset = 0;
     /* dup subr# n-bytes RD n-binary-bytes NP */
-    i = 0i32;
+    let mut i = 0;
     while i < count {
-        let mut idx: i32 = 0;
-        let mut len: i32 = 0;
         tok = pst_get_token(start, end);
         if tok.is_null() {
             free(data as *mut libc::c_void);
@@ -1385,7 +1369,7 @@ unsafe extern "C" fn parse_subrs(
         {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             break;
         } else if !(!tok.is_null()
@@ -1398,42 +1382,42 @@ unsafe extern "C" fn parse_subrs(
         {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
         } else {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             /* Found "dup" */
             tok = pst_get_token(start, end);
             if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 || pst_getIV(tok) >= count {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 free(data as *mut libc::c_void);
                 free(offsets as *mut libc::c_void);
                 free(lengths as *mut libc::c_void);
                 return -1i32;
             }
-            idx = pst_getIV(tok);
+            let idx = pst_getIV(tok);
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 || pst_getIV(tok) > 65536i32 {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
-            len = pst_getIV(tok);
+            let len = pst_getIV(tok);
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -1454,7 +1438,7 @@ unsafe extern "C" fn parse_subrs(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 free(data as *mut libc::c_void);
                 free(offsets as *mut libc::c_void);
@@ -1463,7 +1447,7 @@ unsafe extern "C" fn parse_subrs(
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             *start = (*start).offset(1);
             if (*start).offset(len as isize) >= end {
@@ -1506,7 +1490,7 @@ unsafe extern "C" fn parse_subrs(
         if (*font.subrs.offset(0)).is_null() {
             let ref mut fresh17 = *font.subrs.offset(0);
             *fresh17 = cff_new_index(count as u16);
-            subrs = *fresh17;
+            let subrs = *fresh17;
             (*subrs).data = new((offset as u32 as u64)
                 .wrapping_mul(::std::mem::size_of::<u8>() as u64)
                 as u32) as *mut u8;
@@ -1542,21 +1526,15 @@ unsafe extern "C" fn parse_charstrings(
     mut lenIV: i32,
     mut mode: i32,
 ) -> i32 {
-    let mut charstrings: *mut cff_index = 0 as *mut cff_index;
-    let mut charset: *mut cff_charsets = 0 as *mut cff_charsets;
-    let mut tok: *mut pst_obj = 0 as *mut pst_obj;
-    let mut i: i32 = 0;
-    let mut count: i32 = 0;
-    let mut have_notdef: i32 = 0;
-    let mut max_size: i32 = 0;
-    let mut offset: i32 = 0;
+    let charstrings;
+    let mut max_size;
     /* /CharStrings n dict dup begin
      * /GlyphName n-bytes RD -n-binary-bytes- ND
      * ...
      * end
      *  - stack - ... /CharStrings dict
      */
-    tok = pst_get_token(start, end); /* .notdef must be at gid = 0 in CFF */
+    let mut tok = pst_get_token(start, end); /* .notdef must be at gid = 0 in CFF */
     if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 || pst_getIV(tok) > 64999i32 {
         let mut s: *mut u8 = pst_getSV(tok);
         warn!(
@@ -1566,14 +1544,14 @@ unsafe extern "C" fn parse_charstrings(
         free(s as *mut libc::c_void);
         if !tok.is_null() {
             pst_release_obj(tok);
-            tok = 0 as *mut pst_obj
+            //tok = 0 as *mut pst_obj
         }
         return 0i32;
     }
-    count = pst_getIV(tok);
+    let count = pst_getIV(tok);
     if !tok.is_null() {
         pst_release_obj(tok);
-        tok = 0 as *mut pst_obj
+        //tok = 0 as *mut pst_obj
     }
     if mode != 1i32 {
         charstrings = cff_new_index(count as u16);
@@ -1588,7 +1566,7 @@ unsafe extern "C" fn parse_charstrings(
     font.cstrings = charstrings;
     font.charsets = new((1_u64).wrapping_mul(::std::mem::size_of::<cff_charsets>() as u64) as u32)
         as *mut cff_charsets;
-    charset = font.charsets;
+    let charset = font.charsets;
     (*charset).format = 0i32 as u8;
     (*charset).num_entries = (count - 1i32) as u16;
     (*charset).data.glyphs = new(((count - 1i32) as u32 as u64)
@@ -1599,21 +1577,18 @@ unsafe extern "C" fn parse_charstrings(
         0i32,
         (::std::mem::size_of::<s_SID>()).wrapping_mul(count as usize - 1),
     );
-    offset = 0i32;
-    have_notdef = 0i32;
+    let mut offset = 0i32;
+    let mut have_notdef = 0i32;
     font.is_notdef_notzero = 0i32;
     seek_operator(start, end, b"begin\x00" as *const u8 as *const i8);
-    i = 0i32;
+    let mut i = 0;
     while i < count {
-        let mut glyph_name: *mut i8 = 0 as *mut i8;
-        let mut len: i32 = 0;
-        let mut gid: i32 = 0;
         /* BUG-20061126 (by ChoF):
          * Some fonts (e.g., belleek/blsy.pfb) does not have the correct number
          * of glyphs. Modify the codes even to work with these broken fonts.
          */
         tok = pst_get_token(start, end);
-        glyph_name = pst_getSV(tok) as *mut i8;
+        let glyph_name = pst_getSV(tok) as *mut i8;
         if i == 0i32
             && !glyph_name.is_null()
             && strcmp(glyph_name, b".notdef\x00" as *const u8 as *const i8) != 0i32
@@ -1623,24 +1598,24 @@ unsafe extern "C" fn parse_charstrings(
         if pst_type_of(tok) == 6i32 {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
-            if glyph_name.is_null() {
+            let gid = if glyph_name.is_null() {
                 return -1i32;
             } else {
                 if streq_ptr(glyph_name, b".notdef\x00" as *const u8 as *const i8) {
-                    gid = 0i32;
-                    have_notdef = 1i32
+                    have_notdef = 1;
+                    0
                 } else if have_notdef != 0 {
-                    gid = i
+                    i
                 } else if i == count - 1i32 {
                     warn!("No .notdef glyph???");
                     return -1i32;
                 } else {
-                    gid = i + 1i32
+                    i + 1
                 }
-            }
-            if gid > 0i32 {
+            };
+            if gid > 0 {
                 *(*charset).data.glyphs.offset((gid - 1i32) as isize) =
                     cff_add_string(font, glyph_name, 0i32)
             }
@@ -1653,14 +1628,14 @@ unsafe extern "C" fn parse_charstrings(
             if !(pst_type_of(tok) == 2i32) || pst_getIV(tok) < 0i32 || pst_getIV(tok) > 65536i32 {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
-            len = pst_getIV(tok);
+            let len = pst_getIV(tok);
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             tok = pst_get_token(start, end);
             if !(!tok.is_null()
@@ -1681,13 +1656,13 @@ unsafe extern "C" fn parse_charstrings(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             if (*start).offset(len as isize).offset(1) >= end {
                 return -1i32;
@@ -1783,13 +1758,13 @@ unsafe extern "C" fn parse_charstrings(
             {
                 if !tok.is_null() {
                     pst_release_obj(tok);
-                    tok = 0 as *mut pst_obj
+                    //tok = 0 as *mut pst_obj
                 }
                 return -1i32;
             }
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             i += 1
         } else if pst_type_of(tok) < 0i32
@@ -1797,13 +1772,13 @@ unsafe extern "C" fn parse_charstrings(
         {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             break;
         } else {
             if !tok.is_null() {
                 pst_release_obj(tok);
-                tok = 0 as *mut pst_obj
+                //tok = 0 as *mut pst_obj
             }
             return -1i32;
         }
@@ -1822,7 +1797,6 @@ unsafe extern "C" fn parse_part2(
 ) -> i32 {
     let mut key: *mut i8 = 0 as *mut i8;
     let mut argv: [f64; 127] = [0.; 127];
-    let mut argn: i32 = 0;
     let mut lenIV: i32 = 4i32;
     while *start < end && {
         key = get_next_key(start, end);
@@ -1840,7 +1814,7 @@ unsafe extern "C" fn parse_part2(
                 return -1i32;
             }
         } else if streq_ptr(key, b"lenIV\x00" as *const u8 as *const i8) {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
+            let argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1857,7 +1831,7 @@ unsafe extern "C" fn parse_part2(
             /*
              * Operand values are delta in CFF font dictionary encoding.
              */
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 127i32);
+            let mut argn = parse_nvalue(start, end, argv.as_mut_ptr(), 127i32);
             if argn < 0i32 {
                 warn!("{} values expected but only {} read.", 0i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1893,7 +1867,7 @@ unsafe extern "C" fn parse_part2(
              * Value of StdHW and StdVW is described as an array in the
              * Type 1 Font Specification but is a number in CFF format.
              */
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
+            let argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1902,7 +1876,7 @@ unsafe extern "C" fn parse_part2(
             cff_dict_add(*font.private.offset(0), key, 1i32);
             cff_dict_set(*font.private.offset(0), key, 0i32, argv[0]);
         } else if streq_ptr(key, b"ForceBold\x00" as *const u8 as *const i8) {
-            argn = parse_bvalue(start, end, &mut *argv.as_mut_ptr().offset(0));
+            let argn = parse_bvalue(start, end, &mut *argv.as_mut_ptr().offset(0));
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1929,7 +1903,6 @@ unsafe extern "C" fn parse_part1(
     let mut key: *mut i8 = 0 as *mut i8;
     let mut strval: *mut i8 = 0 as *mut i8;
     let mut argv: [f64; 127] = [0.; 127];
-    let mut argn: i32 = 0;
     /*
      * We skip PostScript code inserted before the beginning of
      * font dictionary so that parser will not be confused with
@@ -1948,7 +1921,7 @@ unsafe extern "C" fn parse_part1(
                 return -1i32;
             }
         } else if streq_ptr(key, b"FontName\x00" as *const u8 as *const i8) {
-            argn = parse_svalue(start, end, &mut strval);
+            let argn = parse_svalue(start, end, &mut strval);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1965,7 +1938,7 @@ unsafe extern "C" fn parse_part1(
             cff_set_name(font, strval);
             free(strval as *mut libc::c_void);
         } else if streq_ptr(key, b"FontType\x00" as *const u8 as *const i8) {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
+            let argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1980,7 +1953,7 @@ unsafe extern "C" fn parse_part1(
             || streq_ptr(key, b"StrokeWidth\x00" as *const u8 as *const i8) as i32 != 0
             || streq_ptr(key, b"PaintType\x00" as *const u8 as *const i8) as i32 != 0
         {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
+            let argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -1993,7 +1966,7 @@ unsafe extern "C" fn parse_part1(
         } else if streq_ptr(key, b"UnderLinePosition\x00" as *const u8 as *const i8) as i32 != 0
             || streq_ptr(key, b"UnderLineThickness\x00" as *const u8 as *const i8) as i32 != 0
         {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
+            let argn = parse_nvalue(start, end, argv.as_mut_ptr(), 1i32);
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -2002,7 +1975,7 @@ unsafe extern "C" fn parse_part1(
             cff_dict_add(font.topdict, key, 1i32);
             cff_dict_set(font.topdict, key, 0i32, argv[0]);
         } else if streq_ptr(key, b"FontBBox\x00" as *const u8 as *const i8) {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 4i32);
+            let mut argn = parse_nvalue(start, end, argv.as_mut_ptr(), 4i32);
             if argn != 4i32 {
                 warn!("{} values expected but only {} read.", 4i32, argn,);
                 free(key as *mut libc::c_void);
@@ -2018,7 +1991,7 @@ unsafe extern "C" fn parse_part1(
                 cff_dict_set(font.topdict, key, argn, argv[argn as usize]);
             }
         } else if streq_ptr(key, b"FontMatrix\x00" as *const u8 as *const i8) {
-            argn = parse_nvalue(start, end, argv.as_mut_ptr(), 6i32);
+            let mut argn = parse_nvalue(start, end, argv.as_mut_ptr(), 6i32);
             if argn != 6i32 {
                 warn!("{} values expected but only {} read.", 6i32, argn,);
                 free(key as *mut libc::c_void);
@@ -2051,15 +2024,14 @@ unsafe extern "C" fn parse_part1(
             /*
              * FontInfo
              */
-            argn = parse_svalue(start, end, &mut strval); /* FIXME */
+            let argn = parse_svalue(start, end, &mut strval); /* FIXME */
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
                 return -1i32;
             }
-            let mut sid: s_SID = 0;
             cff_dict_add(font.topdict, key, 1i32);
-            sid = cff_get_sid(font, strval) as s_SID;
+            let mut sid = cff_get_sid(font, strval) as s_SID;
             if sid as i32 == 65535i32 {
                 sid = cff_add_string(font, strval, 0i32)
             }
@@ -2070,7 +2042,7 @@ unsafe extern "C" fn parse_part1(
             cff_dict_set(font.topdict, key, 0i32, sid as f64); /* No Global Subr */
             free(strval as *mut libc::c_void);
         } else if streq_ptr(key, b"IsFixedPitch\x00" as *const u8 as *const i8) {
-            argn = parse_bvalue(start, end, &mut *argv.as_mut_ptr().offset(0));
+            let argn = parse_bvalue(start, end, &mut *argv.as_mut_ptr().offset(0));
             if argn != 1i32 {
                 warn!("{} values expected but only {} read.", 1i32, argn,);
                 free(key as *mut libc::c_void);
@@ -2088,9 +2060,8 @@ unsafe extern "C" fn parse_part1(
 #[no_mangle]
 pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
     let mut sig: [u8; 15] = [0; 15];
-    let mut ch: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
-    ch = ttstub_input_getc(handle);
+    let mut ch = ttstub_input_getc(handle);
     if ch != 128i32
         || {
             ch = ttstub_input_getc(handle);
@@ -2101,13 +2072,13 @@ pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
         return false;
     }
     for _ in 0..4 {
-        ch = ttstub_input_getc(handle);
+        let ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             return false;
         }
     }
     for i in 0..14 {
-        ch = ttstub_input_getc(handle);
+        let ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             return false;
         }
@@ -2150,29 +2121,26 @@ unsafe extern "C" fn get_pfb_segment(
     let mut buffer: *mut u8 = 0 as *mut u8;
     let mut bytesread: i32 = 0i32;
     loop {
-        let mut ch: i32 = 0;
-        let mut slen: i32 = 0;
-        let mut rlen: i32 = 0;
-        ch = ttstub_input_getc(handle);
+        let ch = ttstub_input_getc(handle);
         if ch < 0i32 {
             break;
         }
         if ch != 128i32 {
             panic!("Not a pfb file?");
         }
-        ch = ttstub_input_getc(handle);
+        let ch = ttstub_input_getc(handle);
         if ch < 0i32 || ch != expected_type {
             ttstub_input_seek(handle, -2i32 as ssize_t, 1i32);
             break;
         } else {
-            slen = 0i32;
+            let mut slen = 0;
             for i in 0..4 {
-                ch = ttstub_input_getc(handle);
+                let ch = ttstub_input_getc(handle);
                 if ch < 0i32 {
                     free(buffer as *mut libc::c_void);
                     return 0 as *mut u8;
                 }
-                slen = slen + (ch << 8i32 * i);
+                slen += ch << 8i32 * i;
             }
             buffer = renew(
                 buffer as *mut libc::c_void,
@@ -2180,7 +2148,7 @@ unsafe extern "C" fn get_pfb_segment(
                     as u32,
             ) as *mut u8;
             while slen > 0i32 {
-                rlen = ttstub_input_read(
+                let rlen = ttstub_input_read(
                     handle,
                     (buffer as *mut i8).offset(bytesread as isize),
                     slen as size_t,
@@ -2219,19 +2187,16 @@ pub unsafe extern "C" fn t1_get_fontname(
     mut handle: rust_input_handle_t,
     mut fontname: *mut i8,
 ) -> i32 {
-    let mut buffer: *mut u8 = 0 as *mut u8;
-    let mut start: *mut u8 = 0 as *mut u8;
-    let mut end: *mut u8 = 0 as *mut u8;
     let mut length: i32 = 0;
     let mut key: *mut i8 = 0 as *mut i8;
     let mut fn_found: i32 = 0i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
-    buffer = get_pfb_segment(handle, 1i32, &mut length);
+    let buffer = get_pfb_segment(handle, 1i32, &mut length);
     if buffer.is_null() || length == 0i32 {
         panic!("Reading PFB (ASCII part) file failed.");
     }
-    start = buffer;
-    end = buffer.offset(length as isize);
+    let mut start = buffer;
+    let end = buffer.offset(length as isize);
     if seek_operator(&mut start, end, b"begin\x00" as *const u8 as *const i8) < 0i32 {
         free(buffer as *mut libc::c_void);
         return -1i32;
@@ -2301,21 +2266,17 @@ pub unsafe extern "C" fn t1_load_font(
     mut handle: rust_input_handle_t,
 ) -> *mut cff_font {
     let mut length: i32 = 0;
-    let mut cff: *mut cff_font = 0 as *mut cff_font;
-    let mut buffer: *mut u8 = 0 as *mut u8;
-    let mut start: *mut u8 = 0 as *mut u8;
-    let mut end: *mut u8 = 0 as *mut u8;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     /* ASCII section */
-    buffer = get_pfb_segment(handle, 1i32, &mut length);
+    let buffer = get_pfb_segment(handle, 1i32, &mut length);
     if buffer.is_null() || length == 0i32 {
         panic!("Reading PFB (ASCII part) file failed.");
     }
-    cff =
+    let cff =
         new((1_u64).wrapping_mul(::std::mem::size_of::<cff_font>() as u64) as u32) as *mut cff_font;
     init_cff_font(&mut *cff);
-    start = buffer;
-    end = buffer.offset(length as isize);
+    let mut start = buffer;
+    let end = buffer.offset(length as isize);
     if parse_part1(&mut *cff, enc_vec, &mut start, end) < 0i32 {
         cff_close(cff);
         free(buffer as *mut libc::c_void);
@@ -2323,7 +2284,7 @@ pub unsafe extern "C" fn t1_load_font(
     }
     free(buffer as *mut libc::c_void);
     /* Binary section */
-    buffer = get_pfb_segment(handle, 2i32, &mut length);
+    let buffer = get_pfb_segment(handle, 2i32, &mut length);
     if buffer.is_null() || length == 0i32 {
         cff_close(cff);
         free(buffer as *mut libc::c_void);
@@ -2331,8 +2292,8 @@ pub unsafe extern "C" fn t1_load_font(
     } else {
         t1_decrypt(55665_u16, buffer, buffer, 0i32, length);
     }
-    start = buffer.offset(4);
-    end = buffer.offset(length as isize);
+    let mut start = buffer.offset(4);
+    let end = buffer.offset(length as isize);
     if parse_part2(&mut *cff, &mut start, end, mode) < 0i32 {
         cff_close(cff);
         free(buffer as *mut libc::c_void);

@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -114,7 +113,6 @@ unsafe extern "C" fn readline(
     mut buf_len: i32,
     mut handle: *mut rust_input_handle_t,
 ) -> *mut i8 {
-    let mut r: *mut i8 = 0 as *mut i8;
     let mut q: *mut i8 = 0 as *mut i8;
     let mut p: *mut i8 = buf;
     let mut n: i32 = 0i32;
@@ -124,7 +122,7 @@ unsafe extern "C" fn readline(
         !q.is_null()
     } {
         c += 1;
-        r = strchr(q, '#' as i32);
+        let r = strchr(q, '#' as i32);
         /* Comment is converted to single wsp (followed by a newline). */
         if !r.is_null() {
             *r = ' ' as i32 as i8; /* empty line */
@@ -163,10 +161,7 @@ unsafe extern "C" fn readline(
 /* subfont_id is already consumed here. */
 unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8) -> i32 {
     let mut p: *const i8 = lbuf;
-    let mut q: *const i8 = 0 as *const i8;
     let mut r: *mut i8 = 0 as *mut i8;
-    let mut repos: i32 = 0i32;
-    let mut v1: i32 = 0i32;
     let mut v2: i32 = 0i32;
     let mut curpos: i32 = 0i32;
     let mut error: i32 = 0i32;
@@ -174,10 +169,10 @@ unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8
         p = p.offset(1)
     }
     while error == 0 && *p as i32 != 0 {
-        repos = 0i32;
-        q = p;
-        v1 = strtol(p, &mut r, 0i32) as i32;
-        q = r;
+        let mut repos = 0i32;
+        //q = p;
+        let v1 = strtol(p, &mut r, 0i32) as i32;
+        let mut q = r as *const i8;
         if q == p
             || !(*q as i32 == '\u{0}' as i32 || libc::isspace(*q as _) != 0)
                 && *q as i32 != ':' as i32
@@ -264,10 +259,6 @@ unsafe extern "C" fn scan_sfd_file(
     mut sfd: *mut sfd_file_,
     mut handle: *mut rust_input_handle_t,
 ) -> i32 {
-    let mut id: *mut i8 = 0 as *mut i8; /* empty */
-    let mut q: *mut i8 = 0 as *mut i8;
-    let mut p: *mut i8 = 0 as *mut i8;
-    let mut n: i32 = 0;
     let mut lpos: i32 = 0i32;
     assert!(!sfd.is_null() && !handle.is_null());
     if verbose > 3i32 {
@@ -280,7 +271,7 @@ unsafe extern "C" fn scan_sfd_file(
     (*sfd).num_subfonts = 0i32;
     (*sfd).max_subfonts = (*sfd).num_subfonts;
     loop {
-        p = readline(line_buf.as_mut_ptr(), 4096i32, handle);
+        let mut p = readline(line_buf.as_mut_ptr(), 4096i32, handle);
         if p.is_null() {
             break;
         }
@@ -292,13 +283,13 @@ unsafe extern "C" fn scan_sfd_file(
             continue;
         }
         /* Saw non-wsp here */
-        n = 0i32;
-        q = p;
+        let mut n = 0;
+        let q = p;
         while *p as i32 != 0 && libc::isspace(*p as _) == 0 {
             p = p.offset(1);
             n += 1
         }
-        id = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+        let id = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
             as *mut i8;
         memcpy(id as *mut libc::c_void, q as *const libc::c_void, n as _);
         *id.offset(n as isize) = '\u{0}' as i32 as i8;
@@ -341,7 +332,6 @@ unsafe extern "C" fn scan_sfd_file(
  */
 unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
     let mut id: i32 = -1i32;
-    let mut error: i32 = -1i32;
     /* Check if we already opened SFD file */
     for i in 0..num_sfd_files {
         if streq_ptr((*sfd_files.offset(i as isize)).ident, sfd_name) {
@@ -350,8 +340,6 @@ unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
         }
     }
     if id < 0i32 {
-        let mut sfd: *mut sfd_file_ = 0 as *mut sfd_file_;
-        let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
         if num_sfd_files >= max_sfd_files {
             max_sfd_files += 8i32;
             sfd_files = renew(
@@ -360,19 +348,19 @@ unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
                     .wrapping_mul(::std::mem::size_of::<sfd_file_>() as u64) as u32,
             ) as *mut sfd_file_
         }
-        sfd = &mut *sfd_files.offset(num_sfd_files as isize) as *mut sfd_file_;
+        let sfd = &mut *sfd_files.offset(num_sfd_files as isize) as *mut sfd_file_;
         init_sfd_file_(sfd);
         (*sfd).ident =
             new((strlen(sfd_name).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
                 as *mut i8;
         strcpy((*sfd).ident, sfd_name);
-        handle =
+        let handle =
             ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
         if handle.is_null() {
             clean_sfd_file_(sfd);
             return -1i32;
         }
-        error = scan_sfd_file(sfd, handle);
+        let error = scan_sfd_file(sfd, handle);
         ttstub_input_close(handle as rust_input_handle_t);
         if error == 0 {
             let fresh2 = num_sfd_files;
@@ -394,11 +382,10 @@ pub unsafe extern "C" fn sfd_get_subfont_ids(
     mut sfd_name: *const i8,
     mut num_ids: *mut i32,
 ) -> *mut *mut i8 {
-    let mut sfd_id: i32 = 0;
     if sfd_name.is_null() {
         return 0 as *mut *mut i8;
     }
-    sfd_id = find_sfd_file(sfd_name);
+    let sfd_id = find_sfd_file(sfd_name);
     if sfd_id < 0i32 {
         return 0 as *mut *mut i8;
     }
@@ -416,23 +403,16 @@ pub unsafe extern "C" fn sfd_load_record(
     mut subfont_id: *const i8,
 ) -> i32 {
     let mut rec_id: i32 = -1i32;
-    let mut sfd: *mut sfd_file_ = 0 as *mut sfd_file_;
-    let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;
-    let mut sfd_id: i32 = 0;
-    let mut i: i32 = 0;
-    let mut error: i32 = 0i32;
-    let mut p: *mut i8 = 0 as *mut i8;
-    let mut q: *mut i8 = 0 as *mut i8;
     if sfd_name.is_null() || subfont_id.is_null() {
         return -1i32;
     }
-    sfd_id = find_sfd_file(sfd_name);
+    let sfd_id = find_sfd_file(sfd_name);
     if sfd_id < 0i32 {
         return -1i32;
     }
-    sfd = &mut *sfd_files.offset(sfd_id as isize) as *mut sfd_file_;
+    let sfd = &mut *sfd_files.offset(sfd_id as isize) as *mut sfd_file_;
     /* Check if we already loaded mapping table. */
-    i = 0i32;
+    let mut i = 0;
     while i < (*sfd).num_subfonts && strcmp(*(*sfd).sub_id.offset(i as isize), subfont_id) != 0 {
         i += 1
     }
@@ -456,7 +436,7 @@ pub unsafe extern "C" fn sfd_load_record(
         );
     }
     /* reopen */
-    handle = ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
+    let handle = ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
     if handle.is_null() {
         return -1i32;
         /* panic!("Could not open SFD file \"{}\"", sfd_name); */
@@ -464,7 +444,7 @@ pub unsafe extern "C" fn sfd_load_record(
     loop
     /* Seek to record for 'sub_name'. */
     {
-        p = readline(line_buf.as_mut_ptr(), 4096i32, handle); /* empty line */
+        let mut p = readline(line_buf.as_mut_ptr(), 4096i32, handle); /* empty line */
         if p.is_null() {
             break;
         }
@@ -475,7 +455,7 @@ pub unsafe extern "C" fn sfd_load_record(
             continue;
         }
         /* q = parse_ident(&p, p + strlen(p)); */
-        q = p;
+        let q = p;
         while *p as i32 != 0 && libc::isspace(*p as _) == 0 {
             p = p.offset(1)
         }
@@ -500,7 +480,7 @@ pub unsafe extern "C" fn sfd_load_record(
                     (*sfd_record.offset(num_sfd_records as isize)).vector[__i as usize] = 0_u16;
                 }
             }
-            error = read_sfd_record(&mut *sfd_record.offset(num_sfd_records as isize), p);
+            let error = read_sfd_record(&mut *sfd_record.offset(num_sfd_records as isize), p);
             if error != 0 {
                 warn!(
                     "Error occured while reading SFD file: file=\"{}\" subfont_id=\"{}\"",
