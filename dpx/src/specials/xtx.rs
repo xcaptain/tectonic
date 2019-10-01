@@ -217,19 +217,18 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut error: i32 = 0;
-    let mut colorspec: Option<PdfColor> = None;
-    error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
-    if error != 0 {
+    if let Ok(colorspec) = spc_util_read_colorspec(spe, args, false) {
+        pdf_doc_set_bgcolor(Some(&colorspec));
+        1
+    } else {
         spc_warn(
             spe,
             b"No valid color specified?\x00" as *const u8 as *const i8,
         );
-    } else {
-        pdf_doc_set_bgcolor(colorspec.as_ref());
+        -1
     }
-    error
 }
+
 /* FIXME: xdv2pdf's x:fontmapline and x:fontmapfile may have slightly different syntax/semantics */
 unsafe extern "C" fn spc_handler_xtx_fontmapline(
     mut spe: *mut spc_env,

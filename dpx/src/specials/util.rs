@@ -120,18 +120,18 @@ unsafe extern "C" fn rgb_color_from_hsv(mut h: f64, mut s: f64, mut v: f64) -> P
 }
 unsafe extern "C" fn spc_read_color_color(
     mut spe: *mut spc_env,
-    colorspec: &mut Option<PdfColor>,
     mut ap: *mut spc_arg,
-) -> i32 {
+) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4];
-    let mut error: i32 = 0i32;
-    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let mut nc: i32 = 0;
+    let mut result: Result<PdfColor, ()>;
+    let mut q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
         spc_warn(
             spe,
             b"No valid color specified?\x00" as *const u8 as *const i8,
         );
-        return -1i32;
+        return Err(());
     }
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if streq_ptr(q, b"rgb\x00" as *const u8 as *const i8) {
@@ -142,12 +142,10 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"Invalid value for RGB color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32
+            result = Err(())
         } else {
-            match PdfColor::from_rgb(cv[0], cv[1], cv[2]) {
-                Ok(color) => *colorspec = Some(color),
-                Err(err) => err.warn(),
-            }
+            result = PdfColor::from_rgb(cv[0], cv[1], cv[2])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
@@ -157,12 +155,10 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"Invalid value for CMYK color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32
+            result = Err(())
         } else {
-            match PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]){
-                Ok(color) => *colorspec = Some(color),
-                Err(err) => err.warn()
-            }
+            result = PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
@@ -172,12 +168,10 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"Invalid value for gray color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32
+            result = Err(())
         } else {
-            match PdfColor::from_gray(cv[0]) {
-                Ok(color) => *colorspec = Some(color),
-                Err(err) => err.warn()
-            }
+            result = PdfColor::from_gray(cv[0])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"spot\x00" as *const u8 as *const i8) {
         /* Handle spot colors */
@@ -187,7 +181,7 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"No valid spot color name specified?\x00" as *const u8 as *const i8,
             );
-            return -1i32;
+            return Err(());
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
@@ -196,13 +190,11 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"Invalid value for spot color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32;
+            result = Err(());
             free(color_name as *mut libc::c_void);
         } else {
-            match PdfColor::from_spot(CStr::from_ptr(color_name).to_owned(), cv[0]) {
-                Ok(color) => *colorspec = Some(color),
-                Err(err) => err.warn()
-            }
+            result = PdfColor::from_spot(CStr::from_ptr(color_name).to_owned(), cv[0])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
@@ -211,7 +203,7 @@ unsafe extern "C" fn spc_read_color_color(
                 spe,
                 b"Invalid value for HSB color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32
+            result = Err(());
         } else {
             let color = rgb_color_from_hsv(cv[0], cv[1], cv[2]);
             if let &PdfColor::Rgb(r, g, b) = &color {
@@ -229,19 +221,19 @@ unsafe extern "C" fn spc_read_color_color(
             } else {
                 unreachable!();
             }
-            *colorspec = Some(color);
+            result = Ok(color);
         }
     } else {
-        if let Ok(name) = CStr::from_ptr(q).to_str() {
+        result = if let Ok(name) = CStr::from_ptr(q).to_str() {
             if let Some(color) = pdf_color_namedcolor(name) {
-                *colorspec = Some(color);
+                Ok(color)
             } else {
-                error = -1;
+                Err(())
             }
         } else {
-            error = -1;
-        }
-        if error != 0 {
+            Err(())
+        };
+        if result.is_err() {
             spc_warn(
                 spe,
                 b"Unrecognized color name: %s\x00" as *const u8 as *const i8,
@@ -250,7 +242,7 @@ unsafe extern "C" fn spc_read_color_color(
         }
     }
     free(q as *mut libc::c_void);
-    error
+    result
 }
 /* Argument for this is PDF_Number or PDF_Array.
  * But we ignore that since we don't want to add
@@ -260,28 +252,28 @@ unsafe extern "C" fn spc_read_color_color(
  */
 unsafe extern "C" fn spc_read_color_pdf(
     mut spe: *mut spc_env,
-    colorspec: &mut Option<PdfColor>,
     mut ap: *mut spc_arg,
-) -> i32 {
+) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
-    let mut isarry: i32 = 0i32;
-    let mut error: i32 = 0i32;
+    let mut nc: i32 = 0;
+    let mut isarry: bool = false;
+    let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if *(*ap).curptr.offset(0) as i32 == '[' as i32 {
         (*ap).curptr = (*ap).curptr.offset(1);
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
-        isarry = 1i32
+        isarry = true
     }
-    let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
-    match nc {
+    nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
+    let mut result = match nc {
         1 => {
-            *colorspec = Some(PdfColor::from_gray(cv[0]).unwrap());
+            PdfColor::from_gray(cv[0]).map_err(|err| err.warn())
         }
         3 => {
-            *colorspec = Some(PdfColor::from_rgb(cv[0], cv[1], cv[2]).unwrap());
+            PdfColor::from_rgb(cv[0], cv[1], cv[2]).map_err(|err| err.warn())
         }
         4 => {
-            *colorspec = Some(PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).unwrap());
+            PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).map_err(|err| err.warn())
         }
         _ => {
             /* Try to read the color names defined in dvipsname.def */
@@ -291,18 +283,13 @@ unsafe extern "C" fn spc_read_color_pdf(
                     spe,
                     b"No valid color specified?\x00" as *const u8 as *const i8,
                 );
-                return -1i32;
+                return Err(());
             }
-            if let Ok(name) = CStr::from_ptr(q).to_str() {
-                if let Some(c) = pdf_color_namedcolor(name) {
-                    *colorspec = Some(c);
-                } else {
-                    error = -1;
-                }
-            } else {
-                error = -1;
-            }
-            if error != 0 {
+            let mut result = CStr::from_ptr(q).to_str()
+                .ok()
+                .and_then(|name| pdf_color_namedcolor(name))
+                .ok_or(());
+            if result.is_err() {
                 spc_warn(
                     spe,
                     b"Unrecognized color name: %s, keep the current color\x00" as *const u8
@@ -311,61 +298,56 @@ unsafe extern "C" fn spc_read_color_pdf(
                 );
             }
             free(q as *mut libc::c_void);
+            result
         }
-    }
-    if isarry != 0 {
+    };
+    if isarry {
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         if (*ap).curptr >= (*ap).endptr || *(*ap).curptr.offset(0) as i32 != ']' as i32 {
             spc_warn(
                 spe,
                 b"Unbalanced \'[\' and \']\' in color specification.\x00" as *const u8 as *const i8,
             );
-            error = -1i32
+            result = Err(())
         } else {
             (*ap).curptr = (*ap).curptr.offset(1)
         }
     }
-    error
+    result
 }
 /* This is for reading *single* color specification. */
 #[no_mangle]
 pub unsafe extern "C" fn spc_util_read_colorspec(
     mut spe: *mut spc_env,
-    colorspec: &mut Option<PdfColor>,
     mut ap: *mut spc_arg,
-    mut syntax: i32,
-) -> i32 {
+    mut syntax: bool,
+) -> Result<PdfColor, ()> {
     assert!(!spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
-        return -1i32;
-    }
-    if syntax != 0 {
-        return spc_read_color_color(spe, colorspec, ap);
+        Err(())
+    } else if syntax {
+        spc_read_color_color(spe, ap)
     } else {
-        return spc_read_color_pdf(spe, colorspec, ap);
-    };
+        spc_read_color_pdf(spe, ap)
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_util_read_pdfcolor(
     mut spe: *mut spc_env,
-    colorspec: &mut Option<PdfColor>,
     mut ap: *mut spc_arg,
     defaultcolor: Option<&PdfColor>,
-) -> i32 {
+) -> Result<PdfColor, ()> {
     assert!(!spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
-        return -1i32;
+        Err(())
+    } else if let Some(c) = spc_read_color_pdf(spe, ap).ok()
+        .or_else(|| defaultcolor.cloned()) {
+        Ok(c)
+    } else {
+        Err(())
     }
-    let mut error = spc_read_color_pdf(spe, colorspec, ap);
-    if error < 0i32 {
-        if let Some(dc) = defaultcolor {
-            *colorspec = Some(dc.clone());
-            error = 0i32
-        }
-    }
-    error
 }
 /* This need to allow 'true' prefix for unit and
  * length value must be divided by current magnification.
