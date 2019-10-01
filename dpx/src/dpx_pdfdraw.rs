@@ -910,7 +910,7 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &PdfColor, mut mask: i8, mut f
         }
         _ => {}
     }
-    pdf_doc_add_page_content(fmt_buf.as_mut_ptr(), len as u32);
+    pdf_doc_add_page_content(&fmt_buf[..len]);
     *current = color.clone();
 }
 #[no_mangle]

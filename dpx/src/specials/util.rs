@@ -255,7 +255,6 @@ unsafe extern "C" fn spc_read_color_pdf(
     mut ap: *mut spc_arg,
 ) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
-    let mut nc: i32 = 0;
     let mut isarry: bool = false;
     let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
@@ -264,7 +263,7 @@ unsafe extern "C" fn spc_read_color_pdf(
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         isarry = true
     }
-    nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
+    let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
     let mut result = match nc {
         1 => {
             PdfColor::from_gray(cv[0]).map_err(|err| err.warn())

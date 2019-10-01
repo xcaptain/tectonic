@@ -38,10 +38,8 @@ use md5::{Digest, Md5};
 use std::slice::from_raw_parts;
 use std::error::Error;
 use std::fmt;
-
-pub type size_t = u64;
-
 use std::ffi::{CStr, CString};
+use crate::shims::sprintf;
 
 #[derive(Debug)]
 pub enum PdfColorError {
