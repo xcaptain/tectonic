@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -86,13 +85,11 @@ pub unsafe extern "C" fn PKFont_set_dpi(mut dpi: i32) {
 /* (Only) This requires TFM to get design size... */
 unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi: u32) -> u32 {
     let mut dpi: u32 = bdpi;
-    let mut design_size: f64 = 0.;
-    let mut tfm_id: i32 = 0;
-    tfm_id = tfm_open(ident, 0i32);
+    let tfm_id = tfm_open(ident, 0i32);
     if tfm_id < 0i32 {
         return dpi;
     }
-    design_size = tfm_get_design_size(tfm_id);
+    let design_size = tfm_get_design_size(tfm_id);
     if design_size <= 0.0f64 {
         warn!(
             "DESGIN_SIZE <= 0.0? (TFM=\"{}\")",
@@ -105,32 +102,25 @@ unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi
     dpi
 }
 unsafe extern "C" fn dpx_open_pk_font_at(_ident: *const i8, _dpi: u32) -> *mut FILE {
-    let mut fp: *mut FILE = 0 as *mut FILE;
-    let mut fqpn: *mut i8 = 0 as *mut i8;
     /*kpse_glyph_file_type kpse_file_info;*/
-    fqpn = 0 as *mut i8; /*kpse_find_glyph(ident, dpi, kpse_pk_format, &kpse_file_info);*/
+    let fqpn = 0 as *mut i8; /*kpse_find_glyph(ident, dpi, kpse_pk_format, &kpse_file_info);*/
     if fqpn.is_null() {
         return 0 as *mut FILE;
     }
-    fp = fopen(fqpn, b"rb\x00" as *const u8 as *const i8);
+    let fp = fopen(fqpn, b"rb\x00" as *const u8 as *const i8);
     free(fqpn as *mut libc::c_void);
     fp
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_font_open_pkfont(mut font: *mut pdf_font) -> i32 {
-    let mut ident: *mut i8 = 0 as *mut i8;
-    let mut point_size: f64 = 0.;
-    let mut encoding_id: i32 = 0;
-    let mut dpi: u32 = 0;
-    let mut fp: *mut FILE = 0 as *mut FILE;
-    ident = pdf_font_get_ident(font);
-    point_size = pdf_font_get_param(font, 2i32);
-    encoding_id = pdf_font_get_encoding(font);
+    let ident = pdf_font_get_ident(font);
+    let point_size = pdf_font_get_param(font, 2i32);
+    let encoding_id = pdf_font_get_encoding(font);
     if ident.is_null() || point_size <= 0.0f64 {
         return -1i32;
     }
-    dpi = truedpi(ident, point_size, base_dpi);
-    fp = dpx_open_pk_font_at(ident, dpi);
+    let dpi = truedpi(ident, point_size, base_dpi);
+    let fp = dpx_open_pk_font_at(ident, dpi);
     if fp.is_null() {
         return -1i32;
     }
@@ -184,20 +174,18 @@ unsafe extern "C" fn pk_packed_num(
 ) -> u32 {
     let mut nmbr: u32 = 0_u32;
     let mut i: u32 = *np;
-    let mut nyb: i32 = 0;
-    let mut j: i32 = 0;
     if i.wrapping_div(2_u32) == pl {
         warn!("EOD reached while unpacking pk_packed_num.");
         return 0_u32;
     }
-    nyb = if i.wrapping_rem(2_u32) != 0 {
+    let mut nyb = if i.wrapping_rem(2_u32) != 0 {
         *dp.offset(i.wrapping_div(2_u32) as isize) as i32 & 0xfi32
     } else {
         *dp.offset(i.wrapping_div(2_u32) as isize) as i32 >> 4i32 & 0xfi32
     };
     i = i.wrapping_add(1);
     if nyb == 0i32 {
-        j = 0i32;
+        let mut j = 0i32;
         loop {
             if i.wrapping_div(2_u32) == pl {
                 warn!("EOD reached while unpacking pk_packed_num.");
@@ -268,28 +256,22 @@ unsafe extern "C" fn pk_decode_packed(
     mut dp: *mut u8,
     mut pl: u32,
 ) -> i32 {
-    let mut rowptr: *mut u8 = 0 as *mut u8;
-    let mut rowbytes: u32 = 0;
-    let mut i: u32 = 0;
-    let mut np: u32 = 0_u32;
     let mut run_count: u32 = 0_u32;
-    let mut repeat_count: u32 = 0_u32;
-    rowbytes = wd.wrapping_add(7_u32).wrapping_div(8_u32);
-    rowptr =
+    let rowbytes = wd.wrapping_add(7_u32).wrapping_div(8_u32);
+    let rowptr =
         new((rowbytes as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
     /* repeat count is applied to the *current* row.
      * "run" can span across rows.
      * If there are non-zero repeat count and if run
      * spans across row, first repeat and then continue.
      */
-    np = 0_u32; /* 1 is white */
-    i = 0_u32;
+    let mut np = 0_u32; /* 1 is white */
+    let mut i = 0;
     while i < ht {
-        let mut rowbits_left: u32 = 0;
-        let mut nbits: u32 = 0;
-        repeat_count = 0_u32;
+        let mut nbits;
+        let mut repeat_count = 0;
         memset(rowptr as *mut libc::c_void, 0xffi32, rowbytes as _);
-        rowbits_left = wd;
+        let mut rowbits_left = wd;
         /* Fill run left over from previous row */
         if run_count > 0_u32 {
             nbits = if rowbits_left < run_count {
@@ -312,8 +294,7 @@ unsafe extern "C" fn pk_decode_packed(
         }
         /* Read nybbles until we have a full row */
         while np.wrapping_div(2_u32) < pl && rowbits_left > 0_u32 {
-            let mut nyb: i32 = 0;
-            nyb = if np.wrapping_rem(2_u32) != 0 {
+            let nyb = if np.wrapping_rem(2_u32) != 0 {
                 *dp.offset(np.wrapping_div(2_u32) as isize) as i32 & 0xfi32
             } else {
                 *dp.offset(np.wrapping_div(2_u32) as isize) as i32 >> 4i32 & 0xfi32
@@ -379,10 +360,6 @@ unsafe extern "C" fn pk_decode_bitmap(
     mut dp: *mut u8,
     mut pl: u32,
 ) -> i32 {
-    let mut rowptr: *mut u8 = 0 as *mut u8;
-    let mut c: u8 = 0;
-    let mut j: u32 = 0;
-    let mut rowbytes: u32 = 0;
     static mut mask: [u8; 8] = [
         0x80u32 as u8,
         0x40u32 as u8,
@@ -404,25 +381,25 @@ unsafe extern "C" fn pk_decode_bitmap(
         );
         return -1i32;
     }
-    rowbytes = wd.wrapping_add(7_u32).wrapping_div(8_u32);
-    rowptr =
+    let rowbytes = wd.wrapping_add(7_u32).wrapping_div(8_u32);
+    let rowptr =
         new((rowbytes as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
     memset(rowptr as *mut libc::c_void, 0i32, rowbytes as _);
     /* Flip. PK bitmap is not byte aligned for each rows. */
     /* flip bit */
-    j = 0_u32;
+    let mut j = 0_u32;
     for i in 0..ht.wrapping_mul(wd) {
-        c = (*dp.offset(i.wrapping_div(8_u32) as isize) as i32
+        let c = (*dp.offset(i.wrapping_div(8_u32) as isize) as i32
             & mask[i.wrapping_rem(8_u32) as usize] as i32) as u8;
         if c as i32 == 0i32 {
             let ref mut fresh2 = *rowptr.offset(j.wrapping_div(8_u32) as isize);
             *fresh2 = (*fresh2 as i32 | mask[i.wrapping_rem(8_u32) as usize] as i32) as u8
         }
-        j = j.wrapping_add(1);
+        j += 1;
         if j == wd {
             send_out(rowptr, rowbytes, stream);
             memset(rowptr as *mut libc::c_void, 0i32, rowbytes as _);
-            j = 0_u32
+            j = 0
         }
     }
     0i32
@@ -515,17 +492,11 @@ unsafe extern "C" fn create_pk_CharProc_stream(
     mut pkt_ptr: *mut u8,
     mut pkt_len: u32,
 ) -> *mut pdf_obj {
-    let mut stream: *mut pdf_obj = 0 as *mut pdf_obj; /* charproc */
-    let mut llx: i32 = 0;
-    let mut lly: i32 = 0;
-    let mut urx: i32 = 0;
-    let mut ury: i32 = 0;
-    let mut len = 0_usize;
-    llx = -(*pkh).bm_hoff;
-    lly = ((*pkh).bm_voff as u32).wrapping_sub((*pkh).bm_ht) as i32;
-    urx = (*pkh).bm_wd.wrapping_sub((*pkh).bm_hoff as u32) as i32;
-    ury = (*pkh).bm_voff;
-    stream = pdf_new_stream(1i32 << 0i32);
+    let llx = -(*pkh).bm_hoff;
+    let lly = ((*pkh).bm_voff as u32).wrapping_sub((*pkh).bm_ht) as i32;
+    let urx = (*pkh).bm_wd.wrapping_sub((*pkh).bm_hoff as u32) as i32;
+    let ury = (*pkh).bm_voff;
+    let stream = pdf_new_stream(1i32 << 0i32); /* charproc */
     /*
      * The following line is a "metric" for the PDF reader:
      *
@@ -535,7 +506,7 @@ unsafe extern "C" fn create_pk_CharProc_stream(
      * width in the font's Widths array. The format string of sprint() must be
      * consistent with write_number() in pdfobj.c.
      */
-    len = pdf_sprint_number(&mut work_buffer[..], chrwid);
+    let mut len = pdf_sprint_number(&mut work_buffer[..], chrwid);
     len += sprintf(
         work_buffer.as_mut_ptr().offset(len as isize) as *mut i8,
         b" 0 %d %d %d %d d1\n\x00" as *const u8 as *const i8,
@@ -622,44 +593,26 @@ unsafe extern "C" fn create_pk_CharProc_stream(
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
-    let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut usedchars: *mut i8 = 0 as *mut i8;
-    let mut ident: *mut i8 = 0 as *mut i8;
-    let mut dpi: u32 = 0;
-    let mut fp: *mut FILE = 0 as *mut FILE;
-    let mut point_size: f64 = 0.;
-    let mut pix2charu: f64 = 0.;
-    let mut opcode: i32 = 0;
-    let mut firstchar: i32 = 0;
-    let mut lastchar: i32 = 0;
-    let mut prev: i32 = 0;
-    let mut charprocs: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut procset: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut encoding: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut tmp_array: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut widths: [f64; 256] = [0.; 256];
     let mut bbox = pdf_rect::new();
     let mut charavail: [i8; 256] = [0; 256];
-    let mut encoding_id: i32 = 0;
-    let mut enc_vec: *mut *mut i8 = 0 as *mut *mut i8;
     /* ENABLE_GLYPHENC */
-    let mut error: i32 = 0i32;
     if !pdf_font_is_in_use(font) {
         return 0i32;
     }
-    ident = pdf_font_get_ident(font);
-    point_size = pdf_font_get_param(font, 2i32);
-    usedchars = pdf_font_get_usedchars(font);
-    encoding_id = pdf_font_get_encoding(font);
-    if encoding_id < 0i32 {
-        enc_vec = 0 as *mut *mut i8
+    let ident = pdf_font_get_ident(font);
+    let point_size = pdf_font_get_param(font, 2i32);
+    let usedchars = pdf_font_get_usedchars(font);
+    let encoding_id = pdf_font_get_encoding(font);
+    let enc_vec = if encoding_id < 0i32 {
+        0 as *mut *mut i8
     } else {
-        enc_vec = pdf_encoding_get_encoding(encoding_id)
-    }
+        pdf_encoding_get_encoding(encoding_id)
+    };
     /* ENABLE_GLYPHENC */
     assert!(!ident.is_null() && !usedchars.is_null() && point_size > 0.0f64);
-    dpi = truedpi(ident, point_size, base_dpi);
-    fp = dpx_open_pk_font_at(ident, dpi);
+    let dpi = truedpi(ident, point_size, base_dpi);
+    let fp = dpx_open_pk_font_at(ident, dpi);
     if fp.is_null() {
         panic!(
             "Could not find/open PK font file: {} (at {}dpi)",
@@ -668,18 +621,18 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
         );
     }
     memset(charavail.as_mut_ptr() as *mut libc::c_void, 0i32, 256);
-    charprocs = pdf_new_dict();
+    let charprocs = pdf_new_dict();
     /* Include bitmap as 72dpi image:
      * There seems to be problems in "scaled" bitmap glyph
      * rendering in several viewers.
      */
-    pix2charu = 72.0f64 * 1000.0f64 / base_dpi as f64 / point_size; /* A command byte */
+    let pix2charu = 72.0f64 * 1000.0f64 / base_dpi as f64 / point_size; /* A command byte */
     bbox.lly = ::std::f64::INFINITY;
     bbox.llx = bbox.lly;
     bbox.ury = -::std::f64::INFINITY;
     bbox.urx = bbox.ury;
     loop {
-        opcode = fgetc(fp);
+        let opcode = fgetc(fp);
         if !(opcode >= 0i32 && opcode != 245i32) {
             break;
         }
@@ -697,7 +650,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 dyn_f: 0,
                 run_color: 0,
             };
-            error = read_pk_char_header(&mut pkh, opcode as u8, fp);
+            let error = read_pk_char_header(&mut pkh, opcode as u8, fp);
             if error != 0 {
                 panic!("Error in reading PK character header.");
             } else {
@@ -712,13 +665,9 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
             if *usedchars.offset((pkh.chrcode & 0xffi32) as isize) == 0 {
                 skip_bytes(pkh.pkt_len, fp);
             } else {
-                let mut charname: *mut i8 = 0 as *mut i8;
-                let mut charproc: *mut pdf_obj = 0 as *mut pdf_obj;
-                let mut pkt_ptr: *mut u8 = 0 as *mut u8;
-                let mut bytesread: size_t = 0;
-                let mut charwidth: f64 = 0.;
+                let mut charname;
                 /* Charwidth in PDF units */
-                charwidth =
+                let charwidth =
                     (1000.0f64 * pkh.wd as f64 / ((1i32 << 20i32) as f64 * pix2charu) / 0.1f64
                         + 0.5f64)
                         .floor()
@@ -745,17 +694,17 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 } else {
                     pkh.bm_voff as f64
                 };
-                pkt_ptr = new(
+                let pkt_ptr = new(
                     (pkh.pkt_len as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32,
                 ) as *mut u8;
-                bytesread = fread(pkt_ptr as *mut libc::c_void, 1, pkh.pkt_len as _, fp) as _;
+                let bytesread = fread(pkt_ptr as *mut libc::c_void, 1, pkh.pkt_len as _, fp) as size_t;
                 if bytesread != pkh.pkt_len as u64 {
                     panic!(
                         "Only {} bytes PK packet read. (expected {} bytes)",
                         bytesread, pkh.pkt_len,
                     );
                 }
-                charproc =
+                let charproc =
                     create_pk_CharProc_stream(&mut pkh, charwidth, pkt_ptr, bytesread as u32);
                 free(pkt_ptr as *mut libc::c_void);
                 if charproc.is_null() {
@@ -825,7 +774,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
         }
     }
     /* Now actually fill fontdict. */
-    fontdict = pdf_font_get_resource(font);
+    let fontdict = pdf_font_get_resource(font);
     pdf_add_dict(fontdict, "CharProcs", pdf_ref_obj(charprocs));
     pdf_release_obj(charprocs);
     /*
@@ -836,20 +785,20 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
      *  We do not care about compatibility with Acrobat 2.x. (See implementation
      *  note 47, Appendix H of PDF Ref., 4th ed.).
      */
-    procset = pdf_new_dict();
-    tmp_array = pdf_new_array();
+    let procset = pdf_new_dict();
+    let tmp_array = pdf_new_array();
     pdf_add_array(tmp_array, pdf_new_name("PDF"));
     pdf_add_array(tmp_array, pdf_new_name("ImageB"));
     pdf_add_dict(procset, "ProcSet", tmp_array);
     pdf_add_dict(fontdict, "Resources", procset);
     /* Encoding */
-    tmp_array = pdf_new_array();
-    prev = -2i32;
-    firstchar = 255i32;
-    lastchar = 0i32;
+    let tmp_array = pdf_new_array();
+    let mut prev = -2i32;
+    let mut firstchar = 255i32;
+    let mut lastchar = 0i32;
     for code in 0..256 {
-        let mut charname_0: *mut i8 = 0 as *mut i8;
         if *usedchars.offset(code as isize) != 0 {
+            let mut charname_0;
             if code < firstchar {
                 firstchar = code
             }
@@ -891,7 +840,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     }
     if encoding_id < 0i32 || enc_vec.is_null() {
         /* ENABLE_GLYPHENC */
-        encoding = pdf_new_dict();
+        let encoding = pdf_new_dict();
         pdf_add_dict(encoding, "Type", pdf_new_name("Encoding"));
         pdf_add_dict(encoding, "Differences", tmp_array);
         pdf_add_dict(fontdict, "Encoding", pdf_ref_obj(encoding));
@@ -901,7 +850,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     }
     /* FontBBox: Accurate value is important.
      */
-    tmp_array = pdf_new_array();
+    let tmp_array = pdf_new_array();
     pdf_add_array(tmp_array, pdf_new_number(bbox.llx));
     pdf_add_array(tmp_array, pdf_new_number(bbox.lly));
     pdf_add_array(tmp_array, pdf_new_number(bbox.urx));
@@ -910,7 +859,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     /* Widths:
      *  Indirect reference preffered. (See PDF Reference)
      */
-    tmp_array = pdf_new_array();
+    let tmp_array = pdf_new_array();
     for code in firstchar..=lastchar {
         if *usedchars.offset(code as isize) != 0 {
             pdf_add_array(tmp_array, pdf_new_number(widths[code as usize]));
@@ -921,7 +870,7 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
     pdf_add_dict(fontdict, "Widths", pdf_ref_obj(tmp_array));
     pdf_release_obj(tmp_array);
     /* FontMatrix */
-    tmp_array = pdf_new_array();
+    let tmp_array = pdf_new_array();
     pdf_add_array(tmp_array, pdf_new_number(0.001f64 * pix2charu));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
     pdf_add_array(tmp_array, pdf_new_number(0.0f64));
