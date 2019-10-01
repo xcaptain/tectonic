@@ -893,10 +893,9 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
         return;
     } /* op: RG K G rg k g etc. */
     graphics_mode(); /* Init to avoid compiler warning */
-    let mut len = color.to_string(fmt_buf.as_mut_ptr() as *mut i8, mask);
-    let fresh40 = len;
-    len = len + 1;
-    fmt_buf[fresh40 as usize] = ' ' as i32 as i8;
+    let mut len = color.to_string(fmt_buf.as_mut_ptr(), mask);
+    fmt_buf[len] = b' ';
+    len += 1;
     match color.colorspace_type() {
         ColorspaceType::Rgb => {
             let fresh41 = len;

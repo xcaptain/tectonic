@@ -2515,13 +2515,10 @@ unsafe extern "C" fn pdf_doc_finish_page(mut p: *mut pdf_doc) {
     }
     (*p).pages.num_entries = (*p).pages.num_entries.wrapping_add(1);
 }
-static mut bgcolor: pdf_color = {
-    let mut init = pdf_color {
-        num_components: 1i32,
-        spot_color_name: None,
-        values: [1., 0., 0., 0.],
-    };
-    init
+static mut bgcolor: pdf_color = pdf_color {
+    num_components: 1,
+    spot_color_name: None,
+    values: [1., 0., 0., 0.],
 };
 /* Manual thumbnail */
 /* Similar to bop_content */

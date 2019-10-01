@@ -53,7 +53,7 @@ pub enum ColorspaceType {
 #[derive(Clone)]
 #[repr(C)]
 pub struct pdf_color {
-    pub num_components: i32,
+    pub num_components: usize,
     pub spot_color_name: Option<CString>,
     pub values: [f64; 4],
 }
@@ -210,7 +210,7 @@ impl pdf_color {
         };
         self.values
             .iter()
-            .take(self.num_components as usize)
+            .take(self.num_components)
             .all(|&value| value == f)
     }
 

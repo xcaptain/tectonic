@@ -1035,7 +1035,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"GreenYellow\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.15f64, 0.00f64, 0.69f64, 0.00f64],
                 };
@@ -1049,7 +1049,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Yellow\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.00f64, 1.00f64, 0.00f64],
                 };
@@ -1063,7 +1063,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Goldenrod\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.10f64, 0.84f64, 0.00f64],
                 };
@@ -1077,7 +1077,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Dandelion\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.29f64, 0.84f64, 0.00f64],
                 };
@@ -1091,7 +1091,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Apricot\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.32f64, 0.52f64, 0.00f64],
                 };
@@ -1105,7 +1105,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Peach\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.50f64, 0.70f64, 0.00f64],
                 };
@@ -1119,7 +1119,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Melon\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.46f64, 0.50f64, 0.00f64],
                 };
@@ -1133,7 +1133,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"YellowOrange\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.42f64, 1.00f64, 0.00f64],
                 };
@@ -1147,7 +1147,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Orange\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.61f64, 0.87f64, 0.00f64],
                 };
@@ -1161,7 +1161,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"BurntOrange\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.51f64, 1.00f64, 0.00f64],
                 };
@@ -1175,7 +1175,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Bittersweet\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.75f64, 1.00f64, 0.24f64],
                 };
@@ -1189,7 +1189,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RedOrange\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.77f64, 0.87f64, 0.00f64],
                 };
@@ -1203,7 +1203,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Mahogany\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.85f64, 0.87f64, 0.35f64],
                 };
@@ -1217,7 +1217,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Maroon\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.87f64, 0.68f64, 0.32f64],
                 };
@@ -1231,7 +1231,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"BrickRed\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.89f64, 0.94f64, 0.28f64],
                 };
@@ -1245,7 +1245,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Red\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 1.00f64, 1.00f64, 0.00f64],
                 };
@@ -1259,7 +1259,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"OrangeRed\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 1.00f64, 0.50f64, 0.00f64],
                 };
@@ -1273,7 +1273,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RubineRed\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 1.00f64, 0.13f64, 0.00f64],
                 };
@@ -1287,7 +1287,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"WildStrawberry\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.96f64, 0.39f64, 0.00f64],
                 };
@@ -1301,7 +1301,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Salmon\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.53f64, 0.38f64, 0.00f64],
                 };
@@ -1315,7 +1315,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"CarnationPink\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.63f64, 0.00f64, 0.00f64],
                 };
@@ -1329,7 +1329,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Magenta\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 1.00f64, 0.00f64, 0.00f64],
                 };
@@ -1343,7 +1343,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"VioletRed\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.81f64, 0.00f64, 0.00f64],
                 };
@@ -1357,7 +1357,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Rhodamine\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.82f64, 0.00f64, 0.00f64],
                 };
@@ -1371,7 +1371,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Mulberry\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.34f64, 0.90f64, 0.00f64, 0.02f64],
                 };
@@ -1385,7 +1385,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RedViolet\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.07f64, 0.90f64, 0.00f64, 0.34f64],
                 };
@@ -1399,7 +1399,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Fuchsia\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.47f64, 0.91f64, 0.00f64, 0.08f64],
                 };
@@ -1413,7 +1413,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Lavender\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.48f64, 0.00f64, 0.00f64],
                 };
@@ -1427,7 +1427,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Thistle\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.12f64, 0.59f64, 0.00f64, 0.00f64],
                 };
@@ -1441,7 +1441,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Orchid\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.32f64, 0.64f64, 0.00f64, 0.00f64],
                 };
@@ -1455,7 +1455,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"DarkOrchid\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.40f64, 0.80f64, 0.20f64, 0.00f64],
                 };
@@ -1469,7 +1469,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Purple\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.45f64, 0.86f64, 0.00f64, 0.00f64],
                 };
@@ -1483,7 +1483,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Plum\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.50f64, 1.00f64, 0.00f64, 0.00f64],
                 };
@@ -1497,7 +1497,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Violet\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.79f64, 0.88f64, 0.00f64, 0.00f64],
                 };
@@ -1511,7 +1511,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RoyalPurple\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.75f64, 0.90f64, 0.00f64, 0.00f64],
                 };
@@ -1525,7 +1525,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"BlueViolet\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.86f64, 0.91f64, 0.00f64, 0.04f64],
                 };
@@ -1539,7 +1539,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Periwinkle\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.57f64, 0.55f64, 0.00f64, 0.00f64],
                 };
@@ -1553,7 +1553,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"CadetBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.62f64, 0.57f64, 0.23f64, 0.00f64],
                 };
@@ -1567,7 +1567,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"CornflowerBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.65f64, 0.13f64, 0.00f64, 0.00f64],
                 };
@@ -1581,7 +1581,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"MidnightBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.98f64, 0.13f64, 0.00f64, 0.43f64],
                 };
@@ -1595,7 +1595,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"NavyBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.94f64, 0.54f64, 0.00f64, 0.00f64],
                 };
@@ -1609,7 +1609,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RoyalBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [1.00f64, 0.50f64, 0.00f64, 0.00f64],
                 };
@@ -1623,7 +1623,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Blue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [1.00f64, 1.00f64, 0.00f64, 0.00f64],
                 };
@@ -1637,7 +1637,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Cerulean\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.94f64, 0.11f64, 0.00f64, 0.00f64],
                 };
@@ -1651,7 +1651,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Cyan\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [1.00f64, 0.00f64, 0.00f64, 0.00f64],
                 };
@@ -1665,7 +1665,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"ProcessBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.96f64, 0.00f64, 0.00f64, 0.00f64],
                 };
@@ -1679,7 +1679,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"SkyBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.62f64, 0.00f64, 0.12f64, 0.00f64],
                 };
@@ -1693,7 +1693,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Turquoise\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.85f64, 0.00f64, 0.20f64, 0.00f64],
                 };
@@ -1707,7 +1707,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"TealBlue\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.86f64, 0.00f64, 0.34f64, 0.02f64],
                 };
@@ -1721,7 +1721,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Aquamarine\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.82f64, 0.00f64, 0.30f64, 0.00f64],
                 };
@@ -1735,7 +1735,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"BlueGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.85f64, 0.00f64, 0.33f64, 0.00f64],
                 };
@@ -1749,7 +1749,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Emerald\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [1.00f64, 0.00f64, 0.50f64, 0.00f64],
                 };
@@ -1763,7 +1763,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"JungleGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.99f64, 0.00f64, 0.52f64, 0.00f64],
                 };
@@ -1777,7 +1777,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"SeaGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.69f64, 0.00f64, 0.50f64, 0.00f64],
                 };
@@ -1791,7 +1791,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Green\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [1.00f64, 0.00f64, 1.00f64, 0.00f64],
                 };
@@ -1805,7 +1805,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"ForestGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.91f64, 0.00f64, 0.88f64, 0.12f64],
                 };
@@ -1819,7 +1819,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"PineGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.92f64, 0.00f64, 0.59f64, 0.25f64],
                 };
@@ -1833,7 +1833,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"LimeGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.50f64, 0.00f64, 1.00f64, 0.00f64],
                 };
@@ -1847,7 +1847,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"YellowGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.44f64, 0.00f64, 0.74f64, 0.00f64],
                 };
@@ -1861,7 +1861,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"SpringGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.26f64, 0.00f64, 0.76f64, 0.00f64],
                 };
@@ -1875,7 +1875,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"OliveGreen\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.64f64, 0.00f64, 0.95f64, 0.40f64],
                 };
@@ -1889,7 +1889,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"RawSienna\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.72f64, 1.00f64, 0.45f64],
                 };
@@ -1903,7 +1903,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Sepia\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.83f64, 1.00f64, 0.70f64],
                 };
@@ -1917,7 +1917,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Brown\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.00f64, 0.81f64, 1.00f64, 0.60f64],
                 };
@@ -1931,7 +1931,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Tan\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 4i32,
+                    num_components: 4,
                     spot_color_name: None,
                     values: [0.14f64, 0.42f64, 0.56f64, 0.00f64],
                 };
@@ -1945,7 +1945,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Gray\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 1i32,
+                    num_components: 1,
                     spot_color_name: None,
                     values: [0.5f64, 0., 0., 0.],
                 };
@@ -1959,7 +1959,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"Black\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 1i32,
+                    num_components: 1,
                     spot_color_name: None,
                     values: [0.0f64, 0., 0., 0.],
                 };
@@ -1973,7 +1973,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: b"White\x00" as *const u8 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 1i32,
+                    num_components: 1,
                     spot_color_name: None,
                     values: [1.0f64, 0., 0., 0.],
                 };
@@ -1987,7 +1987,7 @@ static mut COLORDEFS: [colordef_; 69] = [
             key: 0 as *const i8,
             color: {
                 let mut init = pdf_color {
-                    num_components: 0i32,
+                    num_components: 0,
                     spot_color_name: None,
                     values: [0.0f64, 0., 0., 0.],
                 };
