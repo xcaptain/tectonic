@@ -217,12 +217,9 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
+    let mut error: i32 = 0;
+    let mut colorspec = pdf_color::new();
+    error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
     if error != 0 {
         spc_warn(
             spe,

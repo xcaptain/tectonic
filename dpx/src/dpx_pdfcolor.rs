@@ -53,10 +53,17 @@ pub enum ColorspaceType {
 #[derive(Clone)]
 #[repr(C)]
 pub struct pdf_color {
-    pub num_components: usize,
+    num_components: usize,
     pub spot_color_name: Option<CString>,
     pub values: [f64; 4],
 }
+
+pub const WHITE: pdf_color = pdf_color {
+    num_components: 1,
+    spot_color_name: None,
+    values: [1.0, 0.0, 0.0, 0.0]
+};
+
 impl pdf_color {
     pub const fn new() -> Self {
         Self {
@@ -66,10 +73,6 @@ impl pdf_color {
         }
     }
 
-    /* This function returns PDF_COLORSPACE_TYPE_GRAY,
-     * PDF_COLORSPACE_TYPE_RGB, PDF_COLORSPACE_TYPE_CMYK or
-     * PDF_COLORSPACE_TYPE_SPOT.
-     */
     pub fn colorspace_type(&self) -> ColorspaceType {
         match self.num_components {
             1 => ColorspaceType::Gray,

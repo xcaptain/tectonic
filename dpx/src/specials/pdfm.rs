@@ -789,16 +789,9 @@ unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mu
 }
 /* Color:.... */
 unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut fc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let mut sc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
+    let mut error: i32 = 0;
+    let mut fc: pdf_color = pdf_color::new();
+    let mut sc: pdf_color = pdf_color::new();
     let (psc, pfc) = pdf_color_get_current();
     let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
     if error == 0 {
@@ -824,16 +817,9 @@ unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut
  * It therefore differs from "color rgb 1 0 0".
  */
 unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut fc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let mut sc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
+    let mut error: i32 = 0;
+    let mut fc: pdf_color = pdf_color::new();
+    let mut sc: pdf_color = pdf_color::new();
     let (psc, pfc) = pdf_color_get_current();
     let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
     if error == 0 {
@@ -1898,12 +1884,9 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_pdfcolor(spe, &mut colorspec, args, None);
+    let mut error: i32 = 0;
+    let mut colorspec = pdf_color::new();
+    error = spc_util_read_pdfcolor(spe, &mut colorspec, args, None);
     if error != 0 {
         spc_warn(
             spe,

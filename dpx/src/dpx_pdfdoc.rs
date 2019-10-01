@@ -41,7 +41,7 @@ use super::dpx_dpxutil::{
 use super::dpx_dvipdfmx::is_xdv;
 use super::dpx_jpegimage::check_for_jpeg;
 use super::dpx_mem::{new, renew};
-use super::dpx_pdfcolor::{pdf_close_colors, pdf_color_set_verbose, pdf_init_colors};
+use super::dpx_pdfcolor::{pdf_close_colors, pdf_color_set_verbose, pdf_init_colors, WHITE};
 use super::dpx_pdfdev::{
     pdf_dev_bop, pdf_dev_eop, pdf_dev_get_coord, pdf_dev_get_param, pdf_dev_reset_color,
     pdf_dev_reset_fonts,
@@ -2515,11 +2515,8 @@ unsafe extern "C" fn pdf_doc_finish_page(mut p: *mut pdf_doc) {
     }
     (*p).pages.num_entries = (*p).pages.num_entries.wrapping_add(1);
 }
-static mut bgcolor: pdf_color = pdf_color {
-    num_components: 1,
-    spot_color_name: None,
-    values: [1., 0., 0., 0.],
-};
+static mut bgcolor: pdf_color = WHITE;
+
 /* Manual thumbnail */
 /* Similar to bop_content */
 #[no_mangle]

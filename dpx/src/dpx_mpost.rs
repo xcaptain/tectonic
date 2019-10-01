@@ -3062,11 +3062,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut matrix = pdf_tmatrix::new();
     let mut cp = pdf_coord::zero();
-    let mut color: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
+    let mut color: pdf_color = pdf_color::new();
     opcode = get_opcode(token);
     let mut current_block_294: u64;
     match opcode {

@@ -47,12 +47,9 @@ use libc::free;
  * implicitely.
  */
 unsafe extern "C" fn spc_handler_color_push(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut colorspec: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let mut error: i32 = 0;
+    let mut colorspec: pdf_color = pdf_color::new();
+    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         let color_clone = colorspec.clone();
         pdf_color_push(&mut colorspec, &color_clone);
@@ -70,12 +67,9 @@ unsafe extern "C" fn spc_handler_color_default(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let mut error: i32 = 0;
+    let mut colorspec: pdf_color = pdf_color::new();
+    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         pdf_color_clear_stack();
         pdf_color_set(&colorspec, &colorspec);
@@ -84,12 +78,9 @@ unsafe extern "C" fn spc_handler_color_default(
 }
 /* This is from color special? */
 unsafe extern "C" fn spc_handler_background(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
+    let mut error: i32 = 0;
+    let mut colorspec = pdf_color::new();
+    error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         pdf_doc_set_bgcolor(Some(&colorspec));
     }
