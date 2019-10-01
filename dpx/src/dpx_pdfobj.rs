@@ -3897,7 +3897,7 @@ unsafe extern "C" fn parse_xrefstm_subsec(
     if (*pf).num_obj < first + size {
         extend_xref(pf, first + size);
     }
-    let mut e: *mut xref_entry = 0 as *mut xref_entry;
+    let mut e: *mut xref_entry = (*pf).xref_table.offset(first as isize);
     loop {
         let fresh33 = size;
         size = size - 1;
