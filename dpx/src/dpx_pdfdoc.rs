@@ -82,7 +82,7 @@ use crate::TTInputFormat;
 
 use bridge::rust_input_handle_t;
 
-pub use super::dpx_pdfcolor::pdf_color;
+pub use super::dpx_pdfcolor::PdfColor;
 
 use super::dpx_pdfdev::{pdf_rect, pdf_tmatrix};
 #[derive(Copy, Clone)]
@@ -2515,17 +2515,18 @@ unsafe extern "C" fn pdf_doc_finish_page(mut p: *mut pdf_doc) {
     }
     (*p).pages.num_entries = (*p).pages.num_entries.wrapping_add(1);
 }
-static mut bgcolor: pdf_color = WHITE;
+
+static mut bgcolor: PdfColor = WHITE;
 
 /* Manual thumbnail */
 /* Similar to bop_content */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_doc_set_bgcolor(color: Option<&pdf_color>) {
+pub unsafe extern "C" fn pdf_doc_set_bgcolor(color: Option<&PdfColor>) {
     bgcolor = if let Some(c) = color {
         c.clone()
     } else {
         /* as clear... */
-        pdf_color::gray(1.0).unwrap()
+        WHITE
     };
 }
 unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {

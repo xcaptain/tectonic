@@ -27,7 +27,7 @@ use super::util::spc_util_read_colorspec;
 use super::{spc_arg, spc_env, spc_handler, spc_warn};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfcolor::{
-    pdf_color, pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
+    PdfColor, pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
 };
 use crate::dpx_pdfdoc::pdf_doc_set_bgcolor;
 use crate::streq_ptr;
@@ -48,11 +48,11 @@ use libc::free;
  */
 unsafe extern "C" fn spc_handler_color_push(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut error: i32 = 0;
-    let mut colorspec: pdf_color = pdf_color::new();
+    let mut colorspec: Option<PdfColor> = None;
     error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         let color_clone = colorspec.clone();
-        pdf_color_push(&mut colorspec, &color_clone);
+        pdf_color_push(colorspec.as_mut().unwrap(), color_clone.as_ref().unwrap());
     }
     error
 }
@@ -68,21 +68,21 @@ unsafe extern "C" fn spc_handler_color_default(
     mut args: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = 0;
-    let mut colorspec: pdf_color = pdf_color::new();
+    let mut colorspec: Option<PdfColor> = None;
     error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
         pdf_color_clear_stack();
-        pdf_color_set(&colorspec, &colorspec);
+        pdf_color_set(colorspec.as_ref().unwrap(), colorspec.as_ref().unwrap());
     }
     error
 }
 /* This is from color special? */
 unsafe extern "C" fn spc_handler_background(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut error: i32 = 0;
-    let mut colorspec = pdf_color::new();
+    let mut colorspec: Option<PdfColor> = None;
     error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
     if error == 0 {
-        pdf_doc_set_bgcolor(Some(&colorspec));
+        pdf_doc_set_bgcolor(colorspec.as_ref());
     }
     error
 }

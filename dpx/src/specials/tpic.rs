@@ -78,7 +78,7 @@ pub struct spc_tpic_ {
 
 use crate::dpx_pdfdev::pdf_coord;
 
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 use crate::dpx_pdfdev::pdf_tmatrix;
 
@@ -190,9 +190,8 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
         pdf_doc_add_page_content(&buf[..len]);
         /* op: gs */
     } /* get stroking and fill colors */
-    let mut new_fc: pdf_color = pdf_color::new();
     let (_sc, fc) = pdf_color_get_current();
-    new_fc = fc.brighten(g);
+    let new_fc = fc.clone().brightened(g);
     pdf_dev_set_color(&new_fc, 0x20, 0);
     0i32
 }

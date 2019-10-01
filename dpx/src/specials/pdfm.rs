@@ -115,7 +115,7 @@ use crate::dpx_dpxutil::ht_table;
 pub type hval_free_func = Option<unsafe extern "C" fn(_: *mut libc::c_void) -> ()>;
 
 use crate::dpx_fontmap::fontmap_rec;
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 use crate::dpx_pdfximage::load_options;
 
@@ -788,8 +788,8 @@ unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mu
 /* Color:.... */
 unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0;
-    let mut fc: pdf_color = pdf_color::new();
-    let mut sc: pdf_color = pdf_color::new();
+    let mut fc: Option<PdfColor> = None;
+    let mut sc: Option<PdfColor> = None;
     let (psc, pfc) = pdf_color_get_current();
     let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
     if error == 0 {
@@ -805,7 +805,7 @@ unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut
             b"Invalid color specification?\x00" as *const u8 as *const i8,
         );
     } else {
-        pdf_color_push(&mut sc, &mut fc);
+        pdf_color_push(sc.as_mut().unwrap(), fc.as_mut().unwrap());
         /* save currentcolor */
     }
     error
@@ -816,8 +816,8 @@ unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut
  */
 unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0;
-    let mut fc: pdf_color = pdf_color::new();
-    let mut sc: pdf_color = pdf_color::new();
+    let mut fc: Option<PdfColor> = None;
+    let mut sc: Option<PdfColor> = None;
     let (psc, pfc) = pdf_color_get_current();
     let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
     if error == 0 {
@@ -833,7 +833,7 @@ unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut
             b"Invalid color specification?\x00" as *const u8 as *const i8,
         );
     } else {
-        pdf_color_set(&mut sc, &mut fc);
+        pdf_color_set(sc.as_mut().unwrap(), fc.as_mut().unwrap());
     }
     error
 }
@@ -1883,7 +1883,7 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
     mut args: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = 0;
-    let mut colorspec = pdf_color::new();
+    let mut colorspec: Option<PdfColor> = None;
     error = spc_util_read_pdfcolor(spe, &mut colorspec, args, None);
     if error != 0 {
         spc_warn(
@@ -1891,7 +1891,7 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
             b"No valid color specified?\x00" as *const u8 as *const i8,
         );
     } else {
-        pdf_doc_set_bgcolor(Some(&colorspec));
+        pdf_doc_set_bgcolor(colorspec.as_ref());
     }
     error
 }

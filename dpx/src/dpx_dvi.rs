@@ -55,7 +55,7 @@ use super::dpx_numbers::{
     sqxfw, tt_get_positive_quad, tt_get_signed_quad, tt_get_unsigned_byte, tt_get_unsigned_num,
     tt_get_unsigned_pair, tt_get_unsigned_quad, tt_skip_bytes,
 };
-use super::dpx_pdfcolor::{pdf_color, pdf_color_pop, pdf_color_push};
+use super::dpx_pdfcolor::{PdfColor, pdf_color_pop, pdf_color_push};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_begin_actualtext, pdf_dev_end_actualtext, pdf_dev_locate_font,
     pdf_dev_set_dirmode, pdf_dev_set_rect, pdf_dev_set_rule, pdf_dev_set_string,
@@ -1832,7 +1832,7 @@ unsafe extern "C" fn do_glyphs(mut do_actual_text: i32) {
         *yloc.offset(i as isize) = get_buffered_signed_quad();
     }
     if (*font).rgba_color != 0xffffffffu32 {
-        let mut color = pdf_color::rgb(
+        let mut color = PdfColor::from_rgb(
             (((*font).rgba_color >> 24i32) as u8 as i32 & 0xffi32) as f64 / 255i32 as f64,
             (((*font).rgba_color >> 16i32) as u8 as i32 & 0xffi32) as f64 / 255i32 as f64,
             (((*font).rgba_color >> 8i32) as u8 as i32 & 0xffi32) as f64 / 255i32 as f64,

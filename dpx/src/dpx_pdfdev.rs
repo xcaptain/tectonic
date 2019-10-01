@@ -61,7 +61,7 @@ use crate::shims::sprintf;
 
 pub type size_t = u64;
 
-pub use super::dpx_pdfcolor::pdf_color;
+pub use super::dpx_pdfcolor::PdfColor;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum MotionState {

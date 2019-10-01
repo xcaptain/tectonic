@@ -39,7 +39,7 @@ use super::dpx_dvipdfmx::translate_origin;
 use super::dpx_fontmap::pdf_lookup_fontmap_record;
 use super::dpx_mem::new;
 use super::dpx_mfileio::file_size;
-use super::dpx_pdfcolor::pdf_color;
+use super::dpx_pdfcolor::PdfColor;
 use super::dpx_pdfdev::{
     dev_unit_dviunit, graphics_mode, pdf_coord, pdf_dev_get_dirmode, pdf_dev_get_font_wmode,
     pdf_dev_get_param, pdf_dev_locate_font, pdf_dev_put_image, pdf_dev_set_dirmode,
@@ -3062,7 +3062,6 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut matrix = pdf_tmatrix::new();
     let mut cp = pdf_coord::zero();
-    let mut color: pdf_color = pdf_color::new();
     opcode = get_opcode(token);
     let mut current_block_294: u64;
     match opcode {
@@ -3389,7 +3388,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             error = pop_get_numbers(values.as_mut_ptr(), 4i32);
             /* Not handled properly */
             if error == 0 {
-                color = pdf_color::cmyk(values[0], values[1], values[2], values[3]).unwrap();
+                let color = PdfColor::from_cmyk(values[0], values[1], values[2], values[3]).unwrap();
                 pdf_dev_set_color(&color, 0, 0);
                 pdf_dev_set_color(&color, 0x20, 0);
             }
@@ -3398,7 +3397,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             /* Not handled properly */
             error = pop_get_numbers(values.as_mut_ptr(), 1i32); /* This does pdf_release_obj() */
             if error == 0 {
-                color = pdf_color::gray(values[0]).unwrap();
+                let color = PdfColor::from_gray(values[0]).unwrap();
                 pdf_dev_set_color(&color, 0, 0);
                 pdf_dev_set_color(&color, 0x20, 0);
             }
@@ -3406,7 +3405,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
         71 => {
             error = pop_get_numbers(values.as_mut_ptr(), 3i32);
             if error == 0 {
-                color = pdf_color::rgb(values[0], values[1], values[2]).unwrap();
+                let color = PdfColor::from_rgb(values[0], values[1], values[2]).unwrap();
                 pdf_dev_set_color(&color, 0, 0);
                 pdf_dev_set_color(&color, 0x20, 0);
             }

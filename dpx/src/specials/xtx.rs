@@ -62,7 +62,7 @@ use crate::dpx_pdfdev::pdf_coord;
 
 use crate::dpx_pdfdev::pdf_tmatrix;
 
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 /* tectonic/core-strutils.h: miscellaneous C string utilities
    Copyright 2016-2018 the Tectonic Project
@@ -218,7 +218,7 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     mut args: *mut spc_arg,
 ) -> i32 {
     let mut error: i32 = 0;
-    let mut colorspec = pdf_color::new();
+    let mut colorspec: Option<PdfColor> = None;
     error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
     if error != 0 {
         spc_warn(
@@ -226,7 +226,7 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
             b"No valid color specified?\x00" as *const u8 as *const i8,
         );
     } else {
-        pdf_doc_set_bgcolor(Some(&colorspec));
+        pdf_doc_set_bgcolor(colorspec.as_ref());
     }
     error
 }

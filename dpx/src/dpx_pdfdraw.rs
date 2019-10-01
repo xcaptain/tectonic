@@ -30,7 +30,7 @@
 
 use crate::warn;
 
-use super::dpx_pdfcolor::{ColorspaceType, pdf_color};
+use super::dpx_pdfcolor::{PdfColor, BLACK};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_get_param, pdf_dev_reset_fonts, pdf_sprint_coord, pdf_sprint_length,
     pdf_sprint_matrix, pdf_sprint_rect,
@@ -50,8 +50,8 @@ use super::dpx_pdfdev::{pdf_coord, pdf_rect, pdf_tmatrix};
 pub struct pdf_gstate {
     pub cp: pdf_coord,
     pub matrix: pdf_tmatrix,
-    pub strokecolor: pdf_color,
-    pub fillcolor: pdf_color,
+    pub strokecolor: PdfColor,
+    pub fillcolor: PdfColor,
     pub linedash: LineDash,
     pub linewidth: f64,
     pub linecap: i32,
@@ -734,8 +734,8 @@ impl pdf_gstate {
         Self {
             cp: pdf_coord::zero(),
             matrix: pdf_tmatrix::identity(),
-            strokecolor: pdf_color::gray(0.).unwrap(),
-            fillcolor: pdf_color::gray(0.).unwrap(),
+            strokecolor: BLACK,
+            fillcolor: BLACK,
             linedash: LineDash::default(),
             linecap: 0,  // TODO make enum
             linejoin: 0, // TODO make enum
@@ -875,7 +875,7 @@ pub unsafe extern "C" fn pdf_dev_currentmatrix(M: &mut pdf_tmatrix) -> i32 {
  *   the color is the same as the current graphics state color
  */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut force: i32) {
+pub unsafe extern "C" fn pdf_dev_set_color(color: &PdfColor, mut mask: i8, mut force: i32) {
     let mut stack = unsafe { &mut gs_stack };
     let mut gs = stack.top();
     let current = if mask as i32 != 0 {
@@ -883,7 +883,6 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
     } else {
         &mut gs.strokecolor
     };
-    assert!(color.is_valid());
     if pdf_dev_get_param(2) == 0 || (force == 0 && color == current) {
         /* If "color" is already the current color, then do nothing
          * unless a color operator is forced
@@ -894,24 +893,20 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
     let mut len = color.to_string(fmt_buf.as_mut_ptr(), mask);
     fmt_buf[len] = b' ';
     len += 1;
-    match color.colorspace_type() {
-        ColorspaceType::Rgb => {
-            let fresh41 = len;
-            len = len + 1;
-            fmt_buf[fresh41 as usize] = ('R' as i32 | mask as i32) as u8;
-            let fresh42 = len;
-            len = len + 1;
-            fmt_buf[fresh42 as usize] = ('G' as i32 | mask as i32) as u8
+    match color {
+        PdfColor::Rgb(..) => {
+            fmt_buf[len] = b'R' | mask as u8;
+            len += 1;
+            fmt_buf[len] = b'G' | mask as u8;
+            len += 1;
         }
-        ColorspaceType::Cmyk => {
-            let fresh43 = len;
-            len = len + 1;
-            fmt_buf[fresh43 as usize] = ('K' as i32 | mask as i32) as u8
+        PdfColor::Cmyk(..) => {
+            fmt_buf[len] = b'K' | mask as u8;
+            len += 1;
         }
-        ColorspaceType::Gray => {
-            let fresh44 = len;
-            len = len + 1;
-            fmt_buf[fresh44 as usize] = ('G' as i32 | mask as i32) as u8
+        PdfColor::Gray(..) => {
+            fmt_buf[len] = b'G' | mask as u8;
+            len += 1;
         }
         _ => {}
     }
