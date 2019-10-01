@@ -30,7 +30,7 @@
 
 use crate::warn;
 
-use super::dpx_pdfcolor::{pdf_color_compare, Colorspace};
+use super::dpx_pdfcolor::{pdf_color_compare, ColorspaceType};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_get_param, pdf_dev_reset_fonts, pdf_sprint_coord, pdf_sprint_length,
     pdf_sprint_matrix, pdf_sprint_rect,
@@ -896,9 +896,9 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
     let mut len = color.to_string(fmt_buf.as_mut_ptr() as *mut i8, mask);
     let fresh40 = len;
     len = len + 1;
-    fmt_buf[fresh40 as usize] = ' ' as i32 as u8;
-    match color.colorspace() {
-        Colorspace::Rgb => {
+    fmt_buf[fresh40 as usize] = ' ' as i32 as i8;
+    match color.colorspace_type() {
+        ColorspaceType::Rgb => {
             let fresh41 = len;
             len = len + 1;
             fmt_buf[fresh41 as usize] = ('R' as i32 | mask as i32) as u8;
@@ -906,12 +906,12 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
             len = len + 1;
             fmt_buf[fresh42 as usize] = ('G' as i32 | mask as i32) as u8
         }
-        Colorspace::Cmyk => {
+        ColorspaceType::Cmyk => {
             let fresh43 = len;
             len = len + 1;
             fmt_buf[fresh43 as usize] = ('K' as i32 | mask as i32) as u8
         }
-        Colorspace::Gray => {
+        ColorspaceType::Gray => {
             let fresh44 = len;
             len = len + 1;
             fmt_buf[fresh44 as usize] = ('G' as i32 | mask as i32) as u8
