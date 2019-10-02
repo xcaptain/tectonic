@@ -24,9 +24,16 @@ macro_rules! info(
         use std::io::Write;
         if !(unsafe{_dpx_quietness} > 0) {
             _dpx_ensure_output_handle();
-            _dpx_message_handle.as_mut().unwrap().write_fmt(format_args!($($arg)*)).unwrap();
+            write!(_dpx_message_handle.as_mut().unwrap(), $($arg)*).unwrap();
             unsafe{_last_message_type = DPX_MESG_INFO;}
         }
+    }};
+);
+
+#[macro_export]
+macro_rules! spc_warn(
+    ($spe:ident, $($arg:tt)*) => {{
+        warn!($($arg)*);
     }};
 );
 
@@ -49,8 +56,7 @@ macro_rules! warn(
                 writeln!(handle).unwrap();
             }
             write!(handle, "warning: ").unwrap();
-            handle.write_fmt(format_args!($($arg)*)).unwrap();
-            writeln!(handle).unwrap();
+            writeln!(handle, $($arg)*).unwrap();
             unsafe{_last_message_type = DPX_MESG_WARN;}
         }
     }};

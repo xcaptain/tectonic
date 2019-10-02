@@ -23,7 +23,8 @@
     unused_mut
 )]
 
-use super::{spc_arg, spc_env, spc_handler, spc_warn};
+use crate::spc_warn;
+use super::{spc_arg, spc_env, spc_handler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfparse::skip_white;
 use crate::streq_ptr;
@@ -88,10 +89,7 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
             strlen(b"dvipdfmx:\x00" as *const u8 as *const i8),
         ) != 0
     {
-        spc_warn(
-            spe,
-            b"Not dvipdfmx: special???\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Not dvipdfmx: special???");
         return -1i32;
     }
     (*ap).curptr = (*ap)

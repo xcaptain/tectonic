@@ -116,18 +116,6 @@ static mut VERBOSE: i32 = 0i32;
 pub unsafe fn spc_set_verbose(mut level: i32) {
     VERBOSE = level;
 }
-pub unsafe extern "C" fn spc_warn(mut _spe: *mut spc_env, mut fmt: *const i8, mut args: ...) {
-    let mut ap: ::std::ffi::VaListImpl;
-    static mut BUF: [u8; 1024] = [0; 1024];
-    ap = args.clone();
-    vsnprintf(
-        BUF.as_mut_ptr() as *mut i8,
-        BUF.len() as _,
-        fmt,
-        ap.as_va_list(),
-    );
-    warn!("{}", CStr::from_bytes_with_nul(&BUF[..]).unwrap().display());
-}
 /* This is currently just to make other spc_xxx to not directly
  * call dvi_xxx.
  */

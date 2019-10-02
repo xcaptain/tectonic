@@ -298,21 +298,12 @@ unsafe extern "C" fn pdf_path__next_pe<'a>(
     return &mut pa.path[len - 1];
 }
 unsafe extern "C" fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> i32 {
-    let mut n = 0;
     for i in 0..pa.len() {
         let pe = &mut pa.path[i];
-        n = if pe.typ != PeType::TERMINATE {
-            pe.typ.n_pts()
-        } else {
-            0
-        };
-        loop {
-            let fresh8 = n;
-            n += 1;
-            if !(fresh8 > 0) {
-                break;
+        if pe.typ != PeType::TERMINATE {
+            for n in (0..pe.typ.n_pts()).rev() {
+                pdf_coord__transform(&mut pe.p[n], M);
             }
-            pdf_coord__transform(&mut pe.p[n], M);
         }
     }
     0i32
