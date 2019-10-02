@@ -30,10 +30,7 @@
 
 use crate::warn;
 
-use super::dpx_pdfcolor::{
-    pdf_color_compare, pdf_color_copycolor, pdf_color_graycolor_new, pdf_color_is_valid,
-    pdf_color_to_string, pdf_color_type,
-};
+use super::dpx_pdfcolor::{PdfColor, BLACK};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_get_param, pdf_dev_reset_fonts, pdf_sprint_coord, pdf_sprint_length,
     pdf_sprint_matrix, pdf_sprint_rect,
@@ -45,8 +42,6 @@ static mut gs_stack: Vec<pdf_gstate> = Vec::new();
 
 use crate::shims::sprintf;
 
-pub use super::dpx_pdfcolor::pdf_color;
-
 use super::dpx_pdfdev::{pdf_coord, pdf_rect, pdf_tmatrix};
 
 /* Graphics State */
@@ -55,8 +50,8 @@ use super::dpx_pdfdev::{pdf_coord, pdf_rect, pdf_tmatrix};
 pub struct pdf_gstate {
     pub cp: pdf_coord,
     pub matrix: pdf_tmatrix,
-    pub strokecolor: pdf_color,
-    pub fillcolor: pdf_color,
+    pub strokecolor: PdfColor,
+    pub fillcolor: PdfColor,
     pub linedash: LineDash,
     pub linewidth: f64,
     pub linecap: i32,
@@ -730,8 +725,8 @@ impl pdf_gstate {
         Self {
             cp: pdf_coord::zero(),
             matrix: pdf_tmatrix::identity(),
-            strokecolor: pdf_color_graycolor_new(0.).unwrap(),
-            fillcolor: pdf_color_graycolor_new(0.).unwrap(),
+            strokecolor: BLACK,
+            fillcolor: BLACK,
             linedash: LineDash::default(),
             linecap: 0,  // TODO make enum
             linejoin: 0, // TODO make enum
@@ -765,8 +760,8 @@ unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
     gs1.linewidth = gs2.linewidth;
     gs1.miterlimit = gs2.miterlimit;
     gs1.flatness = gs2.flatness;
-    pdf_color_copycolor(&mut gs1.fillcolor, &gs2.fillcolor);
-    pdf_color_copycolor(&mut gs1.strokecolor, &gs2.strokecolor);
+    gs1.fillcolor = gs2.fillcolor.clone();
+    gs1.strokecolor = gs2.strokecolor.clone();
     gs1.pt_fixee.x = gs2.pt_fixee.x;
     gs1.pt_fixee.y = gs2.pt_fixee.y;
 }
@@ -871,7 +866,7 @@ pub unsafe extern "C" fn pdf_dev_currentmatrix(M: &mut pdf_tmatrix) -> i32 {
  *   the color is the same as the current graphics state color
  */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut force: i32) {
+pub unsafe extern "C" fn pdf_dev_set_color(color: &PdfColor, mut mask: i8, mut force: i32) {
     let mut stack = unsafe { &mut gs_stack };
     let mut gs = stack.top();
     let current = if mask as i32 != 0 {
@@ -879,36 +874,35 @@ pub unsafe extern "C" fn pdf_dev_set_color(color: &pdf_color, mut mask: i8, mut 
     } else {
         &mut gs.strokecolor
     };
-    assert!(pdf_color_is_valid(color));
-    if !(pdf_dev_get_param(2i32) != 0 && (force != 0 || pdf_color_compare(color, current) != 0)) {
+    if pdf_dev_get_param(2) == 0 || (force == 0 && color == current) {
         /* If "color" is already the current color, then do nothing
          * unless a color operator is forced
          */
         return;
     } /* op: RG K G rg k g etc. */
     graphics_mode(); /* Init to avoid compiler warning */
-    let mut len = pdf_color_to_string(color, fmt_buf.as_mut_ptr(), mask);
+    let mut len = color.to_string(fmt_buf.as_mut_ptr(), mask);
     fmt_buf[len] = b' ';
     len += 1;
-    match pdf_color_type(color) {
-        -3 => {
+    match color {
+        PdfColor::Rgb(..) => {
             fmt_buf[len] = b'R' | mask as u8;
             len += 1;
             fmt_buf[len] = b'G' | mask as u8;
             len += 1;
         }
-        -4 => {
+        PdfColor::Cmyk(..) => {
             fmt_buf[len] = b'K' | mask as u8;
             len += 1;
         }
-        -1 => {
+        PdfColor::Gray(..) => {
             fmt_buf[len] = b'G' | mask as u8;
             len += 1;
         }
         _ => {}
     }
     pdf_doc_add_page_content(&fmt_buf[..len]);
-    pdf_color_copycolor(current, color);
+    *current = color.clone();
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_dev_concat(M: &pdf_tmatrix) -> i32 {

@@ -36,7 +36,7 @@ use super::{spc_arg, spc_env};
 
 use crate::dpx_dpxutil::{parse_c_ident, parse_c_string, parse_float_decimal};
 use crate::dpx_mem::renew;
-use crate::dpx_pdfcolor::{pdf_color_brighten_color, pdf_color_get_current};
+use crate::dpx_pdfcolor::pdf_color_get_current;
 use crate::dpx_pdfdev::pdf_dev_scale;
 use crate::dpx_pdfdoc::{
     pdf_doc_add_page_content, pdf_doc_add_page_resource, pdf_doc_current_page_resources,
@@ -79,7 +79,7 @@ pub struct spc_tpic_ {
 
 use crate::dpx_pdfdev::pdf_coord;
 
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 use crate::dpx_pdfdev::pdf_tmatrix;
 
@@ -191,14 +191,9 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
         pdf_doc_add_page_content(&buf[..len]);
         /* op: gs */
     } /* get stroking and fill colors */
-    let mut new_fc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
     let (_sc, fc) = pdf_color_get_current();
-    pdf_color_brighten_color(&mut new_fc, fc, g);
-    pdf_dev_set_color(&mut new_fc, 0x20_i8, 0i32);
+    let new_fc = fc.clone().brightened(g);
+    pdf_dev_set_color(&new_fc, 0x20, 0);
     0i32
 }
 unsafe extern "C" fn set_styles(

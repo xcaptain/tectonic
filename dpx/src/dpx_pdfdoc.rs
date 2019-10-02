@@ -41,10 +41,7 @@ use super::dpx_dpxutil::{
 use super::dpx_dvipdfmx::is_xdv;
 use super::dpx_jpegimage::check_for_jpeg;
 use super::dpx_mem::{new, renew};
-use super::dpx_pdfcolor::{
-    pdf_close_colors, pdf_color_copycolor, pdf_color_graycolor, pdf_color_is_white,
-    pdf_color_set_verbose, pdf_init_colors,
-};
+use super::dpx_pdfcolor::{pdf_close_colors, pdf_color_set_verbose, pdf_init_colors, WHITE};
 use super::dpx_pdfdev::{
     pdf_dev_bop, pdf_dev_eop, pdf_dev_get_coord, pdf_dev_get_param, pdf_dev_reset_color,
     pdf_dev_reset_fonts,
@@ -85,7 +82,7 @@ use crate::TTInputFormat;
 
 use bridge::rust_input_handle_t;
 
-pub use super::dpx_pdfcolor::pdf_color;
+pub use super::dpx_pdfcolor::PdfColor;
 
 use super::dpx_pdfdev::{pdf_rect, pdf_tmatrix};
 #[derive(Copy, Clone)]
@@ -2518,23 +2515,18 @@ unsafe extern "C" fn pdf_doc_finish_page(mut p: *mut pdf_doc) {
     }
     (*p).pages.num_entries = (*p).pages.num_entries.wrapping_add(1);
 }
-static mut bgcolor: pdf_color = {
-    let mut init = pdf_color {
-        num_components: 1i32,
-        spot_color_name: None,
-        values: [1., 0., 0., 0.],
-    };
-    init
-};
+
+static mut bgcolor: PdfColor = WHITE;
+
 /* Manual thumbnail */
 /* Similar to bop_content */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_doc_set_bgcolor(color: Option<&pdf_color>) {
-    if let Some(c) = color {
-        pdf_color_copycolor(&mut bgcolor, c);
+pub unsafe extern "C" fn pdf_doc_set_bgcolor(color: Option<&PdfColor>) {
+    bgcolor = if let Some(c) = color {
+        c.clone()
     } else {
         /* as clear... */
-        pdf_color_graycolor(&mut bgcolor, 1.0f64);
+        WHITE
     };
 }
 unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
@@ -2543,7 +2535,7 @@ unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
     let mut cm: i32 = 0;
     let mut saved_content: *mut pdf_obj = 0 as *mut pdf_obj;
     cm = pdf_dev_get_param(2i32);
-    if cm == 0 || pdf_color_is_white(&mut bgcolor) as i32 != 0 {
+    if cm == 0 || bgcolor.is_white() {
         return;
     }
     pdf_doc_get_mediabox(pdf_doc_current_page_number() as u32, &mut r);
@@ -2555,7 +2547,7 @@ unsafe extern "C" fn doc_fill_page_background(mut p: *mut pdf_doc) {
     saved_content = (*currentpage).contents;
     (*currentpage).contents = (*currentpage).background;
     pdf_dev_gsave();
-    pdf_dev_set_color(&mut bgcolor, 0x20_i8, 0i32);
+    pdf_dev_set_color(&bgcolor, 0x20, 0);
     pdf_dev_rectfill(r.llx, r.lly, r.urx - r.llx, r.ury - r.lly);
     pdf_dev_grestore();
     (*currentpage).contents = saved_content;

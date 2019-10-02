@@ -48,9 +48,7 @@ use crate::dpx_fontmap::{
 };
 use crate::dpx_mem::new;
 use crate::dpx_mfileio::work_buffer_u8 as WORK_BUFFER;
-use crate::dpx_pdfcolor::{
-    pdf_color_copycolor, pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set,
-};
+use crate::dpx_pdfcolor::{pdf_color_get_current, pdf_color_pop, pdf_color_push, pdf_color_set};
 use crate::dpx_pdfdev::pdf_sprint_matrix;
 use crate::dpx_pdfdev::{
     pdf_dev_get_coord, pdf_dev_pop_coord, pdf_dev_push_coord, pdf_dev_reset_color,
@@ -119,7 +117,7 @@ use crate::dpx_dpxutil::ht_table;
 pub type hval_free_func = Option<unsafe extern "C" fn(_: *mut libc::c_void) -> ()>;
 
 use crate::dpx_fontmap::fontmap_rec;
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 use crate::dpx_pdfximage::load_options;
 
@@ -764,63 +762,46 @@ unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mu
 }
 /* Color:.... */
 unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut fc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let mut sc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
     let (psc, pfc) = pdf_color_get_current();
-    let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
-    if error == 0 {
-        if (*ap).curptr < (*ap).endptr {
-            error = spc_util_read_pdfcolor(spe, &mut sc, ap, Some(psc))
+    let fc = spc_util_read_pdfcolor(spe, ap, Some(pfc));
+    let mut sc = Err(());
+    if let Ok(ref fc) = fc {
+        sc = if (*ap).curptr < (*ap).endptr {
+            spc_util_read_pdfcolor(spe, ap, Some(psc))
         } else {
-            pdf_color_copycolor(&mut sc, &mut fc);
-        }
+            Ok(fc.clone())
+        };
     }
-    if error != 0 {
-        spc_warn!(spe, "Invalid color specification?");
+    if let (Ok(mut sc), Ok(fc)) = (sc, fc) {
+        pdf_color_push(&mut sc, &fc);
+        0
     } else {
-        pdf_color_push(&mut sc, &mut fc);
-        /* save currentcolor */
+        spc_warn!(spe, "Invalid color specification?");
+        -1
     }
-    error
 }
 /*
  * This special changes the current color without clearing the color stack.
  * It therefore differs from "color rgb 1 0 0".
  */
 unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
-    let mut fc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let mut sc: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
     let (psc, pfc) = pdf_color_get_current();
-    let mut error = spc_util_read_pdfcolor(spe, &mut fc, ap, Some(pfc));
-    if error == 0 {
-        if (*ap).curptr < (*ap).endptr {
-            error = spc_util_read_pdfcolor(spe, &mut sc, ap, Some(psc))
+    let fc = spc_util_read_pdfcolor(spe, ap, Some(pfc));
+    let mut sc = Err(());
+    if let Ok(ref fc) = fc {
+        sc = if (*ap).curptr < (*ap).endptr {
+            spc_util_read_pdfcolor(spe, ap, Some(psc))
         } else {
-            pdf_color_copycolor(&mut sc, &mut fc);
-        }
+            Ok(fc.clone())
+        };
     }
-    if error != 0 {
-        spc_warn!(spe, "Invalid color specification?");
-    } else {
+    if let (Ok(mut fc), Ok(mut sc)) = (fc, sc) {
         pdf_color_set(&mut sc, &mut fc);
+        0
+    } else {
+        spc_warn!(spe, "Invalid color specification?");
+        -1
     }
-    error
 }
 unsafe extern "C" fn spc_handler_pdfm_ecolor(
     mut _spe: *mut spc_env,
@@ -1747,18 +1728,16 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_pdfcolor(spe, &mut colorspec, args, None);
-    if error != 0 {
-        spc_warn!(spe, "No valid color specified?");
-    } else {
-        pdf_doc_set_bgcolor(Some(&colorspec));
+    match spc_util_read_pdfcolor(spe, args, None) {
+        Ok(colorspec) => {
+            pdf_doc_set_bgcolor(Some(&colorspec));
+            0
+        },
+        Err(_) => {
+            spc_warn!(spe, "No valid color specified?");
+            -1
+        }
     }
-    error
 }
 unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;

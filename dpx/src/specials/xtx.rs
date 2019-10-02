@@ -63,7 +63,7 @@ use crate::dpx_pdfdev::pdf_coord;
 
 use crate::dpx_pdfdev::pdf_tmatrix;
 
-pub use crate::dpx_pdfcolor::pdf_color;
+pub use crate::dpx_pdfcolor::PdfColor;
 
 /* tectonic/core-strutils.h: miscellaneous C string utilities
    Copyright 2016-2018 the Tectonic Project
@@ -218,19 +218,15 @@ unsafe extern "C" fn spc_handler_xtx_backgroundcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 0i32);
-    if error != 0 {
-        spc_warn!(spe, "No valid color specified?");
-    } else {
+    if let Ok(colorspec) = spc_util_read_colorspec(spe, args, false) {
         pdf_doc_set_bgcolor(Some(&colorspec));
+        1
+    } else {
+        spc_warn!(spe, "No valid color specified?");
+        -1
     }
-    error
 }
+
 /* FIXME: xdv2pdf's x:fontmapline and x:fontmapfile may have slightly different syntax/semantics */
 unsafe extern "C" fn spc_handler_xtx_fontmapline(
     mut spe: *mut spc_env,

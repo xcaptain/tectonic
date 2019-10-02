@@ -25,31 +25,19 @@
     unused_mut
 )]
 
-use std::ffi::CStr;
 use crate::spc_warn;
 use crate::DisplayExt;
-
 use super::{spc_arg, spc_env};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
-pub use crate::dpx_pdfcolor::pdf_color;
-use crate::dpx_pdfcolor::{
-    pdf_color_cmykcolor, pdf_color_copycolor, pdf_color_graycolor, pdf_color_rgbcolor,
-    pdf_color_spotcolor,
-};
+use crate::dpx_pdfcolor::PdfColor;
 use crate::dpx_pdfdev::{pdf_tmatrix, transform_info};
 use crate::dpx_pdfparse::skip_white;
 use crate::mfree;
 use crate::streq_ptr;
 use libc::{atof, free, memcmp, strcmp, strlen};
 use crate::shims::strcasecmp;
+use std::ffi::CStr;
 
-/* Color names */
-#[derive(Clone)]
-#[repr(C)]
-pub struct colordef_ {
-    pub key: *const i8,
-    pub color: pdf_color,
-}
 /* tectonic/core-memory.h: basic dynamic memory helpers
    Copyright 2016-2018 the Tectonic Project
    Licensed under the MIT License.
@@ -81,7 +69,7 @@ pub unsafe extern "C" fn spc_util_read_numbers(
     }
     count
 }
-unsafe extern "C" fn rgb_color_from_hsv(color: &mut pdf_color, mut h: f64, mut s: f64, mut v: f64) {
+unsafe extern "C" fn rgb_color_from_hsv(mut h: f64, mut s: f64, mut v: f64) -> PdfColor {
     let mut b = v;
     let mut g = b;
     let mut r = g;
@@ -131,19 +119,19 @@ unsafe extern "C" fn rgb_color_from_hsv(color: &mut pdf_color, mut h: f64, mut s
             _ => {}
         }
     }
-    pdf_color_rgbcolor(color, r, g, b);
+    PdfColor::from_rgb(r, g, b).unwrap()
 }
 unsafe extern "C" fn spc_read_color_color(
     mut spe: *mut spc_env,
-    colorspec: &mut pdf_color,
     mut ap: *mut spc_arg,
-) -> i32 {
+) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4];
-    let mut error: i32 = 0i32;
-    let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
+    let mut nc: i32 = 0;
+    let mut result: Result<PdfColor, ()>;
+    let mut q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
         spc_warn!(spe, "No valid color specified?");
-        return -1i32;
+        return Err(());
     }
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if streq_ptr(q, b"rgb\x00" as *const u8 as *const i8) {
@@ -151,65 +139,82 @@ unsafe extern "C" fn spc_read_color_color(
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
             spc_warn!(spe, "Invalid value for RGB color specification.");
-            error = -1i32
+            result = Err(())
         } else {
-            pdf_color_rgbcolor(colorspec, cv[0], cv[1], cv[2]);
+            result = PdfColor::from_rgb(cv[0], cv[1], cv[2])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
         if nc != 4i32 {
             spc_warn!(spe, "Invalid value for CMYK color specification.");
-            error = -1i32
+            result = Err(())
         } else {
-            pdf_color_cmykcolor(colorspec, cv[0], cv[1], cv[2], cv[3]);
+            result = PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
             spc_warn!(spe, "Invalid value for gray color specification.");
-            error = -1i32
+            result = Err(())
         } else {
-            pdf_color_graycolor(colorspec, cv[0]);
+            result = PdfColor::from_gray(cv[0])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"spot\x00" as *const u8 as *const i8) {
         /* Handle spot colors */
         let mut color_name: *mut i8 = parse_c_ident(&mut (*ap).curptr, (*ap).endptr); /* Must be a "named" color */
         if color_name.is_null() {
             spc_warn!(spe, "No valid spot color name specified?");
-            return -1i32;
+            return Err(());
         }
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 1i32, ap);
         if nc != 1i32 {
             spc_warn!(spe, "Invalid value for spot color specification.");
-            error = -1i32;
+            result = Err(());
             free(color_name as *mut libc::c_void);
         } else {
-            pdf_color_spotcolor(colorspec, color_name, cv[0]);
+            result = PdfColor::from_spot(CStr::from_ptr(color_name).to_owned(), cv[0])
+                .map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"hsb\x00" as *const u8 as *const i8) {
         let nc = spc_util_read_numbers(cv.as_mut_ptr(), 3i32, ap);
         if nc != 3i32 {
             spc_warn!(spe, "Invalid value for HSB color specification.");
-            error = -1i32
+            result = Err(());
         } else {
-            rgb_color_from_hsv(colorspec, cv[0], cv[1], cv[2]);
-            spc_warn!(
-                spe,
-                "HSB color converted to RGB: hsb: <{}, {}, {}> ==> rgb: <{}, {}, {}>",
-                cv[0],
-                cv[1],
-                cv[2],
-                (*colorspec).values[0],
-                (*colorspec).values[1],
-                (*colorspec).values[2],
-            );
+            let color = rgb_color_from_hsv(cv[0], cv[1], cv[2]);
+            if let &PdfColor::Rgb(r, g, b) = &color {
+                spc_warn!(
+                    spe,
+                    "HSB color converted to RGB: hsb: <{}, {}, {}> ==> rgb: <{}, {}, {}>",
+                    cv[0],
+                    cv[1],
+                    cv[2],
+                    r,
+                    g,
+                    b
+                );
+            } else {
+                unreachable!();
+            }
+            result = Ok(color);
         }
     } else {
-        error = pdf_color_namedcolor(colorspec, q);
-        if error != 0 {
+        result = if let Ok(name) = CStr::from_ptr(q).to_str() {
+            if let Some(color) = pdf_color_namedcolor(name) {
+                Ok(color)
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
+        };
+        if result.is_err() {
             spc_warn!(
                 spe,
                 "Unrecognized color name: {}",
@@ -218,7 +223,7 @@ unsafe extern "C" fn spc_read_color_color(
         }
     }
     free(q as *mut libc::c_void);
-    error
+    result
 }
 /* Argument for this is PDF_Number or PDF_Array.
  * But we ignore that since we don't want to add
@@ -228,38 +233,40 @@ unsafe extern "C" fn spc_read_color_color(
  */
 unsafe extern "C" fn spc_read_color_pdf(
     mut spe: *mut spc_env,
-    colorspec: &mut pdf_color,
     mut ap: *mut spc_arg,
-) -> i32 {
+) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
-    let mut isarry: i32 = 0i32;
-    let mut error: i32 = 0i32;
+    let mut isarry: bool = false;
+    let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if *(*ap).curptr.offset(0) as i32 == '[' as i32 {
         (*ap).curptr = (*ap).curptr.offset(1);
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
-        isarry = 1i32
+        isarry = true
     }
     let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
-    match nc {
+    let mut result = match nc {
         1 => {
-            pdf_color_graycolor(colorspec, cv[0]);
+            PdfColor::from_gray(cv[0]).map_err(|err| err.warn())
         }
         3 => {
-            pdf_color_rgbcolor(colorspec, cv[0], cv[1], cv[2]);
+            PdfColor::from_rgb(cv[0], cv[1], cv[2]).map_err(|err| err.warn())
         }
         4 => {
-            pdf_color_cmykcolor(colorspec, cv[0], cv[1], cv[2], cv[3]);
+            PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).map_err(|err| err.warn())
         }
         _ => {
             /* Try to read the color names defined in dvipsname.def */
             let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
             if q.is_null() {
                 spc_warn!(spe, "No valid color specified?");
-                return -1i32;
+                return Err(());
             }
-            error = pdf_color_namedcolor(colorspec, q);
-            if error != 0 {
+            let mut result = CStr::from_ptr(q).to_str()
+                .ok()
+                .and_then(|name| pdf_color_namedcolor(name))
+                .ok_or(());
+            if result.is_err() {
                 spc_warn!(
                     spe,
                     "Unrecognized color name: {}, keep the current color",
@@ -267,58 +274,53 @@ unsafe extern "C" fn spc_read_color_pdf(
                 );
             }
             free(q as *mut libc::c_void);
+            result
         }
-    }
-    if isarry != 0 {
+    };
+    if isarry {
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         if (*ap).curptr >= (*ap).endptr || *(*ap).curptr.offset(0) as i32 != ']' as i32 {
             spc_warn!(spe, "Unbalanced \'[\' and \']\' in color specification.");
-            error = -1i32
+            result = Err(())
         } else {
             (*ap).curptr = (*ap).curptr.offset(1)
         }
     }
-    error
+    result
 }
 /* This is for reading *single* color specification. */
 #[no_mangle]
 pub unsafe extern "C" fn spc_util_read_colorspec(
     mut spe: *mut spc_env,
-    colorspec: &mut pdf_color,
     mut ap: *mut spc_arg,
-    mut syntax: i32,
-) -> i32 {
+    mut syntax: bool,
+) -> Result<PdfColor, ()> {
     assert!(!spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
-        return -1i32;
-    }
-    if syntax != 0 {
-        return spc_read_color_color(spe, colorspec, ap);
+        Err(())
+    } else if syntax {
+        spc_read_color_color(spe, ap)
     } else {
-        return spc_read_color_pdf(spe, colorspec, ap);
-    };
+        spc_read_color_pdf(spe, ap)
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_util_read_pdfcolor(
     mut spe: *mut spc_env,
-    colorspec: &mut pdf_color,
     mut ap: *mut spc_arg,
-    defaultcolor: Option<&pdf_color>,
-) -> i32 {
+    defaultcolor: Option<&PdfColor>,
+) -> Result<PdfColor, ()> {
     assert!(!spe.is_null() && !ap.is_null());
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
-        return -1i32;
+        Err(())
+    } else if let Some(c) = spc_read_color_pdf(spe, ap).ok()
+        .or_else(|| defaultcolor.cloned()) {
+        Ok(c)
+    } else {
+        Err(())
     }
-    let mut error = spc_read_color_pdf(spe, colorspec, ap);
-    if error < 0i32 {
-        if let Some(dc) = defaultcolor {
-            pdf_color_copycolor(colorspec, dc);
-            error = 0i32
-        }
-    }
-    error
 }
 /* This need to allow 'true' prefix for unit and
  * length value must be divided by current magnification.
@@ -970,986 +972,134 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
     }
     error
 }
-static mut COLORDEFS: [colordef_; 69] = [
-    {
-        let mut init = colordef_ {
-            key: b"GreenYellow\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.15f64, 0.00f64, 0.69f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Yellow\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.00f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Goldenrod\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.10f64, 0.84f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Dandelion\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.29f64, 0.84f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Apricot\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.32f64, 0.52f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Peach\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.50f64, 0.70f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Melon\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.46f64, 0.50f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"YellowOrange\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.42f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Orange\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.61f64, 0.87f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"BurntOrange\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.51f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Bittersweet\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.75f64, 1.00f64, 0.24f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RedOrange\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.77f64, 0.87f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Mahogany\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.85f64, 0.87f64, 0.35f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Maroon\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.87f64, 0.68f64, 0.32f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"BrickRed\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.89f64, 0.94f64, 0.28f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Red\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 1.00f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"OrangeRed\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 1.00f64, 0.50f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RubineRed\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 1.00f64, 0.13f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"WildStrawberry\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.96f64, 0.39f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Salmon\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.53f64, 0.38f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"CarnationPink\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.63f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Magenta\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 1.00f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"VioletRed\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.81f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Rhodamine\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.82f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Mulberry\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.34f64, 0.90f64, 0.00f64, 0.02f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RedViolet\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.07f64, 0.90f64, 0.00f64, 0.34f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Fuchsia\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.47f64, 0.91f64, 0.00f64, 0.08f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Lavender\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.48f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Thistle\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.12f64, 0.59f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Orchid\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.32f64, 0.64f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"DarkOrchid\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.40f64, 0.80f64, 0.20f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Purple\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.45f64, 0.86f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Plum\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.50f64, 1.00f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Violet\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.79f64, 0.88f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RoyalPurple\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.75f64, 0.90f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"BlueViolet\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.86f64, 0.91f64, 0.00f64, 0.04f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Periwinkle\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.57f64, 0.55f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"CadetBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.62f64, 0.57f64, 0.23f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"CornflowerBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.65f64, 0.13f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"MidnightBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.98f64, 0.13f64, 0.00f64, 0.43f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"NavyBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.94f64, 0.54f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RoyalBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [1.00f64, 0.50f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Blue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [1.00f64, 1.00f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Cerulean\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.94f64, 0.11f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Cyan\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [1.00f64, 0.00f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"ProcessBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.96f64, 0.00f64, 0.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"SkyBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.62f64, 0.00f64, 0.12f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Turquoise\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.85f64, 0.00f64, 0.20f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"TealBlue\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.86f64, 0.00f64, 0.34f64, 0.02f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Aquamarine\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.82f64, 0.00f64, 0.30f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"BlueGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.85f64, 0.00f64, 0.33f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Emerald\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [1.00f64, 0.00f64, 0.50f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"JungleGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.99f64, 0.00f64, 0.52f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"SeaGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.69f64, 0.00f64, 0.50f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Green\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [1.00f64, 0.00f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"ForestGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.91f64, 0.00f64, 0.88f64, 0.12f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"PineGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.92f64, 0.00f64, 0.59f64, 0.25f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"LimeGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.50f64, 0.00f64, 1.00f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"YellowGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.44f64, 0.00f64, 0.74f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"SpringGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.26f64, 0.00f64, 0.76f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"OliveGreen\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.64f64, 0.00f64, 0.95f64, 0.40f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"RawSienna\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.72f64, 1.00f64, 0.45f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Sepia\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.83f64, 1.00f64, 0.70f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Brown\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.00f64, 0.81f64, 1.00f64, 0.60f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Tan\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 4i32,
-                    spot_color_name: None,
-                    values: [0.14f64, 0.42f64, 0.56f64, 0.00f64],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Gray\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 1i32,
-                    spot_color_name: None,
-                    values: [0.5f64, 0., 0., 0.],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"Black\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 1i32,
-                    spot_color_name: None,
-                    values: [0.0f64, 0., 0., 0.],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: b"White\x00" as *const u8 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 1i32,
-                    spot_color_name: None,
-                    values: [1.0f64, 0., 0., 0.],
-                };
-                init
-            },
-        };
-        init
-    },
-    {
-        let mut init = colordef_ {
-            key: 0 as *const i8,
-            color: {
-                let mut init = pdf_color {
-                    num_components: 0i32,
-                    spot_color_name: None,
-                    values: [0.0f64, 0., 0., 0.],
-                };
-                init
-            },
-        };
-        init
-    },
-];
-/* From pdfcolor.c */
-unsafe extern "C" fn pdf_color_namedcolor(color: &mut pdf_color, mut name: *const i8) -> i32 {
-    let mut i = 0;
-    while !COLORDEFS[i].key.is_null() {
-        if streq_ptr(COLORDEFS[i].key, name) {
-            pdf_color_copycolor(
-                color,
-                &mut (*COLORDEFS.as_mut_ptr().offset(i as isize)).color,
-            );
-            return 0i32;
-        }
-        i += 1
+
+/* Color names */
+struct Colordef {
+    key: &'static str,
+    color: PdfColor,
+}
+
+impl Colordef {
+    const fn new(key: &'static str, color: PdfColor) -> Self {
+        Colordef { key, color }
     }
-    -1i32
+}
+
+const colordefs: [Colordef; 68] = [
+    Colordef::new(
+        "GreenYellow",
+        PdfColor::Cmyk(0.15, 0.0, 0.69, 0.0)
+    ),
+    Colordef::new("Yellow", PdfColor::Cmyk(0.0, 0.0, 1.0, 0.0)),
+    Colordef::new("Goldenrod", PdfColor::Cmyk(0.0, 0.1, 0.84, 0.0)),
+    Colordef::new("Dandelion", PdfColor::Cmyk(0.0, 0.29, 0.84, 0.0)),
+    Colordef::new("Apricot", PdfColor::Cmyk(0.0, 0.32, 0.52, 0.0)),
+    Colordef::new("Peach", PdfColor::Cmyk(0.0, 0.5, 0.7, 0.0)),
+    Colordef::new("Melon", PdfColor::Cmyk(0.0, 0.46, 0.5, 0.0)),
+    Colordef::new(
+        "YellowOrange",
+        PdfColor::Cmyk(0.0, 0.42, 1.0, 0.0)
+    ),
+    Colordef::new("Orange", PdfColor::Cmyk(0.0, 0.61, 0.87, 0.0)),
+    Colordef::new("BurntOrange", PdfColor::Cmyk(0.0, 0.51, 1.0, 0.0)),
+    Colordef::new(
+        "Bittersweet",
+        PdfColor::Cmyk(0.0, 0.75, 1.0, 0.24)
+    ),
+    Colordef::new("RedOrange", PdfColor::Cmyk(0.0, 0.77, 0.87, 0.0)),
+    Colordef::new("Mahogany", PdfColor::Cmyk(0.0, 0.85, 0.87, 0.35)),
+    Colordef::new("Maroon", PdfColor::Cmyk(0.0, 0.87, 0.68, 0.32)),
+    Colordef::new("BrickRed", PdfColor::Cmyk(0.0, 0.89, 0.94, 0.28)),
+    Colordef::new("Red", PdfColor::Cmyk(0.0, 1.0, 1.0, 0.0)),
+    Colordef::new("OrangeRed", PdfColor::Cmyk(0.0, 1.0, 0.5, 0.0)),
+    Colordef::new("RubineRed", PdfColor::Cmyk(0.0, 1.0, 0.13, 0.0)),
+    Colordef::new(
+        "WildStrawberry",
+        PdfColor::Cmyk(0.0, 0.96, 0.39, 0.0)
+    ),
+    Colordef::new("Salmon", PdfColor::Cmyk(0.0, 0.53, 0.38, 0.0)),
+    Colordef::new(
+        "CarnationPink",
+        PdfColor::Cmyk(0.0, 0.63, 0.0, 0.0)
+    ),
+    Colordef::new("Magenta", PdfColor::Cmyk(0.0, 1.0, 0.0, 0.0)),
+    Colordef::new("VioletRed", PdfColor::Cmyk(0.0, 0.81, 0.0, 0.0)),
+    Colordef::new("Rhodamine", PdfColor::Cmyk(0.0, 0.82, 0.0, 0.0)),
+    Colordef::new("Mulberry", PdfColor::Cmyk(0.34, 0.90, 0.0, 0.02)),
+    Colordef::new("RedViolet", PdfColor::Cmyk(0.07, 0.9, 0.0, 0.34)),
+    Colordef::new("Fuchsia", PdfColor::Cmyk(0.47, 0.91, 0.0, 0.08)),
+    Colordef::new("Lavender", PdfColor::Cmyk(0.0, 0.48, 0.0, 0.0)),
+    Colordef::new("Thistle", PdfColor::Cmyk(0.12, 0.59, 0.0, 0.0)),
+    Colordef::new("Orchid", PdfColor::Cmyk(0.32, 0.64, 0.0, 0.0)),
+    Colordef::new("DarkOrchid", PdfColor::Cmyk(0.4, 0.8, 0.2, 0.0)),
+    Colordef::new("Purple", PdfColor::Cmyk(0.45, 0.86, 0.0, 0.0)),
+    Colordef::new("Plum", PdfColor::Cmyk(0.50, 1.0, 0.0, 0.0)),
+    Colordef::new("Violet", PdfColor::Cmyk(0.79, 0.88, 0.0, 0.0)),
+    Colordef::new("RoyalPurple", PdfColor::Cmyk(0.75, 0.9, 0.0, 0.0)),
+    Colordef::new(
+        "BlueViolet",
+        PdfColor::Cmyk(0.86, 0.91, 0.0, 0.04)
+    ),
+    Colordef::new("Periwinkle", PdfColor::Cmyk(0.57, 0.55, 0.0, 0.0)),
+    Colordef::new("CadetBlue", PdfColor::Cmyk(0.62, 0.57, 0.23, 0.0)),
+    Colordef::new(
+        "CornflowerBlue",
+        PdfColor::Cmyk(0.65, 0.13, 0.0, 0.0)
+    ),
+    Colordef::new(
+        "MidnightBlue",
+        PdfColor::Cmyk(0.98, 0.13, 0.0, 0.43)
+    ),
+    Colordef::new("NavyBlue", PdfColor::Cmyk(0.94, 0.54, 0.0, 0.0)),
+    Colordef::new("RoyalBlue", PdfColor::Cmyk(1.0, 0.5, 0.0, 0.0)),
+    Colordef::new("Blue", PdfColor::Cmyk(1.0, 1.0, 0.0, 0.0)),
+    Colordef::new("Cerulean", PdfColor::Cmyk(0.94, 0.11, 0.0, 0.0)),
+    Colordef::new("Cyan", PdfColor::Cmyk(1.0, 0.0, 0.0, 0.0)),
+    Colordef::new("ProcessBlue", PdfColor::Cmyk(0.96, 0.0, 0.0, 0.0)),
+    Colordef::new("SkyBlue", PdfColor::Cmyk(0.62, 0.0, 0.12, 0.0)),
+    Colordef::new("Turquoise", PdfColor::Cmyk(0.85, 0.0, 0.20, 0.0)),
+    Colordef::new("TealBlue", PdfColor::Cmyk(0.86, 0.0, 0.34, 0.02)),
+    Colordef::new("Aquamarine", PdfColor::Cmyk(0.82, 0.0, 0.3, 0.0)),
+    Colordef::new("BlueGreen", PdfColor::Cmyk(0.85, 0.0, 0.33, 0.0)),
+    Colordef::new("Emerald", PdfColor::Cmyk(1.0, 0.0, 0.5, 0.0)),
+    Colordef::new(
+        "JungleGreen",
+        PdfColor::Cmyk(0.99, 0.0, 0.52, 0.0)
+    ),
+    Colordef::new("SeaGreen", PdfColor::Cmyk(0.69, 0.0, 0.5, 0.0)),
+    Colordef::new("Green", PdfColor::Cmyk(1.0, 0.0, 1.0, 0.00f64)),
+    Colordef::new(
+        "ForestGreen",
+        PdfColor::Cmyk(0.91, 0.0, 0.88, 0.12)
+    ),
+    Colordef::new("PineGreen", PdfColor::Cmyk(0.92, 0.0, 0.59, 0.25)),
+    Colordef::new("LimeGreen", PdfColor::Cmyk(0.5, 0.0, 1.0, 0.0)),
+    Colordef::new(
+        "YellowGreen",
+        PdfColor::Cmyk(0.44, 0.0, 0.74, 0.0)
+    ),
+    Colordef::new(
+        "SpringGreen",
+        PdfColor::Cmyk(0.26, 0.0, 0.76, 0.0)
+    ),
+    Colordef::new(
+        "OliveGreen",
+        PdfColor::Cmyk(0.64, 0.0, 0.95, 0.40)
+    ),
+    Colordef::new("RawSienna", PdfColor::Cmyk(0.0, 0.72, 1.0, 0.45)),
+    Colordef::new("Sepia", PdfColor::Cmyk(0.0, 0.83, 1.0, 0.7)),
+    Colordef::new("Brown", PdfColor::Cmyk(0.0, 0.81, 1.0, 0.6)),
+    Colordef::new("Tan", PdfColor::Cmyk(0.14, 0.42, 0.56, 0.0)),
+    Colordef::new("Gray", PdfColor::Gray(0.5)),
+    Colordef::new("Black", PdfColor::Gray(0.0)),
+    Colordef::new("White", PdfColor::Gray(1.0))
+];
+
+/* From pdfcolor.c */
+unsafe extern "C" fn pdf_color_namedcolor(name: &str) -> Option<PdfColor> {
+    colordefs
+        .as_ref()
+        .iter()
+        .find(|&colordef| colordef.key == name)
+        .map(|colordef| colordef.color.clone())
 }

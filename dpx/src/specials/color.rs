@@ -28,7 +28,7 @@ use super::util::spc_util_read_colorspec;
 use super::{spc_arg, spc_env, spc_handler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfcolor::{
-    pdf_color, pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
+    pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
 };
 use crate::dpx_pdfdoc::pdf_doc_set_bgcolor;
 use crate::streq_ptr;
@@ -48,18 +48,15 @@ use libc::free;
  * implicitely.
  */
 unsafe extern "C" fn spc_handler_color_push(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut colorspec: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
-    if error == 0 {
+    if let Ok(mut colorspec) = spc_util_read_colorspec(spe, args, true) {
         let color_clone = colorspec.clone();
         pdf_color_push(&mut colorspec, &color_clone);
+        0
+    } else {
+        -1
     }
-    error
 }
+
 unsafe extern "C" fn spc_handler_color_pop(mut _spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     pdf_color_pop();
     0i32
@@ -71,30 +68,22 @@ unsafe extern "C" fn spc_handler_color_default(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
-    let mut colorspec: pdf_color = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
-    if error == 0 {
+    if let Ok(colorspec) = spc_util_read_colorspec(spe, args, true) {
         pdf_color_clear_stack();
         pdf_color_set(&colorspec, &colorspec);
+        0
+    }  else {
+        -1
     }
-    error
 }
 /* This is from color special? */
 unsafe extern "C" fn spc_handler_background(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
-    let mut colorspec = pdf_color {
-        num_components: 0,
-        spot_color_name: None,
-        values: [0.; 4],
-    };
-    let error = spc_util_read_colorspec(spe, &mut colorspec, args, 1i32);
-    if error == 0 {
+    if let Ok(colorspec) = spc_util_read_colorspec(spe, args, true) {
         pdf_doc_set_bgcolor(Some(&colorspec));
+        0
+    } else {
+        -1
     }
-    error
 }
 unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     let mut p: *const i8 = *pp;

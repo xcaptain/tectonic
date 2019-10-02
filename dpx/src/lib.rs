@@ -62,6 +62,10 @@ macro_rules! warn(
     }};
 );
 
+pub trait Warn<E>: Sized {
+
+}
+
 trait DisplayExt {
     type Adapter: core::fmt::Display;
     fn display(self) -> Self::Adapter;

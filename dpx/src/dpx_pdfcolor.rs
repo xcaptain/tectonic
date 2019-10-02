@@ -19,14 +19,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
-#![allow(
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
-    unused_mut
-)]
 
 use crate::DisplayExt;
 
@@ -44,28 +36,191 @@ use crate::{info, warn};
 use libc::{free, memcmp, memcpy, memset, strcmp, strcpy, strlen};
 use md5::{Digest, Md5};
 use std::slice::from_raw_parts;
+use std::error::Error;
+use std::fmt;
+use std::ffi::{CStr, CString};
 use crate::shims::sprintf;
 
-pub type size_t = u64;
-
-use std::ffi::{CStr, CString};
-
-#[derive(Clone)]
-#[repr(C)]
-pub struct pdf_color {
-    pub num_components: i32,
-    pub spot_color_name: Option<CString>,
-    pub values: [f64; 4],
+#[derive(Debug)]
+pub enum PdfColorError {
+    InvalidValue {
+        name: &'static str,
+        value: f64
+    },
+    EmptyName
 }
-impl pdf_color {
-    pub const fn new() -> Self {
-        Self {
-            num_components: 0,
-            spot_color_name: None,
-            values: [0.; 4],
+
+impl PdfColorError {
+    pub fn warn(&self) {
+        warn!("{}", self);
+    }
+}
+
+impl fmt::Display for PdfColorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PdfColorError::InvalidValue { name, value } => write!(f, "Invalid color value specified: {}={}", name, value),
+            PdfColorError::EmptyName => write!(f, "Invalid spot color: empty name")
         }
     }
 }
+
+impl Error for PdfColorError {}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum PdfColor {
+    Gray(f64),
+    Spot(CString, f64),
+    Rgb(f64, f64, f64),
+    Cmyk(f64, f64, f64, f64)
+}
+
+pub const WHITE: PdfColor = PdfColor::Gray(1.0);
+pub const BLACK: PdfColor = PdfColor::Gray(0.0);
+
+impl PdfColor {
+    pub fn from_gray(value: f64) -> Result<Self, PdfColorError> {
+        if value >= 0.0 && value <= 1.0 {
+            Ok(Self::Gray(value))
+        } else {
+            Err(PdfColorError::InvalidValue {
+                name: "gray",
+                value
+            })
+        }
+    }
+
+    pub fn from_rgb(r: f64, g: f64, b: f64) -> Result<Self, PdfColorError> {
+        if r < 0.0 || r > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "red",
+                value: r
+            })
+        } else if g < 0.0 || g > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "green",
+                value: g
+            })
+        } else if b < 0.0 || b > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "blue",
+                value: b
+            })
+        } else {
+            Ok(PdfColor::Rgb(r, g, b))
+        }
+    }
+
+    pub fn from_cmyk(c: f64, m: f64, y: f64, k: f64) -> Result<Self, PdfColorError> {
+        if c < 0.0 || c > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "cyan",
+                value: c
+            })
+        } else 
+        if m < 0.0 || m > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "magenta",
+                value: m
+            })
+        } else
+        if y < 0.0f64 || y > 1.0f64 {
+            Err(PdfColorError::InvalidValue {
+                name: "yellow",
+                value: y
+            })
+        } else
+        if k < 0.0 || k > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "black",
+                value: k
+            })
+        } else {
+            Ok(PdfColor::Cmyk(c, m, y, k))
+        }
+    }
+
+    pub fn from_spot(name: CString, c: f64) -> Result<Self, PdfColorError> {
+        if c < 0.0 || c > 1.0 {
+            Err(PdfColorError::InvalidValue {
+                name: "grade",
+                value: c
+            })
+        } else if name.to_str()
+            .map(|s| s.is_empty())
+            .unwrap_or(false) {
+            Err(PdfColorError::EmptyName)
+        } else {
+            Ok(PdfColor::Spot(name, c))
+        }
+    }
+
+    /// Brighten up a color. f == 0 means no change, f == 1 means white.
+    pub fn brightened(self, f: f64) -> Self {
+        if f == 1.0 {
+            WHITE
+        } else {
+            let f1 = if let PdfColor::Cmyk(..) = self { 1.0 } else { f };
+            let f0 = 1.0 - f;
+            match self {
+                PdfColor::Gray(g) => PdfColor::Gray(f0 * g + f1),
+                PdfColor::Spot(name, c) => PdfColor::Spot(name, f0 * c + f1),
+                PdfColor::Rgb(r, g, b) => PdfColor::Rgb(
+                    f0 * r + f1,
+                    f0 * g + f1,
+                    f0 * b + f1,
+                ),
+                PdfColor::Cmyk(c, m, y, k) => PdfColor::Cmyk(
+                    f0 * c + f1,
+                    f0 * m + f1,
+                    f0 * y + f1,
+                    f0 * k + f1,
+                )
+            }
+        }
+    }
+
+    pub fn is_white(&self) -> bool {
+        match self {
+            PdfColor::Spot(..) => false,
+            PdfColor::Rgb(r, g, b) => [r, g, b].iter().all(|value| **value == 1.0),
+            PdfColor::Cmyk(c, m, y, k) => [c, m, y, k].iter().all(|value| **value == 0.0),
+            PdfColor::Gray(value) => *value == 1.0
+        }
+    }
+
+    pub unsafe fn to_string(&self, mut buffer: *mut u8, mut mask: i8) -> usize {
+        let values_to_string = |values: &[f64]| {
+            let len = values.len() as isize;
+            values.iter().map(|value|
+                sprintf(
+                    buffer.offset(len) as *mut i8,
+                    b" %g\x00" as *const u8 as *const i8,
+                    (value / 0.001 + 0.5).floor() * 0.001,
+                )
+            ).sum::<i32>() as usize
+        };
+
+        match self {
+            PdfColor::Spot(name, c) => {
+                sprintf(
+                    buffer as *mut i8,
+                    b" /%s %c%c %g %c%c\x00" as *const u8 as *const i8,
+                    name.as_ptr(),
+                    'C' as i32 | mask as i32,
+                    'S' as i32 | mask as i32,
+                    (c / 0.001 + 0.5).floor() * 0.001,
+                    'S' as i32 | mask as i32,
+                    'C' as i32 | mask as i32,
+                ) as usize
+            },
+            PdfColor::Cmyk(c, m, y, k) => values_to_string(&[*c, *m, *y, *k]),
+            PdfColor::Rgb(r, g, b) => values_to_string(&[*r, *g, *b]),
+            PdfColor::Gray(g) => values_to_string(&[*g])
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct pdf_colorspace {
@@ -141,8 +296,8 @@ impl IccVersion {
 #[repr(C)]
 pub struct ColorStack {
     pub current: i32,
-    pub stroke: [pdf_color; 128],
-    pub fill: [pdf_color; 128],
+    pub stroke: [PdfColor; 128],
+    pub fill: [PdfColor; 128],
 }
 /* tectonic/core-memory.h: basic dynamic memory helpers
    Copyright 2016-2018 the Tectonic Project
@@ -155,310 +310,7 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn pdf_color_set_verbose(mut level: i32) {
     verbose = level;
 }
-/* This function returns PDF_COLORSPACE_TYPE_GRAY,
- * PDF_COLORSPACE_TYPE_RGB, PDF_COLORSPACE_TYPE_CMYK or
- * PDF_COLORSPACE_TYPE_SPOT.
- */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_type(color: &pdf_color) -> i32 {
-    -color.num_components
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_rgbcolor(color: &mut pdf_color, r: f64, g: f64, b: f64) -> i32 {
-    if r < 0.0f64 || r > 1.0f64 {
-        warn!("Invalid color value specified: red={}", r);
-        return -1i32;
-    }
-    if g < 0.0f64 || g > 1.0f64 {
-        warn!("Invalid color value specified: green={}", g);
-        return -1i32;
-    }
-    if b < 0.0f64 || b > 1.0f64 {
-        warn!("Invalid color value specified: blue={}", b);
-        return -1i32;
-    }
-    color.values[0] = r;
-    color.values[1] = g;
-    color.values[2] = b;
-    color.num_components = 3i32;
-    color.spot_color_name = None;
-    0i32
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_cmykcolor(
-    color: &mut pdf_color,
-    mut c: f64,
-    mut m: f64,
-    mut y: f64,
-    mut k: f64,
-) -> i32 {
-    if c < 0.0f64 || c > 1.0f64 {
-        warn!("Invalid color value specified: cyan={}", c);
-        return -1i32;
-    }
-    if m < 0.0f64 || m > 1.0f64 {
-        warn!("Invalid color value specified: magenta={}", m);
-        return -1i32;
-    }
-    if y < 0.0f64 || y > 1.0f64 {
-        warn!("Invalid color value specified: yellow={}", y);
-        return -1i32;
-    }
-    if k < 0.0f64 || k > 1.0f64 {
-        warn!("Invalid color value specified: black={}", k);
-        return -1i32;
-    }
-    color.values[0] = c;
-    color.values[1] = m;
-    color.values[2] = y;
-    color.values[3] = k;
-    color.num_components = 4i32;
-    color.spot_color_name = None;
-    0i32
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_graycolor(color: &mut pdf_color, g: f64) -> i32 {
-    if g < 0.0f64 || g > 1.0f64 {
-        warn!("Invalid color value specified: gray={}", g);
-        return -1i32;
-    }
-    color.values[0] = g;
-    color.num_components = 1i32;
-    color.spot_color_name = None;
-    0i32
-}
-pub fn pdf_color_graycolor_new(g: f64) -> Result<pdf_color, i32> {
-    if g < 0. || g > 1. {
-        warn!("Invalid color value specified: gray={}", g);
-        return Err(-1);
-    }
-    Ok(pdf_color {
-        values: [g, 0., 0., 0.],
-        num_components: 1,
-        spot_color_name: None,
-    })
-}
 
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_spotcolor(
-    color: &mut pdf_color,
-    mut name: *mut i8,
-    mut c: f64,
-) -> i32 {
-    if c < 0.0f64 || c > 1.0f64 {
-        warn!("Invalid color value specified: grade={}", c);
-        return -1i32;
-    }
-    color.values[0] = c;
-    color.values[1] = 0.0f64;
-    color.num_components = 2i32;
-    color.spot_color_name = Some(CStr::from_ptr(name).to_owned());
-    0i32
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_copycolor(color1: &mut pdf_color, color2: &pdf_color) {
-    *color1 = color2.clone();
-}
-/* Brighten up a color. f == 0 means no change, f == 1 means white. */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_brighten_color(
-    dst: &mut pdf_color,
-    src: &pdf_color,
-    mut f: f64,
-) {
-    if f == 1.0f64 {
-        pdf_color_graycolor(dst, 1.0f64);
-    } else {
-        let mut f0: f64 = 0.;
-        let mut f1: f64 = 0.;
-        let mut n: i32 = 0;
-        dst.num_components = src.num_components;
-        n = dst.num_components;
-        f1 = if n == 4i32 { 0.0f64 } else { f };
-        f0 = 1.0f64 - f;
-        loop {
-            let fresh0 = n;
-            n = n - 1;
-            if !(fresh0 != 0) {
-                break;
-            }
-            dst.values[n as usize] = f0 * src.values[n as usize] + f1
-        }
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_is_white(color: &pdf_color) -> bool {
-    let mut n: i32 = 0;
-    let mut f: f64 = 0.;
-    n = color.num_components;
-    match n {
-        1 | 3 => {
-            /* Gray */
-            /* RGB */
-            f = 1.0f64
-        }
-        4 => {
-            /* CMYK */
-            f = 0.0f64
-        }
-        _ => return false,
-    }
-    loop {
-        let fresh1 = n;
-        n = n - 1;
-        if !(fresh1 != 0) {
-            break;
-        }
-        if color.values[n as usize] != f {
-            return false;
-        }
-    }
-    true
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_to_string(
-    color: &pdf_color,
-    mut buffer: *mut u8,
-    mut mask: i8,
-) -> usize {
-    let mut len: i32 = 0i32;
-    if pdf_color_type(color) == -2i32 {
-        len = sprintf(
-            buffer as *mut i8,
-            b" /%s %c%c %g %c%c\x00" as *const u8 as *const i8,
-            color.spot_color_name.as_ref().unwrap().as_ptr(),
-            'C' as i32 | mask as i32,
-            'S' as i32 | mask as i32,
-            (color.values[0] / 0.001f64 + 0.5f64).floor() * 0.001f64,
-            'S' as i32 | mask as i32,
-            'C' as i32 | mask as i32,
-        )
-    } else {
-        for i in 0..color.num_components {
-            len += sprintf(
-                buffer.offset(len as isize) as *mut i8,
-                b" %g\x00" as *const u8 as *const i8,
-                (color.values[i as usize] / 0.001f64 + 0.5f64).floor() * 0.001f64,
-            );
-        }
-    }
-    len as usize
-}
-/*
- * This routine is not a real color matching.
- */
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_compare(color1: &pdf_color, color2: &pdf_color) -> i32 {
-    let mut n: i32 = 0;
-    n = color1.num_components;
-    let mut current_block_1: u64;
-    match n {
-        1 => {
-            current_block_1 = 715039052867723359;
-        }
-        2 => {
-            /* Spot */
-            current_block_1 = 1982130065057554431;
-        }
-        3 => {
-            current_block_1 = 1982130065057554431;
-        }
-        4 => {
-            current_block_1 = 15718257842624222162;
-        }
-        _ => return -1i32,
-    }
-    match current_block_1 {
-        1982130065057554431 =>
-        /* RGB */
-        {
-            current_block_1 = 15718257842624222162;
-        }
-        _ => {}
-    }
-    match current_block_1 {
-        15718257842624222162 =>
-            /* CMYK */
-            {}
-        _ => {}
-    }
-    if n != color2.num_components {
-        return -1i32;
-    }
-    loop {
-        let fresh2 = n;
-        n = n - 1;
-        if !(fresh2 != 0) {
-            break;
-        }
-        if color1.values[n as usize] != color2.values[n as usize] {
-            return -1i32;
-        }
-    }
-    if color1.spot_color_name.is_some() && color2.spot_color_name.is_some() {
-        return strcmp(
-            color1.spot_color_name.as_ref().unwrap().as_ptr(),
-            color2.spot_color_name.as_ref().unwrap().as_ptr(),
-        );
-    }
-    0i32
-}
-#[no_mangle]
-pub unsafe extern "C" fn pdf_color_is_valid(color: &pdf_color) -> bool {
-    let mut n: i32 = 0;
-    n = color.num_components;
-    let mut current_block_1: u64;
-    match n {
-        1 => {
-            current_block_1 = 715039052867723359;
-        }
-        2 => {
-            /* Spot */
-            current_block_1 = 17490471542129831839;
-        }
-        3 => {
-            current_block_1 = 17490471542129831839;
-        }
-        4 => {
-            current_block_1 = 7844836989092399584;
-        }
-        _ => return false,
-    }
-    match current_block_1 {
-        17490471542129831839 =>
-        /* RGB */
-        {
-            current_block_1 = 7844836989092399584;
-        }
-        _ => {}
-    }
-    match current_block_1 {
-        7844836989092399584 =>
-            /* CMYK */
-            {}
-        _ => {}
-    }
-    loop {
-        let fresh3 = n;
-        n = n - 1;
-        if !(fresh3 != 0) {
-            break;
-        }
-        if color.values[n as usize] < 0.0f64 || color.values[n as usize] > 1.0f64 {
-            warn!("Invalid color value: {}", color.values[n as usize]);
-            return false;
-        }
-    }
-    if pdf_color_type(color) == -2i32 {
-        if color.spot_color_name.is_none()
-            || *color.spot_color_name.as_ref().unwrap().as_ptr().offset(0) as i32 == '\u{0}' as i32
-        {
-            warn!("Invalid spot color: empty name");
-            return false;
-        }
-    }
-    true
-}
 /*static mut color_stack: ColorStack = ColorStack {
     current: 0,
     stroke: unsafe { core::mem::zeroed() },//[pdf_color::new(); 128],
@@ -480,17 +332,17 @@ pub unsafe extern "C" fn pdf_color_clear_stack() {
         }
     }
     color_stack.current = 0;
-    pdf_color_graycolor(&mut color_stack.stroke[0], 0.0f64);
-    pdf_color_graycolor(&mut color_stack.fill[0], 0.0f64);
+    color_stack.stroke[0] = BLACK;
+    color_stack.fill[0] = BLACK;
 }
 #[no_mangle]
-pub unsafe extern "C" fn pdf_color_set(sc: &pdf_color, fc: &pdf_color) {
-    pdf_color_copycolor(&mut color_stack.stroke[color_stack.current as usize], sc);
-    pdf_color_copycolor(&mut color_stack.fill[color_stack.current as usize], fc);
-    pdf_dev_reset_color(0i32);
+pub unsafe extern "C" fn pdf_color_set(sc: &PdfColor, fc: &PdfColor) {
+    color_stack.stroke[color_stack.current as usize] = sc.clone();
+    color_stack.fill[color_stack.current as usize] = fc.clone();
+    pdf_dev_reset_color(0);
 }
 #[no_mangle]
-pub unsafe extern "C" fn pdf_color_push(sc: &mut pdf_color, fc: &pdf_color) {
+pub unsafe extern "C" fn pdf_color_push(sc: &mut PdfColor, fc: &PdfColor) {
     if color_stack.current >= 128 - 1 {
         warn!("Color stack overflow. Just ignore.");
     } else {
@@ -513,7 +365,7 @@ pub unsafe extern "C" fn pdf_color_pop() {
 /* Color stack
  */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_color_get_current() -> (&'static mut pdf_color, &'static mut pdf_color)
+pub unsafe extern "C" fn pdf_color_get_current() -> (&'static mut PdfColor, &'static mut PdfColor)
 {
     (
         &mut color_stack.stroke[color_stack.current as usize],
@@ -533,8 +385,7 @@ static mut icc_versions: [IccVersion; 8] = [
 ];
 
 unsafe extern "C" fn iccp_version_supported(mut major: i32, mut minor: i32) -> i32 {
-    let mut pdf_ver: i32 = 0;
-    pdf_ver = pdf_get_version() as i32;
+    let mut pdf_ver = pdf_get_version() as i32;
     if pdf_ver < 8i32 {
         if icc_versions[pdf_ver as usize].major < major {
             return 0i32;
@@ -549,8 +400,7 @@ unsafe extern "C" fn iccp_version_supported(mut major: i32, mut minor: i32) -> i
     0i32
 }
 unsafe extern "C" fn str2iccSig(mut s: *const libc::c_void) -> iccSig {
-    let mut p: *const i8 = 0 as *const i8;
-    p = s as *const i8;
+    let mut p = s as *const i8;
     return ((*p.offset(0) as i32) << 24i32
         | (*p.offset(1) as i32) << 16i32
         | (*p.offset(2) as i32) << 8i32
@@ -646,12 +496,11 @@ pub unsafe extern "C" fn iccp_check_colorspace(
     mut profile: *const libc::c_void,
     mut proflen: i32,
 ) -> i32 {
-    let mut colorspace: iccSig = 0;
-    let mut p: *const u8 = 0 as *const u8;
+    let mut colorspace: iccSig;
     if profile.is_null() || proflen < 128i32 {
         return -1i32;
     }
-    p = profile as *const u8;
+    let mut p = profile as *const u8;
     colorspace = str2iccSig(p.offset(16) as *const libc::c_void);
     match colortype {
         3 | -3 => {
@@ -684,31 +533,27 @@ pub unsafe extern "C" fn iccp_get_rendering_intent(
     mut profile: *const libc::c_void,
     mut proflen: i32,
 ) -> *mut pdf_obj {
-    let mut ri: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut p: *const u8 = 0 as *const u8;
-    let mut intent: i32 = 0;
     if profile.is_null() || proflen < 128i32 {
         return 0 as *mut pdf_obj;
     }
-    p = profile as *const u8;
-    intent = (*p.offset(64) as i32) << 24i32
+    let mut p = profile as *const u8;
+    let intent = (*p.offset(64) as i32) << 24i32
         | (*p.offset(65) as i32) << 16i32
         | (*p.offset(66) as i32) << 8i32
         | *p.offset(67) as i32;
     match intent >> 16i32 & 0xffi32 {
-        2 => ri = pdf_new_name("Saturation"),
-        0 => ri = pdf_new_name("Perceptual"),
-        3 => ri = pdf_new_name("AbsoluteColorimetric"),
-        1 => ri = pdf_new_name("RelativeColorimetric"),
+        2 => pdf_new_name("Saturation"),
+        0 => pdf_new_name("Perceptual"),
+        3 => pdf_new_name("AbsoluteColorimetric"),
+        1 => pdf_new_name("RelativeColorimetric"),
         _ => {
             warn!(
                 "Invalid rendering intent type: {}",
                 intent >> 16i32 & 0xffi32
             );
-            ri = 0 as *mut pdf_obj
+            0 as *mut pdf_obj
         }
     }
-    ri
 }
 unsafe extern "C" fn iccp_unpack_header(
     icch: &mut iccHeader,
@@ -716,16 +561,14 @@ unsafe extern "C" fn iccp_unpack_header(
     mut proflen: i32,
     mut check_size: i32,
 ) -> i32 {
-    let mut p: *const u8 = 0 as *const u8;
-    let mut endptr: *const u8 = 0 as *const u8;
     if check_size != 0 {
         if profile.is_null() || proflen < 128i32 || proflen % 4i32 != 0i32 {
             warn!("Profile size: {}", proflen);
             return -1i32;
         }
     }
-    p = profile as *const u8;
-    endptr = p.offset(128);
+    let mut p = profile as *const u8;
+    let endptr = p.offset(128);
     icch.size = (*p.offset(0) as i32) << 24i32
         | (*p.offset(1) as i32) << 16i32
         | (*p.offset(2) as i32) << 8i32
@@ -1081,11 +924,7 @@ unsafe extern "C" fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut 
     };
 }
 unsafe extern "C" fn iccp_devClass_allowed(mut dev_class: i32) -> i32 {
-    let mut colormode: i32 = 0;
-    colormode = pdf_dev_get_param(2i32);
-    match colormode {
-        _ => {}
-    }
+    let colormode = pdf_dev_get_param(2i32);
     if dev_class as u32 != str2iccSig(b"scnr\x00" as *const u8 as *const i8 as *const libc::c_void)
         && dev_class as u32
             != str2iccSig(b"mntr\x00" as *const u8 as *const i8 as *const libc::c_void)
@@ -1104,9 +943,9 @@ pub unsafe extern "C" fn iccp_load_profile(
     mut profile: *const libc::c_void,
     mut proflen: i32,
 ) -> i32 {
-    let mut cspc_id: i32 = 0;
+    let mut cspc_id;
     let mut icch = iccHeader::default();
-    let mut colorspace: i32 = 0;
+    let mut colorspace;
     iccp_init_iccHeader(&mut icch);
     if iccp_unpack_header(&mut icch, profile, proflen, 1i32) < 0i32 {
         /* check size */
@@ -1215,9 +1054,8 @@ unsafe extern "C" fn pdf_colorspace_findresource(
     mut type_0: i32,
     cdata: &iccbased_cdata,
 ) -> i32 {
-    let mut cspc_id: i32 = 0;
     let mut cmp: i32 = -1i32;
-    cspc_id = 0i32;
+    let mut cspc_id = 0i32;
     while cmp != 0 && (cspc_id as u32) < cspc_cache.count {
         let colorspace = &mut *cspc_cache.colorspaces.offset(cspc_id as isize);
         if !(colorspace.subtype != type_0) {
@@ -1278,7 +1116,6 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
     cdata: &mut iccbased_cdata,
     mut resource: *mut pdf_obj,
 ) -> i32 {
-    let mut cspc_id: i32 = 0; /* .... */
     if cspc_cache.count >= cspc_cache.capacity {
         cspc_cache.capacity = cspc_cache.capacity.wrapping_add(16_u32);
         cspc_cache.colorspaces = renew(
@@ -1287,7 +1124,7 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
                 .wrapping_mul(::std::mem::size_of::<pdf_colorspace>() as u64) as u32,
         ) as *mut pdf_colorspace
     }
-    cspc_id = cspc_cache.count as i32;
+    let cspc_id = cspc_cache.count as i32;
     let colorspace = &mut *cspc_cache.colorspaces.offset(cspc_id as isize);
     pdf_init_colorspace_struct(colorspace);
     if !ident.is_null() {
@@ -1322,8 +1159,8 @@ unsafe extern "C" fn pdf_colorspace_defineresource(
 }
 #[no_mangle]
 pub unsafe extern "C" fn pdf_get_colorspace_reference(mut cspc_id: i32) -> *mut pdf_obj {
-    let mut colorspace: *mut pdf_colorspace = 0 as *mut pdf_colorspace;
-    colorspace = &mut *cspc_cache.colorspaces.offset(cspc_id as isize) as *mut pdf_colorspace;
+    let mut colorspace =
+        &mut *cspc_cache.colorspaces.offset(cspc_id as isize) as *mut pdf_colorspace;
     if (*colorspace).reference.is_null() {
         (*colorspace).reference = pdf_ref_obj((*colorspace).resource);
         pdf_release_obj((*colorspace).resource);
@@ -1350,4 +1187,16 @@ pub unsafe extern "C" fn pdf_close_colors() {
         mfree(cspc_cache.colorspaces as *mut libc::c_void) as *mut pdf_colorspace;
     cspc_cache.capacity = 0_u32;
     cspc_cache.count = cspc_cache.capacity;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn is_valid() {
+        assert!(WHITE.is_valid());
+        assert!(pdf_color::rgb(0.5, 0.5, 0.5).unwrap().is_valid());
+        assert!(pdf_color::cmyk(0.3, 0.4, 0.5, 0.6).unwrap().is_valid());
+    }
 }
