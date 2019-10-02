@@ -27,9 +27,9 @@
 
 use std::ffi::CStr;
 
-use crate::{warn, spc_warn};
 use crate::DisplayExt;
 use crate::TTInputFormat;
+use crate::{spc_warn, warn};
 use crate::{streq_ptr, strstartswith};
 
 use super::util::{spc_util_read_blahblah, spc_util_read_dimtrns, spc_util_read_pdfcolor};
@@ -225,10 +225,7 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     (*sd).cd.taintkeys = pdf_new_array();
     let mut i = 0;
     while !DEFAULT_TAINTKEYS[i].is_null() {
-        pdf_add_array(
-            (*sd).cd.taintkeys,
-            pdf_copy_name(DEFAULT_TAINTKEYS[i]),
-        );
+        pdf_add_array((*sd).cd.taintkeys, pdf_copy_name(DEFAULT_TAINTKEYS[i]));
         i += 1
     }
     0i32
@@ -682,7 +679,8 @@ unsafe extern "C" fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mu
         free(ident as *mut libc::c_void);
         return -1i32;
     }
-    let mut annot_dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
+    let mut annot_dict =
+        parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if annot_dict.is_null() {
         spc_warn!(spe, "Could not find dictionary object.");
         free(ident as *mut libc::c_void);
@@ -891,7 +889,8 @@ unsafe extern "C" fn spc_handler_pdfm_outline(
         level
     };
     level += 1i32 - (*sd).lowest_level;
-    let item_dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
+    let item_dict =
+        parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if item_dict.is_null() {
         spc_warn!(spe, "Ignoring invalid dictionary.");
         return -1i32;
@@ -930,7 +929,8 @@ unsafe extern "C" fn spc_handler_pdfm_article(
         spc_warn!(spe, "Article name expected but not found.");
         return -1i32;
     }
-    let info_dict = parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
+    let info_dict =
+        parse_pdf_dict_with_tounicode(&mut (*args).curptr, (*args).endptr, &mut (*sd).cd);
     if info_dict.is_null() {
         spc_warn!(spe, "Ignoring article with invalid info dictionary.");
         free(ident as *mut libc::c_void);
@@ -1092,11 +1092,17 @@ unsafe extern "C" fn spc_handler_pdfm_dest(mut spe: *mut spc_env, mut args: *mut
     skip_white(&mut (*args).curptr, (*args).endptr);
     let name = parse_pdf_object(&mut (*args).curptr, (*args).endptr, 0 as *mut pdf_file);
     if name.is_null() {
-        spc_warn!(spe, "PDF string expected for destination name but not found.");
+        spc_warn!(
+            spe,
+            "PDF string expected for destination name but not found."
+        );
         return -1i32;
     } else {
         if !(!name.is_null() && pdf_obj_typeof(name) == PdfObjType::STRING) {
-            spc_warn!(spe, "PDF string expected for destination name but invalid type.");
+            spc_warn!(
+                spe,
+                "PDF string expected for destination name but invalid type."
+            );
             pdf_release_obj(name);
             return -1i32;
         }
@@ -1732,7 +1738,7 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
         Ok(colorspec) => {
             pdf_doc_set_bgcolor(Some(&colorspec));
             0
-        },
+        }
         Err(_) => {
             spc_warn!(spe, "No valid color specified?");
             -1
@@ -1817,7 +1823,7 @@ unsafe extern "C" fn spc_handler_pdfm_mapfile(
             (*args).curptr = (*args).curptr.offset(1);
             '+' as i32
         }
-        _ => 0
+        _ => 0,
     };
     let mapfile = parse_val_ident(&mut (*args).curptr, (*args).endptr);
     if mapfile.is_null() {

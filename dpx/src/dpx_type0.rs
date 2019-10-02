@@ -46,9 +46,9 @@ use crate::dpx_pdfobj::{
     pdf_lookup_dict, pdf_new_array, pdf_new_dict, pdf_new_name, pdf_new_stream, pdf_obj,
     pdf_ref_obj, pdf_release_obj,
 };
+use crate::shims::sprintf;
 use crate::streq_ptr;
 use libc::{free, memset, strcpy, strlen};
-use crate::shims::sprintf;
 
 pub type size_t = u64;
 #[derive(Copy, Clone)]

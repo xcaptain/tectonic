@@ -25,8 +25,8 @@
     unused_mut
 )]
 
-use std::ffi::CStr;
 use crate::DisplayExt;
+use std::ffi::CStr;
 
 use crate::mfree;
 use crate::strstartswith;
@@ -40,7 +40,6 @@ use crate::dpx_pdfobj::pdf_obj;
 use crate::dpx_pdfximage::pdf_ximage_findresource;
 use crate::{ttstub_input_close, ttstub_input_open};
 
-use crate::spc_warn;
 use super::util::spc_util_read_dimtrns;
 use crate::dpx_mem::{new, xmalloc, xrealloc};
 use crate::dpx_mpost::{mps_eop_cleanup, mps_exec_inline, mps_stack_depth};
@@ -49,6 +48,7 @@ use crate::dpx_pdfdraw::{
     pdf_dev_current_depth, pdf_dev_grestore, pdf_dev_grestore_to, pdf_dev_gsave,
 };
 use crate::dpx_pdfparse::skip_white;
+use crate::spc_warn;
 use libc::{free, memcmp, memcpy, strlen, strncmp, strncpy};
 
 pub type size_t = u64;
@@ -286,11 +286,20 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         let gs_depth = pdf_dev_current_depth();
         error = mps_exec_inline(&mut (*args).curptr, (*args).endptr, x_user, y_user);
         if error != 0 {
-            spc_warn!(spe, "Interpreting PS code failed!!! Output might be broken!!!");
+            spc_warn!(
+                spe,
+                "Interpreting PS code failed!!! Output might be broken!!!"
+            );
             pdf_dev_grestore_to(gs_depth);
         } else if st_depth != mps_stack_depth() {
-            spc_warn!(spe, "Stack not empty after execution of inline PostScript code.");
-            spc_warn!(spe, ">> Your macro package makes some assumption on internal behaviour of DVI drivers.");
+            spc_warn!(
+                spe,
+                "Stack not empty after execution of inline PostScript code."
+            );
+            spc_warn!(
+                spe,
+                ">> Your macro package makes some assumption on internal behaviour of DVI drivers."
+            );
             spc_warn!(spe, ">> It may not compatible with dvipdfmx.");
         }
     }
@@ -335,10 +344,19 @@ unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mu
     M.f = -(*spe).y_user;
     pdf_dev_concat(&mut M);
     if error != 0 {
-        spc_warn!(spe, "Interpreting PS code failed!!! Output might be broken!!!");
+        spc_warn!(
+            spe,
+            "Interpreting PS code failed!!! Output might be broken!!!"
+        );
     } else if st_depth != mps_stack_depth() {
-        spc_warn!(spe, "Stack not empty after execution of inline PostScript code.");
-        spc_warn!(spe, ">> Your macro package makes some assumption on internal behaviour of DVI drivers.");
+        spc_warn!(
+            spe,
+            "Stack not empty after execution of inline PostScript code."
+        );
+        spc_warn!(
+            spe,
+            ">> Your macro package makes some assumption on internal behaviour of DVI drivers."
+        );
         spc_warn!(spe, ">> It may not compatible with dvipdfmx.");
     }
     pdf_dev_grestore_to(gs_depth);

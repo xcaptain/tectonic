@@ -33,8 +33,8 @@ use crate::warn;
 
 use super::dpx_dpxutil::xtoi;
 use super::dpx_mem::new;
-use libc::{free, memcmp, memcpy, strcpy, strlen, strtod, strtol};
 use crate::shims::sprintf;
+use libc::{free, memcmp, memcpy, strcpy, strlen, strtod, strtol};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -76,15 +76,17 @@ pub unsafe extern "C" fn pst_new_obj(
     mut type_0: pst_type,
     mut data: *mut libc::c_void,
 ) -> *mut pst_obj {
-    let obj = new((1_u64).wrapping_mul(::std::mem::size_of::<pst_obj>() as u64) as u32) as *mut pst_obj;
+    let obj =
+        new((1_u64).wrapping_mul(::std::mem::size_of::<pst_obj>() as u64) as u32) as *mut pst_obj;
     (*obj).type_0 = type_0;
     (*obj).data = data;
     obj
 }
 #[no_mangle]
 pub unsafe extern "C" fn pst_new_mark() -> *mut pst_obj {
-    let q = new((strlen(pst_const_mark).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
-        as *mut i8;
+    let q = new(
+        (strlen(pst_const_mark).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _,
+    ) as *mut i8;
     strcpy(q, pst_const_mark);
     pst_new_obj(7i32, q as *mut libc::c_void)
 }
@@ -371,7 +373,7 @@ pub unsafe extern "C" fn pst_parse_null(
     {
         *inbuf = (*inbuf).offset(4);
         let q = new(
-            (strlen(pst_const_null).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _,
+            (strlen(pst_const_null).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _
         ) as *mut i8;
         strcpy(q, pst_const_null);
         return pst_new_obj(0i32, q as *mut libc::c_void);

@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -37,15 +36,12 @@ use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_dict, pdf_new_name, pdf_new_number,
     pdf_new_stream, pdf_new_string, pdf_obj, pdf_stream_dict,
 };
-use libc::{free, memcmp, memset, strlen};
 use crate::shims::sprintf;
+use libc::{free, memcmp, memset, strlen};
 
 pub type size_t = u64;
 
-use super::dpx_cid::CIDSysInfo;
-
 use super::dpx_cmap::mapDef;
-use super::dpx_cmap::rangeDef;
 use super::dpx_cmap::CMap;
 
 /*
@@ -77,8 +73,7 @@ pub struct C2RustUnnamed_1 {
 }
 unsafe extern "C" fn block_count(mut mtab: *mut mapDef, mut c: i32) -> size_t {
     let mut count: size_t = 0i32 as size_t;
-    let mut n: size_t = 0;
-    n = (*mtab.offset(c as isize)).len.wrapping_sub(1i32 as u64);
+    let n = (*mtab.offset(c as isize)).len.wrapping_sub(1i32 as u64);
     c += 1i32;
     while c < 256i32 {
         if (*mtab.offset(c as isize)).flag & 1i32 << 4i32 != 0
@@ -136,17 +131,14 @@ unsafe extern "C" fn write_map(
     mut wbuf: *mut sbuf,
     mut stream: *mut pdf_obj,
 ) -> i32 {
-    let mut c: size_t = 0;
-    let mut block_length: size_t = 0;
-    let mut mtab1: *mut mapDef = 0 as *mut mapDef;
     /* Must be greater than 1 */
     let mut blocks: [C2RustUnnamed_1; 129] = [C2RustUnnamed_1 { start: 0, count: 0 }; 129];
     let mut num_blocks: size_t = 0i32 as size_t;
-    c = 0i32 as size_t;
+    let mut c = 0;
     while c < 256i32 as u64 {
         *codestr.offset(depth as isize) = (c & 0xffi32 as u64) as u8;
         if (*mtab.offset(c as isize)).flag & 1i32 << 4i32 != 0 {
-            mtab1 = (*mtab.offset(c as isize)).next;
+            let mtab1 = (*mtab.offset(c as isize)).next;
             count = write_map(
                 mtab1,
                 count,
@@ -163,7 +155,7 @@ unsafe extern "C" fn write_map(
         {
             match (*mtab.offset(c as isize)).flag & 0xfi32 {
                 1 | 4 => {
-                    block_length = block_count(mtab, c as i32);
+                    let block_length = block_count(mtab, c as i32);
                     if block_length >= 2i32 as u64 {
                         blocks[num_blocks as usize].start = c as i32;
                         blocks[num_blocks as usize].count = block_length as i32;
@@ -286,7 +278,7 @@ unsafe extern "C" fn write_map(
             strlen(fmt_buf_0.as_mut_ptr()) as i32,
         );
         for i in 0..num_blocks {
-            c = blocks[i as usize].start as size_t;
+            let c = blocks[i as usize].start as size_t;
             let fresh6 = (*wbuf).curptr;
             (*wbuf).curptr = (*wbuf).curptr.offset(1);
             *fresh6 = '<' as i32 as i8;
@@ -358,17 +350,11 @@ unsafe extern "C" fn write_map(
 }
 #[no_mangle]
 pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj {
-    let mut stream: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut stream_dict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut csi: *mut CIDSysInfo = 0 as *mut CIDSysInfo;
     let mut wbuf: sbuf = sbuf {
         buf: 0 as *mut i8,
         curptr: 0 as *mut i8,
         limptr: 0 as *mut i8,
     };
-    let mut ranges: *mut rangeDef = 0 as *mut rangeDef;
-    let mut codestr: *mut u8 = 0 as *mut u8;
-    let mut count: size_t = 0i32 as size_t;
     if cmap.is_null() || !CMap_is_valid(cmap) {
         warn!("Invalid CMap");
         return 0 as *mut pdf_obj;
@@ -376,9 +362,9 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
     if (*cmap).type_0 == 0i32 {
         return 0 as *mut pdf_obj;
     }
-    stream = pdf_new_stream(1i32 << 0i32);
-    stream_dict = pdf_stream_dict(stream);
-    csi = CMap_get_CIDSysInfo(cmap);
+    let stream = pdf_new_stream(1i32 << 0i32);
+    let stream_dict = pdf_stream_dict(stream);
+    let mut csi = CMap_get_CIDSysInfo(cmap);
     if csi.is_null() {
         csi = if (*cmap).type_0 != 2i32 {
             &mut CSI_IDENTITY
@@ -387,8 +373,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         }
     }
     if (*cmap).type_0 != 2i32 {
-        let mut csi_dict: *mut pdf_obj = 0 as *mut pdf_obj;
-        csi_dict = pdf_new_dict();
+        let csi_dict = pdf_new_dict();
         pdf_add_dict(
             csi_dict,
             "Registry",
@@ -424,7 +409,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
         panic!("UseCMap found (not supported yet)...");
     }
     wbuf.buf = new((4096_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
-    codestr = new(((*cmap).profile.maxBytesIn as u32 as u64)
+    let codestr = new(((*cmap).profile.maxBytesIn as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32) as *mut u8;
     memset(
         codestr as *mut libc::c_void,
@@ -486,7 +471,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
     );
     wbuf.curptr = wbuf.buf;
     /* codespacerange */
-    ranges = (*cmap).codespace.ranges;
+    let ranges = (*cmap).codespace.ranges;
     wbuf.curptr = wbuf.curptr.offset(sprintf(
         wbuf.curptr,
         b"%d begincodespacerange\n\x00" as *const u8 as *const i8,
@@ -539,7 +524,7 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
     );
     /* CMap body */
     if !(*cmap).mapTbl.is_null() {
-        count = write_map(
+        let count = write_map(
             (*cmap).mapTbl,
             0i32 as size_t,
             codestr,
@@ -573,7 +558,6 @@ pub unsafe extern "C" fn CMap_create_stream(mut cmap: *mut CMap) -> *mut pdf_obj
                 b"endbfchar\n\x00" as *const u8 as *const i8 as *const libc::c_void,
                 strlen(b"endbfchar\n\x00" as *const u8 as *const i8) as i32,
             );
-            count = 0i32 as size_t;
             wbuf.curptr = wbuf.buf
         }
     }

@@ -9,12 +9,12 @@
 )]
 
 use crate::core_memory::xmalloc;
+use crate::stub_stdio::sprintf;
 use crate::xetex_ini::{pool_ptr, pool_size, str_pool, str_start};
 use crate::xetex_io::{bytesFromUTF8, firstByteMark, offsetsFromUTF8};
 use crate::xetex_stringpool::make_string;
 use crate::{ttstub_get_data_md5, ttstub_get_file_md5};
 use libc::{free, strlen};
-use crate::stub_stdio::sprintf;
 
 pub type size_t = u64;
 pub type str_number = i32;

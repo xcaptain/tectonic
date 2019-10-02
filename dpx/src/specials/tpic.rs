@@ -31,8 +31,8 @@ use crate::warn;
 use crate::DisplayExt;
 use std::ffi::CStr;
 
-use crate::spc_warn;
 use super::{spc_arg, spc_env};
+use crate::spc_warn;
 
 use crate::dpx_dpxutil::{parse_c_ident, parse_c_string, parse_float_decimal};
 use crate::dpx_mem::renew;
@@ -53,8 +53,8 @@ use crate::dpx_pdfobj::{
     pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_pdfparse::parse_val_ident;
-use libc::{atof, free, memcmp, strlen};
 use crate::shims::sprintf;
+use libc::{atof, free, memcmp, strlen};
 
 pub type size_t = u64;
 

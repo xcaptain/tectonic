@@ -40,9 +40,7 @@ use crate::{info, warn};
 
 use super::dpx_error::dpx_message;
 use super::dpx_mem::{new, renew};
-use super::dpx_otl_opt::{
-    otl_match_optrule, otl_new_opt, otl_parse_optstring, otl_release_opt,
-};
+use super::dpx_otl_opt::{otl_match_optrule, otl_new_opt, otl_parse_optstring, otl_release_opt};
 use crate::ttstub_input_seek;
 use libc::{free, memset, strchr, strcpy, strlen, strncpy};
 
@@ -438,8 +436,9 @@ unsafe extern "C" fn otl_gsub_read_single(
     (*subtab).SubstFormat = tt_get_unsigned_pair((*sfont).handle);
     let mut len = 2;
     if (*subtab).SubstFormat as i32 == 1i32 {
-        let data = new((1_u64).wrapping_mul(::std::mem::size_of::<otl_gsub_single1>() as u64) as u32)
-            as *mut otl_gsub_single1;
+        let data =
+            new((1_u64).wrapping_mul(::std::mem::size_of::<otl_gsub_single1>() as u64) as u32)
+                as *mut otl_gsub_single1;
         (*subtab).table.single1 = data;
         let cov_offset = tt_get_unsigned_pair((*sfont).handle);
         (*data).DeltaGlyphID = tt_get_signed_pair((*sfont).handle);
@@ -451,8 +450,9 @@ unsafe extern "C" fn otl_gsub_read_single(
         );
         len += clt_read_coverage(&mut (*data).coverage, sfont)
     } else if (*subtab).SubstFormat as i32 == 2i32 {
-        let data_0 = new((1_u64).wrapping_mul(::std::mem::size_of::<otl_gsub_single2>() as u64) as u32)
-            as *mut otl_gsub_single2;
+        let data_0 =
+            new((1_u64).wrapping_mul(::std::mem::size_of::<otl_gsub_single2>() as u64) as u32)
+                as *mut otl_gsub_single2;
         (*subtab).table.single2 = data_0;
         let cov_offset = tt_get_unsigned_pair((*sfont).handle);
         (*data_0).GlyphCount = tt_get_unsigned_pair((*sfont).handle);
@@ -1509,8 +1509,9 @@ pub unsafe extern "C" fn otl_gsub_set_chain(
                 feature.as_mut_ptr(),
             );
             if idx >= 0i32 && idx <= (*gsub_list).num_gsubs {
-                let entry = new((1_u64).wrapping_mul(::std::mem::size_of::<gsub_entry>() as u64) as u32)
-                    as *mut gsub_entry;
+                let entry =
+                    new((1_u64).wrapping_mul(::std::mem::size_of::<gsub_entry>() as u64) as u32)
+                        as *mut gsub_entry;
                 if (*gsub_list).first.is_null() {
                     (*gsub_list).first = entry
                 }
@@ -1593,7 +1594,8 @@ pub unsafe extern "C" fn otl_gsub_apply_chain(
     while !entry.is_null() {
         let idx = (*entry).index;
         if !(idx < 0i32 || idx >= (*gsub_list).num_gsubs) {
-            let gsub = &mut *(*gsub_list).gsubs.as_mut_ptr().offset(idx as isize) as *mut otl_gsub_tab;
+            let gsub =
+                &mut *(*gsub_list).gsubs.as_mut_ptr().offset(idx as isize) as *mut otl_gsub_tab;
             let mut i = 0;
             retval = -1i32;
             while retval < 0i32 && i < (*gsub).num_subtables {

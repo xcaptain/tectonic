@@ -23,10 +23,10 @@
     unused_mut
 )]
 
-use crate::spc_warn;
 use super::{spc_arg, spc_env, spc_handler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfparse::skip_white;
+use crate::spc_warn;
 use crate::streq_ptr;
 use libc::{free, memcmp, strlen};
 

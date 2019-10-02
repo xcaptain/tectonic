@@ -55,7 +55,7 @@ use super::dpx_numbers::{
     sqxfw, tt_get_positive_quad, tt_get_signed_quad, tt_get_unsigned_byte, tt_get_unsigned_num,
     tt_get_unsigned_pair, tt_get_unsigned_quad, tt_skip_bytes,
 };
-use super::dpx_pdfcolor::{PdfColor, pdf_color_pop, pdf_color_push};
+use super::dpx_pdfcolor::{pdf_color_pop, pdf_color_push, PdfColor};
 use super::dpx_pdfdev::{
     graphics_mode, pdf_dev_begin_actualtext, pdf_dev_end_actualtext, pdf_dev_locate_font,
     pdf_dev_set_dirmode, pdf_dev_set_rect, pdf_dev_set_rule, pdf_dev_set_string,
@@ -82,6 +82,7 @@ use crate::dpx_pdfobj::{
     pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::dpx_truetype::sfnt_table_info;
+use crate::shims::sprintf;
 use crate::specials::{
     spc_exec_at_begin_page, spc_exec_at_end_page, spc_exec_special, spc_set_verbose,
 };
@@ -90,7 +91,6 @@ use crate::{
     ttstub_input_read, ttstub_input_seek, ttstub_input_ungetc,
 };
 use libc::{atof, free, memcmp, memset, strcmp, strlen, strncpy, strtol};
-use crate::shims::sprintf;
 
 use crate::TTInputFormat;
 

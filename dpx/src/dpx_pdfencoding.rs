@@ -50,10 +50,10 @@ use crate::dpx_pdfobj::{
 };
 use crate::dpx_pdfparse::{parse_pdf_array, parse_pdf_name, pdfparse_skip_line};
 use crate::mfree;
+use crate::shims::sprintf;
 use crate::streq_ptr;
 use crate::{ttstub_input_close, ttstub_input_get_size, ttstub_input_open, ttstub_input_read};
 use libc::{free, memset, strcmp, strcpy, strlen};
-use crate::shims::sprintf;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;

@@ -514,10 +514,9 @@ pub unsafe extern "C" fn tt_read_longMetrics(
 ) -> *mut tt_longMetrics {
     let mut last_adv: u16 = 0_u16;
     let mut last_esb: i16 = 0_i16;
-    let m = new(
-        (numGlyphs as u32 as u64).wrapping_mul(::std::mem::size_of::<tt_longMetrics>() as u64)
-            as u32,
-    ) as *mut tt_longMetrics;
+    let m = new((numGlyphs as u32 as u64)
+        .wrapping_mul(::std::mem::size_of::<tt_longMetrics>() as u64) as u32)
+        as *mut tt_longMetrics;
     for gid in 0..numGlyphs {
         if (gid as i32) < numLongMetrics as i32 {
             last_adv = tt_get_unsigned_pair((*sfont).handle)

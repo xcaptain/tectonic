@@ -23,19 +23,19 @@
     unused_mut
 )]
 
-use std::ffi::CStr;
-use crate::DisplayExt;
-use crate::spc_warn;
 use crate::dpx_mfileio::tt_mfgets;
 use crate::dpx_mpost::mps_scan_bbox;
 use crate::dpx_pdfdev::{pdf_dev_put_image, transform_info, transform_info_clear};
 use crate::dpx_pdfobj::pdf_obj;
 use crate::dpx_pdfparse::skip_white;
 use crate::dpx_pdfximage::pdf_ximage_findresource;
+use crate::shims::sscanf;
+use crate::spc_warn;
+use crate::DisplayExt;
 use crate::TTInputFormat;
 use crate::{ttstub_input_close, ttstub_input_open};
 use libc::{memcpy, strlen, strncmp};
-use crate::shims::sscanf;
+use std::ffi::CStr;
 
 pub type size_t = u64;
 
@@ -61,7 +61,10 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     let mut buf: [i8; 512] = [0; 512];
     assert!(!spe.is_null() && !ap.is_null());
     if (*ap).curptr >= (*ap).endptr {
-        spc_warn!(spe, "No width/height/filename given for postscriptbox special.");
+        spc_warn!(
+            spe,
+            "No width/height/filename given for postscriptbox special."
+        );
         return -1i32;
     }
     /* input is not NULL terminated */

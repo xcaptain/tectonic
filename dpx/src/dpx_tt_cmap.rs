@@ -65,9 +65,9 @@ use super::dpx_unicode::UC_UTF16BE_encode_char;
 use crate::dpx_pdfobj::pdf_obj;
 use crate::dpx_truetype::sfnt_table_info;
 use crate::mfree;
+use crate::shims::sprintf;
 use crate::{ttstub_input_close, ttstub_input_seek};
 use libc::{free, memcpy, memset, strcpy, strlen};
-use crate::shims::sprintf;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;
@@ -308,7 +308,8 @@ unsafe extern "C" fn lookup_cmap2(mut map: *mut cmap2, mut cc: u16) -> u16 {
     let firstCode = (*(*map).subHeaders.offset(i as isize)).firstCode;
     let entryCount = (*(*map).subHeaders.offset(i as isize)).entryCount;
     let idDelta = (*(*map).subHeaders.offset(i as isize)).idDelta;
-    let mut idRangeOffset = ((*(*map).subHeaders.offset(i as isize)).idRangeOffset as i32 / 2i32) as u16;
+    let mut idRangeOffset =
+        ((*(*map).subHeaders.offset(i as isize)).idRangeOffset as i32 / 2i32) as u16;
     if lo >= firstCode as i32 && lo < firstCode as i32 + entryCount as i32 {
         idRangeOffset = (idRangeOffset as i32 + (lo - firstCode as i32)) as u16;
         idx = *(*map).glyphIndexArray.offset(idRangeOffset as isize);
@@ -407,7 +408,8 @@ unsafe extern "C" fn lookup_cmap4(mut map: *mut cmap4, mut cc: u16) -> u16 {
         } else {
             let j = (*(*map).idRangeOffset.offset(i as isize) as i32
                 - (segCount as i32 - i as i32) * 2i32) as u16;
-            let j = (cc as i32 - *(*map).startCount.offset(i as isize) as i32 + j as i32 / 2i32) as u16;
+            let j =
+                (cc as i32 - *(*map).startCount.offset(i as isize) as i32 + j as i32 / 2i32) as u16;
             gid = *(*map).glyphIndexArray.offset(j as isize);
             if gid as i32 != 0i32 {
                 gid = (gid as i32 + *(*map).idDelta.offset(i as isize) as i32 & 0xffffi32) as u16
@@ -450,7 +452,8 @@ unsafe extern "C" fn read_cmap12(mut sfont: *mut sfnt, mut len: u32) -> *mut cma
     if len < 4_u32 {
         panic!("invalid cmap subtable");
     }
-    let map = new((1_u64).wrapping_mul(::std::mem::size_of::<cmap12>() as u64) as u32) as *mut cmap12;
+    let map =
+        new((1_u64).wrapping_mul(::std::mem::size_of::<cmap12>() as u64) as u32) as *mut cmap12;
     (*map).nGroups = tt_get_unsigned_quad((*sfont).handle);
     (*map).groups =
         new(((*map).nGroups as u64).wrapping_mul(::std::mem::size_of::<charGroup>() as u64) as u32)
@@ -625,7 +628,8 @@ unsafe extern "C" fn load_cmap4(
     while i >= 0i32 {
         let c0 = *(*map).startCount.offset(i as isize);
         let c1 = *(*map).endCount.offset(i as isize);
-        let d = (*(*map).idRangeOffset.offset(i as isize) as i32 / 2i32 - (segCount as i32 - i)) as u16;
+        let d =
+            (*(*map).idRangeOffset.offset(i as isize) as i32 / 2i32 - (segCount as i32 - i)) as u16;
         let mut j = 0_u16;
         while j as i32 <= c1 as i32 - c0 as i32 {
             let ch = (c0 as i32 + j as i32) as u16;
@@ -1113,7 +1117,9 @@ unsafe extern "C" fn create_ToUnicode_cmap12(
 ) -> u16 {
     let mut count: u32 = 0_u32;
     for i in 0..(*map).nGroups {
-        for ch in (*(*map).groups.offset(i as isize)).startCharCode..=(*(*map).groups.offset(i as isize)).endCharCode {
+        for ch in (*(*map).groups.offset(i as isize)).startCharCode
+            ..=(*(*map).groups.offset(i as isize)).endCharCode
+        {
             let mut d: i32 =
                 ch.wrapping_sub((*(*map).groups.offset(i as isize)).startCharCode) as i32;
             let mut gid: u16 = ((*(*map).groups.offset(i as isize))
@@ -1168,8 +1174,9 @@ unsafe extern "C" fn create_ToUnicode_cmap(
                             let mut p: *mut u8 = wbuf.as_mut_ptr().offset(2);
                             wbuf[0] = (cid as i32 >> 8i32 & 0xffi32) as u8;
                             wbuf[1] = (cid as i32 & 0xffi32) as u8;
-                            let len = UC_UTF16BE_encode_char(ch, &mut p, wbuf.as_mut_ptr().offset(1024))
-                                as i32;
+                            let len =
+                                UC_UTF16BE_encode_char(ch, &mut p, wbuf.as_mut_ptr().offset(1024))
+                                    as i32;
                             CMap_add_bfchar(
                                 cmap,
                                 wbuf.as_mut_ptr(),
@@ -1619,7 +1626,8 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
         let tounicode_add_name = new((strlen(map_name)
             .wrapping_add(strlen(b",000-UCS32-Add\x00" as *const u8 as *const i8))
             .wrapping_add(1))
-        .wrapping_mul(::std::mem::size_of::<i8>()) as _) as *mut i8; /* Microsoft UCS4 */
+        .wrapping_mul(::std::mem::size_of::<i8>()) as _)
+            as *mut i8; /* Microsoft UCS4 */
         sprintf(
             tounicode_add_name,
             b"%s,%03d-UCS32-Add\x00" as *const u8 as *const i8,

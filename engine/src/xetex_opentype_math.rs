@@ -1661,15 +1661,13 @@ pub unsafe extern "C" fn get_ot_assembly_ptr(
         );
         if count > 0i32 as libc::c_uint {
             let mut a: *mut GlyphAssembly =
-                xmalloc(::std::mem::size_of::<GlyphAssembly>() as _)
-                    as *mut GlyphAssembly;
+                xmalloc(::std::mem::size_of::<GlyphAssembly>() as _) as *mut GlyphAssembly;
             (*a).count = count;
-            (*a).parts =
-                xmalloc(
-                    (count as libc::c_ulong).wrapping_mul(::std::mem::size_of::<
-                        hb_ot_math_glyph_part_t,
-                    >() as libc::c_ulong) as _,
-                ) as *mut hb_ot_math_glyph_part_t;
+            (*a).parts = xmalloc(
+                (count as libc::c_ulong)
+                    .wrapping_mul(::std::mem::size_of::<hb_ot_math_glyph_part_t>() as libc::c_ulong)
+                    as _,
+            ) as *mut hb_ot_math_glyph_part_t;
             hb_ot_math_get_glyph_assembly(
                 hbFont,
                 g as hb_codepoint_t,

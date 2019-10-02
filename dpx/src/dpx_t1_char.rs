@@ -220,10 +220,7 @@ unsafe extern "C" fn add_stem(
     };
     let mut i = 0;
     while i < (*cd).num_stems as usize {
-        if (*cd).stems[i].dir == dir
-            && (*cd).stems[i].pos == pos
-            && (*cd).stems[i].del == del
-        {
+        if (*cd).stems[i].dir == dir && (*cd).stems[i].pos == pos && (*cd).stems[i].del == del {
             break;
         }
         i += 1
@@ -267,7 +264,8 @@ unsafe extern "C" fn add_charpath(
 ) {
     assert!(!cd.is_null());
     assert!(argn <= 48i32);
-    let mut p = new((1_u64).wrapping_mul(::std::mem::size_of::<t1_cpath>() as u64) as u32) as *mut t1_cpath;
+    let mut p =
+        new((1_u64).wrapping_mul(::std::mem::size_of::<t1_cpath>() as u64) as u32) as *mut t1_cpath;
     (*p).type_0 = type_0;
     (*p).num_args = argn;
     (*p).next = 0 as *mut t1_cpath;

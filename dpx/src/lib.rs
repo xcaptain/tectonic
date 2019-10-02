@@ -2,9 +2,7 @@
 #![feature(ptr_wrapping_offset_from)]
 #![feature(c_variadic)]
 #![feature(const_transmute)]
-#![allow(
-    unused_unsafe
-)]
+#![allow(unused_unsafe)]
 #![deny(unused_assignments)]
 #![deny(clippy::reverse_range_loop)]
 
@@ -33,6 +31,7 @@ macro_rules! info(
 #[macro_export]
 macro_rules! spc_warn(
     ($spe:ident, $($arg:tt)*) => {{
+        let _spe = $spe;
         warn!($($arg)*);
     }};
 );
@@ -62,9 +61,7 @@ macro_rules! warn(
     }};
 );
 
-pub trait Warn<E>: Sized {
-
-}
+pub trait Warn<E>: Sized {}
 
 trait DisplayExt {
     type Adapter: core::fmt::Display;
@@ -202,8 +199,8 @@ pub mod dpx_type1;
 pub mod dpx_type1c;
 pub mod dpx_unicode;
 pub mod dpx_vf;
-pub mod specials;
 mod shims;
+pub mod specials;
 
 pub use crate::dpx_dvipdfmx::dvipdfmx_main;
 

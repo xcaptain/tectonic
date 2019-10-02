@@ -85,7 +85,8 @@ unsafe extern "C" fn _dpx_print_to_stdout(
     _dpx_message_handle
         .as_mut()
         .unwrap()
-        .write(&_dpx_message_buf[..n as usize]).unwrap();
+        .write(&_dpx_message_buf[..n as usize])
+        .unwrap();
 }
 
 #[no_mangle]
@@ -109,7 +110,11 @@ pub unsafe extern "C" fn dpx_warning(mut fmt: *const i8, mut args: ...) {
         _dpx_message_handle.as_mut().unwrap().write(b"\n").unwrap();
     }
     _dpx_ensure_output_handle();
-    _dpx_message_handle.as_mut().unwrap().write(b"warning: ").unwrap();
+    _dpx_message_handle
+        .as_mut()
+        .unwrap()
+        .write(b"warning: ")
+        .unwrap();
     argp = args.clone();
     _dpx_print_to_stdout(fmt, argp.as_va_list(), true);
     _dpx_ensure_output_handle();
