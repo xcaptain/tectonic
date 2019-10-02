@@ -25,6 +25,9 @@
     unused_mut
 )]
 
+use std::ffi::CStr;
+use crate::DisplayExt;
+
 use crate::mfree;
 use crate::strstartswith;
 use crate::warn;
@@ -37,7 +40,7 @@ use crate::dpx_pdfobj::pdf_obj;
 use crate::dpx_pdfximage::pdf_ximage_findresource;
 use crate::{ttstub_input_close, ttstub_input_open};
 
-use super::spc_warn;
+use crate::spc_warn;
 use super::util::spc_util_read_dimtrns;
 use crate::dpx_mem::{new, xmalloc, xrealloc};
 use crate::dpx_mpost::{mps_eop_cleanup, mps_exec_inline, mps_stack_depth};
@@ -67,10 +70,7 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr.offset(1) >= (*args).endptr || *(*args).curptr.offset(0) as i32 != '=' as i32
     {
-        spc_warn(
-            spe,
-            b"No filename specified for PSfile special.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No filename specified for PSfile special.");
         return -1i32;
     }
     (*args).curptr = (*args).curptr.offset(1);
@@ -86,10 +86,10 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
     let ps_header =
         ttstub_input_open(pro, TTInputFormat::TEX_PS_HEADER, 0i32) as *mut rust_input_handle_t;
     if ps_header.is_null() {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"PS header %s not found.\x00" as *const u8 as *const i8,
-            pro,
+            "PS header {} not found.",
+            CStr::from_ptr(pro).display(),
         );
         free(pro as *mut libc::c_void);
         return -1i32;
@@ -160,19 +160,13 @@ unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut s
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr.offset(1) >= (*args).endptr || *(*args).curptr.offset(0) as i32 != '=' as i32
     {
-        spc_warn(
-            spe,
-            b"No filename specified for PSfile special.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No filename specified for PSfile special.");
         return -1i32;
     }
     (*args).curptr = (*args).curptr.offset(1);
     let filename = parse_filename(&mut (*args).curptr, (*args).endptr);
     if filename.is_null() {
-        spc_warn(
-            spe,
-            b"No filename specified for PSfile special.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "No filename specified for PSfile special.");
         return -1i32;
     }
     transform_info_clear(&mut ti);
@@ -182,10 +176,10 @@ unsafe extern "C" fn spc_handler_ps_file(mut spe: *mut spc_env, mut args: *mut s
     }
     let form_id = pdf_ximage_findresource(filename, options);
     if form_id < 0i32 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Failed to read image file: %s\x00" as *const u8 as *const i8,
-            filename,
+            "Failed to read image file: {}",
+            CStr::from_ptr(filename).display(),
         );
         free(filename as *mut libc::c_void);
         return -1i32;
@@ -207,25 +201,19 @@ unsafe extern "C" fn spc_handler_ps_plotfile(mut spe: *mut spc_env, mut args: *m
         init
     };
     assert!(!spe.is_null() && !args.is_null());
-    spc_warn(
-        spe,
-        b"\"ps: plotfile\" found (not properly implemented)\x00" as *const u8 as *const i8,
-    );
+    spc_warn!(spe, "\"ps: plotfile\" found (not properly implemented)");
     skip_white(&mut (*args).curptr, (*args).endptr);
     let filename = parse_filename(&mut (*args).curptr, (*args).endptr);
     if filename.is_null() {
-        spc_warn(
-            spe,
-            b"Expecting filename but not found...\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Expecting filename but not found...");
         return -1i32;
     }
     let form_id = pdf_ximage_findresource(filename, options);
     if form_id < 0i32 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Could not open PS file: %s\x00" as *const u8 as *const i8,
-            filename,
+            "Could not open PS file: {}",
+            CStr::from_ptr(filename).display(),
         );
         error = -1i32
     } else {
@@ -263,10 +251,7 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         && !strstartswith((*args).curptr, b":[end]\x00" as *const u8 as *const i8).is_null()
     {
         if BLOCK_PENDING <= 0i32 {
-            spc_warn(
-                spe,
-                b"No corresponding ::[begin] found.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "No corresponding ::[begin] found.");
             return -1i32;
         }
         BLOCK_PENDING -= 1;
@@ -301,25 +286,12 @@ unsafe extern "C" fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mu
         let gs_depth = pdf_dev_current_depth();
         error = mps_exec_inline(&mut (*args).curptr, (*args).endptr, x_user, y_user);
         if error != 0 {
-            spc_warn(
-                spe,
-                b"Interpreting PS code failed!!! Output might be broken!!!\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "Interpreting PS code failed!!! Output might be broken!!!");
             pdf_dev_grestore_to(gs_depth);
         } else if st_depth != mps_stack_depth() {
-            spc_warn(
-                spe,
-                b"Stack not empty after execution of inline PostScript code.\x00" as *const u8
-                    as *const i8,
-            );
-            spc_warn(spe,
-                     b">> Your macro package makes some assumption on internal behaviour of DVI drivers.\x00"
-                         as *const u8 as *const i8);
-            spc_warn(
-                spe,
-                b">> It may not compatible with dvipdfmx.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Stack not empty after execution of inline PostScript code.");
+            spc_warn!(spe, ">> Your macro package makes some assumption on internal behaviour of DVI drivers.");
+            spc_warn!(spe, ">> It may not compatible with dvipdfmx.");
         }
     }
     error
@@ -363,26 +335,11 @@ unsafe extern "C" fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mu
     M.f = -(*spe).y_user;
     pdf_dev_concat(&mut M);
     if error != 0 {
-        spc_warn(
-            spe,
-            b"Interpreting PS code failed!!! Output might be broken!!!\x00" as *const u8
-                as *const i8,
-        );
+        spc_warn!(spe, "Interpreting PS code failed!!! Output might be broken!!!");
     } else if st_depth != mps_stack_depth() {
-        spc_warn(
-            spe,
-            b"Stack not empty after execution of inline PostScript code.\x00" as *const u8
-                as *const i8,
-        );
-        spc_warn(
-            spe,
-            b">> Your macro package makes some assumption on internal behaviour of DVI drivers.\x00"
-                as *const u8 as *const i8,
-        );
-        spc_warn(
-            spe,
-            b">> It may not compatible with dvipdfmx.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Stack not empty after execution of inline PostScript code.");
+        spc_warn!(spe, ">> Your macro package makes some assumption on internal behaviour of DVI drivers.");
+        spc_warn!(spe, ">> It may not compatible with dvipdfmx.");
     }
     pdf_dev_grestore_to(gs_depth);
     pdf_dev_grestore();
@@ -574,7 +531,7 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     }
     let keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
     if keylen < 1i32 {
-        spc_warn(spe, b"Not ps: special???\x00" as *const u8 as *const i8);
+        spc_warn!(spe, "Not ps: special???");
         return -1i32;
     }
     for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)

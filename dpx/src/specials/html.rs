@@ -35,7 +35,7 @@ use crate::dpx_pdfximage::{
     pdf_ximage_scale_image,
 };
 
-use super::spc_warn;
+use crate::spc_warn;
 use super::{spc_begin_annot, spc_end_annot};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 use crate::dpx_mem::new;
@@ -286,10 +286,7 @@ unsafe extern "C" fn spc_handler_html__clean(
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     free((*sd).baseurl as *mut libc::c_void);
     if (*sd).pending_type >= 0i32 || !(*sd).link_dict.is_null() {
-        spc_warn(
-            spe,
-            b"Unclosed html anchor found.\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Unclosed html anchor found.");
     }
     pdf_release_obj((*sd).link_dict);
     (*sd).pending_type = -1i32;
@@ -304,11 +301,7 @@ unsafe extern "C" fn spc_handler_html__bophook(
 ) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     if (*sd).pending_type >= 0i32 {
-        spc_warn(
-            spe,
-            b"...html anchor continues from previous page processed...\x00" as *const u8
-                as *const i8,
-        );
+        spc_warn!(spe, "...html anchor continues from previous page processed...");
     }
     0i32
 }
@@ -319,10 +312,7 @@ unsafe extern "C" fn spc_handler_html__eophook(
 ) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     if (*sd).pending_type >= 0i32 {
-        spc_warn(
-            spe,
-            b"Unclosed html anchor at end-of-page!\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Unclosed html anchor at end-of-page!");
     }
     0i32
 }
@@ -415,10 +405,10 @@ unsafe extern "C" fn html_open_dest(
         array,
     );
     if error != 0 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Failed to add named destination: %s\x00" as *const u8 as *const i8,
-            name,
+            "Failed to add named destination: {}",
+            CStr::from_ptr(name).display(),
         );
     }
     (*sd).pending_type = 1i32;
@@ -431,21 +421,14 @@ unsafe extern "C" fn spc_html__anchor_open(
     mut sd: *mut spc_html_,
 ) -> i32 {
     if (*sd).pending_type >= 0i32 || !(*sd).link_dict.is_null() {
-        spc_warn(
-            spe,
-            b"Nested html anchors found!\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Nested html anchors found!");
         return -1i32;
     }
     let href = pdf_lookup_dict(attr, "href");
     let name = pdf_lookup_dict(attr, "name");
     match (href, name) {
         (Some(_), Some(_)) => {
-            spc_warn(
-                spe,
-                b"Sorry, you can\'t have both \"href\" and \"name\" in anchor tag...\x00"
-                    as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Sorry, you can\'t have both \"href\" and \"name\" in anchor tag...");
             -1i32
         }
         (Some(href), None) => html_open_link(spe, pdf_string_value(href) as *const i8, sd),
@@ -454,11 +437,7 @@ unsafe extern "C" fn spc_html__anchor_open(
             html_open_dest(spe, pdf_string_value(name) as *const i8, sd)
         }
         _ => {
-            spc_warn(
-                spe,
-                b"You should have \"href\" or \"name\" in anchor tag!\x00" as *const u8
-                    as *const i8,
-            );
+            spc_warn!(spe, "You should have \"href\" or \"name\" in anchor tag!");
             -1i32
         }
     }
@@ -474,19 +453,13 @@ unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut 
                 (*sd).link_dict = 0 as *mut pdf_obj;
                 (*sd).pending_type = -1i32
             } else {
-                spc_warn(
-                    spe,
-                    b"Closing html anchor (link) without starting!\x00" as *const u8 as *const i8,
-                );
+                spc_warn!(spe, "Closing html anchor (link) without starting!");
                 error = -1i32
             }
         }
         1 => (*sd).pending_type = -1i32,
         _ => {
-            spc_warn(
-                spe,
-                b"No corresponding opening tag for html anchor.\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "No corresponding opening tag for html anchor.");
             error = -1i32
         }
     }
@@ -500,20 +473,17 @@ unsafe extern "C" fn spc_html__base_empty(
 ) -> i32 {
     let href = pdf_lookup_dict(attr, "href");
     if href.is_none() {
-        spc_warn(
-            spe,
-            b"\"href\" not found for \"base\" tag!\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "\"href\" not found for \"base\" tag!");
         return -1i32;
     }
     let href = href.unwrap();
     let vp = pdf_string_value(href) as *mut i8;
     if !(*sd).baseurl.is_null() {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"\"baseurl\" changed: \"%s\" --> \"%s\"\x00" as *const u8 as *const i8,
-            (*sd).baseurl,
-            vp,
+            "\"baseurl\" changed: \"{}\" --> \"{}\"",
+            CStr::from_ptr((*sd).baseurl).display(),
+            CStr::from_ptr(vp).display(),
         );
         free((*sd).baseurl as *mut libc::c_void);
     }
@@ -625,16 +595,10 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         f: (*spe).y_user,
     };
     /* ENABLE_HTML_SVG_TRANSFORM */
-    spc_warn(
-        spe,
-        b"html \"img\" tag found (not completed, plese don\'t use!).\x00" as *const u8 as *const i8,
-    );
+    spc_warn!(spe, "html \"img\" tag found (not completed, plese don\'t use!).");
     let src = pdf_lookup_dict(attr, "src");
     if src.is_none() {
-        spc_warn(
-            spe,
-            b"\"src\" attribute not found for \"img\" tag!\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "\"src\" attribute not found for \"img\" tag!");
         return -1i32;
     }
     let src = src.unwrap();
@@ -650,10 +614,10 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
     if let Some(obj) = pdf_lookup_dict(attr, "svg:opacity") {
         alpha = atof(pdf_string_value(obj) as *const i8);
         if alpha < 0.0f64 || alpha > 1.0f64 {
-            spc_warn(
+            spc_warn!(
                 spe,
-                b"Invalid opacity value: %s\x00" as *const u8 as *const i8,
-                pdf_string_value(obj) as *mut i8,
+                "Invalid opacity value: {}",
+                CStr::from_ptr(pdf_string_value(obj) as *mut i8).display(),
             );
             alpha = 1.0f64
         }
@@ -703,18 +667,15 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
     }
     /* ENABLE_HTML_SVG_TRANSFORM */
     if error != 0 {
-        spc_warn(
-            spe,
-            b"Error in html \"img\" tag attribute.\x00" as *const u8 as *const i8,
-        ); /* Not Tps prefix but... */
+        spc_warn!(spe, "Error in html \"img\" tag attribute."); /* Not Tps prefix but... */
         return error;
     } /* op: */
     let id = pdf_ximage_findresource(pdf_string_value(src) as *const i8, options); /* op: */
     if id < 0i32 {
-        spc_warn(
+        spc_warn!(
             spe,
-            b"Could not find/load image: %s\x00" as *const u8 as *const i8,
-            pdf_string_value(src) as *mut i8,
+            "Could not find/load image: {}",
+            CStr::from_ptr(pdf_string_value(src) as *mut i8).display(),
         ); /* op: gs */
         error = -1i32
     } else {
@@ -787,29 +748,20 @@ unsafe extern "C" fn spc_handler_html_default(mut spe: *mut spc_env, mut ap: *mu
             1 => error = spc_html__anchor_open(spe, attr, sd),
             2 => error = spc_html__anchor_close(spe, sd),
             _ => {
-                spc_warn(
-                    spe,
-                    b"Empty html anchor tag???\x00" as *const u8 as *const i8,
-                );
+                spc_warn!(spe, "Empty html anchor tag???");
                 error = -1i32
             }
         }
     } else if streq_ptr(name.as_mut_ptr(), b"base\x00" as *const u8 as *const i8) {
         if type_0 == 2i32 {
-            spc_warn(
-                spe,
-                b"Close tag for \"base\"???\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Close tag for \"base\"???");
             error = -1i32
         } else {
             error = spc_html__base_empty(spe, attr, sd)
         }
     } else if streq_ptr(name.as_mut_ptr(), b"img\x00" as *const u8 as *const i8) {
         if type_0 == 2i32 {
-            spc_warn(
-                spe,
-                b"Close tag for \"img\"???\x00" as *const u8 as *const i8,
-            );
+            spc_warn!(spe, "Close tag for \"img\"???");
             error = -1i32
         } else {
             error = spc_html__img_empty(spe, attr)

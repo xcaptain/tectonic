@@ -23,8 +23,9 @@
     unused_mut
 )]
 
+use crate::spc_warn;
 use super::util::spc_util_read_colorspec;
-use super::{spc_arg, spc_env, spc_handler, spc_warn};
+use super::{spc_arg, spc_env, spc_handler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfcolor::{
     pdf_color, pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
@@ -172,10 +173,7 @@ pub unsafe extern "C" fn spc_color_setup_handler(
         }
         free(q as *mut libc::c_void);
     } else {
-        spc_warn(
-            spe,
-            b"Not color/background special?\x00" as *const u8 as *const i8,
-        );
+        spc_warn!(spe, "Not color/background special?");
         free(q as *mut libc::c_void);
         return -1i32;
     }
