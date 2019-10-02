@@ -480,15 +480,15 @@ unsafe extern "C" fn agl_decompose_glyphname(
     }
     n
 }
-unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper) -> i32 {
-    if feat.is_null() || *feat as i32 == 0i32 || gm.is_null() || (*gm).gsub.is_null() {
+unsafe extern "C" fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 {
+    if feat.is_empty() || gm.is_null() || (*gm).gsub.is_null() {
         return -1i32;
     }
     /* First treat as is */
     let idx = otl_gsub_select(
         (*gm).gsub,
-        b"*\x00" as *const u8 as *const i8,
-        b"*\x00" as *const u8 as *const i8,
+        b"*",
+        b"*",
         feat,
     );
     if idx >= 0i32 {
@@ -497,21 +497,21 @@ unsafe extern "C" fn select_gsub(mut feat: *const i8, mut gm: *mut glyph_mapper)
     if verbose > 1i32 {
         info!(
             "\ntrutype>> Try loading OTL GSUB for \"*.*.{}\"...",
-            CStr::from_ptr(feat).display()
+            feat.display()
         );
     }
     let error = otl_gsub_add_feat(
         (*gm).gsub,
-        b"*\x00" as *const u8 as *const i8,
-        b"*\x00" as *const u8 as *const i8,
+        b"*",
+        b"*",
         feat,
         (*gm).sfont,
     );
     if error == 0 {
         let idx = otl_gsub_select(
             (*gm).gsub,
-            b"*\x00" as *const u8 as *const i8,
-            b"*\x00" as *const u8 as *const i8,
+            b"*",
+            b"*",
             feat,
         );
         return if idx >= 0i32 { 0i32 } else { -1i32 };
@@ -536,8 +536,7 @@ unsafe extern "C" fn selectglyph(
      * agl.c currently only knows less ambiguos cases;
      * e.g., 'sc', 'superior', etc.
      */
-    let r = agl_suffix_to_otltag(s); /* 'suffix' may represent feature tag. */
-    if !r.is_null() {
+    if let Some(r) = agl_suffix_to_otltag(CStr::from_ptr(s).to_bytes()) /* 'suffix' may represent feature tag. */ {
         /* We found feature tag for 'suffix'. */
         error = select_gsub(r, gm); /* no fallback for this */
         if error == 0 {
@@ -550,7 +549,7 @@ unsafe extern "C" fn selectglyph(
         if strlen(s) > 4 {
             error = -1i32
         } else if strlen(s) == 4 {
-            error = select_gsub(s, gm)
+            error = select_gsub(CStr::from_ptr(s).to_bytes(), gm)
         } else {
             /* Uh */
             /* less than 4. pad ' '. */
@@ -561,7 +560,7 @@ unsafe extern "C" fn selectglyph(
                 s as *const libc::c_void,
                 strlen(s),
             );
-            error = select_gsub(t.as_mut_ptr(), gm)
+            error = select_gsub(CStr::from_ptr(t.as_mut_ptr()).to_bytes(), gm)
         }
         if error == 0 {
             /* 'suffix' represents feature tag. */
@@ -589,7 +588,7 @@ unsafe extern "C" fn selectglyph(
                         s as *const libc::c_void,
                         strlen(s),
                     );
-                    error = select_gsub(s, gm);
+                    error = select_gsub(CStr::from_ptr(s).to_bytes(), gm);
                     if error == 0 {
                         error = otl_gsub_apply_alt((*gm).gsub, n as u16, &mut in_0 as *mut u16)
                     }
@@ -620,7 +619,7 @@ unsafe extern "C" fn composeglyph(
     let mut error = if feat.is_null() || *feat.offset(0) as i32 == '\u{0}' as i32 {
         /* meaning "Unknown" */
         select_gsub(
-            b"(?lig|lig?|?cmp|cmp?|frac|afrc)\x00" as *const u8 as *const i8,
+            b"(?lig|lig?|?cmp|cmp?|frac|afrc)",
             gm,
         )
     } else if strlen(feat) > 4 {
@@ -631,7 +630,7 @@ unsafe extern "C" fn composeglyph(
             feat as *const libc::c_void,
             strlen(feat),
         );
-        select_gsub(t.as_mut_ptr(), gm)
+        select_gsub(CStr::from_ptr(t.as_mut_ptr()).to_bytes(), gm)
     };
     if error == 0 {
         error = otl_gsub_apply_lig((*gm).gsub, glyphs, n_glyphs as u16, gid)
@@ -854,7 +853,6 @@ unsafe extern "C" fn resolve_glyph(
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
 ) -> i32 {
-    let mut suffix: *mut i8 = 0 as *mut i8;
     assert!(!glyphname.is_null());
     /* Boooo */
     /*
@@ -870,37 +868,39 @@ unsafe extern "C" fn resolve_glyph(
     if (*gm).codetogid.is_null() {
         return -1i32;
     }
-    let name = agl_chop_suffix(glyphname, &mut suffix);
-    let mut error = if name.is_null() {
+    let (name, suffix) = agl_chop_suffix(CStr::from_ptr(glyphname).to_bytes());
+    if let Some(name) = name {
+        let mut error = if agl_name_is_unicode(name.to_bytes()) {
+            let ucv = agl_name_convert_unicode(name.as_ptr());
+            *gid = tt_cmap_lookup((*gm).codetogid, ucv as u32);
+            if *gid as i32 == 0i32 {
+                -1
+            } else {
+                0
+            }
+        } else {
+            findparanoiac(name.as_ptr(), gid, gm)
+        };
+        if error == 0 {
+            if let Some(suffix) = suffix {
+                error = selectglyph(*gid, suffix.as_ptr(), gm, gid);
+                if error != 0 {
+                    warn!(
+                        "Variant \"{}\" for glyph \"{}\" might not be found.",
+                        suffix.display(),
+                        name.display(),
+                    );
+                    warn!("Using glyph name without suffix instead...");
+                    error = 0i32
+                    /* ignore */
+                }
+            }
+        }
+        error
+    } else {
         /* .notdef, .foo */
         -1
-    } else if agl_name_is_unicode(name) {
-        let ucv = agl_name_convert_unicode(name);
-        *gid = tt_cmap_lookup((*gm).codetogid, ucv as u32);
-        if *gid as i32 == 0i32 {
-            -1
-        } else {
-            0
-        }
-    } else {
-        findparanoiac(name, gid, gm)
-    };
-    if error == 0 && !suffix.is_null() {
-        error = selectglyph(*gid, suffix, gm, gid);
-        if error != 0 {
-            warn!(
-                "Variant \"{}\" for glyph \"{}\" might not be found.",
-                CStr::from_ptr(suffix).display(),
-                CStr::from_ptr(name).display(),
-            );
-            warn!("Using glyph name without suffix instead...");
-            error = 0i32
-            /* ignore */
-        }
     }
-    free(suffix as *mut libc::c_void);
-    free(name as *mut libc::c_void);
-    error
 }
 /* Things are complicated. We still need to use PostScript
  * glyph names. But OpenType fonts may not have PS name to
