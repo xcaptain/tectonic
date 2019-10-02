@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -398,8 +397,7 @@ pub unsafe extern "C" fn CIDFont_set_verbose(mut level: i32) {
     __verbose = level;
 }
 unsafe extern "C" fn CIDFont_new() -> *mut CIDFont {
-    let mut font: *mut CIDFont = 0 as *mut CIDFont;
-    font =
+    let font =
         new((1_u64).wrapping_mul(::std::mem::size_of::<CIDFont>() as u64) as u32) as *mut CIDFont;
     (*font).name = 0 as *mut i8;
     (*font).fontname = 0 as *mut i8;
@@ -468,14 +466,12 @@ pub unsafe extern "C" fn CIDFont_get_ident(mut font: *mut CIDFont) -> *mut i8 {
 }
 #[no_mangle]
 pub unsafe extern "C" fn CIDFont_get_opt_index(mut font: *mut CIDFont) -> i32 {
-    let mut opt_index: i32 = 0;
     assert!(!font.is_null());
     if !(*font).options.is_null() {
-        opt_index = (*(*font).options).index
+        (*(*font).options).index
     } else {
-        opt_index = 0i32
+        0
     }
-    opt_index
 }
 #[no_mangle]
 pub unsafe extern "C" fn CIDFont_get_subtype(mut font: *mut CIDFont) -> i32 {
@@ -897,21 +893,17 @@ unsafe extern "C" fn CIDFont_base_open(
     mut cmap_csi: *mut CIDSysInfo,
     mut opt: *mut cid_opt,
 ) -> i32 {
-    let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut descriptor: *mut pdf_obj = 0 as *mut pdf_obj;
-    let mut fontname: *mut i8 = 0 as *mut i8;
-    let mut idx: i32 = 0;
     assert!(!font.is_null());
-    idx = 0i32;
-    while !cid_basefont[idx as usize].fontname.is_null() {
-        if streq_ptr(name, cid_basefont[idx as usize].fontname) as i32 != 0
+    let mut idx = 0;
+    while !cid_basefont[idx].fontname.is_null() {
+        if streq_ptr(name, cid_basefont[idx].fontname) as i32 != 0
             || strlen(name)
-                == strlen(cid_basefont[idx as usize].fontname)
+                == strlen(cid_basefont[idx].fontname)
                     .wrapping_sub(strlen(b"-Acro\x00" as *const u8 as *const i8))
                 && strncmp(
                     name,
-                    cid_basefont[idx as usize].fontname,
-                    strlen(cid_basefont[idx as usize].fontname)
+                    cid_basefont[idx].fontname,
+                    strlen(cid_basefont[idx].fontname)
                         .wrapping_sub(strlen(b"-Acro\x00" as *const u8 as *const i8)),
                 ) == 0
         {
@@ -919,10 +911,10 @@ unsafe extern "C" fn CIDFont_base_open(
         }
         idx += 1
     }
-    if cid_basefont[idx as usize].fontname.is_null() {
+    if cid_basefont[idx].fontname.is_null() {
         return -1i32;
     }
-    fontname = new((strlen(name).wrapping_add(12)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
+    let fontname = new((strlen(name).wrapping_add(12)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
         as *mut i8;
     memset(
         fontname as *mut libc::c_void,
@@ -942,26 +934,21 @@ unsafe extern "C" fn CIDFont_base_open(
         }
         _ => {}
     }
-    let mut start: *const i8 = 0 as *const i8;
-    let mut end: *const i8 = 0 as *const i8;
-    start = cid_basefont[idx as usize].fontdict;
-    end = start.offset(strlen(start) as isize);
-    fontdict = parse_pdf_dict(&mut start, end, 0 as *mut pdf_file);
-    start = cid_basefont[idx as usize].descriptor;
-    end = start.offset(strlen(start) as isize);
-    descriptor = parse_pdf_dict(&mut start, end, 0 as *mut pdf_file);
+    let mut start = cid_basefont[idx].fontdict;
+    let end = start.offset(strlen(start) as isize);
+    let fontdict = parse_pdf_dict(&mut start, end, 0 as *mut pdf_file);
+    let mut start = cid_basefont[idx].descriptor;
+    let end = start.offset(strlen(start) as isize);
+    let descriptor = parse_pdf_dict(&mut start, end, 0 as *mut pdf_file);
     assert!(!fontdict.is_null() && !descriptor.is_null());
     (*font).fontname = fontname;
     (*font).flags |= 1i32 << 0i32;
-    let mut registry: *mut i8 = 0 as *mut i8;
-    let mut ordering: *mut i8 = 0 as *mut i8;
-    let mut supplement: i32 = 0;
     let tmp = pdf_lookup_dict(fontdict, "CIDSystemInfo")
         .filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::DICT)
         .unwrap();
-    registry = pdf_string_value(pdf_lookup_dict(tmp, "Registry").unwrap()) as *mut i8;
-    ordering = pdf_string_value(pdf_lookup_dict(tmp, "Ordering").unwrap()) as *mut i8;
-    supplement = pdf_number_value(pdf_lookup_dict(tmp, "Supplement").unwrap()) as i32;
+    let registry = pdf_string_value(pdf_lookup_dict(tmp, "Registry").unwrap()) as *mut i8;
+    let ordering = pdf_string_value(pdf_lookup_dict(tmp, "Ordering").unwrap()) as *mut i8;
+    let supplement = pdf_number_value(pdf_lookup_dict(tmp, "Supplement").unwrap()) as i32;
     if !cmap_csi.is_null() {
         /* NULL for accept any */
         if strcmp(registry, (*cmap_csi).registry) != 0
@@ -969,7 +956,7 @@ unsafe extern "C" fn CIDFont_base_open(
         {
             panic!(
                 "Inconsistent CMap used for CID-keyed font {}.",
-                CStr::from_ptr(cid_basefont[idx as usize].fontname).display()
+                CStr::from_ptr(cid_basefont[idx].fontname).display()
             );
         } else {
             if supplement < (*cmap_csi).supplement {
@@ -1052,13 +1039,11 @@ pub unsafe extern "C" fn CIDFont_cache_find(
     mut cmap_csi: *mut CIDSysInfo,
     mut fmap_opt: *mut fontmap_opt,
 ) -> i32 {
-    let mut font_id: i32 = -1i32;
     let mut font: *mut CIDFont = 0 as *mut CIDFont;
-    let mut opt: *mut cid_opt = 0 as *mut cid_opt;
     if __cache.is_null() {
         CIDFont_cache_init();
     }
-    opt = new((1_u64).wrapping_mul(::std::mem::size_of::<cid_opt>() as u64) as u32) as *mut cid_opt;
+    let opt = new((1_u64).wrapping_mul(::std::mem::size_of::<cid_opt>() as u64) as u32) as *mut cid_opt;
     (*opt).style = (*fmap_opt).style;
     (*opt).index = (*fmap_opt).index;
     (*opt).embed = if (*fmap_opt).flags & 1i32 << 1i32 != 0 {
@@ -1091,7 +1076,7 @@ pub unsafe extern "C" fn CIDFont_cache_find(
      * Here, we do not compare font->ident and map_name because of
      * implicit CIDSystemInfo supplied by CMap for TrueType.
      */
-    font_id = 0i32;
+    let mut font_id = 0;
     while font_id < (*__cache).num {
         font = *(*__cache).fonts.offset(font_id as isize);
         if streq_ptr((*font).name, map_name) as i32 != 0
@@ -1188,8 +1173,7 @@ pub unsafe extern "C" fn CIDFont_cache_find(
 pub unsafe extern "C" fn CIDFont_cache_close() {
     if !__cache.is_null() {
         for font_id in 0..(*__cache).num {
-            let mut font: *mut CIDFont = 0 as *mut CIDFont;
-            font = *(*__cache).fonts.offset(font_id as isize);
+            let font = *(*__cache).fonts.offset(font_id as isize);
             if __verbose != 0 {
                 info!("(CID");
             }
@@ -1227,21 +1211,17 @@ unsafe extern "C" fn get_cidsysinfo(
     mut fmap_opt: *mut fontmap_opt,
 ) -> *mut CIDSysInfo {
     let mut csi: *mut CIDSysInfo = 0 as *mut CIDSysInfo;
-    let mut pdf_ver: i32 = 0;
-    let mut i: i32 = 0;
     let mut csi_idx: i32 = -1i32;
-    let mut m: i32 = 0;
-    let mut n: size_t = 0;
-    pdf_ver = pdf_get_version() as i32;
+    let pdf_ver = pdf_get_version() as i32;
     if fmap_opt.is_null() || (*fmap_opt).charcoll.is_null() {
         return 0 as *mut CIDSysInfo;
     }
     /* First try alias for standard one. */
-    i = 0i32; /* Use heighest supported value for current output PDF version. */
-    while !CIDFont_stdcc_alias[i as usize].name.is_null() {
-        n = strlen(CIDFont_stdcc_alias[i as usize].name) as _;
-        if !strstartswith((*fmap_opt).charcoll, CIDFont_stdcc_alias[i as usize].name).is_null() {
-            csi_idx = CIDFont_stdcc_alias[i as usize].index;
+    let mut i = 0; /* Use heighest supported value for current output PDF version. */
+    while !CIDFont_stdcc_alias[i].name.is_null() {
+        let n = strlen(CIDFont_stdcc_alias[i].name) as u64;
+        if !strstartswith((*fmap_opt).charcoll, CIDFont_stdcc_alias[i].name).is_null() {
+            csi_idx = CIDFont_stdcc_alias[i].index;
             csi = new((1_u64).wrapping_mul(::std::mem::size_of::<CIDSysInfo>() as u64) as u32)
                 as *mut CIDSysInfo;
             (*csi).registry = new((strlen(CIDFont_stdcc_def[csi_idx as usize].registry)
@@ -1275,13 +1255,11 @@ unsafe extern "C" fn get_cidsysinfo(
         }
     }
     if csi.is_null() {
-        let mut p: *mut i8 = 0 as *mut i8;
-        let mut q: *mut i8 = 0 as *mut i8;
-        p = (*fmap_opt).charcoll;
+        //let mut p = (*fmap_opt).charcoll; TODO: check
         csi = new((1_u64).wrapping_mul(::std::mem::size_of::<CIDSysInfo>() as u64) as u32)
             as *mut CIDSysInfo;
         /* Full REGISTRY-ORDERING-SUPPLEMENT */
-        p = strchr((*fmap_opt).charcoll, '-' as i32);
+        let mut p = strchr((*fmap_opt).charcoll, '-' as i32);
         if p.is_null() || *p.offset(1) as i32 == '\u{0}' as i32 {
             panic!(
                 "{}: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: {}",
@@ -1290,7 +1268,7 @@ unsafe extern "C" fn get_cidsysinfo(
             );
         }
         p = p.offset(1);
-        q = strchr(p, '-' as i32);
+        let mut q = strchr(p, '-' as i32);
         if q.is_null() || *q.offset(1) as i32 == '\u{0}' as i32 {
             panic!(
                 "{}: String can\'t be converted to REGISTRY-ORDERING-SUPPLEMENT: {}",
@@ -1306,9 +1284,9 @@ unsafe extern "C" fn get_cidsysinfo(
                 CStr::from_ptr((*fmap_opt).charcoll).display(),
             );
         }
-        n = strlen((*fmap_opt).charcoll)
+        let n = strlen((*fmap_opt).charcoll)
             .wrapping_sub(strlen(p))
-            .wrapping_sub(1) as _;
+            .wrapping_sub(1) as u64;
         (*csi).registry = new((n.wrapping_add(1i32 as u64) as u32 as u64)
             .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
             as *mut i8;
@@ -1318,7 +1296,7 @@ unsafe extern "C" fn get_cidsysinfo(
             n as _,
         );
         *(*csi).registry.offset(n as isize) = '\u{0}' as i32 as i8;
-        m = strlen(p).wrapping_sub(strlen(q)).wrapping_sub(1) as _;
+        let m = strlen(p).wrapping_sub(strlen(q)).wrapping_sub(1) as i32;
         (*csi).ordering =
             new(((m + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
                 as *mut i8;
@@ -1330,13 +1308,13 @@ unsafe extern "C" fn get_cidsysinfo(
         *(*csi).ordering.offset(m as isize) = '\u{0}' as i32 as i8;
         (*csi).supplement = strtoul(q, 0 as *mut *mut i8, 10i32) as i32;
         /* Check for standart character collections. */
-        i = 0i32;
-        while !CIDFont_stdcc_def[i as usize].ordering.is_null() {
-            if !CIDFont_stdcc_def[i as usize].registry.is_null()
-                && streq_ptr((*csi).registry, CIDFont_stdcc_def[i as usize].registry) as i32 != 0
-                && streq_ptr((*csi).ordering, CIDFont_stdcc_def[i as usize].ordering) as i32 != 0
+        let mut i = 0;
+        while !CIDFont_stdcc_def[i].ordering.is_null() {
+            if !CIDFont_stdcc_def[i].registry.is_null()
+                && streq_ptr((*csi).registry, CIDFont_stdcc_def[i].registry) as i32 != 0
+                && streq_ptr((*csi).ordering, CIDFont_stdcc_def[i].ordering) as i32 != 0
             {
-                csi_idx = i;
+                csi_idx = i as i32;
                 break;
             } else {
                 i += 1

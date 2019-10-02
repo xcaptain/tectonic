@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -49,7 +48,6 @@ pub type ssize_t = __ssize_t;
 
 use crate::TTInputFormat;
 
-use bridge::rust_input_handle_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct agl_name {
@@ -84,8 +82,7 @@ pub unsafe extern "C" fn agl_set_verbose(mut level: i32) {
     verbose = level;
 }
 unsafe extern "C" fn agl_new_name() -> *mut agl_name {
-    let mut agln: *mut agl_name = 0 as *mut agl_name;
-    agln =
+    let agln =
         new((1_u64).wrapping_mul(::std::mem::size_of::<agl_name>() as u64) as u32) as *mut agl_name;
     (*agln).name = 0 as *mut i8;
     (*agln).suffix = 0 as *mut i8;
@@ -95,9 +92,8 @@ unsafe extern "C" fn agl_new_name() -> *mut agl_name {
     agln
 }
 unsafe extern "C" fn agl_release_name(mut agln: *mut agl_name) {
-    let mut next: *mut agl_name = 0 as *mut agl_name;
     while !agln.is_null() {
-        next = (*agln).alternate;
+        let next = (*agln).alternate;
         free((*agln).name as *mut libc::c_void);
         free((*agln).suffix as *mut libc::c_void);
         (*agln).name = 0 as *mut i8;
@@ -110,13 +106,11 @@ pub unsafe extern "C" fn agl_chop_suffix(
     mut glyphname: *const i8,
     mut suffix: *mut *mut i8,
 ) -> *mut i8 {
-    let mut name: *mut i8 = 0 as *mut i8;
-    let mut p: *mut i8 = 0 as *mut i8;
-    let mut len: i32 = 0;
+    let mut name;
     assert!(!glyphname.is_null() && !suffix.is_null());
-    p = strchr(glyphname, '.' as i32);
+    let mut p = strchr(glyphname, '.' as i32);
     if !p.is_null() {
-        len = strlen(glyphname).wrapping_sub(strlen(p)) as i32;
+        let len = strlen(glyphname).wrapping_sub(strlen(p)) as i32;
         if len < 1i32 {
             name = 0 as *mut i8;
             *suffix = new((strlen(glyphname) as u32 as u64)
@@ -173,22 +167,20 @@ static mut modifiers: [*const i8; 21] = [
     0 as *const i8,
 ];
 unsafe extern "C" fn skip_capital(mut p: *mut *const i8, mut endptr: *const i8) -> i32 {
-    let mut slen: i32 = 0i32;
-    let mut len: i32 = 0;
-    len = endptr.wrapping_offset_from(*p) as i64 as i32;
+    let len = endptr.wrapping_offset_from(*p) as i32;
     if len >= 2i32
         && (**p as i32 == 'A' as i32 && *(*p).offset(1) as i32 == 'E' as i32
             || **p as i32 == 'O' as i32 && *(*p).offset(1) as i32 == 'E' as i32)
     {
         *p = (*p).offset(2);
-        slen = 2i32
+        2
     } else if len >= 3i32
         && **p as i32 == 'E' as i32
         && *(*p).offset(1) as i32 == 't' as i32
         && *(*p).offset(2) as i32 == 'h' as i32
     {
         *p = (*p).offset(3);
-        slen = 3i32
+        3
     } else if len >= 5i32
         && **p as i32 == 'T' as i32
         && *(*p).offset(1) as i32 == 'h' as i32
@@ -197,43 +189,40 @@ unsafe extern "C" fn skip_capital(mut p: *mut *const i8, mut endptr: *const i8) 
         && *(*p).offset(4) as i32 == 'n' as i32
     {
         *p = (*p).offset(5);
-        slen = 5i32
+        5
     } else if len >= 1i32 && **p as i32 >= 'A' as i32 && **p as i32 <= 'Z' as i32 {
         *p = (*p).offset(1);
-        slen = 1i32
+        1
+    } else {
+        0
     }
-    slen
 }
 unsafe extern "C" fn skip_modifier(mut p: *mut *const i8, mut endptr: *const i8) -> size_t {
     let mut slen: size_t = 0i32 as size_t;
-    let mut i: u32 = 0;
     let len = endptr.wrapping_offset_from(*p) as usize;
-    i = 0;
-    while !modifiers[i as usize].is_null() {
-        if len >= strlen(modifiers[i as usize])
+    let mut i = 0;
+    while !modifiers[i].is_null() {
+        if len >= strlen(modifiers[i])
             && memcmp(
                 *p as *const libc::c_void,
-                modifiers[i as usize] as *const libc::c_void,
+                modifiers[i] as *const libc::c_void,
                 len,
             ) == 0
         {
-            slen = strlen(modifiers[i as usize]) as _;
+            slen = strlen(modifiers[i]) as _;
             *p = (*p).offset(slen as isize);
             break;
         } else {
-            i = i.wrapping_add(1)
+            i += 1;
         }
     }
     slen
 }
 unsafe extern "C" fn is_smallcap(mut glyphname: *const i8) -> bool {
-    let mut slen: size_t = 0;
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
     if glyphname.is_null() {
         return false;
     }
-    p = glyphname;
+    let mut p = glyphname as *const i8;
     let len = strlen(glyphname);
     if len < 6
         || strcmp(
@@ -243,9 +232,9 @@ unsafe extern "C" fn is_smallcap(mut glyphname: *const i8) -> bool {
     {
         return false;
     }
-    endptr = p.offset(len as isize).offset(-5);
+    let endptr = p.offset(len as isize).offset(-5) as *const i8;
     let len = len.wrapping_sub(5);
-    slen = skip_modifier(&mut p, endptr);
+    let mut slen = skip_modifier(&mut p, endptr);
     if slen == len as _ {
         return true;
     } else {
@@ -623,63 +612,57 @@ static mut var_list: [C2RustUnnamed_0; 14] = [
 ];
 #[no_mangle]
 pub unsafe extern "C" fn agl_suffix_to_otltag(mut suffix: *const i8) -> *const i8 {
-    let mut i: i32 = 0;
-    let mut j: i32 = 0;
-    i = 0i32;
-    while !var_list[i as usize].key.is_null() {
-        j = 0i32;
-        while !var_list[i as usize].suffixes[j as usize].is_null() {
-            if streq_ptr(suffix, var_list[i as usize].suffixes[j as usize]) {
-                return var_list[i as usize].otl_tag;
+    let mut i = 0;
+    while !var_list[i].key.is_null() {
+        let mut j = 0;
+        while !var_list[i].suffixes[j].is_null() {
+            if streq_ptr(suffix, var_list[i].suffixes[j]) {
+                return var_list[i].otl_tag;
             }
             j += 1
         }
-        if streq_ptr(suffix, var_list[i as usize].key) {
-            return var_list[i as usize].otl_tag;
+        if streq_ptr(suffix, var_list[i].key) {
+            return var_list[i].otl_tag;
         }
-        if !var_list[i as usize].otl_tag.is_null()
-            && streq_ptr(suffix, var_list[i as usize].otl_tag) as i32 != 0
+        if !var_list[i].otl_tag.is_null()
+            && streq_ptr(suffix, var_list[i].otl_tag) as i32 != 0
         {
-            return var_list[i as usize].otl_tag;
+            return var_list[i].otl_tag;
         }
         i += 1
     }
     0 as *const i8
 }
 unsafe extern "C" fn agl_guess_name(mut glyphname: *const i8) -> ssize_t {
-    let mut i: ssize_t = 0;
     if is_smallcap(glyphname) {
         return 0i32 as ssize_t;
     }
     let len = strlen(glyphname);
-    i = 1i32 as ssize_t;
-    while !var_list[i as usize].key.is_null() {
-        if len > strlen(var_list[i as usize].key)
+    let mut i = 1;
+    while !var_list[i].key.is_null() {
+        if len > strlen(var_list[i].key)
             && streq_ptr(
                 glyphname
                     .offset(len as isize)
-                    .offset(-(strlen(var_list[i as usize].key) as isize)),
-                var_list[i as usize].key,
+                    .offset(-(strlen(var_list[i].key) as isize)),
+                var_list[i].key,
             ) as i32
                 != 0
         {
-            return i;
+            return i as ssize_t;
         }
         i += 1
     }
-    -1i32 as ssize_t
+    -1 as ssize_t
 }
 unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_name {
-    let mut agln: *mut agl_name = 0 as *mut agl_name;
-    let mut suffix: *mut i8 = 0 as *mut i8;
-    let mut n: i32 = 0;
     if glyphname.is_null() {
         return 0 as *mut agl_name;
     }
-    agln = agl_new_name();
-    suffix = strchr(glyphname, '.' as i32);
+    let agln = agl_new_name();
+    let suffix = strchr(glyphname, '.' as i32);
     if !suffix.is_null() {
-        n = strlen(glyphname).wrapping_sub(strlen(suffix)) as i32;
+        let n = strlen(glyphname).wrapping_sub(strlen(suffix)) as i32;
         if *suffix.offset(1) as i32 != '\u{0}' as i32 {
             (*agln).suffix = new((strlen(suffix) as u32 as u64)
                 .wrapping_mul(::std::mem::size_of::<i8>() as u64)
@@ -696,7 +679,7 @@ unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_nam
         );
         *(*agln).name.offset(n as isize) = '\u{0}' as i32 as i8
     } else if is_smallcap(glyphname) {
-        n = strlen(glyphname).wrapping_sub(5) as i32;
+        let n = strlen(glyphname).wrapping_sub(5) as i32;
         (*agln).suffix =
             new((3_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
         strcpy((*agln).suffix, b"sc\x00" as *const u8 as *const i8);
@@ -713,8 +696,8 @@ unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_nam
         }
         *(*agln).name.offset(n as isize) = '\u{0}' as i32 as i8
     } else {
-        let mut var_idx: ssize_t = 0;
-        var_idx = agl_guess_name(glyphname);
+        let  var_idx = agl_guess_name(glyphname);
+        let n;
         if var_idx < 0i32 as i64 || var_list[var_idx as usize].key.is_null() {
             n = strlen(glyphname) as i32
         } else {
@@ -780,15 +763,11 @@ pub unsafe extern "C" fn agl_close_map() {
 /* Hash */
 unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i32) -> i32 {
     let mut count: i32 = 0i32;
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    let mut nextptr: *mut i8 = 0 as *mut i8;
     let mut wbuf: [i8; 1024] = [0; 1024];
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
     if filename.is_null() {
         return -1i32;
     }
-    handle = dpx_tt_open(
+    let handle = dpx_tt_open(
         filename,
         b".txt\x00" as *const u8 as *const i8,
         TTInputFormat::FONTMAP,
@@ -800,26 +779,22 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
         info!("<AGL:{}", CStr::from_ptr(filename).display());
     }
     loop {
-        p = tt_mfgets(wbuf.as_mut_ptr(), 1024i32, handle);
+        let mut p = tt_mfgets(wbuf.as_mut_ptr(), 1024i32, handle) as *const i8;
         if p.is_null() {
             break;
         }
-        let mut agln: *mut agl_name = 0 as *mut agl_name;
-        let mut duplicate: *mut agl_name = 0 as *mut agl_name;
-        let mut name: *mut i8 = 0 as *mut i8;
-        let mut n_unicodes: i32 = 0;
         let mut unicodes: [i32; 16] = [0; 16];
-        endptr = p.offset(strlen(p) as isize);
+        let endptr = p.offset(strlen(p) as isize);
         skip_white(&mut p, endptr);
         /* Need table version check. */
         if p.is_null() || *p.offset(0) as i32 == '#' as i32 || p >= endptr {
             continue;
         }
-        nextptr = strchr(p, ';' as i32);
+        let mut nextptr = strchr(p, ';' as i32) as *mut i8;
         if nextptr.is_null() || nextptr == p as *mut i8 {
             continue;
         }
-        name = parse_ident(&mut p, nextptr);
+        let name = parse_ident(&mut p, nextptr);
         skip_white(&mut p, endptr);
         if name.is_null() || *p.offset(0) as i32 != ';' as i32 {
             warn!(
@@ -830,7 +805,7 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
         } else {
             p = p.offset(1);
             skip_white(&mut p, endptr);
-            n_unicodes = 0i32;
+            let mut n_unicodes = 0i32;
             while p < endptr
                 && (*p.offset(0) as i32 >= '0' as i32 && *p.offset(0) as i32 <= '9' as i32
                     || *p.offset(0) as i32 >= 'A' as i32 && *p.offset(0) as i32 <= 'F' as i32)
@@ -840,7 +815,7 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                     break;
                 } else {
                     let fresh0 = n_unicodes;
-                    n_unicodes = n_unicodes + 1;
+                    n_unicodes += 1;
                     unicodes[fresh0 as usize] = strtol(p, &mut nextptr, 16i32) as i32;
                     p = nextptr;
                     skip_white(&mut p, endptr);
@@ -853,13 +828,13 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
                 );
                 free(name as *mut libc::c_void);
             } else {
-                agln = agl_normalized_name(name);
+                let agln = agl_normalized_name(name);
                 (*agln).is_predef = is_predef;
                 (*agln).n_components = n_unicodes;
                 for i in 0..n_unicodes as usize {
                     (*agln).unicodes[i] = unicodes[i];
                 }
-                duplicate = ht_lookup_table(
+                let mut duplicate = ht_lookup_table(
                     &mut aglmap,
                     name as *const libc::c_void,
                     strlen(name) as i32,
@@ -914,27 +889,22 @@ unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i
 }
 #[no_mangle]
 pub unsafe extern "C" fn agl_lookup_list(mut glyphname: *const i8) -> *mut agl_name {
-    let mut agln: *mut agl_name = 0 as *mut agl_name;
     if glyphname.is_null() {
         return 0 as *mut agl_name;
     }
-    agln = ht_lookup_table(
+    ht_lookup_table(
         &mut aglmap,
         glyphname as *const libc::c_void,
         strlen(glyphname) as i32,
-    ) as *mut agl_name;
-    agln
+    ) as *mut agl_name
 }
 #[no_mangle]
 pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
-    let mut c: i8 = 0;
-    let mut suffix: *mut i8 = 0 as *mut i8;
-    let mut len: size_t = 0;
     if glyphname.is_null() {
         return false;
     }
-    suffix = strchr(glyphname, '.' as i32);
-    len = if !suffix.is_null() {
+    let suffix = strchr(glyphname, '.' as i32);
+    let len = if !suffix.is_null() {
         suffix.wrapping_offset_from(glyphname) as i64 as size_t
     } else {
         strlen(glyphname) as _
@@ -946,7 +916,7 @@ pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
         && len.wrapping_sub(3i32 as u64).wrapping_rem(4i32 as u64) == 0i32 as u64
         && !strstartswith(glyphname, b"uni\x00" as *const u8 as *const i8).is_null()
     {
-        c = *glyphname.offset(3);
+        let c = *glyphname.offset(3);
         /*
          * Check if the 4th character is uppercase hexadecimal digit.
          * "union" should not be treated as Unicode glyph name.
@@ -959,7 +929,7 @@ pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
     } else {
         if len <= 7i32 as u64 && len >= 5i32 as u64 && *glyphname.offset(0) as i32 == 'u' as i32 {
             for i in 1..len - 1 {
-                c = *glyphname.offset(i as isize);
+                let c = *glyphname.offset(i as isize);
                 if libc::isdigit(c as _) == 0 && ((c as i32) < 'A' as i32 || c as i32 > 'F' as i32)
                 {
                     return false;
@@ -972,8 +942,6 @@ pub unsafe extern "C" fn agl_name_is_unicode(mut glyphname: *const i8) -> bool {
 }
 #[no_mangle]
 pub unsafe extern "C" fn agl_name_convert_unicode(mut glyphname: *const i8) -> i32 {
-    let mut ucv: i32 = -1i32;
-    let mut p: *const i8 = 0 as *const i8;
     if !agl_name_is_unicode(glyphname) {
         return -1i32;
     }
@@ -981,12 +949,12 @@ pub unsafe extern "C" fn agl_name_convert_unicode(mut glyphname: *const i8) -> i
         warn!("Mapping to multiple Unicode characters not supported.");
         return -1i32;
     }
-    if *glyphname.offset(1) as i32 == 'n' as i32 {
-        p = glyphname.offset(3)
+    let mut p = if *glyphname.offset(1) as i32 == 'n' as i32 {
+        glyphname.offset(3)
     } else {
-        p = glyphname.offset(1)
-    }
-    ucv = 0i32;
+        glyphname.offset(1)
+    };
+    let mut ucv = 0;
     while *p as i32 != '\u{0}' as i32 && *p as i32 != '.' as i32 {
         if libc::isdigit(*p as _) == 0 && ((*p as i32) < 'A' as i32 || *p as i32 > 'F' as i32) {
             dpx_warning(
@@ -1039,19 +1007,16 @@ unsafe extern "C" fn put_unicode_glyph(
     mut dstpp: *mut *mut u8,
     mut limptr: *mut u8,
 ) -> i32 {
-    let mut p: *const i8 = 0 as *const i8;
-    let mut len: i32 = 0i32;
-    let mut ucv: i32 = 0;
-    p = name;
-    ucv = 0i32;
+    let mut len = 0;
+    let mut p = name;
     if *p.offset(1) as i32 != 'n' as i32 {
         p = p.offset(1);
-        ucv = xtol(p, strlen(p) as i32);
+        let ucv = xtol(p, strlen(p) as i32);
         len = (len as u64).wrapping_add(UC_UTF16BE_encode_char(ucv, dstpp, limptr)) as i32 as i32
     } else {
         p = p.offset(3);
         while *p as i32 != '\u{0}' as i32 {
-            ucv = xtol(p, 4i32);
+            let ucv = xtol(p, 4i32);
             len =
                 (len as u64).wrapping_add(UC_UTF16BE_encode_char(ucv, dstpp, limptr)) as i32 as i32;
             p = p.offset(4)
@@ -1068,21 +1033,14 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
 ) -> i32 {
     let mut len: i32 = 0i32;
     let mut count: i32 = 0i32;
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
     assert!(!glyphstr.is_null() && !dstpp.is_null());
-    p = glyphstr;
-    endptr = strchr(p, '.' as i32);
+    let mut p = glyphstr;
+    let mut endptr = strchr(p, '.' as i32) as *const i8;
     if endptr.is_null() {
         endptr = p.offset(strlen(p) as isize)
     }
     while p < endptr {
-        let mut name: *mut i8 = 0 as *mut i8;
-        let mut delim: *const i8 = 0 as *const i8;
-        let mut sub_len: i32 = 0;
-        let mut agln0: *mut agl_name = 0 as *mut agl_name;
-        let mut agln1: *mut agl_name = 0 as *mut agl_name;
-        delim = strchr(p, '_' as i32);
+        let mut delim = strchr(p, '_' as i32) as *const i8;
         if delim == p {
             /*
              * Glyph names starting with a underscore or two subsequent
@@ -1103,8 +1061,8 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
                 delim = endptr
             }
         }
-        sub_len = delim.wrapping_offset_from(p) as i64 as i32;
-        name = new(
+        let sub_len = delim.wrapping_offset_from(p) as i64 as i32;
+        let name = new(
             ((sub_len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64)
                 as u32,
         ) as *mut i8;
@@ -1115,14 +1073,14 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
         );
         *name.offset(sub_len as isize) = '\u{0}' as i32 as i8;
         if agl_name_is_unicode(name) {
-            sub_len = put_unicode_glyph(name, dstpp, limptr);
+            let sub_len = put_unicode_glyph(name, dstpp, limptr);
             if sub_len > 0i32 {
                 len += sub_len
             } else {
                 count += 1
             }
         } else {
-            agln1 = agl_lookup_list(name);
+            let mut agln1 = agl_lookup_list(name);
             if agln1.is_null()
                 || (*agln1).n_components == 1i32
                     && ((*agln1).unicodes[0] as i64 >= 0xe000
@@ -1132,7 +1090,7 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
                         || (*agln1).unicodes[0] as i64 >= 0x100000
                             && (*agln1).unicodes[0] as i64 <= 0x10fffd)
             {
-                agln0 = agl_normalized_name(name);
+                let agln0 = agl_normalized_name(name);
                 if !agln0.is_null() {
                     if verbose > 1i32 && !(*agln0).suffix.is_null() {
                         warn!(
@@ -1179,20 +1137,13 @@ pub unsafe extern "C" fn agl_get_unicodes(
     mut max_unicodes: i32,
 ) -> i32 {
     let mut count: i32 = 0i32;
-    let mut p: *const i8 = 0 as *const i8;
-    let mut endptr: *const i8 = 0 as *const i8;
-    p = glyphstr;
-    endptr = strchr(p, '.' as i32);
+    let mut p = glyphstr;
+    let mut endptr = strchr(p, '.' as i32) as *const i8;
     if endptr.is_null() {
         endptr = p.offset(strlen(p) as isize)
     }
     while p < endptr {
-        let mut name: *mut i8 = 0 as *mut i8;
-        let mut delim: *const i8 = 0 as *const i8;
-        let mut sub_len: i32 = 0;
-        let mut agln0: *mut agl_name = 0 as *mut agl_name;
-        let mut agln1: *mut agl_name = 0 as *mut agl_name;
-        delim = strchr(p, '_' as i32);
+        let mut delim = strchr(p, '_' as i32) as *const i8;
         if delim == p {
             /*
              * Glyph names starting with a underscore or two subsequent
@@ -1209,8 +1160,8 @@ pub unsafe extern "C" fn agl_get_unicodes(
                 delim = endptr
             }
         }
-        sub_len = delim.wrapping_offset_from(p) as i64 as i32;
-        name = new(
+        let sub_len = delim.wrapping_offset_from(p) as i32;
+        let name = new(
             ((sub_len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64)
                 as u32,
         ) as *mut i8;
@@ -1246,7 +1197,7 @@ pub unsafe extern "C" fn agl_get_unicodes(
                 }
             }
         } else {
-            agln1 = agl_lookup_list(name);
+            let mut agln1 = agl_lookup_list(name);
             if agln1.is_null()
                 || (*agln1).n_components == 1i32
                     && ((*agln1).unicodes[0] as i64 >= 0xe000
@@ -1256,7 +1207,7 @@ pub unsafe extern "C" fn agl_get_unicodes(
                         || (*agln1).unicodes[0] as i64 >= 0x100000
                             && (*agln1).unicodes[0] as i64 <= 0x10fffd)
             {
-                agln0 = agl_normalized_name(name);
+                let mut agln0 = agl_normalized_name(name);
                 if !agln0.is_null() {
                     if verbose > 1i32 && !(*agln0).suffix.is_null() {
                         warn!(

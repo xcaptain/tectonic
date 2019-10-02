@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -72,8 +71,7 @@ pub struct C2RustUnnamed_2 {
  * as directory separators. */
 #[no_mangle]
 pub unsafe extern "C" fn cff_new_dict() -> *mut cff_dict {
-    let mut dict: *mut cff_dict = 0 as *mut cff_dict;
-    dict =
+    let dict =
         new((1_u64).wrapping_mul(::std::mem::size_of::<cff_dict>() as u64) as u32) as *mut cff_dict;
     (*dict).max = 16i32;
     (*dict).count = 0i32;
@@ -532,20 +530,17 @@ unsafe extern "C" fn get_integer(
     mut status: *mut i32,
 ) -> f64 {
     let mut result: i32 = 0i32;
-    let mut b0: u8 = 0;
-    let mut b1: u8 = 0;
-    let mut b2: u8 = 0;
     let fresh0 = *data;
     *data = (*data).offset(1);
-    b0 = *fresh0;
+    let b0 = *fresh0;
     if b0 as i32 == 28i32 && *data < endptr.offset(-2) {
         /* shortint */
         let fresh1 = *data;
         *data = (*data).offset(1);
-        b1 = *fresh1;
+        let b1 = *fresh1;
         let fresh2 = *data;
         *data = (*data).offset(1);
-        b2 = *fresh2;
+        let b2 = *fresh2;
         result = b1 as i32 * 256i32 + b2 as i32;
         if result as i64 > 0x7fff {
             result = (result as i64 - 0x10000) as i32
@@ -569,12 +564,12 @@ unsafe extern "C" fn get_integer(
         /* int (2) */
         let fresh4 = *data;
         *data = (*data).offset(1);
-        b1 = *fresh4;
+        let b1 = *fresh4;
         result = (b0 as i32 - 247i32) * 256i32 + b1 as i32 + 108i32
     } else if b0 as i32 >= 251i32 && b0 as i32 <= 254i32 {
         let fresh5 = *data;
         *data = (*data).offset(1);
-        b1 = *fresh5;
+        let b1 = *fresh5;
         result = -(b0 as i32 - 251i32) * 256i32 - b1 as i32 - 108i32
     } else {
         *status = -1i32
@@ -589,7 +584,6 @@ unsafe extern "C" fn get_real(
 ) -> f64 {
     let mut result: f64 = 0.0f64; /* skip first byte (30) */
     let mut nibble: i32 = 0i32;
-    let mut pos: i32 = 0i32;
     let mut len: i32 = 0i32;
     let mut fail: i32 = 0i32;
     if **data as i32 != 30i32 || *data >= endptr.offset(-1) {
@@ -597,7 +591,7 @@ unsafe extern "C" fn get_real(
         return 0.0f64;
     }
     *data = (*data).offset(1);
-    pos = 0i32;
+    let mut pos = 0;
     while fail == 0 && len < 1024i32 - 2i32 && *data < endptr {
         /* get nibble */
         if pos % 2i32 != 0 {
@@ -634,7 +628,7 @@ unsafe extern "C" fn get_real(
             if nibble == 0xfi32 {
                 /* end */
                 let fresh11 = len;
-                len = len + 1;
+                //len = len + 1;
                 *work_buffer.as_mut_ptr().offset(fresh11 as isize) = '\u{0}' as i32 as i8;
                 if pos % 2i32 == 0i32 && **data as i32 != 0xffi32 {
                     fail = 1i32
@@ -667,9 +661,7 @@ unsafe extern "C" fn add_dict(
     mut endptr: *mut u8,
     mut status: *mut i32,
 ) {
-    let mut id: i32 = 0;
-    let mut argtype: i32 = 0;
-    id = **data as i32;
+    let mut id = **data as i32;
     if id == 0xci32 {
         *data = (*data).offset(1);
         if *data >= endptr || {
@@ -683,7 +675,7 @@ unsafe extern "C" fn add_dict(
         *status = -1i32;
         return;
     }
-    argtype = dict_operator[id as usize].argtype;
+    let argtype = dict_operator[id as usize].argtype;
     if dict_operator[id as usize].opname.is_null() || argtype < 0i32 {
         /* YuppySC-Regular.otf from OS X for instance uses op id 37, simply ignore
         this dict instead of treat it as parsing error. */
@@ -744,10 +736,9 @@ don't treat this as underflow (e.g. StemSnapV in TemporaLGCUni-Italic.otf) */
  */
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_unpack(mut data: *mut u8, mut endptr: *mut u8) -> *mut cff_dict {
-    let mut dict: *mut cff_dict = 0 as *mut cff_dict;
     let mut status: i32 = 0i32;
     stack_top = 0i32;
-    dict = cff_new_dict();
+    let dict = cff_new_dict();
     while data < endptr && status == 0i32 {
         if (*data as i32) < 22i32 {
             /* operator */
@@ -860,8 +851,7 @@ unsafe extern "C" fn cff_dict_put_number(
     dest: &mut [u8],
     mut type_0: i32,
 ) -> usize {
-    let mut nearint: f64 = 0.;
-    nearint = (value + 0.5f64).floor();
+    let mut nearint = (value + 0.5f64).floor();
     /* set offset to longint */
     if type_0 == 1i32 << 7i32 {
         let mut lvalue = value as i32; /* integer */
@@ -880,17 +870,15 @@ unsafe extern "C" fn cff_dict_put_number(
 }
 unsafe extern "C" fn put_dict_entry(mut de: *mut cff_dict_entry, dest: &mut [u8]) -> usize {
     let mut len = 0_usize;
-    let mut type_0: i32 = 0;
-    let mut id: i32 = 0;
     if (*de).count > 0i32 {
-        id = (*de).id;
-        if dict_operator[id as usize].argtype == 1i32 << 7i32
+        let id = (*de).id;
+        let mut type_0 = if dict_operator[id as usize].argtype == 1i32 << 7i32
             || dict_operator[id as usize].argtype == 1i32 << 8i32
         {
-            type_0 = 1i32 << 7i32
+            1 << 7
         } else {
-            type_0 = 1i32 << 0i32 | 1i32 << 1i32
-        }
+            1 << 0 | 1 << 1
+        };
         for i in 0..(*de).count {
             len += cff_dict_put_number(*(*de).values.offset(i as isize), &mut dest[len..], type_0);
         }
@@ -933,9 +921,8 @@ pub unsafe extern "C" fn cff_dict_pack(mut dict: *mut cff_dict, dest: &mut [u8])
 }
 #[no_mangle]
 pub unsafe extern "C" fn cff_dict_add(mut dict: *mut cff_dict, mut key: *const i8, mut count: i32) {
-    let mut id: i32 = 0;
-    id = 0i32;
-    while id < 22i32 + 39i32 {
+    let mut id = 0;
+    while id < 22 + 39 {
         if !key.is_null()
             && !dict_operator[id as usize].opname.is_null()
             && streq_ptr(dict_operator[id as usize].opname, key) as i32 != 0
@@ -944,7 +931,7 @@ pub unsafe extern "C" fn cff_dict_add(mut dict: *mut cff_dict, mut key: *const i
         }
         id += 1
     }
-    if id == 22i32 + 39i32 {
+    if id == 22 + 39 {
         panic!("{}: Unknown CFF DICT operator.", "CFF",);
     }
     for i in 0..(*dict).count {
@@ -1012,9 +999,8 @@ pub unsafe extern "C" fn cff_dict_get(
     mut idx: i32,
 ) -> f64 {
     let mut value: f64 = 0.0f64;
-    let mut i: i32 = 0;
     assert!(!key.is_null() && !dict.is_null());
-    i = 0i32;
+    let mut i = 0;
     while i < (*dict).count {
         if streq_ptr(key, (*(*dict).entries.offset(i as isize)).key) {
             if (*(*dict).entries.offset(i as isize)).count > idx {
@@ -1045,9 +1031,8 @@ pub unsafe extern "C" fn cff_dict_set(
     mut idx: i32,
     mut value: f64,
 ) {
-    let mut i: i32 = 0;
     assert!(!dict.is_null() && !key.is_null());
-    i = 0i32;
+    let mut i = 0;
     while i < (*dict).count {
         if streq_ptr(key, (*(*dict).entries.offset(i as isize)).key) {
             if (*(*dict).entries.offset(i as isize)).count > idx {
@@ -1075,11 +1060,9 @@ pub unsafe extern "C" fn cff_dict_set(
 pub unsafe extern "C" fn cff_dict_update(mut dict: *mut cff_dict, cff: &mut cff_font) {
     for i in 0..(*dict).count {
         if (*(*dict).entries.offset(i as isize)).count > 0i32 {
-            let mut str: *mut i8 = 0 as *mut i8;
-            let mut id: i32 = 0;
-            id = (*(*dict).entries.offset(i as isize)).id;
+            let id = (*(*dict).entries.offset(i as isize)).id;
             if dict_operator[id as usize].argtype == 1i32 << 3i32 {
-                str = cff_get_string(
+                let str = cff_get_string(
                     cff,
                     *(*(*dict).entries.offset(i as isize)).values.offset(0) as s_SID,
                 );
@@ -1087,14 +1070,14 @@ pub unsafe extern "C" fn cff_dict_update(mut dict: *mut cff_dict, cff: &mut cff_
                     cff_add_string(cff, str, 1i32) as f64;
                 free(str as *mut libc::c_void);
             } else if dict_operator[id as usize].argtype == 1i32 << 6i32 {
-                str = cff_get_string(
+                let str = cff_get_string(
                     cff,
                     *(*(*dict).entries.offset(i as isize)).values.offset(0) as s_SID,
                 );
                 *(*(*dict).entries.offset(i as isize)).values.offset(0) =
                     cff_add_string(cff, str, 1i32) as f64;
                 free(str as *mut libc::c_void);
-                str = cff_get_string(
+                let str = cff_get_string(
                     cff,
                     *(*(*dict).entries.offset(i as isize)).values.offset(1) as s_SID,
                 );
