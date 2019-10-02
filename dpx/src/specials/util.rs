@@ -25,10 +25,8 @@
     unused_mut
 )]
 
-use std::ffi::CStr;
 use crate::spc_warn;
 use crate::DisplayExt;
-
 use super::{spc_arg, spc_env};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 use crate::dpx_pdfcolor::PdfColor;
@@ -197,9 +195,9 @@ unsafe extern "C" fn spc_read_color_color(
                     cv[0],
                     cv[1],
                     cv[2],
-                    (*colorspec).values[0],
-                    (*colorspec).values[1],
-                    (*colorspec).values[2],
+                    r,
+                    g,
+                    b
                 );
             } else {
                 unreachable!();
@@ -217,7 +215,7 @@ unsafe extern "C" fn spc_read_color_color(
             Err(())
         };
         if result.is_err() {
-            spc_warn(
+            spc_warn!(
                 spe,
                 "Unrecognized color name: {}",
                     CStr::from_ptr(q).display(),
@@ -269,7 +267,7 @@ unsafe extern "C" fn spc_read_color_pdf(
                 .and_then(|name| pdf_color_namedcolor(name))
                 .ok_or(());
             if result.is_err() {
-                spc_warn(
+                spc_warn!(
                     spe,
                     "Unrecognized color name: {}, keep the current color",
                     CStr::from_ptr(q).display(),
