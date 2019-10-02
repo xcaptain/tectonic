@@ -60,12 +60,12 @@ use super::dpx_tfm::{tfm_get_width, tfm_open};
 use super::dpx_tt_aux::tt_get_fontdesc;
 use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_array_length, pdf_lookup_dict, pdf_merge_dict,
-    pdf_new_array, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string,
-    pdf_ref_obj, pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
+    pdf_new_array, pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_ref_obj,
+    pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
+use crate::shims::sprintf;
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
 use libc::{free, strcmp, strlen};
-use crate::shims::sprintf;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;
@@ -223,16 +223,17 @@ unsafe extern "C" fn add_SimpleMetrics(
      * to the default scaling of 1000:1, not relative to the scaling
      * given by the font matrix.
      */
-    let scaling = if cff_dict_known(cffont.topdict, b"FontMatrix\x00" as *const u8 as *const i8) != 0 {
-        1000i32 as f64
-            * cff_dict_get(
-                cffont.topdict,
-                b"FontMatrix\x00" as *const u8 as *const i8,
-                0i32,
-            )
-    } else {
-        1.
-    };
+    let scaling =
+        if cff_dict_known(cffont.topdict, b"FontMatrix\x00" as *const u8 as *const i8) != 0 {
+            1000i32 as f64
+                * cff_dict_get(
+                    cffont.topdict,
+                    b"FontMatrix\x00" as *const u8 as *const i8,
+                    0i32,
+                )
+        } else {
+            1.
+        };
     let tmp_array = pdf_new_array();
     if num_glyphs as i32 <= 1i32 {
         /* This should be error. */

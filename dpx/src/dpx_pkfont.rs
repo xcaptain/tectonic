@@ -46,8 +46,8 @@ use crate::dpx_pdfobj::{
     pdf_add_array, pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_array, pdf_new_dict,
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_obj, pdf_ref_obj, pdf_release_obj,
 };
-use libc::{fclose, fgetc, fopen, fread, free, memset};
 use crate::shims::sprintf;
+use libc::{fclose, fgetc, fopen, fread, free, memset};
 
 use crate::dpx_numbers::{
     get_positive_quad, get_signed_byte, get_signed_pair, get_signed_quad, get_unsigned_byte,
@@ -694,10 +694,11 @@ pub unsafe extern "C" fn pdf_font_load_pkfont(mut font: *mut pdf_font) -> i32 {
                 } else {
                     pkh.bm_voff as f64
                 };
-                let pkt_ptr = new(
-                    (pkh.pkt_len as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32,
-                ) as *mut u8;
-                let bytesread = fread(pkt_ptr as *mut libc::c_void, 1, pkh.pkt_len as _, fp) as size_t;
+                let pkt_ptr = new((pkh.pkt_len as u64)
+                    .wrapping_mul(::std::mem::size_of::<u8>() as u64)
+                    as u32) as *mut u8;
+                let bytesread =
+                    fread(pkt_ptr as *mut libc::c_void, 1, pkh.pkt_len as _, fp) as size_t;
                 if bytesread != pkh.pkt_len as u64 {
                     panic!(
                         "Only {} bytes PK packet read. (expected {} bytes)",

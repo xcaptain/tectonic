@@ -84,9 +84,9 @@ use crate::dpx_pdfobj::{
     pdf_ref_obj, pdf_release_obj, pdf_stream_dict,
 };
 use crate::dpx_truetype::sfnt_table_info;
+use crate::shims::sprintf;
 use crate::{ttstub_input_close, ttstub_input_read, ttstub_input_seek};
 use libc::{free, memmove, memset, strcat, strcmp, strcpy, strlen, strstr};
-use crate::shims::sprintf;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;
@@ -736,15 +736,16 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
     if opt_flags & 1i32 << 1i32 != 0 {
         pdf_add_dict((*font).fontdict, "DW", pdf_new_number(1000.0f64));
     } else {
-        let cid_count = if cff_dict_known((*cffont).topdict, b"CIDCount\x00" as *const u8 as *const i8) != 0 {
-            cff_dict_get(
-                (*cffont).topdict,
-                b"CIDCount\x00" as *const u8 as *const i8,
-                0i32,
-            ) as i32
-        } else {
-            65535i32 + 1i32
-        };
+        let cid_count =
+            if cff_dict_known((*cffont).topdict, b"CIDCount\x00" as *const u8 as *const i8) != 0 {
+                cff_dict_get(
+                    (*cffont).topdict,
+                    b"CIDCount\x00" as *const u8 as *const i8,
+                    0i32,
+                ) as i32
+            } else {
+                65535i32 + 1i32
+            };
         CIDToGIDMap = new(((2i32 * cid_count) as u32 as u64)
             .wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32)
             as *mut u8;
@@ -849,7 +850,8 @@ pub unsafe extern "C" fn CIDFont_type0_dofont(mut font: *mut CIDFont) {
                 | *CIDToGIDMap.offset((2i32 * cid + 1i32) as isize) as i32)
                 as u16;
             let size = (*(*idx).offset.offset((gid_org as i32 + 1i32) as isize))
-                .wrapping_sub(*(*idx).offset.offset(gid_org as isize)) as i32;
+                .wrapping_sub(*(*idx).offset.offset(gid_org as isize))
+                as i32;
             if size > 65536i32 {
                 panic!("Charstring too long: gid={}", gid_org);
             }

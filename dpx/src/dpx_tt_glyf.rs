@@ -33,9 +33,9 @@ use super::dpx_mem::{new, renew};
 use super::dpx_numbers::{tt_get_signed_pair, tt_get_unsigned_pair, tt_get_unsigned_quad};
 use super::dpx_sfnt::{sfnt_find_table_pos, sfnt_locate_table, sfnt_set_table};
 use super::dpx_tt_table::{
-    tt_pack_head_table,
-    tt_pack_hhea_table, tt_pack_maxp_table, tt_read_head_table, tt_read_hhea_table,
-    tt_read_longMetrics, tt_read_maxp_table, tt_read_os2__table, tt_read_vhea_table,
+    tt_pack_head_table, tt_pack_hhea_table, tt_pack_maxp_table, tt_read_head_table,
+    tt_read_hhea_table, tt_read_longMetrics, tt_read_maxp_table, tt_read_os2__table,
+    tt_read_vhea_table,
 };
 use crate::dpx_truetype::sfnt_table_info;
 use crate::qsort;
@@ -501,11 +501,13 @@ pub unsafe extern "C" fn tt_build_tables(mut sfont: *mut sfnt, mut g: *mut tt_gl
         (*head).indexToLocFormat = 1_i16;
         (((*g).last_gid as i32 + 2i32) * 4i32) as u32
     };
-    let mut p_0 = new((hmtx_table_size as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-        as *mut i8;
+    let mut p_0 =
+        new((hmtx_table_size as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8;
     let hmtx_table_data = p_0;
-    let mut q = new((loca_table_size as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-        as *mut i8;
+    let mut q =
+        new((loca_table_size as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8;
     let loca_table_data = q;
     let glyf_table_data =
         new((glyf_table_size as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)

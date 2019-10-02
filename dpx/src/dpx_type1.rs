@@ -57,9 +57,9 @@ use crate::dpx_pdfobj::{
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj, pdf_ref_obj,
     pdf_release_obj, pdf_stream_dataptr, pdf_stream_dict, pdf_stream_length,
 };
+use crate::shims::sprintf;
 use crate::{ttstub_input_close, ttstub_input_open};
 use libc::{free, memset, strlen, strstr};
-use crate::shims::sprintf;
 
 pub type size_t = u64;
 
@@ -415,16 +415,17 @@ unsafe extern "C" fn add_metrics(
      * to the default scaling of 1000:1, not relative to the scaling
      * given by the font matrix.
      */
-    let scaling = if cff_dict_known(cffont.topdict, b"FontMatrix\x00" as *const u8 as *const i8) != 0 {
-        1000.
-            * cff_dict_get(
-                cffont.topdict,
-                b"FontMatrix\x00" as *const u8 as *const i8,
-                0i32,
-            )
-    } else {
-        1.
-    };
+    let scaling =
+        if cff_dict_known(cffont.topdict, b"FontMatrix\x00" as *const u8 as *const i8) != 0 {
+            1000.
+                * cff_dict_get(
+                    cffont.topdict,
+                    b"FontMatrix\x00" as *const u8 as *const i8,
+                    0i32,
+                )
+        } else {
+            1.
+        };
     let tmp_array = pdf_new_array();
     for i in 0..4 {
         let val = cff_dict_get(cffont.topdict, b"FontBBox\x00" as *const u8 as *const i8, i);
@@ -764,7 +765,8 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
         0.
     };
     /* Create CFF encoding, charset, sort glyphs */
-    let GIDMap = new((1024_u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32) as *mut u16; /* FIXME */
+    let GIDMap =
+        new((1024_u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32) as *mut u16; /* FIXME */
     let pdfcharset = pdf_new_stream(0i32); /* With pseudo unique tag */
     cffont.encoding = new((1_u64).wrapping_mul(::std::mem::size_of::<cff_encoding>() as u64) as u32)
         as *mut cff_encoding;
@@ -926,7 +928,8 @@ pub unsafe extern "C" fn pdf_font_load_type1(mut font: *mut pdf_font) -> i32 {
         let srclen = (*(*cffont.cstrings)
             .offset
             .offset((gid_orig as i32 + 1i32) as isize))
-        .wrapping_sub(*(*cffont.cstrings).offset.offset(gid_orig as isize)) as i32;
+        .wrapping_sub(*(*cffont.cstrings).offset.offset(gid_orig as isize))
+            as i32;
         offset += t1char_convert_charstring(
             dstptr,
             65536i32,

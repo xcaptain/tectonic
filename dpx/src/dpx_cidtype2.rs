@@ -59,9 +59,9 @@ use crate::dpx_pdfobj::{
     pdf_new_name, pdf_new_number, pdf_new_stream, pdf_new_string, pdf_obj, pdf_ref_obj,
     pdf_release_obj, pdf_stream_length,
 };
+use crate::shims::sprintf;
 use crate::ttstub_input_close;
 use libc::{free, memmove, memset, strcat, strcmp, strcpy, strlen, strncpy, strstr};
-use crate::shims::sprintf;
 
 pub type size_t = u64;
 
@@ -504,7 +504,8 @@ unsafe extern "C" fn add_TTCIDVMetrics(
     mut last_cid: u16,
 ) {
     let mut empty: i32 = 1i32;
-    let defaultVertOriginY = (1000.0f64 * ((*g).default_advh as i32 - (*g).default_tsb as i32) as f64
+    let defaultVertOriginY = (1000.0f64
+        * ((*g).default_advh as i32 - (*g).default_tsb as i32) as f64
         / (*g).emsize as i32 as f64
         / 1i32 as f64
         + 0.5f64)
@@ -520,7 +521,8 @@ unsafe extern "C" fn add_TTCIDVMetrics(
         if !(*used_chars.offset((cid / 8i32) as isize) as i32 & 1i32 << 7i32 - cid % 8i32 == 0) {
             let idx = tt_get_index(g, cid as u16);
             if !(cid != 0i32 && idx as i32 == 0i32) {
-                let advanceHeight = (1000.0f64 * (*(*g).gd.offset(idx as isize)).advh as i32 as f64
+                let advanceHeight = (1000.0f64
+                    * (*(*g).gd.offset(idx as isize)).advh as i32 as f64
                     / (*g).emsize as i32 as f64
                     / 1i32 as f64
                     + 0.5f64)
@@ -1237,7 +1239,8 @@ pub unsafe extern "C" fn CIDFont_type2_open(
         return -1i32;
     }
     /* MAC-ROMAN-EN-POSTSCRIPT or WIN-UNICODE-EN(US)-POSTSCRIPT */
-    let shortname = new((127_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8; /* for SJIS, UTF-16, ... string */
+    let shortname =
+        new((127_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8; /* for SJIS, UTF-16, ... string */
     let mut namelen = tt_get_ps_fontname(sfont, shortname, 127_u16) as i32;
     if namelen == 0i32 {
         memset(shortname as *mut libc::c_void, 0i32, 127);

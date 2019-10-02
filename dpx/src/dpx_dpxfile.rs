@@ -32,12 +32,10 @@ use super::dpx_mem::{new, xstrdup};
 use super::dpx_numbers::{tt_get_unsigned_pair, tt_get_unsigned_quad};
 use crate::mfree;
 use crate::{ttstub_input_close, ttstub_input_open, ttstub_input_read, ttstub_input_seek};
-use libc::{
-    close, free, getenv, memcmp, remove, strcat, strcpy, strlen, strncmp, strrchr,
-};
-#[cfg(not(target_env="msvc"))]
+#[cfg(not(target_env = "msvc"))]
 use libc::mkstemp;
-#[cfg(target_env="msvc")]
+use libc::{close, free, getenv, memcmp, remove, strcat, strcpy, strlen, strncmp, strrchr};
+#[cfg(target_env = "msvc")]
 extern "C" {
     #[link_name = "dpx_win32_mktemp_s"]
     fn mktemp_s(template: *mut libc::c_char, size: libc::size_t) -> libc::c_int;
@@ -314,9 +312,9 @@ pub unsafe extern "C" fn dpx_create_temp_file() -> *mut i8 {
     let mut tmpdir: *mut i8 = 0 as *mut i8;
     let mut n: size_t = 0;
     let mut tmp: *mut i8 = 0 as *mut i8;
-    #[cfg(not(target_env="msvc"))]
+    #[cfg(not(target_env = "msvc"))]
     const TEMPLATE: &[u8] = b"/dvipdfmx.XXXXXX\x00";
-    #[cfg(target_env="msvc")]
+    #[cfg(target_env = "msvc")]
     const TEMPLATE: &[u8] = b"\\dvipdfmx.XXXXXX\x00";
     tmpdir = dpx_get_tmpdir();
     n = strlen(tmpdir)
@@ -326,7 +324,7 @@ pub unsafe extern "C" fn dpx_create_temp_file() -> *mut i8 {
     strcpy(tmp, tmpdir);
     free(tmpdir as *mut libc::c_void);
     strcat(tmp, TEMPLATE.as_ptr() as *const u8 as *const i8);
-    #[cfg(not(target_env="msvc"))]
+    #[cfg(not(target_env = "msvc"))]
     {
         let mut _fd: i32 = mkstemp(tmp);
         if _fd != -1i32 {
@@ -335,7 +333,7 @@ pub unsafe extern "C" fn dpx_create_temp_file() -> *mut i8 {
             tmp = mfree(tmp as *mut libc::c_void) as *mut i8
         }
     }
-    #[cfg(target_env="msvc")]
+    #[cfg(target_env = "msvc")]
     {
         if mktemp_s(tmp, n as _) != 0 {
             tmp = mfree(tmp as *mut libc::c_void) as *mut i8;

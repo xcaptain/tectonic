@@ -36,22 +36,19 @@ use crate::dpx_pdfobj::{
     pdf_stream_dict,
 };
 use crate::mfree;
+use crate::shims::sprintf;
 use crate::{info, warn};
 use libc::{free, memcmp, memcpy, memset, strcmp, strcpy, strlen};
 use md5::{Digest, Md5};
-use std::slice::from_raw_parts;
 use std::error::Error;
-use std::fmt;
 use std::ffi::{CStr, CString};
-use crate::shims::sprintf;
+use std::fmt;
+use std::slice::from_raw_parts;
 
 #[derive(Debug)]
 pub enum PdfColorError {
-    InvalidValue {
-        name: &'static str,
-        value: f64
-    },
-    EmptyName
+    InvalidValue { name: &'static str, value: f64 },
+    EmptyName,
 }
 
 impl PdfColorError {
@@ -63,8 +60,10 @@ impl PdfColorError {
 impl fmt::Display for PdfColorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PdfColorError::InvalidValue { name, value } => write!(f, "Invalid color value specified: {}={}", name, value),
-            PdfColorError::EmptyName => write!(f, "Invalid spot color: empty name")
+            PdfColorError::InvalidValue { name, value } => {
+                write!(f, "Invalid color value specified: {}={}", name, value)
+            }
+            PdfColorError::EmptyName => write!(f, "Invalid spot color: empty name"),
         }
     }
 }
@@ -76,7 +75,7 @@ pub enum PdfColor {
     Gray(f64),
     Spot(CString, f64),
     Rgb(f64, f64, f64),
-    Cmyk(f64, f64, f64, f64)
+    Cmyk(f64, f64, f64, f64),
 }
 
 pub const WHITE: PdfColor = PdfColor::Gray(1.0);
@@ -89,7 +88,7 @@ impl PdfColor {
         } else {
             Err(PdfColorError::InvalidValue {
                 name: "gray",
-                value
+                value,
             })
         }
     }
@@ -98,17 +97,17 @@ impl PdfColor {
         if r < 0.0 || r > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "red",
-                value: r
+                value: r,
             })
         } else if g < 0.0 || g > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "green",
-                value: g
+                value: g,
             })
         } else if b < 0.0 || b > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "blue",
-                value: b
+                value: b,
             })
         } else {
             Ok(PdfColor::Rgb(r, g, b))
@@ -119,25 +118,22 @@ impl PdfColor {
         if c < 0.0 || c > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "cyan",
-                value: c
+                value: c,
             })
-        } else 
-        if m < 0.0 || m > 1.0 {
+        } else if m < 0.0 || m > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "magenta",
-                value: m
+                value: m,
             })
-        } else
-        if y < 0.0f64 || y > 1.0f64 {
+        } else if y < 0.0f64 || y > 1.0f64 {
             Err(PdfColorError::InvalidValue {
                 name: "yellow",
-                value: y
+                value: y,
             })
-        } else
-        if k < 0.0 || k > 1.0 {
+        } else if k < 0.0 || k > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "black",
-                value: k
+                value: k,
             })
         } else {
             Ok(PdfColor::Cmyk(c, m, y, k))
@@ -148,11 +144,9 @@ impl PdfColor {
         if c < 0.0 || c > 1.0 {
             Err(PdfColorError::InvalidValue {
                 name: "grade",
-                value: c
+                value: c,
             })
-        } else if name.to_str()
-            .map(|s| s.is_empty())
-            .unwrap_or(false) {
+        } else if name.to_str().map(|s| s.is_empty()).unwrap_or(false) {
             Err(PdfColorError::EmptyName)
         } else {
             Ok(PdfColor::Spot(name, c))
@@ -164,22 +158,19 @@ impl PdfColor {
         if f == 1.0 {
             WHITE
         } else {
-            let f1 = if let PdfColor::Cmyk(..) = self { 1.0 } else { f };
+            let f1 = if let PdfColor::Cmyk(..) = self {
+                1.0
+            } else {
+                f
+            };
             let f0 = 1.0 - f;
             match self {
                 PdfColor::Gray(g) => PdfColor::Gray(f0 * g + f1),
                 PdfColor::Spot(name, c) => PdfColor::Spot(name, f0 * c + f1),
-                PdfColor::Rgb(r, g, b) => PdfColor::Rgb(
-                    f0 * r + f1,
-                    f0 * g + f1,
-                    f0 * b + f1,
-                ),
-                PdfColor::Cmyk(c, m, y, k) => PdfColor::Cmyk(
-                    f0 * c + f1,
-                    f0 * m + f1,
-                    f0 * y + f1,
-                    f0 * k + f1,
-                )
+                PdfColor::Rgb(r, g, b) => PdfColor::Rgb(f0 * r + f1, f0 * g + f1, f0 * b + f1),
+                PdfColor::Cmyk(c, m, y, k) => {
+                    PdfColor::Cmyk(f0 * c + f1, f0 * m + f1, f0 * y + f1, f0 * k + f1)
+                }
             }
         }
     }
@@ -189,38 +180,39 @@ impl PdfColor {
             PdfColor::Spot(..) => false,
             PdfColor::Rgb(r, g, b) => [r, g, b].iter().all(|value| **value == 1.0),
             PdfColor::Cmyk(c, m, y, k) => [c, m, y, k].iter().all(|value| **value == 0.0),
-            PdfColor::Gray(value) => *value == 1.0
+            PdfColor::Gray(value) => *value == 1.0,
         }
     }
 
     pub unsafe fn to_string(&self, mut buffer: *mut u8, mut mask: i8) -> usize {
         let values_to_string = |values: &[f64]| {
             let len = values.len() as isize;
-            values.iter().map(|value|
-                sprintf(
-                    buffer.offset(len) as *mut i8,
-                    b" %g\x00" as *const u8 as *const i8,
-                    (value / 0.001 + 0.5).floor() * 0.001,
-                )
-            ).sum::<i32>() as usize
+            values
+                .iter()
+                .map(|value| {
+                    sprintf(
+                        buffer.offset(len) as *mut i8,
+                        b" %g\x00" as *const u8 as *const i8,
+                        (value / 0.001 + 0.5).floor() * 0.001,
+                    )
+                })
+                .sum::<i32>() as usize
         };
 
         match self {
-            PdfColor::Spot(name, c) => {
-                sprintf(
-                    buffer as *mut i8,
-                    b" /%s %c%c %g %c%c\x00" as *const u8 as *const i8,
-                    name.as_ptr(),
-                    'C' as i32 | mask as i32,
-                    'S' as i32 | mask as i32,
-                    (c / 0.001 + 0.5).floor() * 0.001,
-                    'S' as i32 | mask as i32,
-                    'C' as i32 | mask as i32,
-                ) as usize
-            },
+            PdfColor::Spot(name, c) => sprintf(
+                buffer as *mut i8,
+                b" /%s %c%c %g %c%c\x00" as *const u8 as *const i8,
+                name.as_ptr(),
+                'C' as i32 | mask as i32,
+                'S' as i32 | mask as i32,
+                (c / 0.001 + 0.5).floor() * 0.001,
+                'S' as i32 | mask as i32,
+                'C' as i32 | mask as i32,
+            ) as usize,
             PdfColor::Cmyk(c, m, y, k) => values_to_string(&[*c, *m, *y, *k]),
             PdfColor::Rgb(r, g, b) => values_to_string(&[*r, *g, *b]),
-            PdfColor::Gray(g) => values_to_string(&[*g])
+            PdfColor::Gray(g) => values_to_string(&[*g]),
         }
     }
 }
@@ -370,8 +362,7 @@ pub unsafe extern "C" fn pdf_color_pop() {
 /* Color stack
  */
 #[no_mangle]
-pub unsafe extern "C" fn pdf_color_get_current() -> (&'static mut PdfColor, &'static mut PdfColor)
-{
+pub unsafe extern "C" fn pdf_color_get_current() -> (&'static mut PdfColor, &'static mut PdfColor) {
     (
         &mut COLOR_STACK.stroke[COLOR_STACK.current as usize],
         &mut COLOR_STACK.fill[COLOR_STACK.current as usize],

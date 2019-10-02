@@ -170,8 +170,8 @@ mod xetex_xetex0;
 mod xetex_xetexd;
 
 mod stub_icu;
-mod stub_teckit;
 mod stub_stdio;
+mod stub_teckit;
 
 pub use xetex_engine_interface::tt_xetex_set_int_variable;
 

@@ -60,10 +60,10 @@ use crate::dpx_pdfobj::{
     pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_stream_length, PdfObjType,
 };
 use crate::mfree;
+use crate::shims::{snprintf, sprintf};
 use crate::streq_ptr;
 use crate::{info, warn};
 use libc::{free, memset, rand, srand, strcpy, strlen, strstr};
-use crate::shims::{sprintf, snprintf};
 
 /* Options */
 use super::dpx_fontmap::fontmap_rec;

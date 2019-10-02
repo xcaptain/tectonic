@@ -42,9 +42,9 @@ use crate::xetex_xetex0::{
 };
 use bridge::_tt_abort;
 
+use crate::stub_stdio::strcasecmp;
 use crate::xetex_layout_engine::*;
 use libc::{memcpy, strcat, strcpy, strdup, strlen, strncpy, strstr};
-use crate::stub_stdio::strcasecmp;
 
 pub type __ssize_t = i64;
 pub type size_t = u64;

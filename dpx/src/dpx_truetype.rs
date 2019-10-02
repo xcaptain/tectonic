@@ -66,9 +66,9 @@ use crate::dpx_pdfobj::{
     pdf_new_number, pdf_obj, pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_stream_length,
     PdfObjType,
 };
+use crate::shims::sprintf;
 use crate::ttstub_input_close;
 use libc::{atoi, free, memcpy, memmove, memset, strchr, strcpy, strlen, strncpy};
-use crate::shims::sprintf;
 
 use bridge::rust_input_handle_t;
 
@@ -359,7 +359,8 @@ unsafe extern "C" fn do_builtin_encoding(
         warn!("Could not read Mac-Roman TrueType cmap table...");
         return -1i32;
     }
-    let cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+    let cmap_table =
+        new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     memset(cmap_table as *mut libc::c_void, 0i32, 274);
     put_big_endian(cmap_table as *mut libc::c_void, 0i32, 2i32);
     /* Version  */
@@ -649,8 +650,9 @@ unsafe extern "C" fn composeuchar(
     if (*gm).codetogid.is_null() {
         return -1i32;
     }
-    let gids = new((n_unicodes as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32)
-        as *mut u16;
+    let gids =
+        new((n_unicodes as u32 as u64).wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32)
+            as *mut u16;
     let mut i = 0;
     while error == 0 && i < n_unicodes {
         *gids.offset(i as isize) =
@@ -698,8 +700,9 @@ unsafe extern "C" fn findcomposite(
     if error == 0 {
         return 0i32;
     }
-    let gname = new((strlen(glyphname).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
-        as *mut i8; /* first try composing glyph */
+    let gname =
+        new((strlen(glyphname).wrapping_add(1)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
+            as *mut i8; /* first try composing glyph */
     strcpy(gname, glyphname);
     memset(
         gids.as_mut_ptr() as *mut libc::c_void,
@@ -710,11 +713,7 @@ unsafe extern "C" fn findcomposite(
     let mut error = 0i32;
     let mut i = 0;
     while error == 0 && i < n_comp as usize {
-        error = resolve_glyph(
-            nptrs[i],
-            &mut *gids.as_mut_ptr().offset(i as isize),
-            gm,
-        );
+        error = resolve_glyph(nptrs[i], &mut *gids.as_mut_ptr().offset(i as isize), gm);
         if error != 0 {
             warn!(
                 "Could not resolve glyph \"{}\" ({}th component of glyph \"{}\").",
@@ -878,7 +877,11 @@ unsafe extern "C" fn resolve_glyph(
     } else if agl_name_is_unicode(name) {
         let ucv = agl_name_convert_unicode(name);
         *gid = tt_cmap_lookup((*gm).codetogid, ucv as u32);
-        if *gid as i32 == 0i32 { -1 } else { 0 }
+        if *gid as i32 == 0i32 {
+            -1
+        } else {
+            0
+        }
     } else {
         findparanoiac(name, gid, gm)
     };
@@ -955,7 +958,8 @@ unsafe extern "C" fn do_custom_encoding(
         warn!(">> I can\'t find glyphs without this!");
         return -1i32;
     }
-    let cmap_table = new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+    let cmap_table =
+        new((274_u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     memset(cmap_table as *mut libc::c_void, 0i32, 274);
     put_big_endian(cmap_table as *mut libc::c_void, 0i32, 2i32);
     /* Version  */

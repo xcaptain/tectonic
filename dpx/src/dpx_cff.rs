@@ -947,7 +947,7 @@ pub unsafe extern "C" fn cff_get_name(cff: &cff_font) -> *mut i8 {
     let len = (*(*idx).offset.offset((cff.index + 1i32) as isize))
         .wrapping_sub(*(*idx).offset.offset(cff.index as isize));
     let fontname = new(
-        (len.wrapping_add(1_u32) as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32,
+        (len.wrapping_add(1_u32) as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32
     ) as *mut i8;
     memcpy(
         fontname as *mut libc::c_void,
@@ -2187,7 +2187,8 @@ pub unsafe extern "C" fn cff_read_subrs(cff: &mut cff_font) -> i32 {
         let ref mut fresh49 = *cff.subrs.offset(0);
         *fresh49 = 0 as *mut cff_index
     } else {
-        let offset = cff_dict_get(cff.topdict, b"Private\x00" as *const u8 as *const i8, 1i32) as i32;
+        let offset =
+            cff_dict_get(cff.topdict, b"Private\x00" as *const u8 as *const i8, 1i32) as i32;
         let offset = (offset as f64
             + cff_dict_get(
                 *cff.private.offset(0),
@@ -2350,8 +2351,9 @@ pub unsafe extern "C" fn cff_read_private(cff: &mut cff_font) -> i32 {
                 cff.offset.wrapping_add(offset as u32) as ssize_t,
                 0i32,
             );
-            let data = new((size as u32 as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32)
-                as *mut u8;
+            let data =
+                new((size as u32 as u64).wrapping_mul(::std::mem::size_of::<u8>() as u64) as u32)
+                    as *mut u8;
             if ttstub_input_read(cff.handle, data as *mut i8, size as size_t) != size as i64 {
                 panic!("reading file failed");
             }

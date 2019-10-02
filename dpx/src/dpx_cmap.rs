@@ -695,7 +695,9 @@ pub unsafe extern "C" fn CMap_add_notdefrange(
     if locate_tbl(&mut cur, srclo, srcdim as i32) < 0i32 {
         return -1i32;
     }
-    for c in *srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32 ..= *srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32 {
+    for c in *srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32
+        ..=*srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32
+    {
         if if (*cur.offset(c as isize)).flag & 0xfi32 != 0i32 {
             1i32
         } else {
@@ -743,11 +745,13 @@ pub unsafe extern "C" fn CMap_add_bfrange(
     if (*cmap).mapTbl.is_null() {
         (*cmap).mapTbl = mapDef_new()
     }
-    let  mut cur = (*cmap).mapTbl;
+    let mut cur = (*cmap).mapTbl;
     if locate_tbl(&mut cur, srclo, srcdim as i32) < 0i32 {
         return -1i32;
     }
-    for c in *srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32 ..= *srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32 {
+    for c in *srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32
+        ..=*srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as i32
+    {
         /* According to 5014.CIDFont_Spec.pdf (p.52),
          * Code mappings (unlike codespace ranges) may overlap,
          * but succeeding maps superceded preceding maps.
@@ -835,7 +839,9 @@ pub unsafe extern "C" fn CMap_add_cidrange(
         v = (v << 8i32).wrapping_add(*srclo.offset(i as isize) as u64);
     }
     *(*cmap).reverseMap.offset(base as isize) = v as i32;
-    for c in (*srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as u64) ..= *srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as u64 {
+    for c in (*srclo.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as u64)
+        ..=*srchi.offset(srcdim.wrapping_sub(1i32 as u64) as isize) as u64
+    {
         if (*cur.offset(c as isize)).flag != 0i32 {
             if __silent == 0 {
                 warn!("Trying to redefine already defined CID mapping. (ignored)");
@@ -866,7 +872,8 @@ unsafe extern "C" fn mapDef_release(mut t: *mut mapDef) {
     free(t as *mut libc::c_void);
 }
 unsafe extern "C" fn mapDef_new() -> *mut mapDef {
-    let t = new((256_u64).wrapping_mul(::std::mem::size_of::<mapDef>() as u64) as u32) as *mut mapDef;
+    let t =
+        new((256_u64).wrapping_mul(::std::mem::size_of::<mapDef>() as u64) as u32) as *mut mapDef;
     for c in 0..256 {
         (*t.offset(c as isize)).flag = 0i32 | 0i32;
         let ref mut fresh4 = (*t.offset(c as isize)).code;

@@ -71,8 +71,8 @@ use crate::dpx_pdfparse::{
     parse_ident, parse_number, parse_pdf_array, parse_pdf_dict, parse_pdf_name, parse_pdf_string,
     pdfparse_skip_line, skip_white,
 };
-use libc::{atof, fread, free, rewind, strchr, strcpy, strlen, strtod};
 use crate::shims::sprintf;
+use libc::{atof, fread, free, rewind, strchr, strcpy, strlen, strtod};
 
 pub type __off_t = i64;
 pub type __off64_t = i64;
@@ -3388,7 +3388,8 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
             error = pop_get_numbers(values.as_mut_ptr(), 4i32);
             /* Not handled properly */
             if error == 0 {
-                let color = PdfColor::from_cmyk(values[0], values[1], values[2], values[3]).unwrap();
+                let color =
+                    PdfColor::from_cmyk(values[0], values[1], values[2], values[3]).unwrap();
                 pdf_dev_set_color(&color, 0, 0);
                 pdf_dev_set_color(&color, 0x20, 0);
             }

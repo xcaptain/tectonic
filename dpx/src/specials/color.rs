@@ -23,14 +23,12 @@
     unused_mut
 )]
 
-use crate::spc_warn;
 use super::util::spc_util_read_colorspec;
 use super::{spc_arg, spc_env, spc_handler};
 use crate::dpx_dpxutil::parse_c_ident;
-use crate::dpx_pdfcolor::{
-    pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set,
-};
+use crate::dpx_pdfcolor::{pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set};
 use crate::dpx_pdfdoc::pdf_doc_set_bgcolor;
+use crate::spc_warn;
 use crate::streq_ptr;
 use libc::free;
 
@@ -72,7 +70,7 @@ unsafe extern "C" fn spc_handler_color_default(
         pdf_color_clear_stack();
         pdf_color_set(&colorspec, &colorspec);
         0
-    }  else {
+    } else {
         -1
     }
 }

@@ -289,8 +289,9 @@ unsafe extern "C" fn scan_sfd_file(
             p = p.offset(1);
             n += 1
         }
-        let id = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-            as *mut i8;
+        let id =
+            new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+                as *mut i8;
         memcpy(id as *mut libc::c_void, q as *const libc::c_void, n as _);
         *id.offset(n as isize) = '\u{0}' as i32 as i8;
         if (*sfd).num_subfonts >= (*sfd).max_subfonts {
@@ -436,7 +437,8 @@ pub unsafe extern "C" fn sfd_load_record(
         );
     }
     /* reopen */
-    let handle = ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
+    let handle =
+        ttstub_input_open((*sfd).ident, TTInputFormat::SFD, 0i32) as *mut rust_input_handle_t;
     if handle.is_null() {
         return -1i32;
         /* panic!("Could not open SFD file \"{}\"", sfd_name); */

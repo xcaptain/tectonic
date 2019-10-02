@@ -25,10 +25,9 @@
     unused_mut
 )]
 
-use std::ffi::CStr;
 use crate::DisplayExt;
+use std::ffi::CStr;
 
-use crate::spc_warn;
 use super::util::{spc_util_read_colorspec, spc_util_read_numbers};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_fontmap::{
@@ -47,9 +46,10 @@ use crate::dpx_pdfdraw::{
     pdf_dev_set_fixed_point,
 };
 use crate::dpx_pdfparse::{parse_ident, parse_val_ident, skip_white};
+use crate::shims::sprintf;
+use crate::spc_warn;
 use crate::streq_ptr;
 use libc::{free, memcmp, strlen, strncmp, strncpy};
-use crate::shims::sprintf;
 
 pub type size_t = u64;
 
@@ -371,11 +371,7 @@ unsafe extern "C" fn spc_handler_xtx_renderingmode(
         return -1i32;
     }
     if (value as i32) < 0i32 || value as i32 > 7i32 {
-        spc_warn!(
-            spe,
-            "Invalid text rendering mode {}.\n",
-            value as i32,
-        );
+        spc_warn!(spe, "Invalid text rendering mode {}.\n", value as i32,);
         return -1i32;
     }
     sprintf(

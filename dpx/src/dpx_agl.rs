@@ -624,9 +624,7 @@ pub unsafe extern "C" fn agl_suffix_to_otltag(mut suffix: *const i8) -> *const i
         if streq_ptr(suffix, var_list[i].key) {
             return var_list[i].otl_tag;
         }
-        if !var_list[i].otl_tag.is_null()
-            && streq_ptr(suffix, var_list[i].otl_tag) as i32 != 0
-        {
+        if !var_list[i].otl_tag.is_null() && streq_ptr(suffix, var_list[i].otl_tag) as i32 != 0 {
             return var_list[i].otl_tag;
         }
         i += 1
@@ -696,7 +694,7 @@ unsafe extern "C" fn agl_normalized_name(mut glyphname: *mut i8) -> *mut agl_nam
         }
         *(*agln).name.offset(n as isize) = '\u{0}' as i32 as i8
     } else {
-        let  var_idx = agl_guess_name(glyphname);
+        let var_idx = agl_guess_name(glyphname);
         let n;
         if var_idx < 0i32 as i64 || var_list[var_idx as usize].key.is_null() {
             n = strlen(glyphname) as i32
@@ -1062,10 +1060,8 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
             }
         }
         let sub_len = delim.wrapping_offset_from(p) as i64 as i32;
-        let name = new(
-            ((sub_len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64)
-                as u32,
-        ) as *mut i8;
+        let name = new(((sub_len + 1i32) as u32 as u64)
+            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
         memcpy(
             name as *mut libc::c_void,
             p as *const libc::c_void,
@@ -1161,10 +1157,8 @@ pub unsafe extern "C" fn agl_get_unicodes(
             }
         }
         let sub_len = delim.wrapping_offset_from(p) as i32;
-        let name = new(
-            ((sub_len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64)
-                as u32,
-        ) as *mut i8;
+        let name = new(((sub_len + 1i32) as u32 as u64)
+            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
         memcpy(
             name as *mut libc::c_void,
             p as *const libc::c_void,

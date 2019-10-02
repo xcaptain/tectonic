@@ -35,7 +35,6 @@ use crate::dpx_pdfximage::{
     pdf_ximage_scale_image,
 };
 
-use crate::spc_warn;
 use super::{spc_begin_annot, spc_end_annot};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 use crate::dpx_mem::new;
@@ -53,6 +52,7 @@ use crate::dpx_pdfobj::{
     pdf_obj_typeof, pdf_ref_obj, pdf_release_obj, pdf_string_value, PdfObjType,
 };
 use crate::mfree;
+use crate::spc_warn;
 use crate::streq_ptr;
 use libc::{atof, free, memcmp, memcpy, strcat, strcmp, strcpy, strlen};
 
@@ -116,6 +116,7 @@ unsafe extern "C" fn parse_key_val(
     }
     let mut v = 0 as *mut i8; /* Should be checked somewhere else */
     let mut q = p; /* skip '="' */
+                   
     let mut n = 0i32; /* Assume this is URL */
     while p < endptr
         && (*p as i32 >= 'a' as i32 && *p as i32 <= 'z' as i32
@@ -132,8 +133,9 @@ unsafe extern "C" fn parse_key_val(
         *kp = *vp;
         return -1i32;
     }
-    let mut k = new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-        as *mut i8; /* we may want to add '/' */
+    let mut k =
+        new(((n + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8; /* we may want to add '/' */
     memcpy(k as *mut libc::c_void, q as *const libc::c_void, n as _);
     *k.offset(n as isize) = '\u{0}' as i32 as i8;
     if p.offset(2) >= endptr
@@ -301,7 +303,10 @@ unsafe extern "C" fn spc_handler_html__bophook(
 ) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     if (*sd).pending_type >= 0i32 {
-        spc_warn!(spe, "...html anchor continues from previous page processed...");
+        spc_warn!(
+            spe,
+            "...html anchor continues from previous page processed..."
+        );
     }
     0i32
 }
@@ -322,8 +327,9 @@ unsafe extern "C" fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut 
     if !baseurl.is_null() {
         len = (len as usize).wrapping_add(strlen(baseurl).wrapping_add(1)) as _
     }
-    let mut q = new(((len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
-        as *mut i8;
+    let mut q =
+        new(((len + 1i32) as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8;
     *q = '\u{0}' as i32 as i8;
     if !baseurl.is_null() && *baseurl.offset(0) as i32 != 0 {
         strcpy(q, baseurl);
@@ -428,7 +434,10 @@ unsafe extern "C" fn spc_html__anchor_open(
     let name = pdf_lookup_dict(attr, "name");
     match (href, name) {
         (Some(_), Some(_)) => {
-            spc_warn!(spe, "Sorry, you can\'t have both \"href\" and \"name\" in anchor tag...");
+            spc_warn!(
+                spe,
+                "Sorry, you can\'t have both \"href\" and \"name\" in anchor tag..."
+            );
             -1i32
         }
         (Some(href), None) => html_open_link(spe, pdf_string_value(href) as *const i8, sd),
@@ -595,7 +604,10 @@ unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut p
         f: (*spe).y_user,
     };
     /* ENABLE_HTML_SVG_TRANSFORM */
-    spc_warn!(spe, "html \"img\" tag found (not completed, plese don\'t use!).");
+    spc_warn!(
+        spe,
+        "html \"img\" tag found (not completed, plese don\'t use!)."
+    );
     let src = pdf_lookup_dict(attr, "src");
     if src.is_none() {
         spc_warn!(spe, "\"src\" attribute not found for \"img\" tag!");

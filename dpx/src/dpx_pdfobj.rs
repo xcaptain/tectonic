@@ -44,6 +44,7 @@ use super::dpx_mfileio::{tt_mfgets, work_buffer};
 use super::dpx_pdfdev::pdf_sprint_number;
 use super::dpx_pdfencrypt::{pdf_enc_set_generation, pdf_enc_set_label, pdf_encrypt_data};
 use super::dpx_pdfparse::skip_white;
+use crate::shims::{sprintf, sscanf};
 use crate::{
     ttstub_input_get_size, ttstub_input_getc, ttstub_input_read, ttstub_input_seek,
     ttstub_input_ungetc, ttstub_output_close, ttstub_output_open, ttstub_output_open_stdout,
@@ -51,7 +52,6 @@ use crate::{
 };
 use bridge::_tt_abort;
 use libc::{atof, atoi, free, memcmp, memset, strlen, strtoul};
-use crate::shims::{sprintf, sscanf};
 
 use libz_sys as libz;
 

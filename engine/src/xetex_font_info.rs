@@ -2478,8 +2478,9 @@ unsafe extern "C" fn _get_table(
         &mut length,
     );
     if error == 0 {
-        table = xmalloc(length.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _)
-            as *mut FT_Byte;
+        table = xmalloc(
+            length.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _,
+        ) as *mut FT_Byte;
         if !table.is_null() {
             error = FT_Load_Sfnt_Table(face, tag as FT_ULong, 0i32 as FT_Long, table, &mut length);
             if error == 0 {
@@ -2672,8 +2673,9 @@ pub unsafe extern "C" fn XeTeXFontInst_getFontTable(
     if error != 0 {
         return 0 as *mut libc::c_void;
     }
-    let mut table: *mut libc::c_void =
-        xmalloc(tmpLength.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _);
+    let mut table: *mut libc::c_void = xmalloc(
+        tmpLength.wrapping_mul(::std::mem::size_of::<libc::c_char>() as libc::c_ulong) as _,
+    );
     if !table.is_null() {
         error = FT_Load_Sfnt_Table(
             (*self_0).m_ftFace,
@@ -2963,9 +2965,9 @@ pub unsafe extern "C" fn XeTeXFontInst_getHbFont(self_0: *const XeTeXFontInst) -
 #[no_mangle]
 //#[inline]
 pub unsafe extern "C" fn XeTeXFontInst_unitsToPoints(
-        self_0: *const XeTeXFontInst,
-        units: libc::c_float,
-    ) -> libc::c_float {
+    self_0: *const XeTeXFontInst,
+    units: libc::c_float,
+) -> libc::c_float {
     (units * (*self_0).m_pointSize) / ((*self_0).m_unitsPerEM as libc::c_float)
 }
 

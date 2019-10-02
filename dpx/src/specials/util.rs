@@ -25,17 +25,17 @@
     unused_mut
 )]
 
-use crate::spc_warn;
-use crate::DisplayExt;
 use super::{spc_arg, spc_env};
 use crate::dpx_dpxutil::{parse_c_ident, parse_float_decimal};
 use crate::dpx_pdfcolor::PdfColor;
 use crate::dpx_pdfdev::{pdf_tmatrix, transform_info};
 use crate::dpx_pdfparse::skip_white;
 use crate::mfree;
-use crate::streq_ptr;
-use libc::{atof, free, memcmp, strcmp, strlen};
 use crate::shims::strcasecmp;
+use crate::spc_warn;
+use crate::streq_ptr;
+use crate::DisplayExt;
+use libc::{atof, free, memcmp, strcmp, strlen};
 use std::ffi::CStr;
 
 /* tectonic/core-memory.h: basic dynamic memory helpers
@@ -140,8 +140,7 @@ unsafe extern "C" fn spc_read_color_color(
             spc_warn!(spe, "Invalid value for RGB color specification.");
             result = Err(())
         } else {
-            result = PdfColor::from_rgb(cv[0], cv[1], cv[2])
-                .map_err(|err| err.warn())
+            result = PdfColor::from_rgb(cv[0], cv[1], cv[2]).map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"cmyk\x00" as *const u8 as *const i8) {
         /* Handle cmyk color */
@@ -150,8 +149,7 @@ unsafe extern "C" fn spc_read_color_color(
             spc_warn!(spe, "Invalid value for CMYK color specification.");
             result = Err(())
         } else {
-            result = PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3])
-                .map_err(|err| err.warn())
+            result = PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"gray\x00" as *const u8 as *const i8) {
         /* Handle gray */
@@ -160,8 +158,7 @@ unsafe extern "C" fn spc_read_color_color(
             spc_warn!(spe, "Invalid value for gray color specification.");
             result = Err(())
         } else {
-            result = PdfColor::from_gray(cv[0])
-                .map_err(|err| err.warn())
+            result = PdfColor::from_gray(cv[0]).map_err(|err| err.warn())
         }
     } else if streq_ptr(q, b"spot\x00" as *const u8 as *const i8) {
         /* Handle spot colors */
@@ -217,7 +214,7 @@ unsafe extern "C" fn spc_read_color_color(
             spc_warn!(
                 spe,
                 "Unrecognized color name: {}",
-                    CStr::from_ptr(q).display(),
+                CStr::from_ptr(q).display(),
             );
         }
     }
@@ -244,15 +241,9 @@ unsafe extern "C" fn spc_read_color_pdf(
     }
     let nc = spc_util_read_numbers(cv.as_mut_ptr(), 4i32, ap);
     let mut result = match nc {
-        1 => {
-            PdfColor::from_gray(cv[0]).map_err(|err| err.warn())
-        }
-        3 => {
-            PdfColor::from_rgb(cv[0], cv[1], cv[2]).map_err(|err| err.warn())
-        }
-        4 => {
-            PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).map_err(|err| err.warn())
-        }
+        1 => PdfColor::from_gray(cv[0]).map_err(|err| err.warn()),
+        3 => PdfColor::from_rgb(cv[0], cv[1], cv[2]).map_err(|err| err.warn()),
+        4 => PdfColor::from_cmyk(cv[0], cv[1], cv[2], cv[3]).map_err(|err| err.warn()),
         _ => {
             /* Try to read the color names defined in dvipsname.def */
             let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
@@ -260,7 +251,8 @@ unsafe extern "C" fn spc_read_color_pdf(
                 spc_warn!(spe, "No valid color specified?");
                 return Err(());
             }
-            let mut result = CStr::from_ptr(q).to_str()
+            let mut result = CStr::from_ptr(q)
+                .to_str()
                 .ok()
                 .and_then(|name| pdf_color_namedcolor(name))
                 .ok_or(());
@@ -313,8 +305,10 @@ pub unsafe extern "C" fn spc_util_read_pdfcolor(
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if (*ap).curptr >= (*ap).endptr {
         Err(())
-    } else if let Some(c) = spc_read_color_pdf(spe, ap).ok()
-        .or_else(|| defaultcolor.cloned()) {
+    } else if let Some(c) = spc_read_color_pdf(spe, ap)
+        .ok()
+        .or_else(|| defaultcolor.cloned())
+    {
         Ok(c)
     } else {
         Err(())
@@ -495,7 +489,10 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
                     vp = parse_float_decimal(&mut (*ap).curptr, (*ap).endptr);
                     skip_blank(&mut (*ap).curptr, (*ap).endptr);
                     if !vp.is_null() && qchr as i32 != *(*ap).curptr.offset(0) as i32 {
-                        spc_warn!(spe, "Syntax error in dimension/transformation specification.");
+                        spc_warn!(
+                            spe,
+                            "Syntax error in dimension/transformation specification."
+                        );
                         error = -1i32;
                         vp = mfree(vp as *mut libc::c_void) as *mut i8
                     }
@@ -721,7 +718,10 @@ unsafe extern "C" fn spc_read_dimtrns_pdfm(
             spc_warn!(spe, "Can\'t supply both width and xscale. Ignore xscale.");
             xscale = 1.0f64
         } else if has_yscale != 0 && p.flags & 1i32 << 2i32 != 0 {
-            spc_warn!(spe, "Can\'t supply both height/depth and yscale. Ignore yscale.");
+            spc_warn!(
+                spe,
+                "Can\'t supply both height/depth and yscale. Ignore yscale."
+            );
             yscale = 1.0f64
         } else if has_scale != 0 && (has_xscale != 0 || has_yscale != 0) {
             spc_warn!(spe, "Can\'t supply overall scale along with axis scales.");
@@ -950,7 +950,10 @@ pub unsafe extern "C" fn spc_util_read_blahblah(
             spc_warn!(spe, "Can\'t supply both width and xscale. Ignore xscale.");
             xscale = 1.0f64
         } else if has_yscale != 0 && p.flags & 1i32 << 2i32 != 0 {
-            spc_warn!(spe, "Can\'t supply both height/depth and yscale. Ignore yscale.");
+            spc_warn!(
+                spe,
+                "Can\'t supply both height/depth and yscale. Ignore yscale."
+            );
             yscale = 1.0f64
         } else if has_scale != 0 && (has_xscale != 0 || has_yscale != 0) {
             spc_warn!(spe, "Can\'t supply overall scale along with axis scales.");
@@ -984,26 +987,17 @@ impl Colordef {
 }
 
 const COLORDEFS: [Colordef; 68] = [
-    Colordef::new(
-        "GreenYellow",
-        PdfColor::Cmyk(0.15, 0.0, 0.69, 0.0)
-    ),
+    Colordef::new("GreenYellow", PdfColor::Cmyk(0.15, 0.0, 0.69, 0.0)),
     Colordef::new("Yellow", PdfColor::Cmyk(0.0, 0.0, 1.0, 0.0)),
     Colordef::new("Goldenrod", PdfColor::Cmyk(0.0, 0.1, 0.84, 0.0)),
     Colordef::new("Dandelion", PdfColor::Cmyk(0.0, 0.29, 0.84, 0.0)),
     Colordef::new("Apricot", PdfColor::Cmyk(0.0, 0.32, 0.52, 0.0)),
     Colordef::new("Peach", PdfColor::Cmyk(0.0, 0.5, 0.7, 0.0)),
     Colordef::new("Melon", PdfColor::Cmyk(0.0, 0.46, 0.5, 0.0)),
-    Colordef::new(
-        "YellowOrange",
-        PdfColor::Cmyk(0.0, 0.42, 1.0, 0.0)
-    ),
+    Colordef::new("YellowOrange", PdfColor::Cmyk(0.0, 0.42, 1.0, 0.0)),
     Colordef::new("Orange", PdfColor::Cmyk(0.0, 0.61, 0.87, 0.0)),
     Colordef::new("BurntOrange", PdfColor::Cmyk(0.0, 0.51, 1.0, 0.0)),
-    Colordef::new(
-        "Bittersweet",
-        PdfColor::Cmyk(0.0, 0.75, 1.0, 0.24)
-    ),
+    Colordef::new("Bittersweet", PdfColor::Cmyk(0.0, 0.75, 1.0, 0.24)),
     Colordef::new("RedOrange", PdfColor::Cmyk(0.0, 0.77, 0.87, 0.0)),
     Colordef::new("Mahogany", PdfColor::Cmyk(0.0, 0.85, 0.87, 0.35)),
     Colordef::new("Maroon", PdfColor::Cmyk(0.0, 0.87, 0.68, 0.32)),
@@ -1011,15 +1005,9 @@ const COLORDEFS: [Colordef; 68] = [
     Colordef::new("Red", PdfColor::Cmyk(0.0, 1.0, 1.0, 0.0)),
     Colordef::new("OrangeRed", PdfColor::Cmyk(0.0, 1.0, 0.5, 0.0)),
     Colordef::new("RubineRed", PdfColor::Cmyk(0.0, 1.0, 0.13, 0.0)),
-    Colordef::new(
-        "WildStrawberry",
-        PdfColor::Cmyk(0.0, 0.96, 0.39, 0.0)
-    ),
+    Colordef::new("WildStrawberry", PdfColor::Cmyk(0.0, 0.96, 0.39, 0.0)),
     Colordef::new("Salmon", PdfColor::Cmyk(0.0, 0.53, 0.38, 0.0)),
-    Colordef::new(
-        "CarnationPink",
-        PdfColor::Cmyk(0.0, 0.63, 0.0, 0.0)
-    ),
+    Colordef::new("CarnationPink", PdfColor::Cmyk(0.0, 0.63, 0.0, 0.0)),
     Colordef::new("Magenta", PdfColor::Cmyk(0.0, 1.0, 0.0, 0.0)),
     Colordef::new("VioletRed", PdfColor::Cmyk(0.0, 0.81, 0.0, 0.0)),
     Colordef::new("Rhodamine", PdfColor::Cmyk(0.0, 0.82, 0.0, 0.0)),
@@ -1034,20 +1022,11 @@ const COLORDEFS: [Colordef; 68] = [
     Colordef::new("Plum", PdfColor::Cmyk(0.50, 1.0, 0.0, 0.0)),
     Colordef::new("Violet", PdfColor::Cmyk(0.79, 0.88, 0.0, 0.0)),
     Colordef::new("RoyalPurple", PdfColor::Cmyk(0.75, 0.9, 0.0, 0.0)),
-    Colordef::new(
-        "BlueViolet",
-        PdfColor::Cmyk(0.86, 0.91, 0.0, 0.04)
-    ),
+    Colordef::new("BlueViolet", PdfColor::Cmyk(0.86, 0.91, 0.0, 0.04)),
     Colordef::new("Periwinkle", PdfColor::Cmyk(0.57, 0.55, 0.0, 0.0)),
     Colordef::new("CadetBlue", PdfColor::Cmyk(0.62, 0.57, 0.23, 0.0)),
-    Colordef::new(
-        "CornflowerBlue",
-        PdfColor::Cmyk(0.65, 0.13, 0.0, 0.0)
-    ),
-    Colordef::new(
-        "MidnightBlue",
-        PdfColor::Cmyk(0.98, 0.13, 0.0, 0.43)
-    ),
+    Colordef::new("CornflowerBlue", PdfColor::Cmyk(0.65, 0.13, 0.0, 0.0)),
+    Colordef::new("MidnightBlue", PdfColor::Cmyk(0.98, 0.13, 0.0, 0.43)),
     Colordef::new("NavyBlue", PdfColor::Cmyk(0.94, 0.54, 0.0, 0.0)),
     Colordef::new("RoyalBlue", PdfColor::Cmyk(1.0, 0.5, 0.0, 0.0)),
     Colordef::new("Blue", PdfColor::Cmyk(1.0, 1.0, 0.0, 0.0)),
@@ -1060,37 +1039,22 @@ const COLORDEFS: [Colordef; 68] = [
     Colordef::new("Aquamarine", PdfColor::Cmyk(0.82, 0.0, 0.3, 0.0)),
     Colordef::new("BlueGreen", PdfColor::Cmyk(0.85, 0.0, 0.33, 0.0)),
     Colordef::new("Emerald", PdfColor::Cmyk(1.0, 0.0, 0.5, 0.0)),
-    Colordef::new(
-        "JungleGreen",
-        PdfColor::Cmyk(0.99, 0.0, 0.52, 0.0)
-    ),
+    Colordef::new("JungleGreen", PdfColor::Cmyk(0.99, 0.0, 0.52, 0.0)),
     Colordef::new("SeaGreen", PdfColor::Cmyk(0.69, 0.0, 0.5, 0.0)),
     Colordef::new("Green", PdfColor::Cmyk(1.0, 0.0, 1.0, 0.00f64)),
-    Colordef::new(
-        "ForestGreen",
-        PdfColor::Cmyk(0.91, 0.0, 0.88, 0.12)
-    ),
+    Colordef::new("ForestGreen", PdfColor::Cmyk(0.91, 0.0, 0.88, 0.12)),
     Colordef::new("PineGreen", PdfColor::Cmyk(0.92, 0.0, 0.59, 0.25)),
     Colordef::new("LimeGreen", PdfColor::Cmyk(0.5, 0.0, 1.0, 0.0)),
-    Colordef::new(
-        "YellowGreen",
-        PdfColor::Cmyk(0.44, 0.0, 0.74, 0.0)
-    ),
-    Colordef::new(
-        "SpringGreen",
-        PdfColor::Cmyk(0.26, 0.0, 0.76, 0.0)
-    ),
-    Colordef::new(
-        "OliveGreen",
-        PdfColor::Cmyk(0.64, 0.0, 0.95, 0.40)
-    ),
+    Colordef::new("YellowGreen", PdfColor::Cmyk(0.44, 0.0, 0.74, 0.0)),
+    Colordef::new("SpringGreen", PdfColor::Cmyk(0.26, 0.0, 0.76, 0.0)),
+    Colordef::new("OliveGreen", PdfColor::Cmyk(0.64, 0.0, 0.95, 0.40)),
     Colordef::new("RawSienna", PdfColor::Cmyk(0.0, 0.72, 1.0, 0.45)),
     Colordef::new("Sepia", PdfColor::Cmyk(0.0, 0.83, 1.0, 0.7)),
     Colordef::new("Brown", PdfColor::Cmyk(0.0, 0.81, 1.0, 0.6)),
     Colordef::new("Tan", PdfColor::Cmyk(0.14, 0.42, 0.56, 0.0)),
     Colordef::new("Gray", PdfColor::Gray(0.5)),
     Colordef::new("Black", PdfColor::Gray(0.0)),
-    Colordef::new("White", PdfColor::Gray(1.0))
+    Colordef::new("White", PdfColor::Gray(1.0)),
 ];
 
 /* From pdfcolor.c */

@@ -914,8 +914,9 @@ unsafe extern "C" fn CIDFont_base_open(
     if cid_basefont[idx].fontname.is_null() {
         return -1i32;
     }
-    let fontname = new((strlen(name).wrapping_add(12)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
-        as *mut i8;
+    let fontname =
+        new((strlen(name).wrapping_add(12)).wrapping_mul(::std::mem::size_of::<i8>()) as _)
+            as *mut i8;
     memset(
         fontname as *mut libc::c_void,
         0i32,
@@ -1043,7 +1044,8 @@ pub unsafe extern "C" fn CIDFont_cache_find(
     if __cache.is_null() {
         CIDFont_cache_init();
     }
-    let opt = new((1_u64).wrapping_mul(::std::mem::size_of::<cid_opt>() as u64) as u32) as *mut cid_opt;
+    let opt =
+        new((1_u64).wrapping_mul(::std::mem::size_of::<cid_opt>() as u64) as u32) as *mut cid_opt;
     (*opt).style = (*fmap_opt).style;
     (*opt).index = (*fmap_opt).index;
     (*opt).embed = if (*fmap_opt).flags & 1i32 << 1i32 != 0 {

@@ -36,8 +36,8 @@ use crate::dpx_pdfobj::{
     pdf_add_dict, pdf_add_stream, pdf_copy_name, pdf_new_dict, pdf_new_name, pdf_new_number,
     pdf_new_stream, pdf_new_string, pdf_obj, pdf_stream_dict,
 };
-use libc::{free, memcmp, memset, strlen};
 use crate::shims::sprintf;
+use libc::{free, memcmp, memset, strlen};
 
 pub type size_t = u64;
 
