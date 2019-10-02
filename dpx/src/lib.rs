@@ -33,6 +33,7 @@ macro_rules! info(
 #[macro_export]
 macro_rules! spc_warn(
     ($spe:ident, $($arg:tt)*) => {{
+        let _spe = $spe;
         warn!($($arg)*);
     }};
 );

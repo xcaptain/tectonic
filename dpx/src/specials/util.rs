@@ -126,7 +126,6 @@ unsafe extern "C" fn spc_read_color_color(
     mut ap: *mut spc_arg,
 ) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4];
-    let mut nc: i32 = 0;
     let mut result: Result<PdfColor, ()>;
     let mut q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if q.is_null() {
@@ -237,7 +236,6 @@ unsafe extern "C" fn spc_read_color_pdf(
 ) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
     let mut isarry: bool = false;
-    let mut q: *mut i8 = 0 as *mut i8;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if *(*ap).curptr.offset(0) as i32 == '[' as i32 {
         (*ap).curptr = (*ap).curptr.offset(1);
@@ -985,7 +983,7 @@ impl Colordef {
     }
 }
 
-const colordefs: [Colordef; 68] = [
+const COLORDEFS: [Colordef; 68] = [
     Colordef::new(
         "GreenYellow",
         PdfColor::Cmyk(0.15, 0.0, 0.69, 0.0)
@@ -1097,7 +1095,7 @@ const colordefs: [Colordef; 68] = [
 
 /* From pdfcolor.c */
 unsafe extern "C" fn pdf_color_namedcolor(name: &str) -> Option<PdfColor> {
-    colordefs
+    COLORDEFS
         .as_ref()
         .iter()
         .find(|&colordef| colordef.key == name)
