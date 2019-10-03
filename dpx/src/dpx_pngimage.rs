@@ -44,12 +44,6 @@ use crate::dpx_pdfobj::{
 use crate::{ttstub_input_read, ttstub_input_seek};
 use libc::free;
 
-extern "C" {
-    // Should be removed once fixed upstream
-    #[no_mangle]
-    fn png_destroy_info_struct(png_ptr: png_const_structrp, info_ptr_ptr: png_infopp);
-}
-
 pub type __ssize_t = i64;
 pub type size_t = u64;
 pub type ssize_t = __ssize_t;
