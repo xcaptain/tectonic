@@ -10,7 +10,6 @@
 // hopefully show up in a future version.
 #![allow(deprecated)]
 
-use app_dirs;
 use error_chain::error_chain;
 use reqwest::StatusCode;
 use std::io::Write;
@@ -27,7 +26,7 @@ error_chain! {
     }
 
     foreign_links {
-        AppDirs(app_dirs::AppDirsError);
+        AppDirs(app_dirs2::AppDirsError);
         Io(io::Error);
         Nul(ffi::NulError);
         ParseInt(num::ParseIntError);

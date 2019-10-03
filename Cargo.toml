@@ -32,7 +32,7 @@ name = "tectonic"
 crate-type = ["rlib"]
 
 [dependencies]
-app_dirs = "^1.1"
+app_dirs2 = "^2"
 structopt = "0.3"
 error-chain = "^0.12"
 flate2 = { version = "^1.0", default-features = false, features = ["zlib"] }
