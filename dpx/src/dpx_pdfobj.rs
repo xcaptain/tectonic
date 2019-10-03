@@ -2121,7 +2121,7 @@ unsafe extern "C" fn write_stream(mut stream: *mut pdf_stream, handle: &mut Outp
             free(filtered as *mut libc::c_void);
             compression_saved = (compression_saved as u64).wrapping_add(
                 (filtered_length as u64)
-                    .wrapping_sub(buffer_length)
+                    .wrapping_sub(buffer_length as u64)
                     .wrapping_sub(if filters.is_some() {
                         strlen(b"/FlateDecode \x00" as *const u8 as *const i8)
                     } else {
