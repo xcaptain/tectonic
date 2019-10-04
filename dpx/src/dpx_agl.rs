@@ -689,8 +689,8 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
             sub_len as _,
         );
         *name_p.offset(sub_len as isize) = '\u{0}' as i32 as i8;
-        free(name_p as *mut libc::c_void);
         let name = CStr::from_ptr(name_p).to_owned();
+        free(name_p as *mut libc::c_void);
         if agl_name_is_unicode(name.to_bytes()) {
             let sub_len = put_unicode_glyph(name.to_bytes(), dstpp, limptr);
             if sub_len > 0i32 {
@@ -787,8 +787,8 @@ pub unsafe extern "C" fn agl_get_unicodes(
             sub_len as _,
         );
         *name_p.offset(sub_len as isize) = '\u{0}' as i32 as i8;
-        free(name_p as *mut libc::c_void);
         let name = CStr::from_ptr(name_p).to_owned();
+        free(name_p as *mut libc::c_void);
         if agl_name_is_unicode(name.to_bytes()) {
             let mut p = name.to_bytes();
             if p[1] != b'n' {
