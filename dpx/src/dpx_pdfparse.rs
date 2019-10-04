@@ -42,7 +42,7 @@ use crate::dpx_pdfobj::{
     pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_release_obj, pdf_stream_dict, PdfObjType,
 };
 use crate::specials::spc_lookup_reference;
-use libc::{free, memcmp, memcpy, strchr};
+use libc::{free, memcmp, memcpy};
 
 pub type size_t = u64;
 /* pow() */
@@ -168,14 +168,14 @@ pub unsafe extern "C" fn parse_unsigned(mut start: *mut *const i8, mut end: *con
 unsafe extern "C" fn parse_gen_ident(
     mut start: *mut *const i8,
     mut end: *const i8,
-    mut valid_chars: *const i8,
+    mut valid_chars: &[u8],
 ) -> *mut i8 {
     let mut ident: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = 0 as *const i8;
     /* No skip_white(start, end)? */
     p = *start;
     while p < end {
-        if strchr(valid_chars, *p as i32).is_null() {
+        if !valid_chars.contains(&(*p as u8)) {
             break;
         }
         p = p.offset(1)
@@ -186,17 +186,15 @@ unsafe extern "C" fn parse_gen_ident(
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {
-    static mut valid_chars: *const i8 =
-        b"!\"#$&\'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~\x00"
-            as *const u8 as *const i8;
-    parse_gen_ident(start, end, valid_chars)
+    const VALID_CHARS: &[u8] =
+        b"!\"#$&\'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+    parse_gen_ident(start, end, VALID_CHARS)
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_val_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {
-    static mut valid_chars: *const i8 =
-        b"!\"#$&\'*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~\x00"
-            as *const u8 as *const i8;
-    parse_gen_ident(start, end, valid_chars)
+    const VALID_CHARS: &[u8] =
+        b"!\"#$&\'*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+    parse_gen_ident(start, end, VALID_CHARS)
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_opt_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {

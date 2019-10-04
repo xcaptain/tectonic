@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -66,9 +65,8 @@ static mut _sbuf: [i8; 128] = [0; 128];
  *  `ttcf': TrueType Collection
  */
 unsafe extern "C" fn check_stream_is_truetype(mut handle: rust_input_handle_t) -> bool {
-    let mut n: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
-    n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
+    let n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     if n != 4i32 {
         return false;
@@ -99,9 +97,8 @@ unsafe extern "C" fn check_stream_is_truetype(mut handle: rust_input_handle_t) -
 }
 /* "OpenType" is only for ".otf" here */
 unsafe extern "C" fn check_stream_is_opentype(mut handle: rust_input_handle_t) -> bool {
-    let mut n: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
-    n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
+    let n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     if n != 4i32 {
         return false;
@@ -118,9 +115,8 @@ unsafe extern "C" fn check_stream_is_opentype(mut handle: rust_input_handle_t) -
 }
 unsafe extern "C" fn check_stream_is_type1(mut handle: rust_input_handle_t) -> bool {
     let mut p: *mut i8 = _sbuf.as_mut_ptr();
-    let mut n: i32 = 0;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
-    n = ttstub_input_read(handle, p, 21i32 as size_t) as i32;
+    let n = ttstub_input_read(handle, p, 21i32 as size_t) as i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     if n != 21i32 {
         return false;
@@ -159,18 +155,16 @@ unsafe extern "C" fn check_stream_is_type1(mut handle: rust_input_handle_t) -> b
     false
 }
 unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> bool {
-    let mut n: i32 = 0;
-    let mut pos = 0_u32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     tt_get_unsigned_quad(handle);
-    pos = tt_get_unsigned_quad(handle);
+    let pos = tt_get_unsigned_quad(handle);
     ttstub_input_seek(handle, pos.wrapping_add(0x18_u32) as ssize_t, 0i32);
     ttstub_input_seek(
         handle,
         pos.wrapping_add(tt_get_unsigned_pair(handle) as u32) as ssize_t,
         0i32,
     );
-    n = tt_get_unsigned_pair(handle) as i32;
+    let n = tt_get_unsigned_pair(handle) as i32;
     for _ in 0..=n {
         if tt_get_unsigned_quad(handle) as u64 == 0x73666e74 {
             /* "sfnt" */
@@ -182,12 +176,10 @@ unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> b
 }
 /* ensuresuffix() returns a copy of basename if sfx is "". */
 unsafe extern "C" fn ensuresuffix(mut basename: *const i8, mut sfx: *const i8) -> *mut i8 {
-    let mut q: *mut i8 = 0 as *mut i8;
-    let mut p: *mut i8 = 0 as *mut i8;
-    p = new((strlen(basename).wrapping_add(strlen(sfx)).wrapping_add(1))
+    let p = new((strlen(basename).wrapping_add(strlen(sfx)).wrapping_add(1))
         .wrapping_mul(::std::mem::size_of::<i8>()) as _) as *mut i8;
     strcpy(p, basename);
-    q = strrchr(p, '.' as i32);
+    let q = strrchr(p, '.' as i32);
     if q.is_null() && *sfx.offset(0) as i32 != 0 {
         strcat(p, sfx);
     }
@@ -201,10 +193,8 @@ pub unsafe extern "C" fn dpx_tt_open(
     mut suffix: *const i8,
     mut format: TTInputFormat,
 ) -> rust_input_handle_t {
-    let mut q: *mut i8 = 0 as *mut i8;
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
-    q = ensuresuffix(filename, suffix);
-    handle = ttstub_input_open(q, format, 0i32);
+    let q = ensuresuffix(filename, suffix);
+    let handle = ttstub_input_open(q, format, 0i32);
     free(q as *mut libc::c_void);
     handle
 }
@@ -216,8 +206,7 @@ pub unsafe extern "C" fn dpx_tt_open(
  */
 #[no_mangle]
 pub unsafe extern "C" fn dpx_open_type1_file(mut filename: *const i8) -> rust_input_handle_t {
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
-    handle = ttstub_input_open(filename, TTInputFormat::TYPE1, 0i32);
+    let handle = ttstub_input_open(filename, TTInputFormat::TYPE1, 0i32);
     if handle.is_null() {
         return 0 as *mut libc::c_void;
     }
@@ -229,8 +218,7 @@ pub unsafe extern "C" fn dpx_open_type1_file(mut filename: *const i8) -> rust_in
 }
 #[no_mangle]
 pub unsafe extern "C" fn dpx_open_truetype_file(mut filename: *const i8) -> rust_input_handle_t {
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
-    handle = ttstub_input_open(filename, TTInputFormat::TRUETYPE, 0i32);
+    let handle = ttstub_input_open(filename, TTInputFormat::TRUETYPE, 0i32);
     if handle.is_null() {
         return 0 as *mut libc::c_void;
     }
@@ -242,10 +230,8 @@ pub unsafe extern "C" fn dpx_open_truetype_file(mut filename: *const i8) -> rust
 }
 #[no_mangle]
 pub unsafe extern "C" fn dpx_open_opentype_file(mut filename: *const i8) -> rust_input_handle_t {
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
-    let mut q: *mut i8 = 0 as *mut i8;
-    q = ensuresuffix(filename, b".otf\x00" as *const u8 as *const i8);
-    handle = ttstub_input_open(q, TTInputFormat::OPENTYPE, 0i32);
+    let q = ensuresuffix(filename, b".otf\x00" as *const u8 as *const i8);
+    let handle = ttstub_input_open(q, TTInputFormat::OPENTYPE, 0i32);
     free(q as *mut libc::c_void);
     if handle.is_null() {
         return 0 as *mut libc::c_void;
@@ -258,8 +244,7 @@ pub unsafe extern "C" fn dpx_open_opentype_file(mut filename: *const i8) -> rust
 }
 #[no_mangle]
 pub unsafe extern "C" fn dpx_open_dfont_file(mut filename: *const i8) -> rust_input_handle_t {
-    let mut q: *mut i8 = 0 as *mut i8;
-    let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
+    let q;
     let mut len: i32 = strlen(filename) as i32;
     if len > 6i32
         && strncmp(
@@ -279,7 +264,7 @@ pub unsafe extern "C" fn dpx_open_dfont_file(mut filename: *const i8) -> rust_in
     } else {
         q = xstrdup(filename)
     }
-    handle = ttstub_input_open(q, TTInputFormat::TRUETYPE, 0i32);
+    let handle = ttstub_input_open(q, TTInputFormat::TRUETYPE, 0i32);
     free(q as *mut libc::c_void);
     if handle.is_null() {
         return 0 as *mut libc::c_void;
@@ -291,36 +276,31 @@ pub unsafe extern "C" fn dpx_open_dfont_file(mut filename: *const i8) -> rust_in
     handle
 }
 unsafe extern "C" fn dpx_get_tmpdir() -> *mut i8 {
-    let mut i: size_t = 0;
-    let mut ret: *mut i8 = 0 as *mut i8;
     let mut _tmpd: *const i8 = 0 as *const i8;
     _tmpd = getenv(b"TMPDIR\x00" as *const u8 as *const i8);
     if _tmpd.is_null() {
         _tmpd = b"/tmp\x00" as *const u8 as *const i8
     }
-    ret = xstrdup(_tmpd);
-    i = strlen(ret) as _;
+    let ret = xstrdup(_tmpd);
+    let mut i = strlen(ret) as u64;
     while i > 1i32 as u64 && *ret.offset(i.wrapping_sub(1i32 as u64) as isize) as i32 == '/' as i32
     {
         *ret.offset(i.wrapping_sub(1i32 as u64) as isize) = '\u{0}' as i32 as i8;
-        i = i.wrapping_sub(1)
+        i -= 1;
     }
     ret
 }
 #[no_mangle]
 pub unsafe extern "C" fn dpx_create_temp_file() -> *mut i8 {
-    let mut tmpdir: *mut i8 = 0 as *mut i8;
-    let mut n: size_t = 0;
-    let mut tmp: *mut i8 = 0 as *mut i8;
     #[cfg(not(target_env = "msvc"))]
     const TEMPLATE: &[u8] = b"/dvipdfmx.XXXXXX\x00";
     #[cfg(target_env = "msvc")]
     const TEMPLATE: &[u8] = b"\\dvipdfmx.XXXXXX\x00";
-    tmpdir = dpx_get_tmpdir();
-    n = strlen(tmpdir)
+    let tmpdir = dpx_get_tmpdir();
+    let n = strlen(tmpdir)
         .wrapping_add(strlen(TEMPLATE.as_ptr() as *const u8 as *const i8))
-        .wrapping_add(1) as _;
-    tmp = new((n as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+        .wrapping_add(1) as u64;
+    let mut tmp = new((n as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     strcpy(tmp, tmpdir);
     free(tmpdir as *mut libc::c_void);
     strcat(tmp, TEMPLATE.as_ptr() as *const u8 as *const i8);
