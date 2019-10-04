@@ -19,10 +19,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
-#![allow(
-    non_snake_case,
-    unused_mut,
-)]
+#![allow(non_snake_case, unused_mut)]
 
 use crate::DisplayExt;
 
@@ -185,17 +182,15 @@ impl PdfColor {
 
     pub unsafe fn to_string(&self, mut buffer: *mut u8, mut mask: i8) -> usize {
         let values_to_string = |values: &[f64]| {
-            let len = values.len() as isize;
-            values
-                .iter()
-                .map(|value| {
-                    sprintf(
-                        buffer.offset(len) as *mut i8,
-                        b" %g\x00" as *const u8 as *const i8,
-                        (value / 0.001 + 0.5).floor() * 0.001,
-                    )
-                })
-                .sum::<i32>() as usize
+            let mut len = 0isize;
+            for value in values {
+                len += sprintf(
+                    buffer.offset(len) as *mut i8,
+                    b" %g\x00" as *const u8 as *const i8,
+                    (value / 0.001 + 0.5).floor() * 0.001,
+                ) as isize;
+            }
+            len as usize
         };
 
         match self {
