@@ -31,13 +31,16 @@ This file is public domain.  */
 static mut last_source_name: *mut i8 = 0 as *const i8 as *mut i8;
 static mut last_lineno: i32 = 0;
 pub fn get_date_and_time() -> (i32, i32, i32, i32) {
-    use datetime::{DatePiece, TimePiece};
-    let tm = datetime::LocalDateTime::now();
-    let minutes = (tm.hour() as i32) * 60 + (tm.minute() as i32);
-    let day = tm.day() as i32;
-    let month = (tm.month().months_from_january() as i32) + 1;
-    let year = tm.year() as i32;
-    (minutes, day, month, year)
+    use chrono::prelude::*;
+
+    let tm = Local::now();
+
+    let year = tm.year();
+    let month = tm.month();
+    let day = tm.day();
+    let minutes = tm.hour() * 60 + tm.minute();
+
+    (minutes as _, day as _, month as _, year)
 }
 unsafe extern "C" fn checkpool_pointer(mut pool_ptr_0: pool_pointer, mut len: size_t) {
     assert!(
