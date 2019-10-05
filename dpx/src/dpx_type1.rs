@@ -104,7 +104,7 @@ use super::dpx_t1_char::t1_ginfo;
  * as directory separators. */
 
 /* Force bold at small text sizes */
-unsafe extern "C" fn is_basefont(mut name: *const i8) -> bool {
+unsafe fn is_basefont(mut name: *const i8) -> bool {
     static mut basefonts: [*const i8; 14] = [
         b"Courier\x00" as *const u8 as *const i8,
         b"Courier-Bold\x00" as *const u8 as *const i8,
@@ -158,7 +158,7 @@ pub unsafe extern "C" fn pdf_font_open_type1(mut font: *mut pdf_font) -> i32 {
     }
     0i32
 }
-unsafe extern "C" fn get_font_attr(mut font: *mut pdf_font, cffont: &cff_font) {
+unsafe fn get_font_attr(mut font: *mut pdf_font, cffont: &cff_font) {
     let mut italicangle;
     let mut flags: i32 = 0i32;
     static mut L_c: [*const i8; 5] = [
@@ -390,7 +390,7 @@ unsafe extern "C" fn get_font_attr(mut font: *mut pdf_font, cffont: &cff_font) {
     pdf_add_dict(descriptor, "StemV", pdf_new_number(stemv));
     pdf_add_dict(descriptor, "Flags", pdf_new_number(flags as f64));
 }
-unsafe extern "C" fn add_metrics(
+unsafe fn add_metrics(
     mut font: *mut pdf_font,
     cffont: &cff_font,
     mut enc_vec: *mut *mut i8,
@@ -510,7 +510,7 @@ unsafe extern "C" fn add_metrics(
     pdf_add_dict(fontdict, "FirstChar", pdf_new_number(firstchar as f64));
     pdf_add_dict(fontdict, "LastChar", pdf_new_number(lastchar as f64));
 }
-unsafe extern "C" fn write_fontfile(
+unsafe fn write_fontfile(
     mut font: *mut pdf_font,
     cffont: &cff_font,
     mut pdfcharset: *mut pdf_obj,

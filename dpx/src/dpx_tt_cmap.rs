@@ -224,7 +224,7 @@ pub unsafe extern "C" fn otf_cmap_set_verbose(mut level: i32) {
     otl_gsub_set_verbose(level);
     verbose = level;
 }
-unsafe extern "C" fn read_cmap0(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap0 {
+unsafe fn read_cmap0(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap0 {
     if len < 256_u32 {
         panic!("invalid cmap subtable");
     }
@@ -234,17 +234,17 @@ unsafe extern "C" fn read_cmap0(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap
     }
     map
 }
-unsafe extern "C" fn release_cmap0(mut map: *mut cmap0) {
+unsafe fn release_cmap0(mut map: *mut cmap0) {
     free(map as *mut libc::c_void);
 }
-unsafe extern "C" fn lookup_cmap0(mut map: *mut cmap0, mut cc: u16) -> u16 {
+unsafe fn lookup_cmap0(mut map: *mut cmap0, mut cc: u16) -> u16 {
     return (if cc as i32 > 255i32 {
         0i32
     } else {
         (*map).glyphIndexArray[cc as usize] as i32
     }) as u16;
 }
-unsafe extern "C" fn read_cmap2(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap2 {
+unsafe fn read_cmap2(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap2 {
     if len < 512_u32 {
         panic!("invalid cmap subtable");
     }
@@ -291,14 +291,14 @@ unsafe extern "C" fn read_cmap2(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap
     }
     map
 }
-unsafe extern "C" fn release_cmap2(mut map: *mut cmap2) {
+unsafe fn release_cmap2(mut map: *mut cmap2) {
     if !map.is_null() {
         free((*map).subHeaders as *mut libc::c_void);
         free((*map).glyphIndexArray as *mut libc::c_void);
         free(map as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn lookup_cmap2(mut map: *mut cmap2, mut cc: u16) -> u16 {
+unsafe fn lookup_cmap2(mut map: *mut cmap2, mut cc: u16) -> u16 {
     let mut idx: u16 = 0_u16;
     let [hi, lo] = cc.to_be_bytes();
     let hi = hi as i32;
@@ -319,7 +319,7 @@ unsafe extern "C" fn lookup_cmap2(mut map: *mut cmap2, mut cc: u16) -> u16 {
     }
     idx
 }
-unsafe extern "C" fn read_cmap4(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap4 {
+unsafe fn read_cmap4(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap4 {
     if len < 8_u32 {
         panic!("invalid cmap subtable");
     }
@@ -371,7 +371,7 @@ unsafe extern "C" fn read_cmap4(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap
     }
     map
 }
-unsafe extern "C" fn release_cmap4(mut map: *mut cmap4) {
+unsafe fn release_cmap4(mut map: *mut cmap4) {
     if !map.is_null() {
         free((*map).endCount as *mut libc::c_void);
         free((*map).startCount as *mut libc::c_void);
@@ -381,7 +381,7 @@ unsafe extern "C" fn release_cmap4(mut map: *mut cmap4) {
         free(map as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn lookup_cmap4(mut map: *mut cmap4, mut cc: u16) -> u16 {
+unsafe fn lookup_cmap4(mut map: *mut cmap4, mut cc: u16) -> u16 {
     let mut gid: u16 = 0_u16;
     /*
      * Segments are sorted in order of increasing endCode values.
@@ -419,7 +419,7 @@ unsafe extern "C" fn lookup_cmap4(mut map: *mut cmap4, mut cc: u16) -> u16 {
     }
     gid
 }
-unsafe extern "C" fn read_cmap6(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap6 {
+unsafe fn read_cmap6(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap6 {
     if len < 4_u32 {
         panic!("invalid cmap subtable");
     }
@@ -434,13 +434,13 @@ unsafe extern "C" fn read_cmap6(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap
     }
     map
 }
-unsafe extern "C" fn release_cmap6(mut map: *mut cmap6) {
+unsafe fn release_cmap6(mut map: *mut cmap6) {
     if !map.is_null() {
         free((*map).glyphIndexArray as *mut libc::c_void);
         free(map as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn lookup_cmap6(mut map: *mut cmap6, mut cc: u16) -> u16 {
+unsafe fn lookup_cmap6(mut map: *mut cmap6, mut cc: u16) -> u16 {
     let idx = (cc as i32 - (*map).firstCode as i32) as u16;
     if (idx as i32) < (*map).entryCount as i32 {
         return *(*map).glyphIndexArray.offset(idx as isize);
@@ -448,7 +448,7 @@ unsafe extern "C" fn lookup_cmap6(mut map: *mut cmap6, mut cc: u16) -> u16 {
     0_u16
 }
 /* ULONG length */
-unsafe extern "C" fn read_cmap12(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap12 {
+unsafe fn read_cmap12(mut sfont: *mut sfnt, mut len: u32) -> *mut cmap12 {
     if len < 4_u32 {
         panic!("invalid cmap subtable");
     }
@@ -465,13 +465,13 @@ unsafe extern "C" fn read_cmap12(mut sfont: *mut sfnt, mut len: u32) -> *mut cma
     }
     map
 }
-unsafe extern "C" fn release_cmap12(mut map: *mut cmap12) {
+unsafe fn release_cmap12(mut map: *mut cmap12) {
     if !map.is_null() {
         free((*map).groups as *mut libc::c_void);
         free(map as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn lookup_cmap12(mut map: *mut cmap12, mut cccc: u32) -> u16 {
+unsafe fn lookup_cmap12(mut map: *mut cmap12, mut cccc: u32) -> u16 {
     let mut gid: u16 = 0_u16;
     let mut i = (*map).nGroups as i32;
     loop {
@@ -614,7 +614,7 @@ static mut srange_min: [u8; 2] = [0; 2];
 static mut srange_max: [u8; 2] = [0xff_u8, 0xff_u8];
 static mut lrange_min: [u8; 4] = [0; 4];
 static mut lrange_max: [u8; 4] = [0x7f_u8, 0xff_u8, 0xff_u8, 0xff_u8];
-unsafe extern "C" fn load_cmap4(
+unsafe fn load_cmap4(
     mut map: *mut cmap4,
     mut GIDToCIDMap: *mut u8,
     mut gsub_vert: *mut otl_gsub,
@@ -691,7 +691,7 @@ unsafe extern "C" fn load_cmap4(
         i -= 1
     }
 }
-unsafe extern "C" fn load_cmap12(
+unsafe fn load_cmap12(
     mut map: *mut cmap12,
     mut GIDToCIDMap: *mut u8,
     mut gsub_vert: *mut otl_gsub,
@@ -752,7 +752,7 @@ unsafe extern "C" fn load_cmap12(
  *  We don't use GID for them. OpenType cmap table is for
  *  charcode to GID mapping rather than to-CID mapping.
  */
-unsafe extern "C" fn handle_CIDFont(
+unsafe fn handle_CIDFont(
     mut sfont: *mut sfnt,
     mut GIDToCIDMap: *mut *mut u8,
     mut csi: *mut CIDSysInfo,
@@ -872,7 +872,7 @@ unsafe extern "C" fn handle_CIDFont(
     *GIDToCIDMap = map;
     1i32
 }
-unsafe extern "C" fn is_PUA_or_presentation(mut uni: u32) -> bool {
+unsafe fn is_PUA_or_presentation(mut uni: u32) -> bool {
     /* KANGXI RADICALs are commonly double encoded. */
     return uni >= 0x2f00_u32 && uni <= 0x2fd5_u32
         || uni >= 0xe000_u32 && uni <= 0xf8ff_u32
@@ -880,7 +880,7 @@ unsafe extern "C" fn is_PUA_or_presentation(mut uni: u32) -> bool {
         || uni >= 0xf0000_u32 && uni <= 0xffffd_u32
         || uni >= 0x100000_u32 && uni <= 0x10fffd_u32;
 }
-unsafe extern "C" fn sfnt_get_glyphname(
+unsafe fn sfnt_get_glyphname(
     mut post: *mut tt_post_table,
     cffont: Option<&cff_font>,
     mut gid: u16,
@@ -901,7 +901,7 @@ unsafe extern "C" fn sfnt_get_glyphname(
  *
  *  Mapping information stored in cmap_add.
  */
-unsafe extern "C" fn handle_subst_glyphs(
+unsafe fn handle_subst_glyphs(
     mut cmap: *mut CMap,
     mut cmap_add: *mut CMap,
     mut used_glyphs: *const i8,
@@ -1011,7 +1011,7 @@ unsafe extern "C" fn handle_subst_glyphs(
     }
     count
 }
-unsafe extern "C" fn prepare_CIDFont_from_sfnt<'a>(
+unsafe fn prepare_CIDFont_from_sfnt<'a>(
     mut sfont: *mut sfnt,
 ) -> Option<&'a mut cff_font> {
     let mut offset: u32 = 0_u32;
@@ -1028,7 +1028,7 @@ unsafe extern "C" fn prepare_CIDFont_from_sfnt<'a>(
     cff_read_charsets(&mut *cffont);
     Some(&mut *cffont)
 }
-unsafe extern "C" fn add_to_cmap_if_used(
+unsafe fn add_to_cmap_if_used(
     mut cmap: *mut CMap,
     cffont: Option<&cff_font>,
     mut used_chars: *mut i8,
@@ -1070,7 +1070,7 @@ unsafe extern "C" fn add_to_cmap_if_used(
     }
     count
 }
-unsafe extern "C" fn create_ToUnicode_cmap4(
+unsafe fn create_ToUnicode_cmap4(
     mut cmap: *mut CMap,
     mut map: *mut cmap4,
     mut used_chars: *mut i8,
@@ -1109,7 +1109,7 @@ unsafe extern "C" fn create_ToUnicode_cmap4(
     }
     count
 }
-unsafe extern "C" fn create_ToUnicode_cmap12(
+unsafe fn create_ToUnicode_cmap12(
     mut cmap: *mut CMap,
     mut map: *mut cmap12,
     mut used_chars: *mut i8,
@@ -1131,7 +1131,7 @@ unsafe extern "C" fn create_ToUnicode_cmap12(
     }
     count as u16
 }
-unsafe extern "C" fn create_ToUnicode_cmap(
+unsafe fn create_ToUnicode_cmap(
     mut ttcmap: *mut tt_cmap,
     mut cmap_name: *const i8,
     mut cmap_add: *mut CMap,
@@ -1451,7 +1451,7 @@ pub unsafe extern "C" fn otf_create_ToUnicode_stream(
     }
     cmap_ref
 }
-unsafe extern "C" fn load_base_CMap(
+unsafe fn load_base_CMap(
     mut cmap_name: *const i8,
     mut tounicode_add: *mut CMap,
     mut wmode: i32,

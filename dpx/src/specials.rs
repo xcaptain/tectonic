@@ -155,7 +155,7 @@ static mut _RKEYS: [*const i8; 11] = [
 /* pageN where N is a positive integer.
  * Note that page need not exist at this time.
  */
-unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
+unsafe fn ispageref(mut key: *const i8) -> i32 {
     if strlen(key) <= strlen(b"page\x00" as *const u8 as *const i8)
         || memcmp(
             key as *const libc::c_void,
@@ -457,7 +457,7 @@ pub unsafe extern "C" fn spc_exec_at_end_document() -> i32 {
     }
     error
 }
-unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut ap: *mut spc_arg) {
+unsafe fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut ap: *mut spc_arg) {
     let mut ebuf: [i8; 64] = [0; 64];
     let mut pg: i32 = (*spe).pg;
     let mut c = pdf_coord::new((*spe).x_user, (*spe).y_user);

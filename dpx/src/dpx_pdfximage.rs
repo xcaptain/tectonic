@@ -152,7 +152,7 @@ static mut _ic: ic_ = {
     };
     init
 };
-unsafe extern "C" fn pdf_init_ximage_struct(mut I: *mut pdf_ximage) {
+unsafe fn pdf_init_ximage_struct(mut I: *mut pdf_ximage) {
     (*I).ident = 0 as *mut i8;
     (*I).filename = 0 as *mut i8;
     (*I).subtype = -1i32;
@@ -173,7 +173,7 @@ unsafe extern "C" fn pdf_init_ximage_struct(mut I: *mut pdf_ximage) {
     (*I).attr.dict = 0 as *mut pdf_obj;
     (*I).attr.tempfile = 0_i8;
 }
-unsafe extern "C" fn pdf_clean_ximage_struct(mut I: *mut pdf_ximage) {
+unsafe fn pdf_clean_ximage_struct(mut I: *mut pdf_ximage) {
     free((*I).ident as *mut libc::c_void);
     free((*I).filename as *mut libc::c_void);
     pdf_release_obj((*I).reference);
@@ -220,7 +220,7 @@ pub unsafe extern "C" fn pdf_close_images() {
     }
     _opts.cmdtmpl = mfree(_opts.cmdtmpl as *mut libc::c_void) as *mut i8;
 }
-unsafe extern "C" fn source_image_type(mut handle: rust_input_handle_t) -> i32 {
+unsafe fn source_image_type(mut handle: rust_input_handle_t) -> i32 {
     let mut format: i32 = -1i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     /* Original check order: jpeg, jp2, png, bmp, pdf, ps */
@@ -241,7 +241,7 @@ unsafe extern "C" fn source_image_type(mut handle: rust_input_handle_t) -> i32 {
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     format
 }
-unsafe extern "C" fn load_image(
+unsafe fn load_image(
     mut ident: *const i8,
     mut fullname: *const i8,
     mut format: i32,
@@ -702,7 +702,7 @@ pub unsafe extern "C" fn pdf_ximage_set_attr(
  * not as vertical dimension of scaled image. (And there are bugs.)
  * This part contains incompatibile behaviour than dvipdfm!
  */
-unsafe extern "C" fn scale_to_fit_I(
+unsafe fn scale_to_fit_I(
     T: &mut pdf_tmatrix,
     p: &mut transform_info,
     mut I: *mut pdf_ximage,
@@ -763,7 +763,7 @@ unsafe extern "C" fn scale_to_fit_I(
     T.e = d_x * s_x / xscale;
     T.f = d_y * s_y / yscale - dp;
 }
-unsafe extern "C" fn scale_to_fit_F(
+unsafe fn scale_to_fit_F(
     T: &mut pdf_tmatrix,
     p: &mut transform_info,
     mut I: *mut pdf_ximage,
@@ -924,7 +924,7 @@ pub unsafe extern "C" fn set_distiller_template(mut s: *mut i8) {
 pub unsafe extern "C" fn get_distiller_template() -> *mut i8 {
     _opts.cmdtmpl
 }
-unsafe extern "C" fn check_for_ps(mut handle: rust_input_handle_t) -> i32 {
+unsafe fn check_for_ps(mut handle: rust_input_handle_t) -> i32 {
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     tt_mfgets(work_buffer.as_mut_ptr(), 1024i32, handle);
     if !strstartswith(

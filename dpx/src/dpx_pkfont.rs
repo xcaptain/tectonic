@@ -83,7 +83,7 @@ pub unsafe extern "C" fn PKFont_set_dpi(mut dpi: i32) {
     base_dpi = dpi as u32;
 }
 /* (Only) This requires TFM to get design size... */
-unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi: u32) -> u32 {
+unsafe fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi: u32) -> u32 {
     let mut dpi: u32 = bdpi;
     let tfm_id = tfm_open(ident, 0i32);
     if tfm_id < 0i32 {
@@ -101,7 +101,7 @@ unsafe extern "C" fn truedpi(mut ident: *const i8, mut point_size: f64, mut bdpi
     }
     dpi
 }
-unsafe extern "C" fn dpx_open_pk_font_at(_ident: *const i8, _dpi: u32) -> *mut FILE {
+unsafe fn dpx_open_pk_font_at(_ident: *const i8, _dpi: u32) -> *mut FILE {
     /*kpse_glyph_file_type kpse_file_info;*/
     let fqpn = 0 as *mut i8; /*kpse_find_glyph(ident, dpi, kpse_pk_format, &kpse_file_info);*/
     if fqpn.is_null() {
@@ -143,7 +143,7 @@ pub unsafe extern "C" fn pdf_font_open_pkfont(mut font: *mut pdf_font) -> i32 {
 /* We are using Mask Image. Fill black is bit clear.
  * Optimizing those codes doesn't improve things.
  */
-unsafe extern "C" fn fill_black_run(mut dp: *mut u8, mut left: u32, mut run_count: u32) -> u32 {
+unsafe fn fill_black_run(mut dp: *mut u8, mut left: u32, mut run_count: u32) -> u32 {
     static mut mask: [u8; 8] = [
         127u32 as u8,
         191u32 as u8,
@@ -163,10 +163,10 @@ unsafe extern "C" fn fill_black_run(mut dp: *mut u8, mut left: u32, mut run_coun
     run_count
 }
 /* Just skip bits. See decode_packed() */
-unsafe extern "C" fn fill_white_run(mut run_count: u32) -> u32 {
+unsafe fn fill_white_run(mut run_count: u32) -> u32 {
     run_count
 }
-unsafe extern "C" fn pk_packed_num(
+unsafe fn pk_packed_num(
     mut np: *mut u32,
     mut dyn_f: i32,
     mut dp: *mut u8,
@@ -244,10 +244,10 @@ unsafe extern "C" fn pk_packed_num(
     *np = i;
     nmbr
 }
-unsafe extern "C" fn send_out(mut rowptr: *mut u8, mut rowbytes: u32, mut stream: *mut pdf_obj) {
+unsafe fn send_out(mut rowptr: *mut u8, mut rowbytes: u32, mut stream: *mut pdf_obj) {
     pdf_add_stream(stream, rowptr as *mut libc::c_void, rowbytes as i32);
 }
-unsafe extern "C" fn pk_decode_packed(
+unsafe fn pk_decode_packed(
     mut stream: *mut pdf_obj,
     mut wd: u32,
     mut ht: u32,
@@ -351,7 +351,7 @@ unsafe extern "C" fn pk_decode_packed(
     free(rowptr as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn pk_decode_bitmap(
+unsafe fn pk_decode_bitmap(
     mut stream: *mut pdf_obj,
     mut wd: u32,
     mut ht: u32,
@@ -404,7 +404,7 @@ unsafe extern "C" fn pk_decode_bitmap(
     }
     0i32
 }
-unsafe extern "C" fn do_preamble(mut fp: *mut FILE) {
+unsafe fn do_preamble(mut fp: *mut FILE) {
     /* Check for id byte */
     if fgetc(fp) == 89i32 {
         /* Skip comment */
@@ -416,7 +416,7 @@ unsafe extern "C" fn do_preamble(mut fp: *mut FILE) {
         panic!("embed_pk_font: PK ID byte is incorrect.  Are you sure this is a PK file?");
     };
 }
-unsafe extern "C" fn read_pk_char_header(
+unsafe fn read_pk_char_header(
     mut h: *mut pk_header_,
     mut opcode: u8,
     mut fp: *mut FILE,
@@ -486,7 +486,7 @@ unsafe extern "C" fn read_pk_char_header(
     0i32
 }
 /* CCITT Group 4 filter may reduce file size. */
-unsafe extern "C" fn create_pk_CharProc_stream(
+unsafe fn create_pk_CharProc_stream(
     mut pkh: *mut pk_header_,
     mut chrwid: f64,
     mut pkt_ptr: *mut u8,

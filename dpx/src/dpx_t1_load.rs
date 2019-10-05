@@ -79,7 +79,7 @@ pub type pst_type = i32;
 /* Note that we explicitly do *not* change this on Windows. For maximum
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
-unsafe extern "C" fn t1_decrypt(
+unsafe fn t1_decrypt(
     mut key: u16,
     mut dst: *mut u8,
     mut src: *const u8,
@@ -117,7 +117,7 @@ unsafe extern "C" fn t1_decrypt(
     }
 }
 /* T1CRYPT */
-unsafe extern "C" fn get_next_key(mut start: *mut *mut u8, mut end: *mut u8) -> *mut i8 {
+unsafe fn get_next_key(mut start: *mut *mut u8, mut end: *mut u8) -> *mut i8 {
     let mut key: *mut i8 = 0 as *mut i8;
     let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     while *start < end && {
@@ -138,7 +138,7 @@ unsafe extern "C" fn get_next_key(mut start: *mut *mut u8, mut end: *mut u8) -> 
     }
     key
 }
-unsafe extern "C" fn seek_operator(
+unsafe fn seek_operator(
     mut start: *mut *mut u8,
     mut end: *mut u8,
     mut op: *const i8,
@@ -168,7 +168,7 @@ unsafe extern "C" fn seek_operator(
     }
     0i32
 }
-unsafe extern "C" fn parse_svalue(
+unsafe fn parse_svalue(
     mut start: *mut *mut u8,
     mut end: *mut u8,
     mut value: *mut *mut i8,
@@ -193,7 +193,7 @@ unsafe extern "C" fn parse_svalue(
     }
     1i32
 }
-unsafe extern "C" fn parse_bvalue(
+unsafe fn parse_bvalue(
     mut start: *mut *mut u8,
     mut end: *mut u8,
     mut value: *mut f64,
@@ -218,7 +218,7 @@ unsafe extern "C" fn parse_bvalue(
     }
     1i32
 }
-unsafe extern "C" fn parse_nvalue(
+unsafe fn parse_nvalue(
     mut start: *mut *mut u8,
     mut end: *mut u8,
     mut value: *mut f64,
@@ -803,7 +803,7 @@ static mut ISOLatin1Encoding: [*const i8; 256] = [
 /* Treat cases such as "dup num num getinterval num exch putinterval"
  * or "dup num exch num get put"
  */
-unsafe extern "C" fn try_put_or_putinterval(
+unsafe fn try_put_or_putinterval(
     mut enc_vec: *mut *mut i8,
     mut start: *mut *mut u8,
     mut end: *mut u8,
@@ -1014,7 +1014,7 @@ unsafe extern "C" fn try_put_or_putinterval(
     }
     0i32
 }
-unsafe extern "C" fn parse_encoding(
+unsafe fn parse_encoding(
     mut enc_vec: *mut *mut i8,
     mut start: *mut *mut u8,
     mut end: *mut u8,
@@ -1260,7 +1260,7 @@ unsafe extern "C" fn parse_encoding(
     }
     0i32
 }
-unsafe extern "C" fn parse_subrs(
+unsafe fn parse_subrs(
     font: &cff_font,
     mut start: *mut *mut u8,
     mut end: *mut u8,
@@ -1519,7 +1519,7 @@ unsafe extern "C" fn parse_subrs(
     }
     0i32
 }
-unsafe extern "C" fn parse_charstrings(
+unsafe fn parse_charstrings(
     font: &mut cff_font,
     mut start: *mut *mut u8,
     mut end: *mut u8,
@@ -1789,7 +1789,7 @@ unsafe extern "C" fn parse_charstrings(
     font.num_glyphs = count as u16;
     0i32
 }
-unsafe extern "C" fn parse_part2(
+unsafe fn parse_part2(
     font: &mut cff_font,
     mut start: *mut *mut u8,
     mut end: *mut u8,
@@ -1894,7 +1894,7 @@ unsafe extern "C" fn parse_part2(
     }
     0i32
 }
-unsafe extern "C" fn parse_part1(
+unsafe fn parse_part1(
     font: &mut cff_font,
     mut enc_vec: *mut *mut i8,
     mut start: *mut *mut u8,
@@ -2113,7 +2113,7 @@ pub unsafe extern "C" fn is_pfb(mut handle: rust_input_handle_t) -> bool {
     warn!("Not a PFB font file?");
     false
 }
-unsafe extern "C" fn get_pfb_segment(
+unsafe fn get_pfb_segment(
     mut handle: rust_input_handle_t,
     mut expected_type: i32,
     mut length: *mut i32,
@@ -2226,7 +2226,7 @@ pub unsafe extern "C" fn t1_get_fontname(
     free(buffer as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn init_cff_font(cff: &mut cff_font) {
+unsafe fn init_cff_font(cff: &mut cff_font) {
     cff.handle = 0 as *mut libc::c_void;
     cff.filter = 0;
     cff.fontname = 0 as *mut i8;

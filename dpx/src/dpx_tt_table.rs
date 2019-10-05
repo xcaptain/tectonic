@@ -607,7 +607,7 @@ pub unsafe extern "C" fn tt_read_os2__table(mut sfont: *mut sfnt) -> *mut tt_os2
     }
     table
 }
-unsafe extern "C" fn tt_get_name(
+unsafe fn tt_get_name(
     mut sfont: *mut sfnt,
     mut dest: *mut i8,
     mut destlen: u16,

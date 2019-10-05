@@ -67,7 +67,7 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn otl_conf_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn parse_uc_coverage(
+unsafe fn parse_uc_coverage(
     mut gclass: *mut pdf_obj,
     mut pp: *mut *const i8,
     mut endptr: *const i8,
@@ -152,7 +152,7 @@ unsafe extern "C" fn parse_uc_coverage(
     }
     coverage
 }
-unsafe extern "C" fn add_rule(
+unsafe fn add_rule(
     mut rule: *mut pdf_obj,
     mut gclass: *mut pdf_obj,
     mut first: *mut i8,
@@ -274,7 +274,7 @@ unsafe extern "C" fn add_rule(
     pdf_add_array(rule, glyph1);
     pdf_add_array(rule, glyph2);
 }
-unsafe extern "C" fn parse_substrule(
+unsafe fn parse_substrule(
     mut gclass: *mut pdf_obj,
     mut pp: *mut *const i8,
     mut endptr: *const i8,
@@ -361,7 +361,7 @@ unsafe extern "C" fn parse_substrule(
     }
     substrule
 }
-unsafe extern "C" fn parse_block(
+unsafe fn parse_block(
     mut gclass: *mut pdf_obj,
     mut pp: *mut *const i8,
     mut endptr: *const i8,
@@ -491,7 +491,7 @@ unsafe extern "C" fn parse_block(
     }
     rule
 }
-unsafe extern "C" fn otl_read_conf(mut conf_name: *const i8) -> *mut pdf_obj {
+unsafe fn otl_read_conf(mut conf_name: *const i8) -> *mut pdf_obj {
     let mut rule: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut gclass: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut handle: *mut rust_input_handle_t = 0 as *mut rust_input_handle_t;

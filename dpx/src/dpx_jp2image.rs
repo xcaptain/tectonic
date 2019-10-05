@@ -45,7 +45,7 @@ pub type size_t = u64;
 
 use crate::dpx_pdfximage::{pdf_ximage, ximage_info};
 /* Label */
-unsafe extern "C" fn read_box_hdr(
+unsafe fn read_box_hdr(
     mut fp: *mut FILE,
     mut lbox: *mut u32,
     mut tbox: *mut u32,
@@ -65,7 +65,7 @@ unsafe extern "C" fn read_box_hdr(
     }
     bytesread
 }
-unsafe extern "C" fn check_jp___box(mut fp: *mut FILE) -> i32 {
+unsafe fn check_jp___box(mut fp: *mut FILE) -> i32 {
     if get_unsigned_quad(fp) != 0xc_u32 {
         return 0i32;
     }
@@ -78,7 +78,7 @@ unsafe extern "C" fn check_jp___box(mut fp: *mut FILE) -> i32 {
     }
     1i32
 }
-unsafe extern "C" fn check_ftyp_data(mut fp: *mut FILE, mut size: u32) -> i32 {
+unsafe fn check_ftyp_data(mut fp: *mut FILE, mut size: u32) -> i32 {
     let mut supported: i32 = 0i32;
     let mut BR: u32 = 0;
     let mut CLi: u32 = 0;
@@ -113,7 +113,7 @@ unsafe extern "C" fn check_ftyp_data(mut fp: *mut FILE, mut size: u32) -> i32 {
     }
     supported
 }
-unsafe extern "C" fn read_res__data(info: &mut ximage_info, mut fp: *mut FILE, mut _size: u32) {
+unsafe fn read_res__data(info: &mut ximage_info, mut fp: *mut FILE, mut _size: u32) {
     let mut VR_N: u32 = 0;
     let mut VR_D: u32 = 0;
     let mut HR_N: u32 = 0;
@@ -129,7 +129,7 @@ unsafe extern "C" fn read_res__data(info: &mut ximage_info, mut fp: *mut FILE, m
     info.xdensity = 72. / (HR_N as f64 / HR_D as f64 * (10f64).powf(HR_E as f64) * 0.0254);
     info.ydensity = 72. / (VR_N as f64 / VR_D as f64 * (10f64).powf(VR_E as f64) * 0.0254);
 }
-unsafe extern "C" fn scan_res_(info: &mut ximage_info, mut fp: *mut FILE, mut size: u32) -> i32 {
+unsafe fn scan_res_(info: &mut ximage_info, mut fp: *mut FILE, mut size: u32) -> i32 {
     let mut len: u32 = 0;
     let mut lbox: u32 = 0;
     let mut tbox: u32 = 0;
@@ -170,7 +170,7 @@ unsafe extern "C" fn scan_res_(info: &mut ximage_info, mut fp: *mut FILE, mut si
  * contains opacity channel. However, OpenJPEG (and maybe most of JPEG 2000 coders?)
  * does not write Channel Definition box so transparency will be ignored.
  */
-unsafe extern "C" fn scan_cdef(
+unsafe fn scan_cdef(
     _info: &mut ximage_info,
     mut smask: *mut i32,
     mut fp: *mut FILE,
@@ -214,7 +214,7 @@ unsafe extern "C" fn scan_cdef(
     }
     0i32
 }
-unsafe extern "C" fn scan_jp2h(
+unsafe fn scan_jp2h(
     info: &mut ximage_info,
     mut smask: *mut i32,
     mut fp: *mut FILE,
@@ -270,7 +270,7 @@ unsafe extern "C" fn scan_jp2h(
         -1i32
     };
 }
-unsafe extern "C" fn scan_file(
+unsafe fn scan_file(
     info: &mut ximage_info,
     mut smask: *mut i32,
     mut fp: *mut FILE,

@@ -82,13 +82,13 @@ static mut __verbose: i32 = 0i32;
 pub unsafe extern "C" fn Type0Font_set_verbose(mut level: i32) {
     __verbose = level;
 }
-unsafe extern "C" fn new_used_chars2() -> *mut i8 {
+unsafe fn new_used_chars2() -> *mut i8 {
     let used_chars = new((8192usize).wrapping_mul(::std::mem::size_of::<i8>()) as _) as *mut i8;
     memset(used_chars as *mut libc::c_void, 0i32, 8192);
     used_chars
 }
 /* MUST BE NULL */
-unsafe extern "C" fn Type0Font_init_font_struct(mut font: *mut Type0Font) {
+unsafe fn Type0Font_init_font_struct(mut font: *mut Type0Font) {
     assert!(!font.is_null());
     (*font).fontname = 0 as *mut i8;
     (*font).fontdict = 0 as *mut pdf_obj;
@@ -101,7 +101,7 @@ unsafe extern "C" fn Type0Font_init_font_struct(mut font: *mut Type0Font) {
     (*font).cmap_id = -1i32;
     (*font).flags = 0i32;
 }
-unsafe extern "C" fn Type0Font_clean(mut font: *mut Type0Font) {
+unsafe fn Type0Font_clean(mut font: *mut Type0Font) {
     if !font.is_null() {
         if !(*font).fontdict.is_null() {
             panic!("{}: Object not flushed.", "Type0",);
@@ -126,7 +126,7 @@ unsafe extern "C" fn Type0Font_clean(mut font: *mut Type0Font) {
     };
 }
 /* PLEASE FIX THIS */
-unsafe extern "C" fn Type0Font_create_ToUnicode_stream(mut font: *mut Type0Font) -> *mut pdf_obj {
+unsafe fn Type0Font_create_ToUnicode_stream(mut font: *mut Type0Font) -> *mut pdf_obj {
     let mut cidfont: *mut CIDFont = (*font).descendant;
     otf_create_ToUnicode_stream(
         CIDFont_get_ident(cidfont),
@@ -137,7 +137,7 @@ unsafe extern "C" fn Type0Font_create_ToUnicode_stream(mut font: *mut Type0Font)
 }
 /* Try to load ToUnicode CMap from file system first, if not found fallback to
  * font CMap reverse lookup. */
-unsafe extern "C" fn Type0Font_try_load_ToUnicode_stream(
+unsafe fn Type0Font_try_load_ToUnicode_stream(
     mut font: *mut Type0Font,
     mut cmap_base: *mut i8,
 ) -> *mut pdf_obj {
@@ -166,7 +166,7 @@ unsafe extern "C" fn Type0Font_try_load_ToUnicode_stream(
     }
     tounicode
 }
-unsafe extern "C" fn add_ToUnicode(mut font: *mut Type0Font) {
+unsafe fn add_ToUnicode(mut font: *mut Type0Font) {
     /*
      * ToUnicode CMap:
      *
@@ -257,7 +257,7 @@ pub unsafe extern "C" fn Type0Font_set_ToUnicode(
     assert!(!font.is_null());
     pdf_add_dict((*font).fontdict, "ToUnicode", cmap_ref);
 }
-unsafe extern "C" fn Type0Font_dofont(mut font: *mut Type0Font) {
+unsafe fn Type0Font_dofont(mut font: *mut Type0Font) {
     if font.is_null() || (*font).indirect.is_null() {
         return;
     }
@@ -266,7 +266,7 @@ unsafe extern "C" fn Type0Font_dofont(mut font: *mut Type0Font) {
         add_ToUnicode(font);
     };
 }
-unsafe extern "C" fn Type0Font_flush(mut font: *mut Type0Font) {
+unsafe fn Type0Font_flush(mut font: *mut Type0Font) {
     if !font.is_null() {
         pdf_release_obj((*font).fontdict);
         (*font).fontdict = 0 as *mut pdf_obj;
@@ -529,7 +529,7 @@ pub unsafe extern "C" fn Type0Font_cache_close() {
     __cache.capacity = 0i32;
 }
 /* ******************************* COMPAT ********************************/
-unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
+unsafe fn create_dummy_CMap() -> *mut pdf_obj {
     let mut buf: [i8; 32] = [0; 32];
     let stream = pdf_new_stream(1i32 << 0i32);
     pdf_add_stream(stream,
@@ -625,7 +625,7 @@ unsafe extern "C" fn create_dummy_CMap() -> *mut pdf_obj {
                        i32);
     stream
 }
-unsafe extern "C" fn pdf_read_ToUnicode_file(mut cmap_name: *const i8) -> *mut pdf_obj {
+unsafe fn pdf_read_ToUnicode_file(mut cmap_name: *const i8) -> *mut pdf_obj {
     assert!(!cmap_name.is_null());
     let mut res_id = pdf_findresource(b"CMap\x00" as *const u8 as *const i8, cmap_name);
     if res_id < 0i32 {

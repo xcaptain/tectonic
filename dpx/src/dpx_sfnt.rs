@@ -148,7 +148,7 @@ pub unsafe extern "C" fn dfont_open(mut handle: rust_input_handle_t, mut index: 
         .wrapping_add(4i32 as u64) as u32;
     sfont
 }
-unsafe extern "C" fn release_directory(mut td: *mut sfnt_table_directory) {
+unsafe fn release_directory(mut td: *mut sfnt_table_directory) {
     if !td.is_null() {
         if !(*td).tables.is_null() {
             for i in 0..(*td).num_tables as u32 {
@@ -189,7 +189,7 @@ fn convert_tag(tag: &mut [u8; 4], u_tag: u32) {
 /*
  * Computes the max power of 2 <= n
  */
-unsafe extern "C" fn max2floor(mut n: u32) -> u32 {
+unsafe fn max2floor(mut n: u32) -> u32 {
     let mut val: i32 = 1i32;
     while n > 1_u32 {
         n = n.wrapping_div(2_u32);
@@ -200,7 +200,7 @@ unsafe extern "C" fn max2floor(mut n: u32) -> u32 {
 /*
  * Computes the log2 of the max power of 2 <= n
  */
-unsafe extern "C" fn log2floor(mut n: u32) -> u32 {
+unsafe fn log2floor(mut n: u32) -> u32 {
     let mut val: u32 = 0_u32;
     while n > 1_u32 {
         n = n.wrapping_div(2_u32);
@@ -208,7 +208,7 @@ unsafe extern "C" fn log2floor(mut n: u32) -> u32 {
     }
     val
 }
-unsafe extern "C" fn sfnt_calc_checksum(mut data: *mut libc::c_void, mut length: u32) -> u32 {
+unsafe fn sfnt_calc_checksum(mut data: *mut libc::c_void, mut length: u32) -> u32 {
     let mut chksum: u32 = 0_u32;
     let mut count: i32 = 0i32;
     let mut p = data as *mut u8;

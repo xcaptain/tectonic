@@ -79,7 +79,7 @@ pub unsafe extern "C" fn check_for_bmp(mut handle: rust_input_handle_t) -> i32 {
     }
     1i32
 }
-unsafe extern "C" fn get_density(
+unsafe fn get_density(
     mut xdensity: *mut f64,
     mut ydensity: *mut f64,
     mut hdr: *mut hdr_info,
@@ -341,7 +341,7 @@ pub unsafe extern "C" fn bmp_include_image(
 }
 
 use crate::FromLEByteSlice;
-unsafe extern "C" fn read_header(mut handle: rust_input_handle_t, hdr: &mut hdr_info) -> i32 {
+unsafe fn read_header(mut handle: rust_input_handle_t, hdr: &mut hdr_info) -> i32 {
     let mut buf: [u8; 142] = [0; 142];
     let p = &mut buf;
     if ttstub_input_read(handle, p.as_mut_ptr() as *mut i8, (14i32 + 4i32) as size_t)
@@ -423,7 +423,7 @@ unsafe extern "C" fn read_header(mut handle: rust_input_handle_t, hdr: &mut hdr_
     }
     0i32
 }
-unsafe extern "C" fn read_raster_rle8(
+unsafe fn read_raster_rle8(
     mut data_ptr: *mut u8,
     mut width: i32,
     mut height: i32,
@@ -515,7 +515,7 @@ unsafe extern "C" fn read_raster_rle8(
     }
     count
 }
-unsafe extern "C" fn read_raster_rle4(
+unsafe fn read_raster_rle4(
     mut data_ptr: *mut u8,
     mut width: i32,
     mut height: i32,

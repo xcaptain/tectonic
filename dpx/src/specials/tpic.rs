@@ -87,7 +87,7 @@ use crate::dpx_pdfdev::pdf_tmatrix;
    Copyright 2016-2018 the Tectonic Project
    Licensed under the MIT License.
 */
-unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
+unsafe fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     let mut p: *const i8 = *pp;
     while p < endptr && (*p as i32 & !0x7fi32 == 0i32 && crate::isblank(*p as _) != 0) {
         p = p.offset(1)
@@ -106,14 +106,14 @@ static mut _TPIC_STATE: spc_tpic_ = spc_tpic_ {
 /* We use pdf_doc_add_page_content() here
  * since we always draw isolated graphics.
  */
-unsafe extern "C" fn tpic__clear(mut tp: *mut spc_tpic_) {
+unsafe fn tpic__clear(mut tp: *mut spc_tpic_) {
     (*tp).points = mfree((*tp).points as *mut libc::c_void) as *mut pdf_coord;
     (*tp).num_points = 0i32;
     (*tp).max_points = 0i32;
     (*tp).fill_shape = false;
     (*tp).fill_color = 0.0f64;
 }
-unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
+unsafe fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let dict = pdf_new_dict(); /* dash pattern */
     pdf_add_dict(dict, "Type", pdf_new_name("ExtGState"));
@@ -135,7 +135,7 @@ unsafe fn check_resourcestatus(category: &str, mut resname: &str) -> i32 {
     }
     0i32
 }
-unsafe extern "C" fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
+unsafe fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
     let mut dp: [f64; 2] = [0.; 2];
     pdf_dev_setlinejoin(1i32);
     pdf_dev_setmiterlimit(1.4f64);
@@ -154,7 +154,7 @@ unsafe extern "C" fn set_linestyle(mut pn: f64, mut da: f64) -> i32 {
     }
     0i32
 }
-unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i32 {
+unsafe fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i32 {
     let mut resname: [u8; 32] = [0; 32];
     if a > 0.0f64 {
         let alp = (100. * a).round() as i32;
@@ -196,7 +196,7 @@ unsafe extern "C" fn set_fillstyle(mut g: f64, mut a: f64, mut f_ais: i32) -> i3
     pdf_dev_set_color(&new_fc, 0x20, 0);
     0i32
 }
-unsafe extern "C" fn set_styles(
+unsafe fn set_styles(
     mut tp: *mut spc_tpic_,
     mut c: *const pdf_coord,
     mut f_fs: bool,
@@ -226,7 +226,7 @@ unsafe extern "C" fn set_styles(
         set_fillstyle(g, a, f_ais);
     };
 }
-unsafe extern "C" fn showpath(mut f_vp: bool, mut f_fs: bool)
+unsafe fn showpath(mut f_vp: bool, mut f_fs: bool)
 /* visible_path, fill_shape */
 {
     if f_vp {
@@ -241,7 +241,7 @@ unsafe extern "C" fn showpath(mut f_vp: bool, mut f_fs: bool)
         pdf_dev_newpath();
     };
 }
-unsafe extern "C" fn tpic__polyline(
+unsafe fn tpic__polyline(
     mut tp: *mut spc_tpic_,
     mut c: *const pdf_coord,
     mut f_vp: bool,
@@ -300,7 +300,7 @@ unsafe extern "C" fn tpic__polyline(
  * curve) control point p1, end point q2 = (p1 + p2)/2, ..., and a
  * straight line from qn to pn.
  */
-unsafe extern "C" fn tpic__spline(
+unsafe fn tpic__spline(
     mut tp: *mut spc_tpic_,
     mut c: *const pdf_coord,
     mut f_vp: bool,
@@ -357,7 +357,7 @@ unsafe extern "C" fn tpic__spline(
     tpic__clear(tp);
     error
 }
-unsafe extern "C" fn tpic__arc(
+unsafe fn tpic__arc(
     mut tp: *mut spc_tpic_,
     mut c: *const pdf_coord,
     mut f_vp: bool,
@@ -643,7 +643,7 @@ unsafe extern "C" fn spc_handler_tpic_tx(mut spe: *mut spc_env, mut ap: *mut spc
     spc_warn!(spe, "TPIC command \"tx\" not supported.");
     -1i32
 }
-unsafe extern "C" fn spc_handler_tpic__init(
+unsafe fn spc_handler_tpic__init(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -660,13 +660,13 @@ unsafe extern "C" fn spc_handler_tpic__init(
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic__bophook(mut dp: *mut libc::c_void) -> i32 {
+unsafe fn spc_handler_tpic__bophook(mut dp: *mut libc::c_void) -> i32 {
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     assert!(!tp.is_null());
     tpic__clear(tp);
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic__eophook(
+unsafe fn spc_handler_tpic__eophook(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -678,7 +678,7 @@ unsafe extern "C" fn spc_handler_tpic__eophook(
     tpic__clear(tp);
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic__clean(
+unsafe fn spc_handler_tpic__clean(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -715,7 +715,7 @@ pub unsafe extern "C" fn spc_tpic_at_end_document() -> i32 {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     spc_handler_tpic__clean(0 as *mut spc_env, tp as *mut libc::c_void)
 }
-unsafe extern "C" fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
+unsafe fn spc_parse_kvpairs(mut ap: *mut spc_arg) -> *mut pdf_obj {
     let mut error: i32 = 0i32;
     let mut dict = pdf_new_dict();
     skip_blank(&mut (*ap).curptr, (*ap).endptr);

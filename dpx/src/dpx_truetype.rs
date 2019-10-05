@@ -294,7 +294,7 @@ const required_table: [SfntTableInfo; 12] = {
     ]
 };
 
-unsafe extern "C" fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
+unsafe fn do_widths(mut font: *mut pdf_font, mut widths: *mut f64) {
     let fontdict = pdf_font_get_resource(font);
     let usedchars = pdf_font_get_usedchars(font);
     let tmparray = pdf_new_array();
@@ -348,7 +348,7 @@ static mut verbose: i32 = 0i32;
  * It does not work with encodings that uses full 256 range since
  * GID = 0 is reserved for .notdef, so GID = 256 is not accessible.
  */
-unsafe extern "C" fn do_builtin_encoding(
+unsafe fn do_builtin_encoding(
     mut font: *mut pdf_font,
     mut usedchars: *const i8,
     mut sfont: *mut sfnt,
@@ -446,7 +446,7 @@ unsafe extern "C" fn do_builtin_encoding(
     0i32
 }
 /* WARNING: This modifies glyphname itself */
-unsafe extern "C" fn agl_decompose_glyphname(
+unsafe fn agl_decompose_glyphname(
     mut glyphname: *mut i8,
     mut nptrs: *mut *mut i8,
     mut size: i32,
@@ -480,7 +480,7 @@ unsafe extern "C" fn agl_decompose_glyphname(
     }
     n
 }
-unsafe extern "C" fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 {
+unsafe fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 {
     if feat.is_empty() || gm.is_null() || (*gm).gsub.is_null() {
         return -1i32;
     }
@@ -519,7 +519,7 @@ unsafe extern "C" fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 
     -1i32
 }
 /* Apply GSUB. This is a bit tricky... */
-unsafe extern "C" fn selectglyph(
+unsafe fn selectglyph(
     mut in_0: u16,
     mut suffix: *const i8,
     mut gm: *mut glyph_mapper,
@@ -601,7 +601,7 @@ unsafe extern "C" fn selectglyph(
     error
 }
 /* Compose glyphs via ligature substitution. */
-unsafe extern "C" fn composeglyph(
+unsafe fn composeglyph(
     mut glyphs: *mut u16,
     mut n_glyphs: i32,
     mut feat: *const i8,
@@ -638,7 +638,7 @@ unsafe extern "C" fn composeglyph(
     error
 }
 /* This may be called by findparanoiac(). */
-unsafe extern "C" fn composeuchar(
+unsafe fn composeuchar(
     mut unicodes: *mut i32,
     mut n_unicodes: i32,
     mut feat: *const i8,
@@ -670,7 +670,7 @@ unsafe extern "C" fn composeuchar(
     error
 }
 /* Search 'post' table. */
-unsafe extern "C" fn findposttable(
+unsafe fn findposttable(
     mut glyph_name: *const i8,
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
@@ -687,7 +687,7 @@ unsafe extern "C" fn findposttable(
 }
 /* This is wrong. We must care about '.'. */
 /* Glyph names are concatinated with '_'. */
-unsafe extern "C" fn findcomposite(
+unsafe fn findcomposite(
     mut glyphname: *const i8,
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
@@ -745,7 +745,7 @@ unsafe extern "C" fn findcomposite(
     error
 }
 /* glyphname should not have suffix here */
-unsafe extern "C" fn findparanoiac(
+unsafe fn findparanoiac(
     mut glyphname: *const i8,
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
@@ -848,7 +848,7 @@ unsafe extern "C" fn findparanoiac(
         0i32
     }
 }
-unsafe extern "C" fn resolve_glyph(
+unsafe fn resolve_glyph(
     mut glyphname: *const i8,
     mut gid: *mut u16,
     mut gm: *mut glyph_mapper,
@@ -907,7 +907,7 @@ unsafe extern "C" fn resolve_glyph(
  * glyph mapping. We use Unicode plus OTL GSUB for finding
  * glyphs in this case.
  */
-unsafe extern "C" fn setup_glyph_mapper(mut gm: *mut glyph_mapper, mut sfont: *mut sfnt) -> i32 {
+unsafe fn setup_glyph_mapper(mut gm: *mut glyph_mapper, mut sfont: *mut sfnt) -> i32 {
     (*gm).sfont = sfont;
     (*gm).nametogid = tt_read_post_table(sfont);
     (*gm).codetogid = tt_cmap_read(sfont, 3_u16, 10_u16);
@@ -920,7 +920,7 @@ unsafe extern "C" fn setup_glyph_mapper(mut gm: *mut glyph_mapper, mut sfont: *m
     (*gm).gsub = otl_gsub_new();
     0i32
 }
-unsafe extern "C" fn clean_glyph_mapper(mut gm: *mut glyph_mapper) {
+unsafe fn clean_glyph_mapper(mut gm: *mut glyph_mapper) {
     if !(*gm).gsub.is_null() {
         otl_gsub_release((*gm).gsub);
     }
@@ -935,7 +935,7 @@ unsafe extern "C" fn clean_glyph_mapper(mut gm: *mut glyph_mapper) {
     (*gm).nametogid = 0 as *mut tt_post_table;
     (*gm).sfont = 0 as *mut sfnt;
 }
-unsafe extern "C" fn do_custom_encoding(
+unsafe fn do_custom_encoding(
     mut font: *mut pdf_font,
     mut encoding: *mut *mut i8,
     mut usedchars: *const i8,

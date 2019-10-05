@@ -104,7 +104,7 @@ fn pdf_coord__equal(p1: &pdf_coord, p2: &pdf_coord) -> bool {
     ((p1.x - p2.x).abs() < 1e-7) && ((p1.y - p2.y).abs() < 1e-7)
 }
 
-unsafe extern "C" fn inversematrix(mut W: &mut pdf_tmatrix, mut M: &pdf_tmatrix) -> i32 {
+unsafe fn inversematrix(mut W: &mut pdf_tmatrix, mut M: &pdf_tmatrix) -> i32 {
     let mut det: f64 = 0.;
     det = M.a * M.d - M.b * M.c;
     if det.abs() < 2.5e-16f64 {
@@ -132,7 +132,7 @@ extern "C" fn pdf_coord__dtransform(p: &mut pdf_coord, M: &pdf_tmatrix) -> i32 {
     p.y = x * M.b + y * M.d;
     0i32
 }
-unsafe extern "C" fn pdf_coord__idtransform(p: &mut pdf_coord, M: &pdf_tmatrix) -> i32 {
+unsafe fn pdf_coord__idtransform(p: &mut pdf_coord, M: &pdf_tmatrix) -> i32 {
     let mut W = pdf_tmatrix::new();
     let mut error: i32 = 0;
     error = inversematrix(&mut W, M);
@@ -217,7 +217,7 @@ impl PeType {
 static mut fmt_buf: [u8; 1024] = [0; 1024];
 
 /* start new subpath */
-unsafe extern "C" fn pdf_path__moveto(
+unsafe fn pdf_path__moveto(
     pa: &mut pdf_path,
     cp: &mut pdf_coord,
     p0: &pdf_coord,
@@ -247,7 +247,7 @@ unsafe extern "C" fn pdf_path__moveto(
  * 'moveto' must be used to enforce starting new path.
  * This affects how 'closepath' is treated.
  */
-unsafe extern "C" fn pdf_path__next_pe<'a>(
+unsafe fn pdf_path__next_pe<'a>(
     pa: &'a mut pdf_path,
     cp: &pdf_coord,
 ) -> &'a mut pa_elem {
@@ -297,7 +297,7 @@ unsafe extern "C" fn pdf_path__next_pe<'a>(
     let len = pa.len();
     return &mut pa.path[len - 1];
 }
-unsafe extern "C" fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> i32 {
+unsafe fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> i32 {
     for i in 0..pa.len() {
         let pe = &mut pa.path[i];
         if pe.typ != PeType::TERMINATE {
@@ -309,7 +309,7 @@ unsafe extern "C" fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> 
     0i32
 }
 /* Path Construction */
-unsafe extern "C" fn pdf_path__lineto(
+unsafe fn pdf_path__lineto(
     pa: &mut pdf_path,
     cp: &mut pdf_coord,
     p0: &pdf_coord,
@@ -322,7 +322,7 @@ unsafe extern "C" fn pdf_path__lineto(
     pe.p[0].y = cp.y;
     0i32
 }
-unsafe extern "C" fn pdf_path__curveto(
+unsafe fn pdf_path__curveto(
     pa: &mut pdf_path,
     cp: &mut pdf_coord,
     p0: &pdf_coord,
@@ -350,7 +350,7 @@ unsafe extern "C" fn pdf_path__curveto(
     0i32
 }
 /* This isn't specified as cp to somewhere. */
-unsafe extern "C" fn pdf_path__elliptarc(
+unsafe fn pdf_path__elliptarc(
     pa: &mut pdf_path,
     cp: &mut pdf_coord,
     ca: &pdf_coord,
@@ -454,7 +454,7 @@ unsafe extern "C" fn pdf_path__elliptarc(
     }
     error
 }
-unsafe extern "C" fn pdf_path__closepath(pa: &mut pdf_path, cp: &mut pdf_coord) -> i32
+unsafe fn pdf_path__closepath(pa: &mut pdf_path, cp: &mut pdf_coord) -> i32
 /* no arg */ {
     /* search for start point of the last subpath */
     let pe = pa.path.iter().rev().find(|pe| pe.typ == PeType::MOVETO);
@@ -487,7 +487,7 @@ unsafe extern "C" fn pdf_path__closepath(pa: &mut pdf_path, cp: &mut pdf_coord) 
  *  h
  */
 /* Just for quick test */
-unsafe extern "C" fn pdf_path__isarect(pa: &mut pdf_path, mut f_ir: i32) -> i32
+unsafe fn pdf_path__isarect(pa: &mut pdf_path, mut f_ir: i32) -> i32
 /* fill-rule is ignorable */ {
     if pa.len() == 5 {
         let pe0 = &pa.path[0];
@@ -524,7 +524,7 @@ unsafe extern "C" fn pdf_path__isarect(pa: &mut pdf_path, mut f_ir: i32) -> i32
 }
 /* Path Painting */
 /* F is obsoleted */
-unsafe extern "C" fn INVERTIBLE_MATRIX(M: &pdf_tmatrix) -> i32 {
+unsafe fn INVERTIBLE_MATRIX(M: &pdf_tmatrix) -> i32 {
     if (M.a * M.d - M.b * M.c).abs() < 2.5e-16f64 {
         warn!("Transformation matrix not invertible.");
         warn!("--- M = [{} {} {} {} {} {}]", M.a, M.b, M.c, M.d, M.e, M.f,);
@@ -544,7 +544,7 @@ unsafe extern "C" fn INVERTIBLE_MATRIX(M: &pdf_tmatrix) -> i32 {
  *  various drawing styles, which might inherite
  *  current graphcs state parameter.
  */
-unsafe extern "C" fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, opchr: u8) -> i32 {
+unsafe fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, opchr: u8) -> i32 {
     let buf = &mut fmt_buf;
     let mut len = 0;
     let mut isclip: i32 = 0i32;
@@ -618,7 +618,7 @@ unsafe extern "C" fn pdf_dev__rectshape(r: &pdf_rect, M: Option<&pdf_tmatrix>, o
 }
 static mut path_added: i32 = 0i32;
 /* FIXME */
-unsafe extern "C" fn pdf_dev__flushpath(
+unsafe fn pdf_dev__flushpath(
     pa: &mut pdf_path,
     mut opchr: u8,
     mut rule: i32,
@@ -741,7 +741,7 @@ impl pdf_gstate {
     }
 }
 
-unsafe extern "C" fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
+unsafe fn copy_a_gstate(gs1: &mut pdf_gstate, gs2: &pdf_gstate) {
     gs1.cp = gs2.cp;
     gs1.matrix = gs2.matrix;
     /* TODO:

@@ -71,7 +71,7 @@ pub struct ifreader {
 }
 pub type pst_type = i32;
 static mut __verbose: i32 = 0i32;
-unsafe extern "C" fn ifreader_create(
+unsafe fn ifreader_create(
     mut handle: rust_input_handle_t,
     mut size: size_t,
     mut bufsize: size_t,
@@ -88,12 +88,12 @@ unsafe extern "C" fn ifreader_create(
     *(*reader).endptr = 0_u8;
     reader
 }
-unsafe extern "C" fn ifreader_destroy(mut reader: *mut ifreader) {
+unsafe fn ifreader_destroy(mut reader: *mut ifreader) {
     assert!(!reader.is_null());
     free((*reader).buf as *mut libc::c_void);
     free(reader as *mut libc::c_void);
 }
-unsafe extern "C" fn ifreader_read(mut reader: *mut ifreader, mut size: size_t) -> size_t {
+unsafe fn ifreader_read(mut reader: *mut ifreader, mut size: size_t) -> size_t {
     let mut bytesread: size_t = 0i32 as size_t;
     assert!(!reader.is_null());
     let bytesrem = ((*reader).endptr as size_t).wrapping_sub((*reader).cursor as size_t);
@@ -138,7 +138,7 @@ unsafe extern "C" fn ifreader_read(mut reader: *mut ifreader, mut size: size_t) 
     *(*reader).endptr = 0_u8;
     bytesread.wrapping_add(bytesrem)
 }
-unsafe extern "C" fn check_next_token(mut input: *mut ifreader, mut key: *const i8) -> i32 {
+unsafe fn check_next_token(mut input: *mut ifreader, mut key: *const i8) -> i32 {
     if ifreader_read(input, strlen(key) as _) == 0 {
         return -1i32;
     }
@@ -152,7 +152,7 @@ unsafe extern "C" fn check_next_token(mut input: *mut ifreader, mut key: *const 
     pst_release_obj(token);
     cmp
 }
-unsafe extern "C" fn get_coderange(
+unsafe fn get_coderange(
     mut input: *mut ifreader,
     mut codeLo: *mut u8,
     mut codeHi: *mut u8,
@@ -187,7 +187,7 @@ unsafe extern "C" fn get_coderange(
     *dim = dim1;
     0i32
 }
-unsafe extern "C" fn do_codespacerange(
+unsafe fn do_codespacerange(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -224,7 +224,7 @@ unsafe extern "C" fn do_codespacerange(
  * bfrange
  *  <codeLo> <codeHi> [destCode1 destCode2 ...]
  */
-unsafe extern "C" fn handle_codearray(
+unsafe fn handle_codearray(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut codeLo: *mut u8,
@@ -264,7 +264,7 @@ unsafe extern "C" fn handle_codearray(
     }
     check_next_token(input, b"]\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_notdefrange(
+unsafe fn do_notdefrange(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -314,7 +314,7 @@ unsafe extern "C" fn do_notdefrange(
     }
     check_next_token(input, b"endnotdefrange\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_bfrange(
+unsafe fn do_bfrange(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -375,7 +375,7 @@ unsafe extern "C" fn do_bfrange(
     }
     check_next_token(input, b"endbfrange\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_cidrange(
+unsafe fn do_cidrange(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -425,7 +425,7 @@ unsafe extern "C" fn do_cidrange(
     }
     check_next_token(input, b"endcidrange\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_notdefchar(
+unsafe fn do_notdefchar(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -466,7 +466,7 @@ unsafe extern "C" fn do_notdefchar(
     }
     check_next_token(input, b"endnotdefchar\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_bfchar(
+unsafe fn do_bfchar(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -508,7 +508,7 @@ unsafe extern "C" fn do_bfchar(
     }
     check_next_token(input, b"endbfchar\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_cidchar(
+unsafe fn do_cidchar(
     mut cmap: *mut CMap,
     mut input: *mut ifreader,
     mut count: i32,
@@ -549,7 +549,7 @@ unsafe extern "C" fn do_cidchar(
     }
     check_next_token(input, b"endcidchar\x00" as *const u8 as *const i8)
 }
-unsafe extern "C" fn do_cidsysteminfo(mut cmap: *mut CMap, mut input: *mut ifreader) -> i32 {
+unsafe fn do_cidsysteminfo(mut cmap: *mut CMap, mut input: *mut ifreader) -> i32 {
     let mut csi: CIDSysInfo = {
         let mut init = CIDSysInfo {
             registry: 0 as *mut i8,

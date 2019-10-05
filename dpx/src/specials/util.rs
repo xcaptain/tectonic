@@ -42,7 +42,7 @@ use std::ffi::CStr;
    Copyright 2016-2018 the Tectonic Project
    Licensed under the MIT License.
 */
-unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
+unsafe fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     let mut p: *const i8 = *pp; /* 360 / 60 */
     while p < endptr && (*p as i32 & !0x7fi32 == 0i32 && crate::isblank(*p as _) != 0) {
         p = p.offset(1)
@@ -69,7 +69,7 @@ pub unsafe extern "C" fn spc_util_read_numbers(
     }
     count
 }
-unsafe extern "C" fn rgb_color_from_hsv(mut h: f64, mut s: f64, mut v: f64) -> PdfColor {
+unsafe fn rgb_color_from_hsv(mut h: f64, mut s: f64, mut v: f64) -> PdfColor {
     let mut b = v;
     let mut g = b;
     let mut r = g;
@@ -121,7 +121,7 @@ unsafe extern "C" fn rgb_color_from_hsv(mut h: f64, mut s: f64, mut v: f64) -> P
     }
     PdfColor::from_rgb(r, g, b).unwrap()
 }
-unsafe extern "C" fn spc_read_color_color(
+unsafe fn spc_read_color_color(
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> Result<PdfColor, ()> {
@@ -227,7 +227,7 @@ unsafe extern "C" fn spc_read_color_color(
  * allowed for color specification. "pdf" here
  * means pdf: special syntax.
  */
-unsafe extern "C" fn spc_read_color_pdf(
+unsafe fn spc_read_color_pdf(
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> Result<PdfColor, ()> {
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn spc_util_read_pdfcolor(
  * length value must be divided by current magnification.
  */
 /* XXX: there are four quasi-redundant versions of this; grp for K_UNIT__PT */
-unsafe extern "C" fn spc_util_read_length(
+unsafe fn spc_util_read_length(
     mut spe: *mut spc_env,
     mut vp: *mut f64,
     mut ap: *mut spc_arg,
@@ -421,7 +421,7 @@ extern "C" fn make_transmatrix(
     M.e = xoffset;
     M.f = yoffset;
 }
-unsafe extern "C" fn spc_read_dimtrns_dvips(
+unsafe fn spc_read_dimtrns_dvips(
     mut spe: *mut spc_env,
     t: &mut transform_info,
     mut ap: *mut spc_arg,
@@ -564,7 +564,7 @@ unsafe extern "C" fn spc_read_dimtrns_dvips(
  * something acceptable to put into here.
  * PLEASE DONT ADD HERE!
  */
-unsafe extern "C" fn spc_read_dimtrns_pdfm(
+unsafe fn spc_read_dimtrns_pdfm(
     mut spe: *mut spc_env,
     p: &mut transform_info,
     mut ap: *mut spc_arg,
@@ -1058,7 +1058,7 @@ const COLORDEFS: [Colordef; 68] = [
 ];
 
 /* From pdfcolor.c */
-unsafe extern "C" fn pdf_color_namedcolor(name: &str) -> Option<PdfColor> {
+unsafe fn pdf_color_namedcolor(name: &str) -> Option<PdfColor> {
     COLORDEFS
         .as_ref()
         .iter()

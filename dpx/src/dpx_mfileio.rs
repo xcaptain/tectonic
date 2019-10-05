@@ -34,7 +34,7 @@ pub type __off_t = i64;
 pub type __off64_t = i64;
 pub type size_t = u64;
 use bridge::rust_input_handle_t;
-unsafe extern "C" fn os_error() {
+unsafe fn os_error() {
     panic!("io:  An OS command failed that should not have.\n");
 }
 #[no_mangle]
@@ -43,12 +43,12 @@ pub unsafe extern "C" fn seek_relative(mut file: *mut FILE, mut pos: i32) {
         os_error();
     };
 }
-unsafe extern "C" fn seek_end(mut file: *mut FILE) {
+unsafe fn seek_end(mut file: *mut FILE) {
     if fseek(file, 0, 2i32) != 0 {
         os_error();
     };
 }
-unsafe extern "C" fn tell_position(mut file: *mut FILE) -> i32 {
+unsafe fn tell_position(mut file: *mut FILE) -> i32 {
     let mut size = ftell(file);
     if size < 0 {
         os_error();

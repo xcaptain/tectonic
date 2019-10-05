@@ -151,7 +151,7 @@ pub const OP_UNKNOWN: C2RustUnnamed_0 = 16;
  * The number of degrees by which the page should be rotated clockwise when
  * displayed or printed. The value must be a multiple of 90. Default value: 0.
  */
-unsafe extern "C" fn rect_equal(mut rect1: *mut pdf_obj, mut rect2: *mut pdf_obj) -> i32 {
+unsafe fn rect_equal(mut rect1: *mut pdf_obj, mut rect2: *mut pdf_obj) -> i32 {
     if rect1.is_null() || rect2.is_null() {
         return 0i32;
     }
@@ -162,7 +162,7 @@ unsafe extern "C" fn rect_equal(mut rect1: *mut pdf_obj, mut rect2: *mut pdf_obj
     }
     1i32
 }
-unsafe extern "C" fn pdf_get_page_obj(
+unsafe fn pdf_get_page_obj(
     mut pf: *mut pdf_file,
     mut page_no: i32,
     mut ret_bbox: *mut *mut pdf_obj,
@@ -343,7 +343,7 @@ unsafe extern "C" fn pdf_get_page_obj(
     }
     page_tree
 }
-unsafe extern "C" fn pdf_get_page_content(mut page: *mut pdf_obj) -> *mut pdf_obj {
+unsafe fn pdf_get_page_content(mut page: *mut pdf_obj) -> *mut pdf_obj {
     let mut contents: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut content_new: *mut pdf_obj = 0 as *mut pdf_obj;
     contents = pdf_deref_obj(pdf_lookup_dict(page, "Contents"));

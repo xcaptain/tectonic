@@ -108,7 +108,7 @@ unsafe extern "C" fn spc_handler_ps_header(mut spe: *mut spc_env, mut args: *mut
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe extern "C" fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut i8 {
+unsafe fn parse_filename(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut i8 {
     let mut p: *const i8 = *pp;
     let mut qchar;
     if p.is_null() || p >= endptr {

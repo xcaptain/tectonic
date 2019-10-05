@@ -37,7 +37,7 @@ use libc::memcpy;
 
 pub type pst_type = i32;
 
-unsafe extern "C" fn pst_parse_any(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) -> *mut pst_obj {
+unsafe fn pst_parse_any(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) -> *mut pst_obj {
     let mut cur: *mut u8 = *inbuf;
     while cur < inbufend
         && !(cur == inbufend
@@ -73,7 +73,7 @@ unsafe extern "C" fn pst_parse_any(mut inbuf: *mut *mut u8, mut inbufend: *mut u
     *inbuf = cur;
     pst_new_obj(-1i32, data as *mut libc::c_void)
 }
-unsafe extern "C" fn skip_line(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) {
+unsafe fn skip_line(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) {
     while *inbuf < inbufend && **inbuf as i32 != '\n' as i32 && **inbuf as i32 != '\r' as i32 {
         *inbuf = (*inbuf).offset(1)
     }
@@ -84,7 +84,7 @@ unsafe extern "C" fn skip_line(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) {
         *inbuf = (*inbuf).offset(1)
     };
 }
-unsafe extern "C" fn skip_comments(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) {
+unsafe fn skip_comments(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) {
     while *inbuf < inbufend && **inbuf as i32 == '%' as i32 {
         skip_line(inbuf, inbufend);
         skip_white_spaces(inbuf, inbufend);

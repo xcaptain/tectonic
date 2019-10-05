@@ -304,7 +304,7 @@ static mut ten_pow_inv: [f64; 10] = [
     0.00000001f64,
     0.000000001f64,
 ];
-unsafe extern "C" fn p_itoa(mut value: i32, mut buf: *mut i8) -> u32 {
+unsafe fn p_itoa(mut value: i32, mut buf: *mut i8) -> u32 {
     let mut sign: u32 = 0;
     let mut ndigits: u32 = 0;
     let mut p: *mut i8 = buf;
@@ -345,7 +345,7 @@ unsafe extern "C" fn p_itoa(mut value: i32, mut buf: *mut i8) -> u32 {
 /* NOTE: Acrobat 5 and prior uses 16.16 fixed point representation for
  * real numbers.
  */
-unsafe extern "C" fn p_dtoa(mut value: f64, mut prec: i32, buf: &mut [u8]) -> usize {
+unsafe fn p_dtoa(mut value: f64, mut prec: i32, buf: &mut [u8]) -> usize {
     let p: [i32; 10] = [
         1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000,
     ];
@@ -403,7 +403,7 @@ unsafe extern "C" fn p_dtoa(mut value: f64, mut prec: i32, buf: &mut [u8]) -> us
     *c = 0;
     n as usize
 }
-unsafe extern "C" fn dev_sprint_bp(
+unsafe fn dev_sprint_bp(
     buf: &mut [u8],
     mut value: spt_t,
     mut error: *mut spt_t,
@@ -522,7 +522,7 @@ static mut dev_fonts: *mut dev_font = 0 as *const dev_font as *mut dev_font;
 static mut num_dev_fonts: i32 = 0i32;
 static mut max_dev_fonts: i32 = 0i32;
 static mut num_phys_fonts: i32 = 0i32;
-unsafe extern "C" fn dev_set_text_matrix(
+unsafe fn dev_set_text_matrix(
     mut xpos: spt_t,
     mut ypos: spt_t,
     mut slant: f64,
@@ -599,7 +599,7 @@ unsafe extern "C" fn dev_set_text_matrix(
  * reset_text_state() outputs a BT and does any necessary coordinate
  * transformations to get ready to ship out text.
  */
-unsafe extern "C" fn reset_text_state() {
+unsafe fn reset_text_state() {
     /*
      * We need to reset the line matrix to handle slanted fonts.
      */
@@ -627,7 +627,7 @@ unsafe extern "C" fn reset_text_state() {
     text_state.offset = 0i32;
     text_state.force_reset = 0i32;
 }
-unsafe extern "C" fn text_mode() {
+unsafe fn text_mode() {
     match motion_state {
         MotionState::STRING_MODE => {
             pdf_doc_add_page_content(if text_state.is_mb != 0 {
@@ -675,7 +675,7 @@ pub unsafe extern "C" fn graphics_mode() {
     }
     motion_state = MotionState::GRAPHICS_MODE;
 }
-unsafe extern "C" fn start_string(
+unsafe fn start_string(
     mut xpos: spt_t,
     mut ypos: spt_t,
     mut slant: f64,
@@ -867,7 +867,7 @@ unsafe extern "C" fn start_string(
     text_state.ref_y = ypos - error_dely;
     text_state.offset = 0i32;
 }
-unsafe extern "C" fn string_mode(
+unsafe fn string_mode(
     mut xpos: spt_t,
     mut ypos: spt_t,
     mut slant: f64,
@@ -914,7 +914,7 @@ unsafe extern "C" fn string_mode(
  * This routine prevents a PDF Tf font selection until there's
  * really a character in that font.
  */
-unsafe extern "C" fn dev_set_font(mut font_id: i32) -> i32 {
+unsafe fn dev_set_font(mut font_id: i32) -> i32 {
     let mut font: *mut dev_font = 0 as *mut dev_font;
     let mut real_font: *mut dev_font = 0 as *mut dev_font;
     let mut font_scale: f64 = 0.;
@@ -1017,7 +1017,7 @@ pub unsafe extern "C" fn pdf_dev_get_font_wmode(mut font_id: i32) -> i32 {
 }
 static mut sbuf0: [u8; 4096] = [0; 4096];
 static mut sbuf1: [u8; 4096] = [0; 4096];
-unsafe extern "C" fn handle_multibyte_string(
+unsafe fn handle_multibyte_string(
     mut font: *mut dev_font,
     mut str_ptr: *mut *const u8,
     mut str_len: *mut size_t,
@@ -1501,7 +1501,7 @@ pub unsafe extern "C" fn pdf_dev_eop() {
         pdf_dev_grestore();
     };
 }
-unsafe extern "C" fn print_fontmap(mut font_name: *const i8, mut mrec: *mut fontmap_rec) {
+unsafe fn print_fontmap(mut font_name: *const i8, mut mrec: *mut fontmap_rec) {
     if mrec.is_null() {
         return;
     }
@@ -1669,7 +1669,7 @@ pub unsafe extern "C" fn pdf_dev_locate_font(mut font_name: *const i8, mut ptsiz
     fresh46
 }
 /* This does not remember current stroking width. */
-unsafe extern "C" fn dev_sprint_line(
+unsafe fn dev_sprint_line(
     buf: &mut [u8],
     mut width: spt_t,
     mut p0_x: spt_t,
@@ -1900,7 +1900,7 @@ pub unsafe extern "C" fn pdf_dev_set_dirmode(mut text_dir: i32) {
     text_state.matrix.rotate = text_rotate;
     text_state.dir_mode = text_dir;
 }
-unsafe extern "C" fn dev_set_param_autorotate(mut auto_rotate: i32) {
+unsafe fn dev_set_param_autorotate(mut auto_rotate: i32) {
     let mut font: *mut dev_font = 0 as *mut dev_font;
     font = if text_state.font_id < 0i32 {
         0 as *mut dev_font

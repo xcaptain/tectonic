@@ -251,7 +251,7 @@ pub unsafe extern "C" fn CMap_get_profile(mut cmap: *mut CMap, mut type_0: i32) 
 /*
  * Put notdef chars for codes not declared in notdef(range|char)
  */
-unsafe extern "C" fn handle_undefined(
+unsafe fn handle_undefined(
     mut cmap: *mut CMap,
     mut inbuf: *mut *const u8,
     mut inbytesleft: *mut size_t,
@@ -564,7 +564,7 @@ pub unsafe extern "C" fn CMap_set_usecmap(mut cmap: *mut CMap, mut ucmap: *mut C
     (*cmap).useCMap = ucmap;
 }
 /* Test the validity of character c. */
-unsafe extern "C" fn CMap_match_codespace(
+unsafe fn CMap_match_codespace(
     mut cmap: *mut CMap,
     mut c: *const u8,
     mut dim: size_t,
@@ -862,7 +862,7 @@ pub unsafe extern "C" fn CMap_add_cidrange(
     }
     0i32
 }
-unsafe extern "C" fn mapDef_release(mut t: *mut mapDef) {
+unsafe fn mapDef_release(mut t: *mut mapDef) {
     assert!(!t.is_null());
     for c in 0..256 {
         if (*t.offset(c as isize)).flag & 1i32 << 4i32 != 0 {
@@ -871,7 +871,7 @@ unsafe extern "C" fn mapDef_release(mut t: *mut mapDef) {
     }
     free(t as *mut libc::c_void);
 }
-unsafe extern "C" fn mapDef_new() -> *mut mapDef {
+unsafe fn mapDef_new() -> *mut mapDef {
     let t =
         new((256_u64).wrapping_mul(::std::mem::size_of::<mapDef>() as u64) as u32) as *mut mapDef;
     for c in 0..256 {
@@ -883,7 +883,7 @@ unsafe extern "C" fn mapDef_new() -> *mut mapDef {
     }
     t
 }
-unsafe extern "C" fn get_mem(mut cmap: *mut CMap, mut size: i32) -> *mut u8 {
+unsafe fn get_mem(mut cmap: *mut CMap, mut size: i32) -> *mut u8 {
     assert!(!cmap.is_null() && !(*cmap).mapData.is_null() && size >= 0i32);
     let mut map = (*cmap).mapData;
     if (*map).pos + size >= 4096i32 {
@@ -900,7 +900,7 @@ unsafe extern "C" fn get_mem(mut cmap: *mut CMap, mut size: i32) -> *mut u8 {
     (*map).pos += size;
     p
 }
-unsafe extern "C" fn locate_tbl(
+unsafe fn locate_tbl(
     mut cur: *mut *mut mapDef,
     mut code: *const u8,
     mut dim: i32,
@@ -933,7 +933,7 @@ unsafe extern "C" fn locate_tbl(
  * Substring of length bytesconsumed bytes of input string is interpreted as
  * a `single' character by CMap_decode().
  */
-unsafe extern "C" fn bytes_consumed(
+unsafe fn bytes_consumed(
     mut cmap: *mut CMap,
     mut instr: *const u8,
     mut inbytes: size_t,
@@ -982,7 +982,7 @@ unsafe extern "C" fn bytes_consumed(
     }
     bytesconsumed
 }
-unsafe extern "C" fn check_range(
+unsafe fn check_range(
     mut cmap: *mut CMap,
     mut srclo: *const u8,
     mut srchi: *const u8,

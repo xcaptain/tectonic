@@ -1004,7 +1004,7 @@ unsafe extern "C" fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut
         spc_push_object(article_name, article_info);
     }
     let page_no = pdf_doc_current_page_number();
-    pdf_doc_add_bead(article_name, 0 as *const i8, page_no, &mut rect);
+    pdf_doc_add_bead(article_name, &[], page_no, &mut rect);
     free(article_name as *mut libc::c_void);
     0i32
 }

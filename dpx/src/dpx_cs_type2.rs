@@ -97,7 +97,7 @@ static mut trn_array: [f64; 32] = [0.; 32];
 /*
  * clear_stack() put all operands sotred in operand stack to dest.
  */
-unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
+unsafe fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
     for i in 0..stack_top {
         let value = arg_stack[i as usize];
         /* Nearest integer value */
@@ -199,7 +199,7 @@ unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
  *  1: hint declaration, first stack-clearing operator appeared
  *  2: in path construction
  */
-unsafe extern "C" fn do_operator1(
+unsafe fn do_operator1(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
@@ -355,7 +355,7 @@ unsafe extern "C" fn do_operator1(
  * Following operators are not supported:
  *  random: How random ?
  */
-unsafe extern "C" fn do_operator2(
+unsafe fn do_operator2(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
@@ -653,7 +653,7 @@ unsafe extern "C" fn do_operator2(
  * integer:
  *  exactly the same as the DICT encoding (except 29)
  */
-unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
+unsafe fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
     let mut result;
     let mut b0: u8 = **data;
     *data = (*data).offset(1);
@@ -705,7 +705,7 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
 /*
  * Signed 16.16-bits fixed number for Type 2 charstring encoding
  */
-unsafe extern "C" fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
+unsafe fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
     *data = (*data).offset(1);
     if endptr < (*data).offset(4) {
         status = -1i32;
@@ -737,7 +737,7 @@ unsafe extern "C" fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
  * subr_idx: CFF INDEX data that contains subroutines.
  * id:       biased subroutine number.
  */
-unsafe extern "C" fn get_subr(
+unsafe fn get_subr(
     mut subr: *mut *mut u8,
     mut len: *mut i32,
     mut subr_idx: *mut cff_index,
@@ -777,7 +777,7 @@ unsafe extern "C" fn get_subr(
  *  an initial byte value of 255) differs from how it is interpreted in the
  *  Type 1 format.
  */
-unsafe extern "C" fn do_charstring(
+unsafe fn do_charstring(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
@@ -875,7 +875,7 @@ unsafe extern "C" fn do_charstring(
     }
     nest -= 1;
 }
-unsafe extern "C" fn cs_parse_init() {
+unsafe fn cs_parse_init() {
     status = 0i32;
     nest = 0i32;
     phase = 0i32;

@@ -405,7 +405,7 @@ pub unsafe extern "C" fn png_include_image(
  * Finally, in the case of PDF version 1.4, all kind of translucent pixels can
  * be represented with Soft-Mask.
  */
-unsafe extern "C" fn check_transparency(
+unsafe fn check_transparency(
     mut png: &mut png_struct,
     mut info: &mut png_info,
 ) -> libc::c_int {
@@ -514,7 +514,7 @@ unsafe extern "C" fn check_transparency(
  *   If sRGB chunk is present, cHRM and gAMA chunk must be ignored.
  *
  */
-unsafe extern "C" fn get_rendering_intent(
+unsafe fn get_rendering_intent(
     mut png: &mut png_struct,
     mut info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -544,7 +544,7 @@ unsafe extern "C" fn get_rendering_intent(
  * space.
  */
 /* Approximated sRGB */
-unsafe extern "C" fn create_cspace_sRGB(mut png: &png_struct, mut info: &png_info) -> *mut pdf_obj {
+unsafe fn create_cspace_sRGB(mut png: &png_struct, mut info: &png_info) -> *mut pdf_obj {
     let color_type = png_get_color_type(png, info);
     /* Parameters taken from PNG spec. section 4.2.2.3. */
     let cal_param = make_param_Cal(
@@ -573,7 +573,7 @@ unsafe extern "C" fn create_cspace_sRGB(mut png: &png_struct, mut info: &png_inf
  * There are few restrictions (should be applied to PNG too?) in ICC profile
  * support in PDF. Some information should be obtained from profile.
  */
-unsafe extern "C" fn create_cspace_ICCBased(
+unsafe fn create_cspace_ICCBased(
     mut png: &mut png_struct,
     mut png_info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -624,7 +624,7 @@ unsafe extern "C" fn create_cspace_ICCBased(
  *   If cHRM is present, we use CIE-Based color space. gAMA is also used here
  * if available.
  */
-unsafe extern "C" fn create_cspace_CalRGB(
+unsafe fn create_cspace_CalRGB(
     mut png: &mut png_struct,
     mut png_info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -675,7 +675,7 @@ unsafe extern "C" fn create_cspace_CalRGB(
     pdf_add_array(colorspace, cal_param);
     colorspace
 }
-unsafe extern "C" fn create_cspace_CalGray(
+unsafe fn create_cspace_CalGray(
     mut png: &mut png_struct,
     mut info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -726,7 +726,7 @@ unsafe extern "C" fn create_cspace_CalGray(
     pdf_add_array(colorspace, cal_param);
     colorspace
 }
-unsafe extern "C" fn make_param_Cal(
+unsafe fn make_param_Cal(
     color_type: png_byte,
     G: f64,
     xw: f64,
@@ -869,7 +869,7 @@ unsafe extern "C" fn make_param_Cal(
  *  for base color space.
  *
  */
-unsafe extern "C" fn create_cspace_Indexed(
+unsafe fn create_cspace_Indexed(
     mut png: &mut png_struct,
     mut info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -917,7 +917,7 @@ unsafe extern "C" fn create_cspace_Indexed(
  *  [component_0_min component_0_max ... component_n_min component_n_max]
  *
  */
-unsafe extern "C" fn create_ckey_mask(
+unsafe fn create_ckey_mask(
     mut png: &png_struct_def,
     mut png_info: &mut png_info,
 ) -> *mut pdf_obj {
@@ -983,7 +983,7 @@ unsafe extern "C" fn create_ckey_mask(
  *
  *   ColorSpace, Mask, SMask must be absent. ImageMask must be false or absent.
  */
-unsafe extern "C" fn create_soft_mask(
+unsafe fn create_soft_mask(
     mut png: &mut png_struct_def,
     mut info: &mut png_info,
     mut image_data_ptr: png_bytep,
@@ -1035,7 +1035,7 @@ unsafe extern "C" fn create_soft_mask(
     smask
 }
 /* bitdepth is always 8 (16 is not supported) */
-unsafe extern "C" fn strip_soft_mask(
+unsafe fn strip_soft_mask(
     mut png: &png_struct,
     mut png_info: &png_info,
     mut image_data_ptr: *mut png_byte,
@@ -1167,7 +1167,7 @@ unsafe extern "C" fn strip_soft_mask(
     smask
 }
 /* Read image body */
-unsafe extern "C" fn read_image_data(
+unsafe fn read_image_data(
     mut png: &mut png_struct,
     mut dest_ptr: png_bytep,
     mut height: png_uint_32,

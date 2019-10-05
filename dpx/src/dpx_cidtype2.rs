@@ -153,7 +153,7 @@ const required_table: [SfntTableInfo; 11] = {
         SfntTableInfo::new(PREP, false),
     ]
 };
-unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
+unsafe fn validate_name(mut fontname: *mut i8, mut len: i32) {
     static mut badstrlist: [*const i8; 5] = [
         b"-WIN-RKSJ-H\x00" as *const u8 as *const i8,
         b"-WINP-RKSJ-H\x00" as *const u8 as *const i8,
@@ -358,7 +358,7 @@ static mut known_encodings: [C2RustUnnamed_3; 11] = [
         init
     },
 ];
-unsafe extern "C" fn find_tocode_cmap(
+unsafe fn find_tocode_cmap(
     mut reg: *const i8,
     mut ord: *const i8,
     mut select: i32,
@@ -420,7 +420,7 @@ unsafe extern "C" fn find_tocode_cmap(
  * CIDFont glyph metrics:
  * Mostly same as add_CID[HV]Metrics in cidtype0.c.
  */
-unsafe extern "C" fn add_TTCIDHMetrics(
+unsafe fn add_TTCIDHMetrics(
     mut fontdict: *mut pdf_obj,
     mut g: *mut tt_glyphs,
     mut used_chars: *mut i8,
@@ -497,7 +497,7 @@ unsafe extern "C" fn add_TTCIDHMetrics(
     }
     pdf_release_obj(w_array);
 }
-unsafe extern "C" fn add_TTCIDVMetrics(
+unsafe fn add_TTCIDVMetrics(
     mut fontdict: *mut pdf_obj,
     mut g: *mut tt_glyphs,
     mut used_chars: *mut i8,
@@ -575,7 +575,7 @@ unsafe extern "C" fn add_TTCIDVMetrics(
  * The following routine fixes few problems caused by vendor specific
  * Unicode mappings.
  */
-unsafe extern "C" fn fix_CJK_symbols(mut code: u16) -> u16 {
+unsafe fn fix_CJK_symbols(mut code: u16) -> u16 {
     static mut CJK_Uni_symbols: [C2RustUnnamed_2; 10] = [
         {
             let mut init = C2RustUnnamed_2 {
@@ -662,7 +662,7 @@ unsafe extern "C" fn fix_CJK_symbols(mut code: u16) -> u16 {
     }
     alt_code
 }
-unsafe extern "C" fn cid_to_code(mut cmap: *mut CMap, mut cid: CID) -> i32 {
+unsafe fn cid_to_code(mut cmap: *mut CMap, mut cid: CID) -> i32 {
     let mut outbuf: [u8; 32] = [0; 32];
     let mut inbytesleft: size_t = 2i32 as size_t;
     let mut outbytesleft: size_t = 32i32 as size_t;

@@ -524,7 +524,7 @@ static mut dict_operator: [C2RustUnnamed_2; 61] = [
     },
 ];
 /* Parse DICT data */
-unsafe extern "C" fn get_integer(
+unsafe fn get_integer(
     mut data: *mut *mut u8,
     mut endptr: *mut u8,
     mut status: *mut i32,
@@ -577,7 +577,7 @@ unsafe extern "C" fn get_integer(
     result as f64
 }
 /* Simply uses strtod */
-unsafe extern "C" fn get_real(
+unsafe fn get_real(
     mut data: *mut *mut u8,
     mut endptr: *mut u8,
     mut status: *mut i32,
@@ -655,7 +655,7 @@ unsafe extern "C" fn get_real(
     result
 }
 /* operators */
-unsafe extern "C" fn add_dict(
+unsafe fn add_dict(
     mut dict: *mut cff_dict,
     mut data: *mut *mut u8,
     mut endptr: *mut u8,
@@ -772,7 +772,7 @@ pub unsafe extern "C" fn cff_dict_unpack(mut data: *mut u8, mut endptr: *mut u8)
     dict
 }
 /* Pack DICT data */
-unsafe extern "C" fn pack_integer(dest: &mut [u8], mut value: i32) -> usize {
+unsafe fn pack_integer(dest: &mut [u8], mut value: i32) -> usize {
     if value >= -107 && value <= 107 {
         dest[0] = (value + 139 & 0xff) as u8;
         1
@@ -796,7 +796,7 @@ unsafe extern "C" fn pack_integer(dest: &mut [u8], mut value: i32) -> usize {
         5
     }
 }
-unsafe extern "C" fn pack_real(dest: &mut [u8], mut value: f64) -> usize {
+unsafe fn pack_real(dest: &mut [u8], mut value: f64) -> usize {
     let mut pos = 2_usize;
     let mut buffer: [u8; 32] = [0; 32];
     dest[0] = 30 as u8;
@@ -846,7 +846,7 @@ unsafe extern "C" fn pack_real(dest: &mut [u8], mut value: f64) -> usize {
     }
     pos / 2
 }
-unsafe extern "C" fn cff_dict_put_number(
+unsafe fn cff_dict_put_number(
     mut value: f64,
     dest: &mut [u8],
     mut type_0: i32,
@@ -868,7 +868,7 @@ unsafe extern "C" fn cff_dict_put_number(
         pack_integer(dest, nearint as i32)
     }
 }
-unsafe extern "C" fn put_dict_entry(mut de: *mut cff_dict_entry, dest: &mut [u8]) -> usize {
+unsafe fn put_dict_entry(mut de: *mut cff_dict_entry, dest: &mut [u8]) -> usize {
     let mut len = 0_usize;
     if (*de).count > 0i32 {
         let id = (*de).id;

@@ -138,7 +138,7 @@ pub struct char_map {
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
 static mut verbose: i32 = 0i32;
-unsafe extern "C" fn tfm_font_init(mut tfm: *mut tfm_font) {
+unsafe fn tfm_font_init(mut tfm: *mut tfm_font) {
     (*tfm).header = 0 as *mut fixword;
     (*tfm).level = 0i32;
     (*tfm).fontdir = 0_u32;
@@ -153,7 +153,7 @@ unsafe extern "C" fn tfm_font_init(mut tfm: *mut tfm_font) {
     (*tfm).height = (*tfm).depth;
     (*tfm).width = (*tfm).height;
 }
-unsafe extern "C" fn tfm_font_clear(mut tfm: *mut tfm_font) {
+unsafe fn tfm_font_clear(mut tfm: *mut tfm_font) {
     if !tfm.is_null() {
         (*tfm).header = mfree((*tfm).header as *mut libc::c_void) as *mut fixword;
         (*tfm).char_info = mfree((*tfm).char_info as *mut libc::c_void) as *mut u32;
@@ -165,18 +165,18 @@ unsafe extern "C" fn tfm_font_clear(mut tfm: *mut tfm_font) {
         (*tfm).depth_index = mfree((*tfm).depth_index as *mut libc::c_void) as *mut u8
     };
 }
-unsafe extern "C" fn release_char_map(mut map: *mut char_map) {
+unsafe fn release_char_map(mut map: *mut char_map) {
     (*map).indices = mfree((*map).indices as *mut libc::c_void) as *mut u16;
     free(map as *mut libc::c_void);
 }
-unsafe extern "C" fn release_range_map(mut map: *mut range_map) {
+unsafe fn release_range_map(mut map: *mut range_map) {
     free((*map).coverages as *mut libc::c_void);
     free((*map).indices as *mut libc::c_void);
     (*map).coverages = 0 as *mut coverage;
     (*map).indices = 0 as *mut u16;
     free(map as *mut libc::c_void);
 }
-unsafe extern "C" fn lookup_char(mut map: *const char_map, mut charcode: i32) -> i32 {
+unsafe fn lookup_char(mut map: *const char_map, mut charcode: i32) -> i32 {
     if charcode >= (*map).coverage.first_char
         && charcode <= (*map).coverage.first_char + (*map).coverage.num_chars
     {
@@ -187,7 +187,7 @@ unsafe extern "C" fn lookup_char(mut map: *const char_map, mut charcode: i32) ->
         return -1i32;
     };
 }
-unsafe extern "C" fn lookup_range(mut map: *const range_map, mut charcode: i32) -> i32 {
+unsafe fn lookup_range(mut map: *const range_map, mut charcode: i32) -> i32 {
     let mut idx = (*map).num_coverages as i32 - 1i32;
     while idx >= 0i32 && charcode >= (*(*map).coverages.offset(idx as isize)).first_char {
         if charcode
@@ -200,7 +200,7 @@ unsafe extern "C" fn lookup_range(mut map: *const range_map, mut charcode: i32) 
     }
     -1i32
 }
-unsafe extern "C" fn fm_init(mut fm: *mut font_metric) {
+unsafe fn fm_init(mut fm: *mut font_metric) {
     (*fm).tex_name = 0 as *mut i8;
     (*fm).firstchar = 0i32;
     (*fm).lastchar = 0i32;
@@ -214,7 +214,7 @@ unsafe extern "C" fn fm_init(mut fm: *mut font_metric) {
     (*fm).charmap.data = 0 as *mut libc::c_void;
     (*fm).source = 0i32;
 }
-unsafe extern "C" fn fm_clear(mut fm: *mut font_metric) {
+unsafe fn fm_clear(mut fm: *mut font_metric) {
     if !fm.is_null() {
         free((*fm).tex_name as *mut libc::c_void);
         free((*fm).widths as *mut libc::c_void);
@@ -241,7 +241,7 @@ pub unsafe extern "C" fn tfm_reset_global_state() {
     numfms = 0_u32;
     max_fms = 0_u32;
 }
-unsafe extern "C" fn fms_need(mut n: u32) {
+unsafe fn fms_need(mut n: u32) {
     if n > max_fms {
         max_fms = if max_fms.wrapping_add(16_u32) > n {
             max_fms.wrapping_add(16_u32)
@@ -258,7 +258,7 @@ unsafe extern "C" fn fms_need(mut n: u32) {
 pub unsafe extern "C" fn tfm_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn fread_fwords(
+unsafe fn fread_fwords(
     mut words: *mut fixword,
     mut nmemb: u32,
     mut handle: rust_input_handle_t,
@@ -268,7 +268,7 @@ unsafe extern "C" fn fread_fwords(
     }
     nmemb.wrapping_mul(4_u32) as i32
 }
-unsafe extern "C" fn fread_uquads(
+unsafe fn fread_uquads(
     mut quads: *mut u32,
     mut nmemb: u32,
     mut handle: rust_input_handle_t,
@@ -281,7 +281,7 @@ unsafe extern "C" fn fread_uquads(
 /*
  * TFM and JFM
  */
-unsafe extern "C" fn tfm_check_size(mut tfm: *mut tfm_font, mut tfm_file_size: off_t) {
+unsafe fn tfm_check_size(mut tfm: *mut tfm_font, mut tfm_file_size: off_t) {
     let mut expected_size: u32 = 6_u32;
     /* Removed the warning message caused by EC TFM metric files.
      *
@@ -323,7 +323,7 @@ unsafe extern "C" fn tfm_check_size(mut tfm: *mut tfm_font, mut tfm_file_size: o
         }
     };
 }
-unsafe extern "C" fn tfm_get_sizes(
+unsafe fn tfm_get_sizes(
     mut tfm_handle: rust_input_handle_t,
     mut tfm_file_size: off_t,
     mut tfm: *mut tfm_font,
@@ -345,7 +345,7 @@ unsafe extern "C" fn tfm_get_sizes(
     (*tfm).nfonparm = tt_get_unsigned_pair(tfm_handle) as u32;
     tfm_check_size(tfm, tfm_file_size);
 }
-unsafe extern "C" fn tfm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut tfm_font) {
+unsafe fn tfm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut tfm_font) {
     (*fm).widths =
         new((256_u32 as u64).wrapping_mul(::std::mem::size_of::<fixword>() as u64) as u32)
             as *mut fixword;
@@ -370,7 +370,7 @@ unsafe extern "C" fn tfm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut t
         *(*fm).depths.offset(i as isize) = *(*tfm).depth.offset(depth_index as isize);
     }
 }
-unsafe extern "C" fn sput_bigendian(mut s: *mut i8, mut v: i32, mut n: i32) -> i32 {
+unsafe fn sput_bigendian(mut s: *mut i8, mut v: i32, mut n: i32) -> i32 {
     let mut i = n - 1i32;
     while i >= 0i32 {
         *s.offset(i as isize) = (v & 0xffi32) as i8;
@@ -379,7 +379,7 @@ unsafe extern "C" fn sput_bigendian(mut s: *mut i8, mut v: i32, mut n: i32) -> i
     }
     n
 }
-unsafe extern "C" fn tfm_unpack_header(mut fm: *mut font_metric, mut tfm: *mut tfm_font) {
+unsafe fn tfm_unpack_header(mut fm: *mut font_metric, mut tfm: *mut tfm_font) {
     if (*tfm).wlenheader < 12_u32 {
         (*fm).codingscheme = 0 as *mut i8
     } else {
@@ -405,7 +405,7 @@ unsafe extern "C" fn tfm_unpack_header(mut fm: *mut font_metric, mut tfm: *mut t
     }
     (*fm).designsize = *(*tfm).header.offset(1);
 }
-unsafe extern "C" fn ofm_check_size_one(mut tfm: *mut tfm_font, mut ofm_file_size: off_t) {
+unsafe fn ofm_check_size_one(mut tfm: *mut tfm_font, mut ofm_file_size: off_t) {
     let mut ofm_size: u32 = 14_u32;
     ofm_size = (ofm_size as u32)
         .wrapping_add((2_u32).wrapping_mul((*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32)))
@@ -423,7 +423,7 @@ unsafe extern "C" fn ofm_check_size_one(mut tfm: *mut tfm_font, mut ofm_file_siz
         panic!("OFM file problem.  Table sizes don\'t agree.");
     };
 }
-unsafe extern "C" fn ofm_get_sizes(
+unsafe fn ofm_get_sizes(
     mut ofm_handle: rust_input_handle_t,
     mut ofm_file_size: off_t,
     mut tfm: *mut tfm_font,
@@ -527,7 +527,7 @@ unsafe extern "C" fn ofm_get_sizes(
         panic!("can\'t handle OFM files with level > 1");
     };
 }
-unsafe extern "C" fn ofm_do_char_info_zero(
+unsafe fn ofm_do_char_info_zero(
     mut ofm_handle: rust_input_handle_t,
     mut tfm: *mut tfm_font,
 ) {
@@ -551,7 +551,7 @@ unsafe extern "C" fn ofm_do_char_info_zero(
         }
     };
 }
-unsafe extern "C" fn ofm_do_char_info_one(
+unsafe fn ofm_do_char_info_one(
     mut ofm_handle: rust_input_handle_t,
     mut tfm: *mut tfm_font,
 ) {
@@ -610,7 +610,7 @@ unsafe extern "C" fn ofm_do_char_info_one(
         }
     };
 }
-unsafe extern "C" fn ofm_unpack_arrays(
+unsafe fn ofm_unpack_arrays(
     mut fm: *mut font_metric,
     mut tfm: *mut tfm_font,
     mut num_chars: u32,
@@ -636,7 +636,7 @@ unsafe extern "C" fn ofm_unpack_arrays(
             .offset(*(*tfm).depth_index.offset(i as isize) as isize);
     }
 }
-unsafe extern "C" fn read_ofm(
+unsafe fn read_ofm(
     mut fm: *mut font_metric,
     mut ofm_handle: rust_input_handle_t,
     mut ofm_file_size: off_t,
@@ -713,7 +713,7 @@ unsafe extern "C" fn read_ofm(
     (*fm).source = 2i32;
     tfm_font_clear(&mut tfm);
 }
-unsafe extern "C" fn read_tfm(
+unsafe fn read_tfm(
     mut fm: *mut font_metric,
     mut tfm_handle: rust_input_handle_t,
     mut tfm_file_size: off_t,

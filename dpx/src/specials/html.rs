@@ -103,7 +103,7 @@ static mut _HTML_STATE: spc_html_ = {
     init
 };
 /* ENABLE_HTML_SVG_TRANSFORM */
-unsafe extern "C" fn parse_key_val(
+unsafe fn parse_key_val(
     mut pp: *mut *const i8,
     mut endptr: *const i8,
     mut kp: *mut *mut i8,
@@ -171,7 +171,7 @@ unsafe extern "C" fn parse_key_val(
     error
 }
 
-unsafe extern "C" fn read_html_tag(
+unsafe fn read_html_tag(
     mut name: *mut i8,
     mut attr: *mut pdf_obj,
     mut type_0: *mut i32,
@@ -273,7 +273,7 @@ unsafe extern "C" fn read_html_tag(
     0i32
 }
 
-unsafe extern "C" fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
+unsafe fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     (*sd).link_dict = 0 as *mut pdf_obj;
     (*sd).baseurl = 0 as *mut i8;
@@ -281,7 +281,7 @@ unsafe extern "C" fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
     0i32
 }
 
-unsafe extern "C" fn spc_handler_html__clean(
+unsafe fn spc_handler_html__clean(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -297,7 +297,7 @@ unsafe extern "C" fn spc_handler_html__clean(
     0i32
 }
 
-unsafe extern "C" fn spc_handler_html__bophook(
+unsafe fn spc_handler_html__bophook(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -311,7 +311,7 @@ unsafe extern "C" fn spc_handler_html__bophook(
     0i32
 }
 
-unsafe extern "C" fn spc_handler_html__eophook(
+unsafe fn spc_handler_html__eophook(
     mut spe: *mut spc_env,
     mut dp: *mut libc::c_void,
 ) -> i32 {
@@ -322,7 +322,7 @@ unsafe extern "C" fn spc_handler_html__eophook(
     0i32
 }
 
-unsafe extern "C" fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut i8 {
+unsafe fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut i8 {
     let mut len = strlen(name) as i32;
     if !baseurl.is_null() {
         len = (len as usize).wrapping_add(strlen(baseurl).wrapping_add(1)) as _
@@ -345,7 +345,7 @@ unsafe extern "C" fn fqurl(mut baseurl: *const i8, mut name: *const i8) -> *mut 
     q
 }
 
-unsafe extern "C" fn html_open_link(
+unsafe fn html_open_link(
     mut spe: *mut spc_env,
     mut name: *const i8,
     mut sd: *mut spc_html_,
@@ -389,7 +389,7 @@ unsafe extern "C" fn html_open_link(
     0i32
 }
 
-unsafe extern "C" fn html_open_dest(
+unsafe fn html_open_dest(
     mut spe: *mut spc_env,
     mut name: *const i8,
     mut sd: *mut spc_html_,
@@ -421,7 +421,7 @@ unsafe extern "C" fn html_open_dest(
     error
 }
 
-unsafe extern "C" fn spc_html__anchor_open(
+unsafe fn spc_html__anchor_open(
     mut spe: *mut spc_env,
     mut attr: *mut pdf_obj,
     mut sd: *mut spc_html_,
@@ -452,7 +452,7 @@ unsafe extern "C" fn spc_html__anchor_open(
     }
 }
 
-unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut spc_html_) -> i32 {
+unsafe fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut spc_html_) -> i32 {
     let mut error: i32 = 0i32;
     match (*sd).pending_type {
         0 => {
@@ -475,7 +475,7 @@ unsafe extern "C" fn spc_html__anchor_close(mut spe: *mut spc_env, mut sd: *mut 
     error
 }
 
-unsafe extern "C" fn spc_html__base_empty(
+unsafe fn spc_html__base_empty(
     mut spe: *mut spc_env,
     mut attr: *mut pdf_obj,
     mut sd: *mut spc_html_,
@@ -505,7 +505,7 @@ unsafe extern "C" fn spc_html__base_empty(
  * Please think about placement of images.
  */
 /* XXX: there are four quasi-redundant versions of this; grp for K_UNIT__PT */
-unsafe extern "C" fn atopt(mut a: *const i8) -> f64 {
+unsafe fn atopt(mut a: *const i8) -> f64 {
     let mut p: *const i8 = a;
     let mut u: f64 = 1.0f64;
     let mut _ukeys: [*const i8; 11] = [
@@ -558,7 +558,7 @@ unsafe extern "C" fn atopt(mut a: *const i8) -> f64 {
     v * u
 }
 /* Replicated from spc_tpic */
-unsafe extern "C" fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
+unsafe fn create_xgstate(mut a: f64, mut f_ais: i32) -> *mut pdf_obj
 /* alpha is shape */ {
     let dict = pdf_new_dict();
     pdf_add_dict(dict, "Type", pdf_new_name("ExtGState"));
@@ -581,7 +581,7 @@ unsafe fn check_resourcestatus(category: &str, mut resname: &str) -> i32 {
     0i32
 }
 /* ENABLE_HTML_SVG_OPACITY */
-unsafe extern "C" fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut pdf_obj) -> i32 {
+unsafe fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut pdf_obj) -> i32 {
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -786,7 +786,7 @@ unsafe extern "C" fn spc_handler_html_default(mut spe: *mut spc_env, mut ap: *mu
     error
 }
 /* translate wsp* '(' wsp* number (comma-wsp number)? wsp* ')' */
-unsafe extern "C" fn cvt_a_to_tmatrix(
+unsafe fn cvt_a_to_tmatrix(
     M: &mut pdf_tmatrix,
     mut ptr: *const i8,
     mut nextptr: *mut *const i8,

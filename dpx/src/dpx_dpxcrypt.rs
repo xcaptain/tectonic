@@ -48,7 +48,7 @@ pub struct AES_CONTEXT {
     pub rk: [u32; 60],
     pub iv: [u8; 16],
 }
-unsafe extern "C" fn _gcry_burn_stack(mut bytes: i32) {
+unsafe fn _gcry_burn_stack(mut bytes: i32) {
     let mut buf: [i8; 64] = [0; 64];
     memset(
         buf.as_mut_ptr() as *mut libc::c_void,
@@ -82,30 +82,30 @@ unsafe extern "C" fn _gcry_burn_stack(mut bytes: i32) {
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-unsafe extern "C" fn _gcry_bswap32(mut x: u32) -> u32 {
+unsafe fn _gcry_bswap32(mut x: u32) -> u32 {
     return ((x << 8i32 | x >> 32i32 - 8i32) as i64 & 0xff00ffi64
         | (x >> (8i32 & 32i32 - 1i32) | x << (32i32 - 8i32 & 32i32 - 1i32)) as i64 & 0xff00ff00i64)
         as u32;
 }
-unsafe extern "C" fn _gcry_bswap64(mut x: u64) -> u64 {
+unsafe fn _gcry_bswap64(mut x: u64) -> u64 {
     (_gcry_bswap32(x as u32) as u64) << 32i32 | _gcry_bswap32((x >> 32i32) as u32) as u64
 }
 /* Endian dependent byte swap operations.  */
-unsafe extern "C" fn buf_get_be32(mut _buf: *const libc::c_void) -> u32 {
+unsafe fn buf_get_be32(mut _buf: *const libc::c_void) -> u32 {
     let mut in_0: *const u8 = _buf as *const u8;
     return (*in_0.offset(0) as u32) << 24i32
         | (*in_0.offset(1) as u32) << 16i32
         | (*in_0.offset(2) as u32) << 8i32
         | *in_0.offset(3) as u32;
 }
-unsafe extern "C" fn buf_put_be32(mut _buf: *mut libc::c_void, mut val: u32) {
+unsafe fn buf_put_be32(mut _buf: *mut libc::c_void, mut val: u32) {
     let mut out: *mut u8 = _buf as *mut u8;
     *out.offset(0) = (val >> 24i32) as u8;
     *out.offset(1) = (val >> 16i32) as u8;
     *out.offset(2) = (val >> 8i32) as u8;
     *out.offset(3) = val as u8;
 }
-unsafe extern "C" fn buf_get_be64(mut _buf: *const libc::c_void) -> u64 {
+unsafe fn buf_get_be64(mut _buf: *const libc::c_void) -> u64 {
     let mut in_0: *const u8 = _buf as *const u8;
     return (*in_0.offset(0) as u64) << 56i32
         | (*in_0.offset(1) as u64) << 48i32
@@ -116,7 +116,7 @@ unsafe extern "C" fn buf_get_be64(mut _buf: *const libc::c_void) -> u64 {
         | (*in_0.offset(6) as u64) << 8i32
         | *in_0.offset(7) as u64;
 }
-unsafe extern "C" fn buf_put_be64(mut _buf: *mut libc::c_void, mut val: u64) {
+unsafe fn buf_put_be64(mut _buf: *mut libc::c_void, mut val: u64) {
     let mut out: *mut u8 = _buf as *mut u8;
     *out.offset(0) = (val >> 56i32) as u8;
     *out.offset(1) = (val >> 48i32) as u8;
@@ -234,7 +234,7 @@ static mut k: [u64; 80] = [
  * Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
  * heavily modified for GnuPG by Werner Koch <wk@gnupg.org>
  */
-unsafe extern "C" fn do_encrypt_stream(
+unsafe fn do_encrypt_stream(
     mut ctx: *mut ARC4_CONTEXT,
     mut outbuf: *mut u8,
     mut inbuf: *const u8,
@@ -280,7 +280,7 @@ pub unsafe extern "C" fn ARC4(
     do_encrypt_stream(ctx, outbuf, inbuf, len);
     _gcry_burn_stack(64i32);
 }
-unsafe extern "C" fn do_arcfour_setkey(
+unsafe fn do_arcfour_setkey(
     mut ctx: *mut ARC4_CONTEXT,
     mut key: *const u8,
     mut keylen: u32,
@@ -1796,7 +1796,7 @@ static mut rcon: [u32; 10] = [
  *
  * @return the number of rounds for the given cipher key size.
  */
-unsafe extern "C" fn rijndaelSetupEncrypt(
+unsafe fn rijndaelSetupEncrypt(
     mut rk: *mut u32,
     mut key: *const u8,
     mut keybits: i32,
@@ -1905,7 +1905,7 @@ unsafe extern "C" fn rijndaelSetupEncrypt(
     }
     0i32
 }
-unsafe extern "C" fn rijndaelEncrypt(
+unsafe fn rijndaelEncrypt(
     mut rk: *const u32,
     mut nrounds: i32,
     mut plaintext: *const u8,

@@ -79,7 +79,7 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn agl_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn agl_new_name() -> *mut agl_name {
+unsafe fn agl_new_name() -> *mut agl_name {
     let agln =
         new((1_u64).wrapping_mul(::std::mem::size_of::<agl_name>() as u64) as u32) as *mut agl_name;
     (*agln).name = 0 as *mut i8;
@@ -89,7 +89,7 @@ unsafe extern "C" fn agl_new_name() -> *mut agl_name {
     (*agln).is_predef = 0i32;
     agln
 }
-unsafe extern "C" fn agl_release_name(mut agln: *mut agl_name) {
+unsafe fn agl_release_name(mut agln: *mut agl_name) {
     while !agln.is_null() {
         let next = (*agln).alternate;
         let _ = CString::from_raw((*agln).name);
@@ -325,7 +325,7 @@ unsafe fn agl_guess_name(glyphname: &[u8]) -> Option<usize> {
     }
     None
 }
-unsafe extern "C" fn agl_normalized_name(glyphname: &[u8]) -> *mut agl_name {
+unsafe fn agl_normalized_name(glyphname: &[u8]) -> *mut agl_name {
     if glyphname.is_empty() {
         return 0 as *mut agl_name;
     }
@@ -393,7 +393,7 @@ pub unsafe extern "C" fn agl_close_map() {
  *  http://partners.adobe.com/asn/tech/type/unicodegn.jsp
  */
 /* Hash */
-unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i32) -> i32 {
+unsafe fn agl_load_listfile(mut filename: *const i8, mut is_predef: i32) -> i32 {
     let mut count: i32 = 0i32;
     let mut wbuf: [i8; 1024] = [0; 1024];
     if filename.is_null() {
@@ -621,7 +621,7 @@ fn xtol(mut buf: &[u8]) -> i32 {
     v
 }
 
-unsafe extern "C" fn put_unicode_glyph(
+unsafe fn put_unicode_glyph(
     name: &[u8],
     mut dstpp: *mut *mut u8,
     mut limptr: *mut u8,

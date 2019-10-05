@@ -142,7 +142,7 @@ pub unsafe extern "C" fn pdf_clear_fontmap_record(mut mrec: *mut fontmap_rec) {
     pdf_init_fontmap_record(mrec);
 }
 /* strdup: just returns NULL for NULL */
-unsafe extern "C" fn mstrdup(mut s: *const i8) -> *mut i8 {
+unsafe fn mstrdup(mut s: *const i8) -> *mut i8 {
     let mut r: *mut i8 = 0 as *mut i8;
     if s.is_null() {
         return 0 as *mut i8;
@@ -151,7 +151,7 @@ unsafe extern "C" fn mstrdup(mut s: *const i8) -> *mut i8 {
     strcpy(r, s);
     r
 }
-unsafe extern "C" fn pdf_copy_fontmap_record(
+unsafe fn pdf_copy_fontmap_record(
     mut dst: *mut fontmap_rec,
     mut src: *const fontmap_rec,
 ) {
@@ -179,7 +179,7 @@ unsafe extern "C" fn hval_free(mut vp: *mut libc::c_void) {
     pdf_clear_fontmap_record(mrec);
     free(mrec as *mut libc::c_void);
 }
-unsafe extern "C" fn fill_in_defaults(mut mrec: *mut fontmap_rec, mut tex_name: *const i8) {
+unsafe fn fill_in_defaults(mut mrec: *mut fontmap_rec, mut tex_name: *const i8) {
     if !(*mrec).enc_name.is_null()
         && (streq_ptr((*mrec).enc_name, b"default\x00" as *const u8 as *const i8) as i32 != 0
             || streq_ptr((*mrec).enc_name, b"none\x00" as *const u8 as *const i8) as i32 != 0)
@@ -260,7 +260,7 @@ unsafe extern "C" fn fill_in_defaults(mut mrec: *mut fontmap_rec, mut tex_name: 
         }
     };
 }
-unsafe extern "C" fn tt_readline(
+unsafe fn tt_readline(
     mut buf: *mut i8,
     mut buf_len: i32,
     mut handle: rust_input_handle_t,
@@ -278,7 +278,7 @@ unsafe extern "C" fn tt_readline(
     }
     p
 }
-unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
+unsafe fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     let mut p: *const i8 = *pp;
     if p.is_null() || p >= endptr {
         return;
@@ -288,7 +288,7 @@ unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     }
     *pp = p;
 }
-unsafe extern "C" fn parse_string_value(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut i8 {
+unsafe fn parse_string_value(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut i8 {
     let mut q: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = *pp;
     let mut n: u32 = 0;
@@ -316,7 +316,7 @@ unsafe extern "C" fn parse_string_value(mut pp: *mut *const i8, mut endptr: *con
     q
 }
 /* no preceeding spaces allowed */
-unsafe extern "C" fn parse_integer_value(
+unsafe fn parse_integer_value(
     mut pp: *mut *const i8,
     mut endptr: *const i8,
     mut base: i32,
@@ -378,7 +378,7 @@ unsafe extern "C" fn parse_integer_value(
     *pp = p;
     q
 }
-unsafe extern "C" fn fontmap_parse_mapdef_dpm(
+unsafe fn fontmap_parse_mapdef_dpm(
     mut mrec: *mut fontmap_rec,
     mut mapdef: *const i8,
     mut endptr: *const i8,
@@ -685,7 +685,7 @@ unsafe extern "C" fn fontmap_parse_mapdef_dpm(
     0i32
 }
 /* Parse record line in map file of DVIPS/pdfTeX format. */
-unsafe extern "C" fn fontmap_parse_mapdef_dps(
+unsafe fn fontmap_parse_mapdef_dps(
     mut mrec: *mut fontmap_rec,
     mut mapdef: *const i8,
     mut endptr: *const i8,
@@ -795,7 +795,7 @@ unsafe extern "C" fn fontmap_parse_mapdef_dps(
     0i32
 }
 static mut fontmap: *mut ht_table = 0 as *const ht_table as *mut ht_table;
-unsafe extern "C" fn chop_sfd_name(mut tex_name: *const i8, mut sfd_name: *mut *mut i8) -> *mut i8 {
+unsafe fn chop_sfd_name(mut tex_name: *const i8, mut sfd_name: *mut *mut i8) -> *mut i8 {
     let mut fontname: *mut i8 = 0 as *mut i8;
     let mut p: *mut i8 = 0 as *mut i8;
     let mut q: *mut i8 = 0 as *mut i8;
@@ -839,7 +839,7 @@ unsafe extern "C" fn chop_sfd_name(mut tex_name: *const i8, mut sfd_name: *mut *
     *(*sfd_name).offset(n as isize) = '\u{0}' as i32 as i8;
     fontname
 }
-unsafe extern "C" fn make_subfont_name(
+unsafe fn make_subfont_name(
     mut map_name: *const i8,
     mut sfd_name: *const i8,
     mut sub_id: *const i8,
@@ -1408,7 +1408,7 @@ pub unsafe extern "C" fn pdf_close_fontmaps() {
  *
  *   (:int:)?!?string(/string)?(,string)?
  */
-unsafe extern "C" fn substr(mut str: *mut *const i8, mut stop: i8) -> *mut i8 {
+unsafe fn substr(mut str: *mut *const i8, mut stop: i8) -> *mut i8 {
     let mut sstr: *mut i8 = 0 as *mut i8;
     let mut endptr: *const i8 = 0 as *const i8;
     endptr = strchr(*str, stop as i32);
@@ -1429,7 +1429,7 @@ unsafe extern "C" fn substr(mut str: *mut *const i8, mut stop: i8) -> *mut i8 {
     sstr
 }
 /* CIDFont */
-unsafe extern "C" fn strip_options(mut map_name: *const i8, mut opt: *mut fontmap_opt) -> *mut i8 {
+unsafe fn strip_options(mut map_name: *const i8, mut opt: *mut fontmap_opt) -> *mut i8 {
     let mut font_name: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = 0 as *const i8;
     let mut next: *mut i8 = 0 as *mut i8;

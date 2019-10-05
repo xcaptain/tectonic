@@ -302,7 +302,7 @@ pub unsafe extern "C" fn jpeg_include_image(
     JPEG_info_clear(&mut j_info);
     0i32
 }
-unsafe extern "C" fn jpeg_get_density(
+unsafe fn jpeg_get_density(
     mut j_info: *mut JPEG_info,
     mut xdensity: *mut f64,
     mut ydensity: *mut f64,
@@ -321,7 +321,7 @@ unsafe extern "C" fn jpeg_get_density(
     *xdensity = 72.0f64 / (*j_info).xdpi;
     *ydensity = 72.0f64 / (*j_info).ydpi;
 }
-unsafe extern "C" fn JPEG_info_init(mut j_info: *mut JPEG_info) {
+unsafe fn JPEG_info_init(mut j_info: *mut JPEG_info) {
     (*j_info).width = 0_u16;
     (*j_info).height = 0_u16;
     (*j_info).bits_per_component = 0_u8;
@@ -338,7 +338,7 @@ unsafe extern "C" fn JPEG_info_init(mut j_info: *mut JPEG_info) {
         1024 / 8 + 1,
     );
 }
-unsafe extern "C" fn JPEG_release_APPn_data(
+unsafe fn JPEG_release_APPn_data(
     mut marker: JPEG_marker,
     mut app_sig: JPEG_APPn_sig,
     mut app_data: *mut libc::c_void,
@@ -368,7 +368,7 @@ unsafe extern "C" fn JPEG_release_APPn_data(
         free(data_2 as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn JPEG_info_clear(mut j_info: *mut JPEG_info) {
+unsafe fn JPEG_info_clear(mut j_info: *mut JPEG_info) {
     if (*j_info).num_appn > 0i32 && !(*j_info).appn.is_null() {
         for i in 0..(*j_info).num_appn {
             JPEG_release_APPn_data(
@@ -384,7 +384,7 @@ unsafe extern "C" fn JPEG_info_clear(mut j_info: *mut JPEG_info) {
     (*j_info).max_appn = 0i32;
     (*j_info).flags = 0i32;
 }
-unsafe extern "C" fn JPEG_get_iccp(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
+unsafe fn JPEG_get_iccp(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     let mut icc_stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut icc: *mut JPEG_APPn_ICC = 0 as *mut JPEG_APPn_ICC;
     let mut prev_id: i32 = 0i32;
@@ -423,7 +423,7 @@ unsafe extern "C" fn JPEG_get_iccp(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     }
     icc_stream
 }
-unsafe extern "C" fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
+unsafe fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     let mut XMP_stream: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut stream_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut XMP: *mut JPEG_APPn_XMP = 0 as *mut JPEG_APPn_XMP;
@@ -455,7 +455,7 @@ unsafe extern "C" fn JPEG_get_XMP(mut j_info: *mut JPEG_info) -> *mut pdf_obj {
     }
     XMP_stream
 }
-unsafe extern "C" fn JPEG_get_marker(mut handle: rust_input_handle_t) -> JPEG_marker {
+unsafe fn JPEG_get_marker(mut handle: rust_input_handle_t) -> JPEG_marker {
     let mut c: i32 = 0;
     c = ttstub_input_getc(handle);
     if c != 255i32 {
@@ -472,7 +472,7 @@ unsafe extern "C" fn JPEG_get_marker(mut handle: rust_input_handle_t) -> JPEG_ma
         }
     }
 }
-unsafe extern "C" fn add_APPn_marker(
+unsafe fn add_APPn_marker(
     mut j_info: *mut JPEG_info,
     mut marker: JPEG_marker,
     mut app_sig: i32,
@@ -495,7 +495,7 @@ unsafe extern "C" fn add_APPn_marker(
     (*j_info).num_appn += 1i32;
     n
 }
-unsafe extern "C" fn read_APP14_Adobe(
+unsafe fn read_APP14_Adobe(
     mut j_info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
 ) -> u16 {
@@ -514,7 +514,7 @@ unsafe extern "C" fn read_APP14_Adobe(
     );
     7_u16
 }
-unsafe extern "C" fn read_exif_bytes(mut pp: *mut *mut u8, mut n: i32, mut endian: i32) -> i32 {
+unsafe fn read_exif_bytes(mut pp: *mut *mut u8, mut n: i32, mut endian: i32) -> i32 {
     let mut rval: i32 = 0i32;
     let mut p: *mut u8 = *pp;
     match endian {
@@ -533,7 +533,7 @@ unsafe extern "C" fn read_exif_bytes(mut pp: *mut *mut u8, mut n: i32, mut endia
     *pp = (*pp).offset(n as isize);
     rval
 }
-unsafe extern "C" fn read_APP1_Exif(
+unsafe fn read_APP1_Exif(
     mut info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
     mut length: size_t,
@@ -750,7 +750,7 @@ unsafe extern "C" fn read_APP1_Exif(
     free(buffer as *mut libc::c_void);
     length
 }
-unsafe extern "C" fn read_APP0_JFIF(
+unsafe fn read_APP0_JFIF(
     mut j_info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
 ) -> size_t {
@@ -798,7 +798,7 @@ unsafe extern "C" fn read_APP0_JFIF(
     }
     (9i32 as u64).wrapping_add(thumb_data_len)
 }
-unsafe extern "C" fn read_APP0_JFXX(mut handle: rust_input_handle_t, mut length: size_t) -> size_t {
+unsafe fn read_APP0_JFXX(mut handle: rust_input_handle_t, mut length: size_t) -> size_t {
     tt_get_unsigned_byte(handle);
     /* Extension Code:
      *
@@ -810,7 +810,7 @@ unsafe extern "C" fn read_APP0_JFXX(mut handle: rust_input_handle_t, mut length:
     /* Ignore */
     return length; /* Starting at 1 */
 }
-unsafe extern "C" fn read_APP1_XMP(
+unsafe fn read_APP1_XMP(
     mut j_info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
     mut length: size_t,
@@ -831,7 +831,7 @@ unsafe extern "C" fn read_APP1_XMP(
     );
     length
 }
-unsafe extern "C" fn read_APP2_ICC(
+unsafe fn read_APP2_ICC(
     mut j_info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
     mut length: size_t,
@@ -854,7 +854,7 @@ unsafe extern "C" fn read_APP2_ICC(
     );
     length
 }
-unsafe extern "C" fn JPEG_copy_stream(
+unsafe fn JPEG_copy_stream(
     mut j_info: *mut JPEG_info,
     mut stream: *mut pdf_obj,
     mut handle: rust_input_handle_t,
@@ -976,7 +976,7 @@ unsafe extern "C" fn JPEG_copy_stream(
         -1i32
     }
 }
-unsafe extern "C" fn JPEG_scan_file(
+unsafe fn JPEG_scan_file(
     mut j_info: *mut JPEG_info,
     mut handle: rust_input_handle_t,
 ) -> i32 {

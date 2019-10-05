@@ -83,7 +83,7 @@ unsafe extern "C" fn spc_handler_background(mut spe: *mut spc_env, mut args: *mu
         -1
     }
 }
-unsafe extern "C" fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
+unsafe fn skip_blank(mut pp: *mut *const i8, mut endptr: *const i8) {
     let mut p: *const i8 = *pp;
     while p < endptr && (*p as i32 & !0x7fi32 == 0i32 && crate::isblank(*p as _) != 0) {
         p = p.offset(1)

@@ -64,7 +64,7 @@ static mut _sbuf: [i8; 128] = [0; 128];
  *  `OTTO': PostScript CFF font with OpenType wrapper
  *  `ttcf': TrueType Collection
  */
-unsafe extern "C" fn check_stream_is_truetype(mut handle: rust_input_handle_t) -> bool {
+unsafe fn check_stream_is_truetype(mut handle: rust_input_handle_t) -> bool {
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     let n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
@@ -96,7 +96,7 @@ unsafe extern "C" fn check_stream_is_truetype(mut handle: rust_input_handle_t) -
     false
 }
 /* "OpenType" is only for ".otf" here */
-unsafe extern "C" fn check_stream_is_opentype(mut handle: rust_input_handle_t) -> bool {
+unsafe fn check_stream_is_opentype(mut handle: rust_input_handle_t) -> bool {
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     let n = ttstub_input_read(handle, _sbuf.as_mut_ptr(), 4i32 as size_t) as i32;
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
@@ -113,7 +113,7 @@ unsafe extern "C" fn check_stream_is_opentype(mut handle: rust_input_handle_t) -
     }
     false
 }
-unsafe extern "C" fn check_stream_is_type1(mut handle: rust_input_handle_t) -> bool {
+unsafe fn check_stream_is_type1(mut handle: rust_input_handle_t) -> bool {
     let mut p: *mut i8 = _sbuf.as_mut_ptr();
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     let n = ttstub_input_read(handle, p, 21i32 as size_t) as i32;
@@ -154,7 +154,7 @@ unsafe extern "C" fn check_stream_is_type1(mut handle: rust_input_handle_t) -> b
     }
     false
 }
-unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> bool {
+unsafe fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> bool {
     ttstub_input_seek(handle, 0i32 as ssize_t, 0i32);
     tt_get_unsigned_quad(handle);
     let pos = tt_get_unsigned_quad(handle);
@@ -175,7 +175,7 @@ unsafe extern "C" fn check_stream_is_dfont(mut handle: rust_input_handle_t) -> b
     false
 }
 /* ensuresuffix() returns a copy of basename if sfx is "". */
-unsafe extern "C" fn ensuresuffix(mut basename: *const i8, mut sfx: *const i8) -> *mut i8 {
+unsafe fn ensuresuffix(mut basename: *const i8, mut sfx: *const i8) -> *mut i8 {
     let p = new((strlen(basename).wrapping_add(strlen(sfx)).wrapping_add(1))
         .wrapping_mul(::std::mem::size_of::<i8>()) as _) as *mut i8;
     strcpy(p, basename);
@@ -275,7 +275,7 @@ pub unsafe extern "C" fn dpx_open_dfont_file(mut filename: *const i8) -> rust_in
     }
     handle
 }
-unsafe extern "C" fn dpx_get_tmpdir() -> *mut i8 {
+unsafe fn dpx_get_tmpdir() -> *mut i8 {
     let mut _tmpd: *const i8 = 0 as *const i8;
     _tmpd = getenv(b"TMPDIR\x00" as *const u8 as *const i8);
     if _tmpd.is_null() {
