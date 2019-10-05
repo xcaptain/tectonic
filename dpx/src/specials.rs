@@ -86,7 +86,7 @@ pub struct spc_arg {
     pub base: *const i8,
     pub command: *const i8,
 }
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
+pub type spc_handler_fn_ptr = Option<unsafe fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct spc_handler {
@@ -300,7 +300,7 @@ pub unsafe extern "C" fn spc_clear_objects() {
     pdf_delete_name_tree(&mut NAMED_OBJECTS);
     NAMED_OBJECTS = pdf_new_name_tree();
 }
-unsafe extern "C" fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     assert!(!spe.is_null() && !args.is_null());
     (*args).curptr = (*args).endptr;
     -1i32
@@ -316,12 +316,7 @@ unsafe fn init_special(
     mut mag: f64,
 ) {
     special.key = 0 as *const i8;
-    special.exec = ::std::mem::transmute::<
-        Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>,
-        spc_handler_fn_ptr,
-    >(Some(
-        spc_handler_unknown as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-    ));
+    special.exec = Some(spc_handler_unknown);
     spe.x_user = x_user;
     spe.y_user = y_user;
     spe.mag = mag;

@@ -736,7 +736,7 @@ unsafe fn spc_html__img_empty(mut spe: *mut spc_env, mut attr: *mut pdf_obj) -> 
     error
 }
 /* ENABLE_HTML_IMG_SUPPORT */
-unsafe extern "C" fn spc_handler_html_default(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_html_default(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_html_ = &mut _HTML_STATE; /* treat "open" same as "empty" */
     let mut name: [i8; 128] = [0; 128]; /* treat "open" same as "empty" */
     let mut type_0: i32 = 1i32;
@@ -992,9 +992,7 @@ pub unsafe extern "C" fn spc_html_setup_handler(
     }
     (*ap).command = b"\x00" as *const u8 as *const i8;
     (*sph).key = b"html:\x00" as *const u8 as *const i8;
-    (*sph).exec = Some(
-        spc_handler_html_default as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-    );
+    (*sph).exec = Some(spc_handler_html_default);
     (*ap).curptr = (*ap)
         .curptr
         .offset(strlen(b"html:\x00" as *const u8 as *const i8) as isize);

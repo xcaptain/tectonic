@@ -406,7 +406,7 @@ unsafe fn spc_currentpoint(mut spe: *mut spc_env, mut pg: *mut i32) -> pdf_coord
     *pg = 0;
     pdf_coord::new((*spe).x_user, (*spe).y_user)
 }
-unsafe extern "C" fn spc_handler_tpic_pn(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_pn(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
@@ -420,7 +420,7 @@ unsafe extern "C" fn spc_handler_tpic_pn(mut spe: *mut spc_env, mut ap: *mut spc
     free(q as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic_pa(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_pa(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut v: [f64; 2] = [0.; 2];
@@ -455,7 +455,7 @@ unsafe extern "C" fn spc_handler_tpic_pa(mut spe: *mut spc_env, mut ap: *mut spc
     (*tp).num_points += 1i32;
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic_fp(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_fp(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut pg: i32 = 0;
@@ -467,7 +467,7 @@ unsafe extern "C" fn spc_handler_tpic_fp(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__polyline(tp, &mut cp, true, 0.0f64)
 }
-unsafe extern "C" fn spc_handler_tpic_ip(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_ip(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut pg: i32 = 0;
@@ -479,7 +479,7 @@ unsafe extern "C" fn spc_handler_tpic_ip(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__polyline(tp, &mut cp, false, 0.0f64)
 }
-unsafe extern "C" fn spc_handler_tpic_da(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_da(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut da: f64 = 0.;
@@ -498,7 +498,7 @@ unsafe extern "C" fn spc_handler_tpic_da(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__polyline(tp, &mut cp, true, da)
 }
-unsafe extern "C" fn spc_handler_tpic_dt(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_dt(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut da: f64 = 0.0f64;
@@ -517,7 +517,7 @@ unsafe extern "C" fn spc_handler_tpic_dt(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__polyline(tp, &mut cp, true, da)
 }
-unsafe extern "C" fn spc_handler_tpic_sp(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_sp(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut da: f64 = 0.0f64;
@@ -536,7 +536,7 @@ unsafe extern "C" fn spc_handler_tpic_sp(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__spline(tp, &mut cp, true, da)
 }
-unsafe extern "C" fn spc_handler_tpic_ar(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_ar(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut v: [f64; 6] = [0.; 6];
@@ -568,7 +568,7 @@ unsafe extern "C" fn spc_handler_tpic_ar(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__arc(tp, &mut cp, true, 0.0f64, v.as_mut_ptr())
 }
-unsafe extern "C" fn spc_handler_tpic_ia(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_ia(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let mut v: [f64; 6] = [0.; 6];
@@ -600,7 +600,7 @@ unsafe extern "C" fn spc_handler_tpic_ia(mut spe: *mut spc_env, mut ap: *mut spc
     let mut cp = spc_currentpoint(spe, &mut pg);
     tpic__arc(tp, &mut cp, false, 0.0f64, v.as_mut_ptr())
 }
-unsafe extern "C" fn spc_handler_tpic_sh(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_sh(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
@@ -620,7 +620,7 @@ unsafe extern "C" fn spc_handler_tpic_sh(mut spe: *mut spc_env, mut ap: *mut spc
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic_wh(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_wh(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
@@ -628,7 +628,7 @@ unsafe extern "C" fn spc_handler_tpic_wh(mut spe: *mut spc_env, mut ap: *mut spc
     (*tp).fill_color = 0.0f64;
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic_bk(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_bk(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
@@ -636,7 +636,7 @@ unsafe extern "C" fn spc_handler_tpic_bk(mut spe: *mut spc_env, mut ap: *mut spc
     (*tp).fill_color = 1.0f64;
     0i32
 }
-unsafe extern "C" fn spc_handler_tpic_tx(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
+unsafe fn spc_handler_tpic_tx(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32
 /* , void *dp) */ {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE; /* NULL terminate */
     assert!(!spe.is_null() && !ap.is_null() && !tp.is_null());
@@ -795,7 +795,7 @@ unsafe extern "C" fn tpic_filter_getopts(
     }
     error
 }
-unsafe extern "C" fn spc_handler_tpic__setopts(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_tpic__setopts(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut tp: *mut spc_tpic_ = &mut _TPIC_STATE;
     let dict = spc_parse_kvpairs(ap);
     if dict.is_null() {
@@ -827,130 +827,91 @@ static mut TPIC_HANDLERS: [spc_handler; 13] = {
         {
             let mut init = spc_handler {
                 key: b"pn\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_pn
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_pn),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"pa\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_pa
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_pa),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"fp\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_fp
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_fp),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ip\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_ip
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_ip),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"da\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_da
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_da),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"dt\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_dt
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_dt),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"sp\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_sp
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_sp),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ar\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_ar
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_ar),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ia\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_ia
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_ia),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"sh\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_sh
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_sh),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"wh\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_wh
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_wh),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bk\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_bk
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_bk),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"tx\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_tpic_tx
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_tpic_tx),
             };
             init
         },
@@ -1029,10 +990,7 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
     {
         (*ap).command = b"__setopt__\x00" as *const u8 as *const i8;
         (*sph).key = b"tpic:\x00" as *const u8 as *const i8;
-        (*sph).exec = Some(
-            spc_handler_tpic__setopts
-                as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-        );
+        (*sph).exec = Some(spc_handler_tpic__setopts);
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         error = 0i32;
         free(q as *mut libc::c_void);

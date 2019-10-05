@@ -40,16 +40,14 @@ pub type size_t = u64;
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
 
-unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     (*args).curptr = (*args).endptr;
     0i32
 }
 static mut DVIPDFMX_HANDLERS: [spc_handler; 1] = [{
     let mut init = spc_handler {
         key: b"config\x00" as *const u8 as *const i8,
-        exec: Some(
-            spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-        ),
+        exec: Some(spc_handler_null),
     };
     init
 }];

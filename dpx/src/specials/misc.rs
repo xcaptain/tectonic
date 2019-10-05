@@ -47,7 +47,7 @@ use super::spc_handler;
 use crate::dpx_pdfximage::load_options;
 
 /* quasi-hack to get the primary input */
-unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut ti = transform_info::new();
     let mut options: load_options = {
         let mut init = load_options {
@@ -126,7 +126,7 @@ unsafe extern "C" fn spc_handler_postscriptbox(mut spe: *mut spc_env, mut ap: *m
     pdf_dev_put_image(form_id, &mut ti, (*spe).x_user, (*spe).y_user);
     0i32
 }
-unsafe extern "C" fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     (*args).curptr = (*args).endptr;
     0i32
 }
@@ -134,55 +134,42 @@ static mut MISC_HANDLERS: [spc_handler; 6] = [
     {
         let mut init = spc_handler {
             key: b"postscriptbox\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_postscriptbox
-                    as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_postscriptbox),
         };
         init
     },
     {
         let mut init = spc_handler {
             key: b"landscape\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_null),
         };
         init
     },
     {
         let mut init = spc_handler {
             key: b"papersize\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_null),
         };
         init
     },
     {
         let mut init = spc_handler {
             key: b"src:\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_null),
         };
         init
     },
     {
         let mut init = spc_handler {
             key: b"pos:\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_null),
         };
         init
     },
     {
         let mut init = spc_handler {
             key: b"om:\x00" as *const u8 as *const i8,
-            exec: Some(
-                spc_handler_null as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-            ),
+            exec: Some(spc_handler_null),
         };
         init
     },

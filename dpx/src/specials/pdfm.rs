@@ -195,7 +195,7 @@ unsafe extern "C" fn findresource(mut sd: *mut spc_pdf_, mut ident: *const i8) -
         -1i32
     }
 }
-unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
+unsafe fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_pdf_ = dp as *mut spc_pdf_;
     /* The folllowing dictionary entry keys are considered as keys for
      * text strings. Be sure that string object is NOT always a text string.
@@ -230,7 +230,7 @@ unsafe extern "C" fn spc_handler_pdfm__init(mut dp: *mut libc::c_void) -> i32 {
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm__clean(mut dp: *mut libc::c_void) -> i32 {
+unsafe fn spc_handler_pdfm__clean(mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_pdf_ = dp as *mut spc_pdf_;
     if !(*sd).annot_dict.is_null() {
         warn!("Unbalanced bann and eann found.");
@@ -258,7 +258,7 @@ pub unsafe extern "C" fn spc_pdfm_at_end_document() -> i32 {
     spc_handler_pdfm__clean(sd as *mut libc::c_void)
 }
 /* Dvipdfm specials */
-unsafe extern "C" fn spc_handler_pdfm_bop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_bop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if (*args).curptr < (*args).endptr {
         pdf_doc_set_bop_content(
             (*args).curptr,
@@ -268,7 +268,7 @@ unsafe extern "C" fn spc_handler_pdfm_bop(mut _spe: *mut spc_env, mut args: *mut
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_eop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_eop(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if (*args).curptr < (*args).endptr {
         pdf_doc_set_eop_content(
             (*args).curptr,
@@ -337,7 +337,7 @@ unsafe extern "C" fn safeputresdict(
  *  pdf:put @resources << /Font << >> >>
  *
  */
-unsafe extern "C" fn spc_handler_pdfm_put(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_put(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     let ident = parse_opt_ident(&mut (*ap).curptr, (*ap).endptr);
@@ -657,7 +657,7 @@ unsafe extern "C" fn parse_pdf_dict_with_tounicode(
     }
     dict
 }
-unsafe extern "C" fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut rect = pdf_rect::new();
     let mut ident: *mut i8 = 0 as *mut i8;
@@ -725,7 +725,7 @@ unsafe extern "C" fn spc_handler_pdfm_annot(mut spe: *mut spc_env, mut args: *mu
     0i32
 }
 /* NOTE: This can't have ident. See "Dvipdfm User's Manual". */
-unsafe extern "C" fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     if !(*sd).annot_dict.is_null() {
         spc_warn!(spe, "Can\'t begin an annotation when one is pending.");
@@ -747,7 +747,7 @@ unsafe extern "C" fn spc_handler_pdfm_bann(mut spe: *mut spc_env, mut args: *mut
     }
     spc_begin_annot(spe, (*sd).annot_dict)
 }
-unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     if (*sd).annot_dict.is_null() {
         spc_warn!(spe, "Tried to end an annotation without starting one!");
@@ -759,7 +759,7 @@ unsafe extern "C" fn spc_handler_pdfm_eann(mut spe: *mut spc_env, mut _args: *mu
     error
 }
 /* Color:.... */
-unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let (psc, pfc) = pdf_color_get_current();
     let fc = spc_util_read_pdfcolor(spe, ap, Some(pfc));
     let mut sc = Err(());
@@ -782,7 +782,7 @@ unsafe extern "C" fn spc_handler_pdfm_bcolor(mut spe: *mut spc_env, mut ap: *mut
  * This special changes the current color without clearing the color stack.
  * It therefore differs from "color rgb 1 0 0".
  */
-unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let (psc, pfc) = pdf_color_get_current();
     let fc = spc_util_read_pdfcolor(spe, ap, Some(pfc));
     let mut sc = Err(());
@@ -801,14 +801,14 @@ unsafe extern "C" fn spc_handler_pdfm_scolor(mut spe: *mut spc_env, mut ap: *mut
         -1
     }
 }
-unsafe extern "C" fn spc_handler_pdfm_ecolor(
+unsafe fn spc_handler_pdfm_ecolor(
     mut _spe: *mut spc_env,
     mut _args: *mut spc_arg,
 ) -> i32 {
     pdf_color_pop();
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_btrans(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_btrans(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut ti = transform_info::new();
     transform_info_clear(&mut ti);
     if spc_util_read_dimtrns(spe, &mut ti, args, 0i32) < 0i32 {
@@ -822,7 +822,7 @@ unsafe extern "C" fn spc_handler_pdfm_btrans(mut spe: *mut spc_env, mut args: *m
     pdf_dev_concat(&mut M);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_etrans(
+unsafe fn spc_handler_pdfm_etrans(
     mut _spe: *mut spc_env,
     mut _args: *mut spc_arg,
 ) -> i32 {
@@ -838,7 +838,7 @@ unsafe extern "C" fn spc_handler_pdfm_etrans(
     pdf_dev_reset_color(0i32);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_outline(
+unsafe fn spc_handler_pdfm_outline(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -918,7 +918,7 @@ unsafe extern "C" fn spc_handler_pdfm_outline(
     pdf_doc_bookmarks_add(item_dict, is_open);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_article(
+unsafe fn spc_handler_pdfm_article(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -941,7 +941,7 @@ unsafe extern "C" fn spc_handler_pdfm_article(
     free(ident as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let article_info;
     let mut rect = pdf_rect::new();
@@ -1008,7 +1008,7 @@ unsafe extern "C" fn spc_handler_pdfm_bead(mut spe: *mut spc_env, mut args: *mut
     free(article_name as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_image(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_image(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut ident: *mut i8 = 0 as *mut i8;
     let mut ti = transform_info::new();
@@ -1088,7 +1088,7 @@ unsafe extern "C" fn spc_handler_pdfm_image(mut spe: *mut spc_env, mut args: *mu
     0i32
 }
 /* Use do_names instead. */
-unsafe extern "C" fn spc_handler_pdfm_dest(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_dest(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     let name = parse_pdf_object(&mut (*args).curptr, (*args).endptr, 0 as *mut pdf_file);
     if name.is_null() {
@@ -1129,7 +1129,7 @@ unsafe extern "C" fn spc_handler_pdfm_dest(mut spe: *mut spc_env, mut args: *mut
     pdf_release_obj(name);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let category = parse_pdf_object(&mut (*args).curptr, (*args).endptr, 0 as *mut pdf_file);
     if category.is_null() {
         spc_warn!(spe, "PDF name expected but not found.");
@@ -1211,7 +1211,7 @@ unsafe extern "C" fn spc_handler_pdfm_names(mut spe: *mut spc_env, mut args: *mu
     pdf_release_obj(category);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_docinfo(
+unsafe fn spc_handler_pdfm_docinfo(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1226,7 +1226,7 @@ unsafe extern "C" fn spc_handler_pdfm_docinfo(
     pdf_release_obj(dict);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_docview(
+unsafe fn spc_handler_pdfm_docview(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1248,7 +1248,7 @@ unsafe extern "C" fn spc_handler_pdfm_docview(
     pdf_release_obj(dict);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_close(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_close(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     let ident = parse_opt_ident(&mut (*args).curptr, (*args).endptr);
     if !ident.is_null() {
@@ -1259,7 +1259,7 @@ unsafe extern "C" fn spc_handler_pdfm_close(mut _spe: *mut spc_env, mut args: *m
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_object(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_object(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     let ident = parse_opt_ident(&mut (*args).curptr, (*args).endptr);
     if ident.is_null() {
@@ -1281,7 +1281,7 @@ unsafe extern "C" fn spc_handler_pdfm_object(mut spe: *mut spc_env, mut args: *m
     free(ident as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_content(
+unsafe fn spc_handler_pdfm_content(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1321,7 +1321,7 @@ unsafe extern "C" fn spc_handler_pdfm_content(
     (*args).curptr = (*args).endptr; /* op: ANY */
     return 0i32; /*kpse_find_pict(instring);*/
 }
-unsafe extern "C" fn spc_handler_pdfm_literal(
+unsafe fn spc_handler_pdfm_literal(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1370,7 +1370,7 @@ unsafe extern "C" fn spc_handler_pdfm_literal(
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_bcontent(
+unsafe fn spc_handler_pdfm_bcontent(
     mut spe: *mut spc_env,
     mut _args: *mut spc_arg,
 ) -> i32 {
@@ -1390,7 +1390,7 @@ unsafe extern "C" fn spc_handler_pdfm_bcontent(
     pdf_dev_push_coord((*spe).x_user, (*spe).y_user);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_econtent(
+unsafe fn spc_handler_pdfm_econtent(
     mut _spe: *mut spc_env,
     mut _args: *mut spc_arg,
 ) -> i32 {
@@ -1399,7 +1399,7 @@ unsafe extern "C" fn spc_handler_pdfm_econtent(
     pdf_dev_reset_color(0i32);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_code(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_code(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
         pdf_doc_add_page_content(b" ");
@@ -1411,14 +1411,14 @@ unsafe extern "C" fn spc_handler_pdfm_code(mut _spe: *mut spc_env, mut args: *mu
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_do_nothing(
+unsafe fn spc_handler_pdfm_do_nothing(
     mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
+unsafe fn spc_handler_pdfm_stream_with_type(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
     mut type_0: i32,
@@ -1546,7 +1546,7 @@ unsafe extern "C" fn spc_handler_pdfm_stream_with_type(
  *
  *  pdf: stream @objname (input_string) [PDF_DICT]
  */
-unsafe extern "C" fn spc_handler_pdfm_stream(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_stream(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     spc_handler_pdfm_stream_with_type(spe, args, 0i32)
 }
 /*
@@ -1554,7 +1554,7 @@ unsafe extern "C" fn spc_handler_pdfm_stream(mut spe: *mut spc_env, mut args: *m
  *
  *  pdf: fstream @objname (filename) [PDF_DICT]
  */
-unsafe extern "C" fn spc_handler_pdfm_fstream(
+unsafe fn spc_handler_pdfm_fstream(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1576,7 +1576,7 @@ unsafe extern "C" fn spc_handler_pdfm_fstream(
  *
  * Note that scale, xscale, yscale, xoffset, yoffset options are ignored.
  */
-unsafe extern "C" fn spc_handler_pdfm_bform(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_bform(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut cropbox = pdf_rect::new();
     let mut ti = transform_info::new();
     skip_white(&mut (*args).curptr, (*args).endptr);
@@ -1630,7 +1630,7 @@ unsafe extern "C" fn spc_handler_pdfm_bform(mut spe: *mut spc_env, mut args: *mu
  * not resource dictionary.
  * Please use pdf:put @resources (before pdf:exobj) instead.
  */
-unsafe extern "C" fn spc_handler_pdfm_eform(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_eform(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut attrib: *mut pdf_obj = 0 as *mut pdf_obj;
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr < (*args).endptr {
@@ -1665,7 +1665,7 @@ unsafe extern "C" fn spc_handler_pdfm_eform(mut _spe: *mut spc_env, mut args: *m
  * Note that xoffset and yoffset moves the reference point where the
  * lower-left corner of the XObject will be put.
  */
-unsafe extern "C" fn spc_handler_pdfm_uxobj(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_uxobj(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut sd: *mut spc_pdf_ = &mut _PDF_STAT;
     let mut ti = transform_info::new();
     let mut options: load_options = {
@@ -1710,17 +1710,17 @@ unsafe extern "C" fn spc_handler_pdfm_uxobj(mut spe: *mut spc_env, mut args: *mu
     free(ident as *mut libc::c_void);
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_link(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_link(mut spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     spc_resume_annot(spe)
 }
-unsafe extern "C" fn spc_handler_pdfm_nolink(
+unsafe fn spc_handler_pdfm_nolink(
     mut spe: *mut spc_env,
     mut _args: *mut spc_arg,
 ) -> i32 {
     spc_suspend_annot(spe)
 }
 /* Handled at BOP */
-unsafe extern "C" fn spc_handler_pdfm_pagesize(
+unsafe fn spc_handler_pdfm_pagesize(
     mut _spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1730,7 +1730,7 @@ unsafe extern "C" fn spc_handler_pdfm_pagesize(
 /* Please remove this.
  * This should be handled before processing pages!
  */
-unsafe extern "C" fn spc_handler_pdfm_bgcolor(
+unsafe fn spc_handler_pdfm_bgcolor(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1745,7 +1745,7 @@ unsafe extern "C" fn spc_handler_pdfm_bgcolor(
         }
     }
 }
-unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;
     static mut BUFFER: [i8; 1024] = [0; 1024];
     skip_white(&mut (*ap).curptr, (*ap).endptr);
@@ -1805,7 +1805,7 @@ unsafe extern "C" fn spc_handler_pdfm_mapline(mut spe: *mut spc_env, mut ap: *mu
     }
     0i32
 }
-unsafe extern "C" fn spc_handler_pdfm_mapfile(
+unsafe fn spc_handler_pdfm_mapfile(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1835,7 +1835,7 @@ unsafe extern "C" fn spc_handler_pdfm_mapfile(
     free(mapfile as *mut libc::c_void);
     error
 }
-unsafe extern "C" fn spc_handler_pdfm_tounicode(
+unsafe fn spc_handler_pdfm_tounicode(
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -1888,800 +1888,560 @@ static mut PDFM_HANDLERS: [spc_handler; 80] = {
         {
             let mut init = spc_handler {
                 key: b"annotation\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_annot
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_annot),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"annotate\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_annot
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_annot),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"annot\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_annot
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_annot),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ann\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_annot
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_annot),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"outline\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_outline
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_outline),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"out\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_outline
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_outline),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"article\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_article
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_article),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"art\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_article
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_article),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bead\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bead
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bead),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"thread\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bead
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bead),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"destination\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_dest
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_dest),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"dest\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_dest
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_dest),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"object\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_object
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_object),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"obj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_object
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_object),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"docinfo\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_docinfo
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_docinfo),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"docview\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_docview
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_docview),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"content\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_content
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_content),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"put\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_put
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_put),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"close\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_close
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_close),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bop\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bop
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bop),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"eop\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eop
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eop),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"image\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_image
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_image),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"img\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_image
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_image),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"epdf\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_image
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_image),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"link\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_link
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_link),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"nolink\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_nolink
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_nolink),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"begincolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bcolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bc\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"setcolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_scolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_scolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"scolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_scolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_scolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"sc\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_scolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_scolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endcolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ecolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"ec\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"begingray\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bgray\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bg\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endgray\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"egray\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"eg\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_ecolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_ecolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bgcolor\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bgcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bgcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bgc\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bgcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bgcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bbc\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bgcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bgcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bbg\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bgcolor
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bgcolor),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"pagesize\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_pagesize
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_pagesize),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bannot\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"beginann\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bann\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"eannot\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endann\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"eann\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eann
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eann),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"btrans\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_btrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_btrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"begintransform\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_btrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_btrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"begintrans\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_btrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_btrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bt\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_btrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_btrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"etrans\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_etrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_etrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endtransform\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_etrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_etrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endtrans\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_etrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_etrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"et\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_etrans
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_etrans),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bform\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"beginxobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bxobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"eform\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"endxobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"exobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_eform
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_eform),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"usexobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_uxobj
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_uxobj),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"uxobj\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_uxobj
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_uxobj),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"tounicode\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_tounicode
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_tounicode),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"literal\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_literal
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_literal),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"stream\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_stream
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_stream),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"fstream\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_fstream
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_fstream),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"names\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_names
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_names),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"mapline\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_mapline
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_mapline),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"mapfile\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_mapfile
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_mapfile),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"bcontent\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_bcontent
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_bcontent),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"econtent\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_econtent
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_econtent),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"code\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_code
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_code),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"minorversion\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_do_nothing
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_do_nothing),
             };
             init
         },
         {
             let mut init = spc_handler {
                 key: b"encrypt\x00" as *const u8 as *const i8,
-                exec: Some(
-                    spc_handler_pdfm_do_nothing
-                        as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-                ),
+                exec: Some(spc_handler_pdfm_do_nothing),
             };
             init
         },
