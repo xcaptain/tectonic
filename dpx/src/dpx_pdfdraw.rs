@@ -217,11 +217,7 @@ impl PeType {
 static mut fmt_buf: [u8; 1024] = [0; 1024];
 
 /* start new subpath */
-unsafe fn pdf_path__moveto(
-    pa: &mut pdf_path,
-    cp: &mut pdf_coord,
-    p0: &pdf_coord,
-) -> i32 {
+unsafe fn pdf_path__moveto(pa: &mut pdf_path, cp: &mut pdf_coord, p0: &pdf_coord) -> i32 {
     if !pa.path.is_empty() {
         let len = pa.len();
         let pe = &mut pa.path[len - 1];
@@ -247,10 +243,7 @@ unsafe fn pdf_path__moveto(
  * 'moveto' must be used to enforce starting new path.
  * This affects how 'closepath' is treated.
  */
-unsafe fn pdf_path__next_pe<'a>(
-    pa: &'a mut pdf_path,
-    cp: &pdf_coord,
-) -> &'a mut pa_elem {
+unsafe fn pdf_path__next_pe<'a>(pa: &'a mut pdf_path, cp: &pdf_coord) -> &'a mut pa_elem {
     if pa.path.is_empty() {
         let mut pe = pa_elem::default();
         pe.p[0] = *cp;
@@ -309,11 +302,7 @@ unsafe fn pdf_path__transform(pa: &mut pdf_path, M: &pdf_tmatrix) -> i32 {
     0i32
 }
 /* Path Construction */
-unsafe fn pdf_path__lineto(
-    pa: &mut pdf_path,
-    cp: &mut pdf_coord,
-    p0: &pdf_coord,
-) -> i32 {
+unsafe fn pdf_path__lineto(pa: &mut pdf_path, cp: &mut pdf_coord, p0: &pdf_coord) -> i32 {
     let pe = pdf_path__next_pe(pa, cp);
     pe.typ = PeType::LINETO;
     cp.x = p0.x;

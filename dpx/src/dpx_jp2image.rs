@@ -45,11 +45,7 @@ pub type size_t = u64;
 
 use crate::dpx_pdfximage::{pdf_ximage, ximage_info};
 /* Label */
-unsafe fn read_box_hdr(
-    mut fp: *mut FILE,
-    mut lbox: *mut u32,
-    mut tbox: *mut u32,
-) -> u32 {
+unsafe fn read_box_hdr(mut fp: *mut FILE, mut lbox: *mut u32, mut tbox: *mut u32) -> u32 {
     let mut bytesread: u32 = 0_u32;
     *lbox = get_unsigned_quad(fp);
     *tbox = get_unsigned_quad(fp);
@@ -270,11 +266,7 @@ unsafe fn scan_jp2h(
         -1i32
     };
 }
-unsafe fn scan_file(
-    info: &mut ximage_info,
-    mut smask: *mut i32,
-    mut fp: *mut FILE,
-) -> i32 {
+unsafe fn scan_file(info: &mut ximage_info, mut smask: *mut i32, mut fp: *mut FILE) -> i32 {
     let mut error: i32 = 0i32;
     let mut have_jp2h: i32 = 0i32;
     let mut size: i32 = 0;

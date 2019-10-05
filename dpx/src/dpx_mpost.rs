@@ -2707,11 +2707,7 @@ unsafe fn pop_get_numbers(mut values: *mut f64, mut count: i32) -> i32 {
     }
     count + 1i32
 }
-unsafe fn cvr_array(
-    mut array: *mut pdf_obj,
-    mut values: *mut f64,
-    mut count: i32,
-) -> i32 {
+unsafe fn cvr_array(mut array: *mut pdf_obj, mut values: *mut f64, mut count: i32) -> i32 {
     if !(!array.is_null() && pdf_obj_typeof(array) == PdfObjType::ARRAY) {
         warn!("mpost: Not an array!");
     } else {
@@ -2979,11 +2975,7 @@ unsafe fn do_show() -> i32 {
     pdf_release_obj(text_str);
     0i32
 }
-unsafe fn do_mpost_bind_def(
-    mut ps_code: *const i8,
-    mut x_user: f64,
-    mut y_user: f64,
-) -> i32 {
+unsafe fn do_mpost_bind_def(mut ps_code: *const i8, mut x_user: f64, mut y_user: f64) -> i32 {
     let mut error: i32 = 0i32;
     let mut start: *const i8 = 0 as *const i8;
     let mut end: *const i8 = 0 as *const i8;

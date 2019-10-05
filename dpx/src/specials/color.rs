@@ -62,10 +62,7 @@ unsafe fn spc_handler_color_pop(mut _spe: *mut spc_env, mut _args: *mut spc_arg)
 /* Invoked by the special command "color rgb .625 0 0".
  * DVIPS clears the color stack, and then saves and sets the given color.
  */
-unsafe fn spc_handler_color_default(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_color_default(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if let Ok(colorspec) = spc_util_read_colorspec(spe, args, true) {
         pdf_color_clear_stack();
         pdf_color_set(&colorspec, &colorspec);

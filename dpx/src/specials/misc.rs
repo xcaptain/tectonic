@@ -191,9 +191,7 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
         return -1i32;
     }
     for handler in MISC_HANDLERS.iter() {
-        if keylen == handler.key.len()
-            && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key
-        {
+        if keylen == handler.key.len() && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key {
             skip_white(&mut (*args).curptr, (*args).endptr);
             (*args).command = Some(handler.key);
             (*handle).key = b"???:";

@@ -527,10 +527,7 @@ unsafe fn ofm_get_sizes(
         panic!("can\'t handle OFM files with level > 1");
     };
 }
-unsafe fn ofm_do_char_info_zero(
-    mut ofm_handle: rust_input_handle_t,
-    mut tfm: *mut tfm_font,
-) {
+unsafe fn ofm_do_char_info_zero(mut ofm_handle: rust_input_handle_t, mut tfm: *mut tfm_font) {
     let mut num_chars = (*tfm).ec.wrapping_sub((*tfm).bc).wrapping_add(1_u32);
     if num_chars != 0_u32 {
         (*tfm).width_index = new((num_chars as u64)
@@ -551,10 +548,7 @@ unsafe fn ofm_do_char_info_zero(
         }
     };
 }
-unsafe fn ofm_do_char_info_one(
-    mut ofm_handle: rust_input_handle_t,
-    mut tfm: *mut tfm_font,
-) {
+unsafe fn ofm_do_char_info_one(mut ofm_handle: rust_input_handle_t, mut tfm: *mut tfm_font) {
     let num_char_infos = (*tfm)
         .ncw
         .wrapping_div((3_u32).wrapping_add((*tfm).npc.wrapping_div(2_u32)));
@@ -610,11 +604,7 @@ unsafe fn ofm_do_char_info_one(
         }
     };
 }
-unsafe fn ofm_unpack_arrays(
-    mut fm: *mut font_metric,
-    mut tfm: *mut tfm_font,
-    mut num_chars: u32,
-) {
+unsafe fn ofm_unpack_arrays(mut fm: *mut font_metric, mut tfm: *mut tfm_font, mut num_chars: u32) {
     (*fm).widths = new(((*tfm).bc.wrapping_add(num_chars) as u64)
         .wrapping_mul(::std::mem::size_of::<fixword>() as u64) as u32)
         as *mut fixword;

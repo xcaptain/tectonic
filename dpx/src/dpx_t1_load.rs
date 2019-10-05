@@ -138,11 +138,7 @@ unsafe fn get_next_key(mut start: *mut *mut u8, mut end: *mut u8) -> *mut i8 {
     }
     key
 }
-unsafe fn seek_operator(
-    mut start: *mut *mut u8,
-    mut end: *mut u8,
-    mut op: *const i8,
-) -> i32 {
+unsafe fn seek_operator(mut start: *mut *mut u8, mut end: *mut u8, mut op: *const i8) -> i32 {
     let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     while *start < end && {
         tok = pst_get_token(start, end);
@@ -168,11 +164,7 @@ unsafe fn seek_operator(
     }
     0i32
 }
-unsafe fn parse_svalue(
-    mut start: *mut *mut u8,
-    mut end: *mut u8,
-    mut value: *mut *mut i8,
-) -> i32 {
+unsafe fn parse_svalue(mut start: *mut *mut u8, mut end: *mut u8, mut value: *mut *mut i8) -> i32 {
     let tok = pst_get_token(start, end);
     if tok.is_null() {
         return -1i32;
@@ -193,11 +185,7 @@ unsafe fn parse_svalue(
     }
     1i32
 }
-unsafe fn parse_bvalue(
-    mut start: *mut *mut u8,
-    mut end: *mut u8,
-    mut value: *mut f64,
-) -> i32 {
+unsafe fn parse_bvalue(mut start: *mut *mut u8, mut end: *mut u8, mut value: *mut f64) -> i32 {
     let tok = pst_get_token(start, end);
     if tok.is_null() {
         return -1i32;

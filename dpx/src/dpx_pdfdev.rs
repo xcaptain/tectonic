@@ -403,11 +403,7 @@ unsafe fn p_dtoa(mut value: f64, mut prec: i32, buf: &mut [u8]) -> usize {
     *c = 0;
     n as usize
 }
-unsafe fn dev_sprint_bp(
-    buf: &mut [u8],
-    mut value: spt_t,
-    mut error: *mut spt_t,
-) -> usize {
+unsafe fn dev_sprint_bp(buf: &mut [u8], mut value: spt_t, mut error: *mut spt_t) -> usize {
     let mut value_in_bp: f64 = 0.;
     let mut error_in_bp: f64 = 0.;
     let mut prec: i32 = dev_unit.precision;

@@ -1011,9 +1011,7 @@ unsafe fn handle_subst_glyphs(
     }
     count
 }
-unsafe fn prepare_CIDFont_from_sfnt<'a>(
-    mut sfont: *mut sfnt,
-) -> Option<&'a mut cff_font> {
+unsafe fn prepare_CIDFont_from_sfnt<'a>(mut sfont: *mut sfnt) -> Option<&'a mut cff_font> {
     let mut offset: u32 = 0_u32;
     if (*sfont).type_0 != 1i32 << 2i32 || sfnt_read_table_directory(sfont, 0_u32) < 0i32 || {
         offset = sfnt_find_table_pos(sfont, b"CFF ");
@@ -1706,40 +1704,16 @@ pub unsafe extern "C" fn otf_load_Unicode_CMap(
     }
     if wmode == 1i32 {
         gsub_vert = otl_gsub_new();
-        if otl_gsub_add_feat(
-            gsub_vert,
-            b"*",
-            b"*",
-            b"vrt2",
-            sfont,
-        ) < 0i32
-        {
-            if otl_gsub_add_feat(
-                gsub_vert,
-                b"*",
-                b"*",
-                b"vert",
-                sfont,
-            ) < 0i32
-            {
+        if otl_gsub_add_feat(gsub_vert, b"*", b"*", b"vrt2", sfont) < 0i32 {
+            if otl_gsub_add_feat(gsub_vert, b"*", b"*", b"vert", sfont) < 0i32 {
                 warn!("GSUB feature vrt2/vert not found.");
                 otl_gsub_release(gsub_vert);
                 gsub_vert = 0 as *mut otl_gsub
             } else {
-                otl_gsub_select(
-                    gsub_vert,
-                    b"*",
-                    b"*",
-                    b"vert",
-                );
+                otl_gsub_select(gsub_vert, b"*", b"*", b"vert");
             }
         } else {
-            otl_gsub_select(
-                gsub_vert,
-                b"*",
-                b"*",
-                b"vrt2",
-            );
+            otl_gsub_select(gsub_vert, b"*", b"*", b"vrt2");
         }
     } else {
         gsub_vert = 0 as *mut otl_gsub

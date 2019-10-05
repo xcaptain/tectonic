@@ -187,10 +187,7 @@ unsafe fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut bt_n
                         } else if **pp as i32 == '_' as i32 {
                             (*curr).data[i as usize] = ' ' as i32 as i8
                         } else {
-                            warn!(
-                                "Invalid char in tag: {}\n",
-                                char::from(**pp as u8),
-                            );
+                            warn!("Invalid char in tag: {}\n", char::from(**pp as u8),);
                             bt_release_tree(root);
                             return 0 as *mut bt_node;
                         }

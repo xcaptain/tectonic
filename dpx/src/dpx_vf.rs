@@ -186,11 +186,7 @@ unsafe fn read_a_char_def(
         .pkt_len
         .offset(ch as isize) = pkt_len;
 }
-unsafe fn read_a_font_def(
-    mut vf_handle: rust_input_handle_t,
-    mut font_id: i32,
-    mut thisfont: i32,
-) {
+unsafe fn read_a_font_def(mut vf_handle: rust_input_handle_t, mut font_id: i32, mut thisfont: i32) {
     if (*vf_fonts.offset(thisfont as isize)).num_dev_fonts
         >= (*vf_fonts.offset(thisfont as isize)).max_dev_fonts
     {
@@ -356,11 +352,7 @@ unsafe fn unsigned_byte(mut start: *mut *mut u8, mut end: *mut u8) -> i32 {
         panic!("Premature end of DVI byte stream in VF font\n");
     }
 }
-unsafe fn get_pkt_signed_num(
-    mut start: *mut *mut u8,
-    mut end: *mut u8,
-    mut num: u8,
-) -> i32 {
+unsafe fn get_pkt_signed_num(mut start: *mut *mut u8, mut end: *mut u8, mut num: u8) -> i32 {
     let mut val;
     if end.wrapping_offset_from(*start) as i64 > num as i64 {
         let fresh11 = *start;
@@ -409,11 +401,7 @@ unsafe fn get_pkt_signed_num(
     }
     val
 }
-unsafe fn get_pkt_unsigned_num(
-    mut start: *mut *mut u8,
-    mut end: *mut u8,
-    mut num: u8,
-) -> i32 {
+unsafe fn get_pkt_unsigned_num(mut start: *mut *mut u8, mut end: *mut u8, mut num: u8) -> i32 {
     let mut val;
     if end.wrapping_offset_from(*start) as i64 > num as i64 {
         let fresh15 = *start;

@@ -115,11 +115,7 @@ pub static mut landscape_mode: i32 = 0i32;
 pub static mut always_embed: i32 = 0i32;
 /* always embed fonts, regardless of licensing flags */
 /* XXX: there are four quasi-redundant versions of this; grp for K_UNIT__PT */
-unsafe fn read_length(
-    mut vp: *mut f64,
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> i32 {
+unsafe fn read_length(mut vp: *mut f64, mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut q: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = *pp;
     let mut v: f64 = 0.;

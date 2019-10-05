@@ -751,11 +751,7 @@ pub unsafe extern "C" fn pst_parse_string(
     0 as *mut pst_obj
 }
 /* Overflowed value is set to invalid char.  */
-unsafe fn ostrtouc(
-    mut inbuf: *mut *mut u8,
-    mut inbufend: *mut u8,
-    mut valid: *mut u8,
-) -> u8 {
+unsafe fn ostrtouc(mut inbuf: *mut *mut u8, mut inbufend: *mut u8, mut valid: *mut u8) -> u8 {
     let mut cur: *mut u8 = *inbuf;
     let mut val: u32 = 0_u32;
     while cur < inbufend
@@ -773,11 +769,7 @@ unsafe fn ostrtouc(
     *inbuf = cur;
     val as u8
 }
-unsafe fn esctouc(
-    mut inbuf: *mut *mut u8,
-    mut inbufend: *mut u8,
-    mut valid: *mut u8,
-) -> u8 {
+unsafe fn esctouc(mut inbuf: *mut *mut u8, mut inbufend: *mut u8, mut valid: *mut u8) -> u8 {
     let unescaped;
     let escaped = **inbuf;
     *valid = 1_u8;
@@ -902,10 +894,7 @@ unsafe fn pst_string_parse_literal(
     *inbuf = cur;
     pst_string_new(wbuf.as_mut_ptr(), len as u32)
 }
-unsafe fn pst_string_parse_hex(
-    mut inbuf: *mut *mut u8,
-    mut inbufend: *mut u8,
-) -> *mut pst_string {
+unsafe fn pst_string_parse_hex(mut inbuf: *mut *mut u8, mut inbufend: *mut u8) -> *mut pst_string {
     let mut wbuf: [u8; 4096] = [0; 4096];
     let mut cur: *mut u8 = *inbuf;
     let mut len: u32 = 0_u32;

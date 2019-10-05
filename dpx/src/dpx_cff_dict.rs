@@ -524,11 +524,7 @@ static mut dict_operator: [C2RustUnnamed_2; 61] = [
     },
 ];
 /* Parse DICT data */
-unsafe fn get_integer(
-    mut data: *mut *mut u8,
-    mut endptr: *mut u8,
-    mut status: *mut i32,
-) -> f64 {
+unsafe fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8, mut status: *mut i32) -> f64 {
     let mut result: i32 = 0i32;
     let fresh0 = *data;
     *data = (*data).offset(1);
@@ -577,11 +573,7 @@ unsafe fn get_integer(
     result as f64
 }
 /* Simply uses strtod */
-unsafe fn get_real(
-    mut data: *mut *mut u8,
-    mut endptr: *mut u8,
-    mut status: *mut i32,
-) -> f64 {
+unsafe fn get_real(mut data: *mut *mut u8, mut endptr: *mut u8, mut status: *mut i32) -> f64 {
     let mut result: f64 = 0.0f64; /* skip first byte (30) */
     let mut nibble: i32 = 0i32;
     let mut len: i32 = 0i32;
@@ -846,11 +838,7 @@ unsafe fn pack_real(dest: &mut [u8], mut value: f64) -> usize {
     }
     pos / 2
 }
-unsafe fn cff_dict_put_number(
-    mut value: f64,
-    dest: &mut [u8],
-    mut type_0: i32,
-) -> usize {
+unsafe fn cff_dict_put_number(mut value: f64, dest: &mut [u8], mut type_0: i32) -> usize {
     let mut nearint = (value + 0.5f64).floor();
     /* set offset to longint */
     if type_0 == 1i32 << 7i32 {

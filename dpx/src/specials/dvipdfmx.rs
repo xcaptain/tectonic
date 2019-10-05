@@ -45,12 +45,10 @@ unsafe fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i3
     (*args).curptr = (*args).endptr;
     0i32
 }
-const DVIPDFMX_HANDLERS: [SpcHandler; 1] = [
-    SpcHandler {
-        key: b"config",
-        exec: Some(spc_handler_null),
-    }
-];
+const DVIPDFMX_HANDLERS: [SpcHandler; 1] = [SpcHandler {
+    key: b"config",
+    exec: Some(spc_handler_null),
+}];
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvipdfmx_check_special(mut buf: *const i8, mut len: i32) -> bool {

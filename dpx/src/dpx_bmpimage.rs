@@ -79,11 +79,7 @@ pub unsafe extern "C" fn check_for_bmp(mut handle: rust_input_handle_t) -> i32 {
     }
     1i32
 }
-unsafe fn get_density(
-    mut xdensity: *mut f64,
-    mut ydensity: *mut f64,
-    mut hdr: *mut hdr_info,
-) {
+unsafe fn get_density(mut xdensity: *mut f64, mut ydensity: *mut f64, mut hdr: *mut hdr_info) {
     if (*hdr).x_pix_per_meter > 0_u32 && (*hdr).y_pix_per_meter > 0_u32 {
         /* 0 for undefined. FIXME */
         *xdensity = 72.0f64 / ((*hdr).x_pix_per_meter as f64 * 0.0254f64);

@@ -304,18 +304,12 @@ unsafe fn spc_handler_ps_literal(mut spe: *mut spc_env, mut args: *mut spc_arg) 
     }
     error
 }
-unsafe fn spc_handler_ps_trickscmd(
-    mut _spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_ps_trickscmd(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     warn!("PSTricks commands are disallowed in Tectonic");
     (*args).curptr = (*args).endptr;
     -1i32
 }
-unsafe fn spc_handler_ps_tricksobj(
-    mut _spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_ps_tricksobj(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     warn!("PSTricks commands are disallowed in Tectonic");
     (*args).curptr = (*args).endptr;
     -1i32
@@ -486,9 +480,7 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
         return -1i32;
     }
     for handler in DVIPS_HANDLERS.iter() {
-        if keylen == handler.key.len()
-            && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key
-        {
+        if keylen == handler.key.len() && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key {
             skip_white(&mut (*args).curptr, (*args).endptr);
             (*args).command = Some(handler.key);
             (*handle).key = b"ps:";

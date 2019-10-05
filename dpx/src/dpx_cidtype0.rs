@@ -1541,11 +1541,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     }
     CIDFont_type0_add_CIDSet(font, used_chars, last_cid);
 }
-unsafe fn load_base_CMap(
-    mut font_name: *const i8,
-    mut wmode: i32,
-    cffont: &cff_font,
-) -> i32 {
+unsafe fn load_base_CMap(mut font_name: *const i8, mut wmode: i32, cffont: &cff_font) -> i32 {
     let mut range_min: [u8; 4] = [0; 4];
     let mut range_max: [u8; 4] = [0x7f, 0xff, 0xff, 0xff];
     let cmap_name = new((strlen(font_name)

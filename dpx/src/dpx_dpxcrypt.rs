@@ -280,11 +280,7 @@ pub unsafe extern "C" fn ARC4(
     do_encrypt_stream(ctx, outbuf, inbuf, len);
     _gcry_burn_stack(64i32);
 }
-unsafe fn do_arcfour_setkey(
-    mut ctx: *mut ARC4_CONTEXT,
-    mut key: *const u8,
-    mut keylen: u32,
-) {
+unsafe fn do_arcfour_setkey(mut ctx: *mut ARC4_CONTEXT, mut key: *const u8, mut keylen: u32) {
     let mut karr: [u8; 256] = [0; 256];
     (*ctx).idx_j = 0i32;
     (*ctx).idx_i = (*ctx).idx_j;
@@ -1796,11 +1792,7 @@ static mut rcon: [u32; 10] = [
  *
  * @return the number of rounds for the given cipher key size.
  */
-unsafe fn rijndaelSetupEncrypt(
-    mut rk: *mut u32,
-    mut key: *const u8,
-    mut keybits: i32,
-) -> i32 {
+unsafe fn rijndaelSetupEncrypt(mut rk: *mut u32, mut key: *const u8, mut keybits: i32) -> i32 {
     let mut i: u32 = 0_u32;
     let mut temp: u32 = 0;
     *rk.offset(0) = (*key.offset(0) as u32) << 24i32

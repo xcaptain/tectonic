@@ -642,10 +642,7 @@ unsafe fn spc_handler_tpic_tx(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i3
     spc_warn!(spe, "TPIC command \"tx\" not supported.");
     -1i32
 }
-unsafe fn spc_handler_tpic__init(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_tpic__init(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     (*tp).pen_size = 1.0f64;
     (*tp).fill_shape = false;
@@ -665,10 +662,7 @@ unsafe fn spc_handler_tpic__bophook(mut dp: *mut libc::c_void) -> i32 {
     tpic__clear(tp);
     0i32
 }
-unsafe fn spc_handler_tpic__eophook(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_tpic__eophook(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     assert!(!tp.is_null());
     if (*tp).num_points > 0i32 {
@@ -677,10 +671,7 @@ unsafe fn spc_handler_tpic__eophook(
     tpic__clear(tp);
     0i32
 }
-unsafe fn spc_handler_tpic__clean(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_tpic__clean(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut tp: *mut spc_tpic_ = dp as *mut spc_tpic_;
     assert!(!tp.is_null());
     if (*tp).num_points > 0i32 {
@@ -823,56 +814,56 @@ unsafe fn spc_handler_tpic__setopts(mut spe: *mut spc_env, mut ap: *mut spc_arg)
 /* DEBUG */
 const TPIC_HANDLERS: [SpcHandler; 13] = [
     SpcHandler {
-            key: b"pn",
-            exec: Some(spc_handler_tpic_pn),
+        key: b"pn",
+        exec: Some(spc_handler_tpic_pn),
     },
     SpcHandler {
-            key: b"pa",
-            exec: Some(spc_handler_tpic_pa),
+        key: b"pa",
+        exec: Some(spc_handler_tpic_pa),
     },
     SpcHandler {
-            key: b"fp",
-            exec: Some(spc_handler_tpic_fp),
+        key: b"fp",
+        exec: Some(spc_handler_tpic_fp),
     },
     SpcHandler {
-            key: b"ip",
-            exec: Some(spc_handler_tpic_ip),
+        key: b"ip",
+        exec: Some(spc_handler_tpic_ip),
     },
     SpcHandler {
-            key: b"da",
-            exec: Some(spc_handler_tpic_da),
+        key: b"da",
+        exec: Some(spc_handler_tpic_da),
     },
     SpcHandler {
-            key: b"dt",
-            exec: Some(spc_handler_tpic_dt),
+        key: b"dt",
+        exec: Some(spc_handler_tpic_dt),
     },
     SpcHandler {
-            key: b"sp",
-            exec: Some(spc_handler_tpic_sp),
+        key: b"sp",
+        exec: Some(spc_handler_tpic_sp),
     },
     SpcHandler {
-            key: b"ar",
-            exec: Some(spc_handler_tpic_ar),
+        key: b"ar",
+        exec: Some(spc_handler_tpic_ar),
     },
     SpcHandler {
-            key: b"ia",
-            exec: Some(spc_handler_tpic_ia),
+        key: b"ia",
+        exec: Some(spc_handler_tpic_ia),
     },
     SpcHandler {
-            key: b"sh",
-            exec: Some(spc_handler_tpic_sh),
+        key: b"sh",
+        exec: Some(spc_handler_tpic_sh),
     },
     SpcHandler {
-            key: b"wh",
-            exec: Some(spc_handler_tpic_wh),
+        key: b"wh",
+        exec: Some(spc_handler_tpic_wh),
     },
     SpcHandler {
-            key: b"bk",
-            exec: Some(spc_handler_tpic_bk),
+        key: b"bk",
+        exec: Some(spc_handler_tpic_bk),
     },
     SpcHandler {
-            key: b"tx",
-            exec: Some(spc_handler_tpic_tx),
+        key: b"tx",
+        exec: Some(spc_handler_tpic_tx),
     },
 ];
 #[no_mangle]
@@ -903,7 +894,7 @@ pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32
         free(q as *mut libc::c_void);
     } else {
         for handler in TPIC_HANDLERS.iter() {
-            if CStr::from_ptr(q). to_bytes() == handler.key {
+            if CStr::from_ptr(q).to_bytes() == handler.key {
                 istpic = true;
                 break;
             }
@@ -952,7 +943,7 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
         free(q as *mut libc::c_void);
     } else {
         for handler in TPIC_HANDLERS.iter() {
-            if CStr::from_ptr(q). to_bytes() == handler.key {
+            if CStr::from_ptr(q).to_bytes() == handler.key {
                 (*ap).command = Some(handler.key);
                 (*sph).key = b"tpic:";
                 (*sph).exec = handler.exec;

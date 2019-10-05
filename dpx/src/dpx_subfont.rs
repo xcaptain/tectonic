@@ -253,10 +253,7 @@ unsafe fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8) -> i32 {
     error
 }
 /* Scan for subfont IDs */
-unsafe fn scan_sfd_file(
-    mut sfd: *mut sfd_file_,
-    mut handle: *mut rust_input_handle_t,
-) -> i32 {
+unsafe fn scan_sfd_file(mut sfd: *mut sfd_file_, mut handle: *mut rust_input_handle_t) -> i32 {
     let mut lpos: i32 = 0i32;
     assert!(!sfd.is_null() && !handle.is_null());
     if verbose > 3i32 {

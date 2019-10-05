@@ -180,11 +180,7 @@ unsafe fn passwd_padding(mut src: *const i8, mut dst: *mut u8) {
         (32 - len) as _,
     );
 }
-unsafe fn compute_owner_password(
-    p: &mut pdf_sec,
-    mut opasswd: *const i8,
-    mut upasswd: *const i8,
-) {
+unsafe fn compute_owner_password(p: &mut pdf_sec, mut opasswd: *const i8, mut upasswd: *const i8) {
     let mut padded: [u8; 32] = [0; 32];
     let mut arc4: ARC4_CONTEXT = ARC4_CONTEXT {
         idx_i: 0,
@@ -574,11 +570,7 @@ unsafe fn stringprep_profile(
     strcpy(*output, input);
     0i32
 }
-unsafe fn preproc_password(
-    mut passwd: *const i8,
-    mut outbuf: *mut i8,
-    mut V: i32,
-) -> i32 {
+unsafe fn preproc_password(mut passwd: *const i8, mut outbuf: *mut i8, mut V: i32) -> i32 {
     let mut saslpwd: *mut i8 = 0 as *mut i8;
     let mut error: i32 = 0i32;
     memset(outbuf as *mut libc::c_void, 0i32, 128);

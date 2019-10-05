@@ -485,12 +485,7 @@ unsafe fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 {
         return -1i32;
     }
     /* First treat as is */
-    let idx = otl_gsub_select(
-        (*gm).gsub,
-        b"*",
-        b"*",
-        feat,
-    );
+    let idx = otl_gsub_select((*gm).gsub, b"*", b"*", feat);
     if idx >= 0i32 {
         return 0i32;
     }
@@ -500,20 +495,9 @@ unsafe fn select_gsub(feat: &[u8], mut gm: *mut glyph_mapper) -> i32 {
             feat.display()
         );
     }
-    let error = otl_gsub_add_feat(
-        (*gm).gsub,
-        b"*",
-        b"*",
-        feat,
-        (*gm).sfont,
-    );
+    let error = otl_gsub_add_feat((*gm).gsub, b"*", b"*", feat, (*gm).sfont);
     if error == 0 {
-        let idx = otl_gsub_select(
-            (*gm).gsub,
-            b"*",
-            b"*",
-            feat,
-        );
+        let idx = otl_gsub_select((*gm).gsub, b"*", b"*", feat);
         return if idx >= 0i32 { 0i32 } else { -1i32 };
     }
     -1i32
@@ -536,7 +520,9 @@ unsafe fn selectglyph(
      * agl.c currently only knows less ambiguos cases;
      * e.g., 'sc', 'superior', etc.
      */
-    if let Some(r) = agl_suffix_to_otltag(CStr::from_ptr(s).to_bytes()) /* 'suffix' may represent feature tag. */ {
+    if let Some(r) = agl_suffix_to_otltag(CStr::from_ptr(s).to_bytes())
+    /* 'suffix' may represent feature tag. */
+    {
         /* We found feature tag for 'suffix'. */
         error = select_gsub(r, gm); /* no fallback for this */
         if error == 0 {
@@ -618,10 +604,7 @@ unsafe fn composeglyph(
     assert!(!glyphs.is_null() && n_glyphs > 0i32 && !gm.is_null() && !gid.is_null());
     let mut error = if feat.is_null() || *feat.offset(0) as i32 == '\u{0}' as i32 {
         /* meaning "Unknown" */
-        select_gsub(
-            b"(?lig|lig?|?cmp|cmp?|frac|afrc)",
-            gm,
-        )
+        select_gsub(b"(?lig|lig?|?cmp|cmp?|frac|afrc)", gm)
     } else if strlen(feat) > 4 {
         -1
     } else {

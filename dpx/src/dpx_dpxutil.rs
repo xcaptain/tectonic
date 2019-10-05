@@ -369,11 +369,7 @@ pub unsafe extern "C" fn ht_iter_next(mut iter: *mut ht_iter) -> i32 {
         -1i32
     }
 }
-unsafe fn read_c_escchar(
-    mut r: *mut i8,
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> i32 {
+unsafe fn read_c_escchar(mut r: *mut i8, mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut c: i32 = 0i32;
     let mut l: i32 = 1i32;
     let mut p: *const i8 = *pp;

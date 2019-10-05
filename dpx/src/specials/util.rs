@@ -227,10 +227,7 @@ unsafe fn spc_read_color_color(
  * allowed for color specification. "pdf" here
  * means pdf: special syntax.
  */
-unsafe fn spc_read_color_pdf(
-    mut spe: *mut spc_env,
-    mut ap: *mut spc_arg,
-) -> Result<PdfColor, ()> {
+unsafe fn spc_read_color_pdf(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> Result<PdfColor, ()> {
     let mut cv: [f64; 4] = [0.; 4]; /* at most four */
     let mut isarry: bool = false;
     skip_blank(&mut (*ap).curptr, (*ap).endptr);

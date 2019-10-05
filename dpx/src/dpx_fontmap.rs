@@ -151,10 +151,7 @@ unsafe fn mstrdup(mut s: *const i8) -> *mut i8 {
     strcpy(r, s);
     r
 }
-unsafe fn pdf_copy_fontmap_record(
-    mut dst: *mut fontmap_rec,
-    mut src: *const fontmap_rec,
-) {
+unsafe fn pdf_copy_fontmap_record(mut dst: *mut fontmap_rec, mut src: *const fontmap_rec) {
     assert!(!dst.is_null() && !src.is_null());
     (*dst).map_name = mstrdup((*src).map_name);
     (*dst).charmap.sfd_name = mstrdup((*src).charmap.sfd_name);
@@ -676,10 +673,7 @@ unsafe fn fontmap_parse_mapdef_dpm(
         skip_blank(&mut p, endptr);
     }
     if p < endptr && *p as i32 != '\r' as i32 && *p as i32 != '\n' as i32 {
-        warn!(
-            "Invalid char in fontmap line: {}",
-            char::from(*p as u8),
-        );
+        warn!("Invalid char in fontmap line: {}", char::from(*p as u8),);
         return -1i32;
     }
     0i32
@@ -786,10 +780,7 @@ unsafe fn fontmap_parse_mapdef_dps(
         skip_blank(&mut p, endptr);
     }
     if p < endptr && *p as i32 != '\r' as i32 && *p as i32 != '\n' as i32 {
-        warn!(
-            "Invalid char in fontmap line: {}",
-            char::from(*p as u8),
-        );
+        warn!("Invalid char in fontmap line: {}", char::from(*p as u8),);
         return -1i32;
     }
     0i32

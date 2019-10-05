@@ -706,10 +706,7 @@ pub unsafe extern "C" fn pdf_ref_obj(mut object: *mut pdf_obj) -> *mut pdf_obj {
 unsafe fn release_indirect(mut data: *mut pdf_indirect) {
     free(data as *mut libc::c_void);
 }
-unsafe fn write_indirect(
-    mut indirect: *mut pdf_indirect,
-    handle: &mut OutputHandleWrapper,
-) {
+unsafe fn write_indirect(mut indirect: *mut pdf_indirect, handle: &mut OutputHandleWrapper) {
     assert!((*indirect).pf.is_null());
     let length = sprintf(
         format_buffer.as_mut_ptr() as *mut i8,
@@ -2355,10 +2352,7 @@ pub unsafe extern "C" fn pdf_add_stream_flate(
 }
 
 #[cfg(feature = "libz-sys")]
-unsafe fn get_decode_parms(
-    parms: &mut decode_parms,
-    mut dict: *mut pdf_obj,
-) -> libc::c_int {
+unsafe fn get_decode_parms(parms: &mut decode_parms, mut dict: *mut pdf_obj) -> libc::c_int {
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     assert!(!dict.is_null());
     assert!(!dict.is_null() && pdf_obj_typeof(dict) == PdfObjType::DICT);
@@ -3103,11 +3097,7 @@ pub unsafe extern "C" fn pdf_release_obj(mut object: *mut pdf_obj) {
  * null-terminated string. Returns -1 for when EOF is already reached, and -2
  * if buffer has no enough space.
  */
-unsafe fn tt_mfreadln(
-    mut buf: *mut i8,
-    mut size: i32,
-    mut handle: rust_input_handle_t,
-) -> i32 {
+unsafe fn tt_mfreadln(mut buf: *mut i8, mut size: i32, mut handle: rust_input_handle_t) -> i32 {
     let mut c: i32 = 0;
     let mut len: i32 = 0i32;
     loop {
@@ -3856,11 +3846,7 @@ unsafe fn parse_xref_table(mut pf: *mut pdf_file, mut xref_pos: i32) -> i32 {
     }
     1i32
 }
-unsafe fn parse_xrefstm_field(
-    mut p: *mut *const i8,
-    mut length: i32,
-    mut def: u32,
-) -> u32 {
+unsafe fn parse_xrefstm_field(mut p: *mut *const i8, mut length: i32, mut def: u32) -> u32 {
     let mut val: u32 = 0_u32;
     if length == 0 {
         return def;
@@ -4288,10 +4274,7 @@ pub unsafe extern "C" fn pdf_files_close() {
     free(pdf_files as *mut libc::c_void);
 }
 /* Internal static routines */
-unsafe fn parse_pdf_version(
-    mut handle: rust_input_handle_t,
-    mut ret_version: *mut u32,
-) -> i32 {
+unsafe fn parse_pdf_version(mut handle: rust_input_handle_t, mut ret_version: *mut u32) -> i32 {
     let mut buffer: [i8; 10] = *::std::mem::transmute::<&[u8; 10], &mut [i8; 10]>(
         b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     );

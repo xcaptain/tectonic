@@ -358,11 +358,7 @@ static mut known_encodings: [C2RustUnnamed_3; 11] = [
         init
     },
 ];
-unsafe fn find_tocode_cmap(
-    mut reg: *const i8,
-    mut ord: *const i8,
-    mut select: i32,
-) -> *mut CMap {
+unsafe fn find_tocode_cmap(mut reg: *const i8, mut ord: *const i8, mut select: i32) -> *mut CMap {
     let mut cmap_id: i32 = -1i32;
     if reg.is_null() || ord.is_null() || select < 0i32 || select > 9i32 {
         panic!("Character set unknown.");
@@ -991,40 +987,16 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
             gsub_list = 0 as *mut otl_gsub
         } else {
             gsub_list = otl_gsub_new();
-            if otl_gsub_add_feat(
-                gsub_list,
-                b"*",
-                b"*",
-                b"vrt2",
-                sfont,
-            ) < 0i32
-            {
-                if otl_gsub_add_feat(
-                    gsub_list,
-                    b"*",
-                    b"*",
-                    b"vert",
-                    sfont,
-                ) < 0i32
-                {
+            if otl_gsub_add_feat(gsub_list, b"*", b"*", b"vrt2", sfont) < 0i32 {
+                if otl_gsub_add_feat(gsub_list, b"*", b"*", b"vert", sfont) < 0i32 {
                     warn!("GSUB feature vrt2/vert not found.");
                     otl_gsub_release(gsub_list);
                     gsub_list = 0 as *mut otl_gsub
                 } else {
-                    otl_gsub_select(
-                        gsub_list,
-                        b"*",
-                        b"*",
-                        b"vert",
-                    );
+                    otl_gsub_select(gsub_list, b"*", b"*", b"vert");
                 }
             } else {
-                otl_gsub_select(
-                    gsub_list,
-                    b"*",
-                    b"*",
-                    b"vrt2",
-                );
+                otl_gsub_select(gsub_list, b"*", b"*", b"vrt2");
             }
         }
         for cid in 1..=last_cid as CID {

@@ -702,11 +702,7 @@ pub unsafe extern "C" fn pdf_ximage_set_attr(
  * not as vertical dimension of scaled image. (And there are bugs.)
  * This part contains incompatibile behaviour than dvipdfm!
  */
-unsafe fn scale_to_fit_I(
-    T: &mut pdf_tmatrix,
-    p: &mut transform_info,
-    mut I: *mut pdf_ximage,
-) {
+unsafe fn scale_to_fit_I(T: &mut pdf_tmatrix, p: &mut transform_info, mut I: *mut pdf_ximage) {
     let mut s_x: f64 = 0.;
     let mut s_y: f64 = 0.;
     let mut d_x: f64 = 0.;
@@ -763,11 +759,7 @@ unsafe fn scale_to_fit_I(
     T.e = d_x * s_x / xscale;
     T.f = d_y * s_y / yscale - dp;
 }
-unsafe fn scale_to_fit_F(
-    T: &mut pdf_tmatrix,
-    p: &mut transform_info,
-    mut I: *mut pdf_ximage,
-) {
+unsafe fn scale_to_fit_F(T: &mut pdf_tmatrix, p: &mut transform_info, mut I: *mut pdf_ximage) {
     let mut s_x: f64 = 0.;
     let mut s_y: f64 = 0.;
     let mut d_x: f64 = 0.;

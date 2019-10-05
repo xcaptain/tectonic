@@ -279,10 +279,7 @@ unsafe fn spc_handler_html__init(mut dp: *mut libc::c_void) -> i32 {
     0i32
 }
 
-unsafe fn spc_handler_html__clean(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_html__clean(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     free((*sd).baseurl as *mut libc::c_void);
     if (*sd).pending_type >= 0i32 || !(*sd).link_dict.is_null() {
@@ -295,10 +292,7 @@ unsafe fn spc_handler_html__clean(
     0i32
 }
 
-unsafe fn spc_handler_html__bophook(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_html__bophook(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     if (*sd).pending_type >= 0i32 {
         spc_warn!(
@@ -309,10 +303,7 @@ unsafe fn spc_handler_html__bophook(
     0i32
 }
 
-unsafe fn spc_handler_html__eophook(
-    mut spe: *mut spc_env,
-    mut dp: *mut libc::c_void,
-) -> i32 {
+unsafe fn spc_handler_html__eophook(mut spe: *mut spc_env, mut dp: *mut libc::c_void) -> i32 {
     let mut sd: *mut spc_html_ = dp as *mut spc_html_;
     if (*sd).pending_type >= 0i32 {
         spc_warn!(spe, "Unclosed html anchor at end-of-page!");

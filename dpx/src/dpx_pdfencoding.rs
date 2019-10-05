@@ -184,10 +184,7 @@ unsafe fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) {
     (*encoding).ident = 0 as *mut i8;
     (*encoding).enc_name = 0 as *mut i8;
 }
-unsafe fn is_similar_charset(
-    mut enc_vec: *mut *mut i8,
-    mut enc_vec2: *mut *const i8,
-) -> bool {
+unsafe fn is_similar_charset(mut enc_vec: *mut *mut i8, mut enc_vec2: *mut *const i8) -> bool {
     let mut same: i32 = 0i32;
     for code in 0..256 {
         if !(!(*enc_vec.offset(code as isize)).is_null()

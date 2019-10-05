@@ -187,11 +187,7 @@ unsafe fn get_coderange(
     *dim = dim1;
     0i32
 }
-unsafe fn do_codespacerange(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_codespacerange(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     let mut codeLo: [u8; 127] = [0; 127];
     let mut codeHi: [u8; 127] = [0; 127];
     let mut dim: i32 = 0;
@@ -264,11 +260,7 @@ unsafe fn handle_codearray(
     }
     check_next_token(input, b"]\x00" as *const u8 as *const i8)
 }
-unsafe fn do_notdefrange(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_notdefrange(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     let mut codeLo: [u8; 127] = [0; 127];
     let mut codeHi: [u8; 127] = [0; 127];
@@ -314,11 +306,7 @@ unsafe fn do_notdefrange(
     }
     check_next_token(input, b"endnotdefrange\x00" as *const u8 as *const i8)
 }
-unsafe fn do_bfrange(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_bfrange(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     let mut codeLo: [u8; 127] = [0; 127];
     let mut codeHi: [u8; 127] = [0; 127];
@@ -375,11 +363,7 @@ unsafe fn do_bfrange(
     }
     check_next_token(input, b"endbfrange\x00" as *const u8 as *const i8)
 }
-unsafe fn do_cidrange(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_cidrange(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     let mut tok: *mut pst_obj = 0 as *mut pst_obj;
     let mut codeLo: [u8; 127] = [0; 127];
     let mut codeHi: [u8; 127] = [0; 127];
@@ -425,11 +409,7 @@ unsafe fn do_cidrange(
     }
     check_next_token(input, b"endcidrange\x00" as *const u8 as *const i8)
 }
-unsafe fn do_notdefchar(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_notdefchar(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     loop {
         let fresh6 = count;
         count = count - 1;
@@ -466,11 +446,7 @@ unsafe fn do_notdefchar(
     }
     check_next_token(input, b"endnotdefchar\x00" as *const u8 as *const i8)
 }
-unsafe fn do_bfchar(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_bfchar(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     loop {
         let fresh7 = count;
         count = count - 1;
@@ -508,11 +484,7 @@ unsafe fn do_bfchar(
     }
     check_next_token(input, b"endbfchar\x00" as *const u8 as *const i8)
 }
-unsafe fn do_cidchar(
-    mut cmap: *mut CMap,
-    mut input: *mut ifreader,
-    mut count: i32,
-) -> i32 {
+unsafe fn do_cidchar(mut cmap: *mut CMap, mut input: *mut ifreader, mut count: i32) -> i32 {
     loop {
         let fresh8 = count;
         count = count - 1;

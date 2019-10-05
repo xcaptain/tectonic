@@ -556,10 +556,7 @@ unsafe fn pdf_doc_close_docinfo(mut p: *mut pdf_doc) {
     pdf_release_obj(docinfo);
     (*p).info = 0 as *mut pdf_obj;
 }
-unsafe fn pdf_doc_get_page_resources(
-    mut p: *mut pdf_doc,
-    category: &str,
-) -> *mut pdf_obj {
+unsafe fn pdf_doc_get_page_resources(mut p: *mut pdf_doc, category: &str) -> *mut pdf_obj {
     let mut currentpage: *mut pdf_page = 0 as *mut pdf_page;
     let mut res_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     if p.is_null() {
@@ -774,11 +771,7 @@ unsafe fn build_page_tree(
     pdf_release_obj(self_ref);
     self_0
 }
-unsafe fn pdf_doc_init_page_tree(
-    mut p: *mut pdf_doc,
-    mut media_width: f64,
-    mut media_height: f64,
-) {
+unsafe fn pdf_doc_init_page_tree(mut p: *mut pdf_doc, mut media_width: f64, mut media_height: f64) {
     /*
      * Create empty page tree.
      * The docroot.pages is kept open until the document is closed.
@@ -2034,10 +2027,7 @@ pub unsafe extern "C" fn pdf_doc_begin_article(
     (*article).beads = 0 as *mut pdf_bead;
     (*p).articles.num_entries = (*p).articles.num_entries.wrapping_add(1);
 }
-unsafe fn find_bead(
-    mut article: *mut pdf_article,
-    mut bead_id: &[u8],
-) -> *mut pdf_bead {
+unsafe fn find_bead(mut article: *mut pdf_article, mut bead_id: &[u8]) -> *mut pdf_bead {
     let mut bead: *mut pdf_bead = 0 as *mut pdf_bead;
     bead = 0 as *mut pdf_bead;
     for i in 0..(*article).num_beads {
@@ -2136,7 +2126,10 @@ unsafe fn make_article(
     for i in 0..n {
         let mut bead: *mut pdf_bead = 0 as *mut pdf_bead;
         bead = if !bead_ids.is_null() {
-            find_bead(article, CStr::from_ptr(*bead_ids.offset(i as isize)).to_bytes())
+            find_bead(
+                article,
+                CStr::from_ptr(*bead_ids.offset(i as isize)).to_bytes(),
+            )
         } else {
             &mut *(*article).beads.offset(i as isize) as *mut pdf_bead
         };

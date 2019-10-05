@@ -179,18 +179,12 @@ unsafe fn spc_handler_xtx_rotate(mut spe: *mut spc_env, mut args: *mut spc_arg) 
     )
 }
 #[no_mangle]
-pub unsafe fn spc_handler_xtx_gsave(
-    mut _spe: *mut spc_env,
-    mut _args: *mut spc_arg,
-) -> i32 {
+pub unsafe fn spc_handler_xtx_gsave(mut _spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     pdf_dev_gsave();
     0i32
 }
 #[no_mangle]
-pub unsafe fn spc_handler_xtx_grestore(
-    mut _spe: *mut spc_env,
-    mut _args: *mut spc_arg,
-) -> i32 {
+pub unsafe fn spc_handler_xtx_grestore(mut _spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     pdf_dev_grestore();
     /*
      * Unfortunately, the following line is necessary in case
@@ -206,16 +200,10 @@ pub unsafe fn spc_handler_xtx_grestore(
 /* Please remove this.
  * This should be handled before processing pages!
  */
-unsafe fn spc_handler_xtx_papersize(
-    mut _spe: *mut spc_env,
-    mut _args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_papersize(mut _spe: *mut spc_env, mut _args: *mut spc_arg) -> i32 {
     0i32
 }
-unsafe fn spc_handler_xtx_backgroundcolor(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_backgroundcolor(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     if let Ok(colorspec) = spc_util_read_colorspec(spe, args, false) {
         pdf_doc_set_bgcolor(Some(&colorspec));
         1
@@ -226,10 +214,7 @@ unsafe fn spc_handler_xtx_backgroundcolor(
 }
 
 /* FIXME: xdv2pdf's x:fontmapline and x:fontmapfile may have slightly different syntax/semantics */
-unsafe fn spc_handler_xtx_fontmapline(
-    mut spe: *mut spc_env,
-    mut ap: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_fontmapline(mut spe: *mut spc_env, mut ap: *mut spc_arg) -> i32 {
     let mut error: i32 = 0i32;
     static mut BUFFER: [i8; 1024] = [0; 1024];
     skip_white(&mut (*ap).curptr, (*ap).endptr);
@@ -289,10 +274,7 @@ unsafe fn spc_handler_xtx_fontmapline(
     }
     0i32
 }
-unsafe fn spc_handler_xtx_fontmapfile(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_fontmapfile(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr >= (*args).endptr {
         return 0i32;
@@ -317,10 +299,7 @@ unsafe fn spc_handler_xtx_fontmapfile(
     }
 }
 static mut OVERLAY_NAME: [i8; 256] = [0; 256];
-unsafe fn spc_handler_xtx_initoverlay(
-    mut _spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_initoverlay(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr >= (*args).endptr {
         return -1i32;
@@ -334,10 +313,7 @@ unsafe fn spc_handler_xtx_initoverlay(
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe fn spc_handler_xtx_clipoverlay(
-    mut _spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_clipoverlay(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     skip_white(&mut (*args).curptr, (*args).endptr);
     if (*args).curptr >= (*args).endptr {
         return -1i32;
@@ -360,10 +336,7 @@ unsafe fn spc_handler_xtx_clipoverlay(
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe fn spc_handler_xtx_renderingmode(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_renderingmode(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     let mut value: f64 = 0.;
     if spc_util_read_numbers(&mut value, 1i32, args) < 1i32 {
         return -1i32;
@@ -393,10 +366,7 @@ unsafe fn spc_handler_xtx_renderingmode(
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe fn spc_handler_xtx_unsupportedcolor(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_unsupportedcolor(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     spc_warn!(
         spe,
         "xetex-style \\special{{x:{}}} is not supported by this driver;\nupdate document or driver to use \\special{{color}} instead.",
@@ -405,10 +375,7 @@ unsafe fn spc_handler_xtx_unsupportedcolor(
     (*args).curptr = (*args).endptr;
     0i32
 }
-unsafe fn spc_handler_xtx_unsupported(
-    mut spe: *mut spc_env,
-    mut args: *mut spc_arg,
-) -> i32 {
+unsafe fn spc_handler_xtx_unsupported(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     spc_warn!(
         spe,
         "xetex-style \\special{{x:{}}} is not supported by this driver.",
@@ -419,88 +386,88 @@ unsafe fn spc_handler_xtx_unsupported(
 }
 const XTX_HANDLERS: [SpcHandler; 21] = [
     SpcHandler {
-            key: b"textcolor",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"textcolor",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"textcolorpush",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"textcolorpush",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"textcolorpop",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"textcolorpop",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"rulecolor",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"rulecolor",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"rulecolorpush",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"rulecolorpush",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"rulecolorpop",
-            exec: Some(spc_handler_xtx_unsupportedcolor),
+        key: b"rulecolorpop",
+        exec: Some(spc_handler_xtx_unsupportedcolor),
     },
     SpcHandler {
-            key: b"papersize",
-            exec: Some(spc_handler_xtx_papersize),
+        key: b"papersize",
+        exec: Some(spc_handler_xtx_papersize),
     },
     SpcHandler {
-            key: b"backgroundcolor",
-            exec: Some(spc_handler_xtx_backgroundcolor),
+        key: b"backgroundcolor",
+        exec: Some(spc_handler_xtx_backgroundcolor),
     },
     SpcHandler {
-            key: b"gsave",
-            exec: Some(spc_handler_xtx_gsave),
+        key: b"gsave",
+        exec: Some(spc_handler_xtx_gsave),
     },
     SpcHandler {
-            key: b"grestore",
-            exec: Some(spc_handler_xtx_grestore),
+        key: b"grestore",
+        exec: Some(spc_handler_xtx_grestore),
     },
     SpcHandler {
-            key: b"scale",
-            exec: Some(spc_handler_xtx_scale),
+        key: b"scale",
+        exec: Some(spc_handler_xtx_scale),
     },
     SpcHandler {
-            key: b"bscale",
-            exec: Some(spc_handler_xtx_bscale),
+        key: b"bscale",
+        exec: Some(spc_handler_xtx_bscale),
     },
     SpcHandler {
-            key: b"escale",
-            exec: Some(spc_handler_xtx_escale),
+        key: b"escale",
+        exec: Some(spc_handler_xtx_escale),
     },
     SpcHandler {
-            key: b"rotate",
-            exec: Some(spc_handler_xtx_rotate),
+        key: b"rotate",
+        exec: Some(spc_handler_xtx_rotate),
     },
     SpcHandler {
-            key: b"fontmapline",
-            exec: Some(spc_handler_xtx_fontmapline),
+        key: b"fontmapline",
+        exec: Some(spc_handler_xtx_fontmapline),
     },
     SpcHandler {
-            key: b"fontmapfile",
-            exec: Some(spc_handler_xtx_fontmapfile),
+        key: b"fontmapfile",
+        exec: Some(spc_handler_xtx_fontmapfile),
     },
     SpcHandler {
-            key: b"shadow",
-            exec: Some(spc_handler_xtx_unsupported),
+        key: b"shadow",
+        exec: Some(spc_handler_xtx_unsupported),
     },
     SpcHandler {
-            key: b"colorshadow",
-            exec: Some(spc_handler_xtx_unsupported),
+        key: b"colorshadow",
+        exec: Some(spc_handler_xtx_unsupported),
     },
     SpcHandler {
-            key: b"renderingmode",
-            exec: Some(spc_handler_xtx_renderingmode),
+        key: b"renderingmode",
+        exec: Some(spc_handler_xtx_renderingmode),
     },
     SpcHandler {
-            key: b"initoverlay",
-            exec: Some(spc_handler_xtx_initoverlay),
+        key: b"initoverlay",
+        exec: Some(spc_handler_xtx_initoverlay),
     },
     SpcHandler {
-            key: b"clipoverlay",
-            exec: Some(spc_handler_xtx_clipoverlay),
+        key: b"clipoverlay",
+        exec: Some(spc_handler_xtx_clipoverlay),
     },
 ];
 #[no_mangle]

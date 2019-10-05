@@ -679,7 +679,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     info!("pdf_color>> Profile Size:\t{} bytes\n", icch.size);
     if icch.CMMType == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "CMM Type");
-    } else if icch.CMMType.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .CMMType
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "CMM Type");
     } else {
         let chars = icch.CMMType.to_be_bytes();
@@ -700,7 +705,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     );
     if icch.devClass == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Device Class");
-    } else if icch.devClass.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .devClass
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Device Class",);
     } else {
         let chars = icch.devClass.to_be_bytes();
@@ -715,7 +725,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     }
     if icch.colorSpace == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Color Space");
-    } else if icch.colorSpace.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .colorSpace
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Color Space",);
     } else {
         let chars = icch.colorSpace.to_be_bytes();
@@ -730,7 +745,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     }
     if icch.PCS == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Connection Space");
-    } else if icch.PCS.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .PCS
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Connection Space",);
     } else {
         let chars = icch.PCS.to_be_bytes();
@@ -762,7 +782,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     info!("\n");
     if icch.platform == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Primary Platform");
-    } else if icch.platform.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .platform
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Primary Platform",);
     } else {
         let chars = icch.platform.to_be_bytes();
@@ -781,7 +806,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     );
     if icch.devMnfct == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Device Mnfct");
-    } else if icch.devMnfct.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .devMnfct
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Device Mnfct",);
     } else {
         let chars = icch.devMnfct.to_be_bytes();
@@ -796,7 +826,12 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     }
     if icch.devModel == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Device Model");
-    } else if icch.devModel.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0) {
+    } else if icch
+        .devModel
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
+    {
         info!("pdf_color>> {}:\t(invalid)\n", "Device Model",);
     } else {
         let chars = icch.devModel.to_be_bytes();
@@ -839,7 +874,11 @@ unsafe fn print_iccp_header(icch: &mut iccHeader, mut checksum: *mut u8) {
     info!("\n");
     if icch.creator == 0_u32 {
         info!("pdf_color>> {}:\t(null)\n", "Creator",);
-    } else if icch.creator.to_be_bytes().iter().any(|&x| libc::isprint(x as i32) == 0)
+    } else if icch
+        .creator
+        .to_be_bytes()
+        .iter()
+        .any(|&x| libc::isprint(x as i32) == 0)
     {
         info!("pdf_color>> {}:\t(invalid)\n", "Creator",);
     } else {

@@ -166,12 +166,7 @@ unsafe fn fill_black_run(mut dp: *mut u8, mut left: u32, mut run_count: u32) -> 
 unsafe fn fill_white_run(mut run_count: u32) -> u32 {
     run_count
 }
-unsafe fn pk_packed_num(
-    mut np: *mut u32,
-    mut dyn_f: i32,
-    mut dp: *mut u8,
-    mut pl: u32,
-) -> u32 {
+unsafe fn pk_packed_num(mut np: *mut u32, mut dyn_f: i32, mut dp: *mut u8, mut pl: u32) -> u32 {
     let mut nmbr: u32 = 0_u32;
     let mut i: u32 = *np;
     if i.wrapping_div(2_u32) == pl {
@@ -416,11 +411,7 @@ unsafe fn do_preamble(mut fp: *mut FILE) {
         panic!("embed_pk_font: PK ID byte is incorrect.  Are you sure this is a PK file?");
     };
 }
-unsafe fn read_pk_char_header(
-    mut h: *mut pk_header_,
-    mut opcode: u8,
-    mut fp: *mut FILE,
-) -> i32 {
+unsafe fn read_pk_char_header(mut h: *mut pk_header_, mut opcode: u8, mut fp: *mut FILE) -> i32 {
     assert!(!h.is_null());
     if opcode as i32 & 4i32 == 0i32 {
         /* short */

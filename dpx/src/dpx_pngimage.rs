@@ -405,10 +405,7 @@ pub unsafe extern "C" fn png_include_image(
  * Finally, in the case of PDF version 1.4, all kind of translucent pixels can
  * be represented with Soft-Mask.
  */
-unsafe fn check_transparency(
-    mut png: &mut png_struct,
-    mut info: &mut png_info,
-) -> libc::c_int {
+unsafe fn check_transparency(mut png: &mut png_struct, mut info: &mut png_info) -> libc::c_int {
     let mut trans_type: libc::c_int = 0;
     let mut trans_values = 0 as *mut png_color_16;
     let mut trans: png_bytep = 0 as *mut png_byte;
@@ -514,10 +511,7 @@ unsafe fn check_transparency(
  *   If sRGB chunk is present, cHRM and gAMA chunk must be ignored.
  *
  */
-unsafe fn get_rendering_intent(
-    mut png: &mut png_struct,
-    mut info: &mut png_info,
-) -> *mut pdf_obj {
+unsafe fn get_rendering_intent(mut png: &mut png_struct, mut info: &mut png_info) -> *mut pdf_obj {
     let mut srgb_intent: libc::c_int = 0;
     if png_get_valid(png, info, 0x800u32) != 0 && png_get_sRGB(png, info, &mut srgb_intent) != 0 {
         match srgb_intent {
@@ -675,10 +669,7 @@ unsafe fn create_cspace_CalRGB(
     pdf_add_array(colorspace, cal_param);
     colorspace
 }
-unsafe fn create_cspace_CalGray(
-    mut png: &mut png_struct,
-    mut info: &mut png_info,
-) -> *mut pdf_obj {
+unsafe fn create_cspace_CalGray(mut png: &mut png_struct, mut info: &mut png_info) -> *mut pdf_obj {
     let mut xw: f64 = 0.;
     let mut yw: f64 = 0.;
     let mut xr: f64 = 0.;
@@ -869,10 +860,7 @@ unsafe fn make_param_Cal(
  *  for base color space.
  *
  */
-unsafe fn create_cspace_Indexed(
-    mut png: &mut png_struct,
-    mut info: &mut png_info,
-) -> *mut pdf_obj {
+unsafe fn create_cspace_Indexed(mut png: &mut png_struct, mut info: &mut png_info) -> *mut pdf_obj {
     let mut base: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut plte = 0 as *mut png_color;
     let mut num_plte: libc::c_int = 0;
@@ -917,10 +905,7 @@ unsafe fn create_cspace_Indexed(
  *  [component_0_min component_0_max ... component_n_min component_n_max]
  *
  */
-unsafe fn create_ckey_mask(
-    mut png: &png_struct_def,
-    mut png_info: &mut png_info,
-) -> *mut pdf_obj {
+unsafe fn create_ckey_mask(mut png: &png_struct_def, mut png_info: &mut png_info) -> *mut pdf_obj {
     let mut trans: png_bytep = 0 as *mut png_byte;
     let mut num_trans: libc::c_int = 0;
     let mut colors = 0 as *mut png_color_16;

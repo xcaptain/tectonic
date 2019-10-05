@@ -300,7 +300,8 @@ pub unsafe extern "C" fn dpx_create_temp_file() -> *mut i8 {
     let n = strlen(tmpdir)
         .wrapping_add(strlen(TEMPLATE.as_ptr() as *const u8 as *const i8))
         .wrapping_add(1) as u64;
-    let mut tmp = new((n as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+    let mut tmp =
+        new((n as u32 as u64).wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
     strcpy(tmp, tmpdir);
     free(tmpdir as *mut libc::c_void);
     strcat(tmp, TEMPLATE.as_ptr() as *const u8 as *const i8);

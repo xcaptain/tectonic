@@ -206,12 +206,7 @@ unsafe fn get_stem(mut cd: *mut t1_chardesc, mut stem_id: i32) -> i32 {
         -1i32
     }
 }
-unsafe fn add_stem(
-    mut cd: *mut t1_chardesc,
-    mut pos: f64,
-    mut del: f64,
-    mut dir: i32,
-) -> i32 {
+unsafe fn add_stem(mut cd: *mut t1_chardesc, mut pos: f64, mut del: f64, mut dir: i32) -> i32 {
     assert!(!cd.is_null());
     pos += if dir == 0i32 {
         (*cd).sbw.sby
@@ -787,11 +782,7 @@ unsafe fn do_callothersubr(mut cd: *mut t1_chardesc) {
 /*
  * Double byte operators:
  */
-unsafe fn do_operator2(
-    mut cd: *mut t1_chardesc,
-    mut data: *mut *mut u8,
-    mut endptr: *mut u8,
-) {
+unsafe fn do_operator2(mut cd: *mut t1_chardesc, mut data: *mut *mut u8, mut endptr: *mut u8) {
     *data = (*data).offset(1);
     if endptr < (*data).offset(1) {
         status = -1i32;

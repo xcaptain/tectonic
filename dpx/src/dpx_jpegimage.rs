@@ -495,10 +495,7 @@ unsafe fn add_APPn_marker(
     (*j_info).num_appn += 1i32;
     n
 }
-unsafe fn read_APP14_Adobe(
-    mut j_info: *mut JPEG_info,
-    mut handle: rust_input_handle_t,
-) -> u16 {
+unsafe fn read_APP14_Adobe(mut j_info: *mut JPEG_info, mut handle: rust_input_handle_t) -> u16 {
     let mut app_data: *mut JPEG_APPn_Adobe = 0 as *mut JPEG_APPn_Adobe;
     app_data = new((1_u64).wrapping_mul(::std::mem::size_of::<JPEG_APPn_Adobe>() as u64) as u32)
         as *mut JPEG_APPn_Adobe;
@@ -750,10 +747,7 @@ unsafe fn read_APP1_Exif(
     free(buffer as *mut libc::c_void);
     length
 }
-unsafe fn read_APP0_JFIF(
-    mut j_info: *mut JPEG_info,
-    mut handle: rust_input_handle_t,
-) -> size_t {
+unsafe fn read_APP0_JFIF(mut j_info: *mut JPEG_info, mut handle: rust_input_handle_t) -> size_t {
     let mut app_data: *mut JPEG_APPn_JFIF = 0 as *mut JPEG_APPn_JFIF;
     let mut thumb_data_len: size_t = 0;
     app_data = new((1_u64).wrapping_mul(::std::mem::size_of::<JPEG_APPn_JFIF>() as u64) as u32)
@@ -976,10 +970,7 @@ unsafe fn JPEG_copy_stream(
         -1i32
     }
 }
-unsafe fn JPEG_scan_file(
-    mut j_info: *mut JPEG_info,
-    mut handle: rust_input_handle_t,
-) -> i32 {
+unsafe fn JPEG_scan_file(mut j_info: *mut JPEG_info, mut handle: rust_input_handle_t) -> i32 {
     let mut marker: JPEG_marker = 0 as JPEG_marker;
     let mut found_SOFn: i32 = 0;
     let mut count: i32 = 0;

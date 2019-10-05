@@ -530,10 +530,7 @@ unsafe fn ps_getescc(mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     *pp = p;
     ch
 }
-unsafe fn parse_pdf_literal_string(
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_literal_string(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut pdf_obj {
     let mut ch: i32 = 0;
     let mut op_count: i32 = 0i32;
     let mut len: i32 = 0i32;
@@ -621,10 +618,7 @@ unsafe fn parse_pdf_literal_string(
 /*
  * PDF Hex String
  */
-unsafe fn parse_pdf_hex_string(
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_hex_string(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut pdf_obj {
     let mut p: *const i8 = 0 as *const i8;
     let mut len: i32 = 0;
     p = *pp;
@@ -874,10 +868,7 @@ unsafe fn parse_pdf_stream(
 }
 /* PLEASE REMOVE THIS */
 /* This is not PDF indirect reference. */
-unsafe fn parse_pdf_reference(
-    mut start: *mut *const i8,
-    mut end: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_reference(mut start: *mut *const i8, mut end: *const i8) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut name: *mut i8 = 0 as *mut i8;
     save = *start;
