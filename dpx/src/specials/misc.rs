@@ -34,15 +34,14 @@ use crate::spc_warn;
 use crate::DisplayExt;
 use crate::TTInputFormat;
 use crate::{ttstub_input_close, ttstub_input_open};
-use libc::{memcpy, strlen, strncmp};
+use libc::{memcpy, strlen};
 use std::ffi::CStr;
 
 pub type size_t = u64;
 
 use super::{spc_arg, spc_env};
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-use super::spc_handler;
+use super::SpcHandler;
 
 use crate::dpx_pdfximage::load_options;
 
@@ -130,48 +129,30 @@ unsafe fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i3
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut MISC_HANDLERS: [spc_handler; 6] = [
-    {
-        let mut init = spc_handler {
-            key: b"postscriptbox\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_postscriptbox),
-        };
-        init
+const MISC_HANDLERS: [SpcHandler; 6] = [
+    SpcHandler {
+        key: b"postscriptbox",
+        exec: Some(spc_handler_postscriptbox),
     },
-    {
-        let mut init = spc_handler {
-            key: b"landscape\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_null),
-        };
-        init
+    SpcHandler {
+        key: b"landscape",
+        exec: Some(spc_handler_null),
     },
-    {
-        let mut init = spc_handler {
-            key: b"papersize\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_null),
-        };
-        init
+    SpcHandler {
+        key: b"papersize",
+        exec: Some(spc_handler_null),
     },
-    {
-        let mut init = spc_handler {
-            key: b"src:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_null),
-        };
-        init
+    SpcHandler {
+        key: b"src:",
+        exec: Some(spc_handler_null),
     },
-    {
-        let mut init = spc_handler {
-            key: b"pos:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_null),
-        };
-        init
+    SpcHandler {
+        key: b"pos:",
+        exec: Some(spc_handler_null),
     },
-    {
-        let mut init = spc_handler {
-            key: b"om:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_null),
-        };
-        init
+    SpcHandler {
+        key: b"om:",
+        exec: Some(spc_handler_null),
     },
 ];
 
@@ -181,15 +162,9 @@ pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size:
     let endptr = p.offset(size as isize);
     skip_white(&mut p, endptr);
     size = endptr.wrapping_offset_from(p) as i64 as i32;
-    for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
-        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-    {
-        if size as usize >= strlen(MISC_HANDLERS[i as usize].key)
-            && strncmp(
-                p,
-                MISC_HANDLERS[i as usize].key,
-                strlen(MISC_HANDLERS[i as usize].key),
-            ) == 0
+    for handler in MISC_HANDLERS.iter() {
+        if size as usize >= handler.key.len()
+            && CStr::from_ptr(p).to_bytes().starts_with(handler.key)
         {
             return true;
         }
@@ -198,7 +173,7 @@ pub unsafe extern "C" fn spc_misc_check_special(mut buffer: *const i8, mut size:
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_misc_setup_handler(
-    mut handle: *mut spc_handler,
+    mut handle: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -211,20 +186,18 @@ pub unsafe extern "C" fn spc_misc_setup_handler(
     if (*args).curptr < (*args).endptr && *(*args).curptr.offset(0) as i32 == ':' as i32 {
         (*args).curptr = (*args).curptr.offset(1)
     }
-    let keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
-    if keylen < 1i32 {
+    let keylen = (*args).curptr.wrapping_offset_from(key) as usize;
+    if keylen < 1 {
         return -1i32;
     }
-    for i in 0..(::std::mem::size_of::<[spc_handler; 6]>() as u64)
-        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-    {
-        if keylen as usize == strlen(MISC_HANDLERS[i as usize].key)
-            && strncmp(key, MISC_HANDLERS[i as usize].key, keylen as _) == 0
+    for handler in MISC_HANDLERS.iter() {
+        if keylen == handler.key.len()
+            && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = MISC_HANDLERS[i as usize].key;
-            (*handle).key = b"???:\x00" as *const u8 as *const i8;
-            (*handle).exec = MISC_HANDLERS[i as usize].exec;
+            (*args).command = Some(handler.key);
+            (*handle).key = b"???:";
+            (*handle).exec = handler.exec;
             return 0i32;
         }
     }

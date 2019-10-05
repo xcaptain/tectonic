@@ -91,8 +91,7 @@ use bridge::rust_input_handle_t;
 
 use super::{spc_arg, spc_env};
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-use super::spc_handler;
+use super::SpcHandler;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct spc_pdf_ {
@@ -1883,570 +1882,328 @@ unsafe fn spc_handler_pdfm_tounicode(
     free(cmap_name as *mut libc::c_void);
     0i32
 }
-static mut PDFM_HANDLERS: [spc_handler; 80] = {
-    [
-        {
-            let mut init = spc_handler {
-                key: b"annotation\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_annot),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"annotate\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_annot),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"annot\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_annot),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ann\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_annot),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"outline\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_outline),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"out\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_outline),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"article\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_article),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"art\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_article),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bead\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bead),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"thread\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bead),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"destination\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_dest),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"dest\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_dest),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"object\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_object),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"obj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_object),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"docinfo\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_docinfo),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"docview\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_docview),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"content\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_content),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"put\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_put),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"close\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_close),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bop\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bop),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"eop\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eop),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"image\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_image),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"img\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_image),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"epdf\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_image),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"link\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_link),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"nolink\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_nolink),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"begincolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bc\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"setcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_scolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"scolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_scolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"sc\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_scolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ecolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ec\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"begingray\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bgray\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bg\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endgray\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"egray\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"eg\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_ecolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bgcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bgcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bgc\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bgcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bbc\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bgcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bbg\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bgcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"pagesize\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_pagesize),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bannot\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"beginann\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bann\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"eannot\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endann\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"eann\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eann),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"btrans\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_btrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"begintransform\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_btrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"begintrans\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_btrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bt\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_btrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"etrans\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_etrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endtransform\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_etrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endtrans\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_etrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"et\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_etrans),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bform\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"beginxobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bxobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"eform\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"endxobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"exobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_eform),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"usexobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_uxobj),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"uxobj\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_uxobj),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"tounicode\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_tounicode),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"literal\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_literal),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"stream\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_stream),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"fstream\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_fstream),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"names\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_names),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"mapline\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_mapline),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"mapfile\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_mapfile),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bcontent\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_bcontent),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"econtent\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_econtent),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"code\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_code),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"minorversion\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_do_nothing),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"encrypt\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_pdfm_do_nothing),
-            };
-            init
-        },
-    ]
-};
+const PDFM_HANDLERS: [SpcHandler; 80] = [
+    SpcHandler {
+        key: b"annotation",
+        exec: Some(spc_handler_pdfm_annot),
+    },
+    SpcHandler {
+        key: b"annotate",
+        exec: Some(spc_handler_pdfm_annot),
+    },
+    SpcHandler {
+        key: b"annot",
+        exec: Some(spc_handler_pdfm_annot),
+    },
+    SpcHandler {
+        key: b"ann",
+        exec: Some(spc_handler_pdfm_annot),
+    },
+    SpcHandler {
+        key: b"outline",
+        exec: Some(spc_handler_pdfm_outline),
+    },
+    SpcHandler {
+        key: b"out",
+        exec: Some(spc_handler_pdfm_outline),
+    },
+    SpcHandler {
+        key: b"article",
+        exec: Some(spc_handler_pdfm_article),
+    },
+    SpcHandler {
+        key: b"art",
+        exec: Some(spc_handler_pdfm_article),
+    },
+    SpcHandler {
+        key: b"bead",
+        exec: Some(spc_handler_pdfm_bead),
+    },
+    SpcHandler {
+        key: b"thread",
+        exec: Some(spc_handler_pdfm_bead),
+    },
+    SpcHandler {
+        key: b"destination",
+        exec: Some(spc_handler_pdfm_dest),
+    },
+    SpcHandler {
+        key: b"dest",
+        exec: Some(spc_handler_pdfm_dest),
+    },
+    SpcHandler {
+        key: b"object",
+        exec: Some(spc_handler_pdfm_object),
+    },
+    SpcHandler {
+        key: b"obj",
+        exec: Some(spc_handler_pdfm_object),
+    },
+    SpcHandler {
+            key: b"docinfo",
+            exec: Some(spc_handler_pdfm_docinfo),
+    },
+    SpcHandler {
+            key: b"docview",
+            exec: Some(spc_handler_pdfm_docview),
+    },
+    SpcHandler {
+            key: b"content",
+            exec: Some(spc_handler_pdfm_content),
+    },
+    SpcHandler {
+            key: b"put",
+            exec: Some(spc_handler_pdfm_put),
+    },
+    SpcHandler {
+            key: b"close",
+            exec: Some(spc_handler_pdfm_close),
+    },
+    SpcHandler {
+            key: b"bop",
+            exec: Some(spc_handler_pdfm_bop),
+    },
+    SpcHandler {
+            key: b"eop",
+            exec: Some(spc_handler_pdfm_eop),
+    },
+    SpcHandler {
+            key: b"image",
+            exec: Some(spc_handler_pdfm_image),
+    },
+    SpcHandler {
+            key: b"img",
+            exec: Some(spc_handler_pdfm_image),
+    },
+    SpcHandler {
+            key: b"epdf",
+            exec: Some(spc_handler_pdfm_image),
+    },
+    SpcHandler {
+            key: b"link",
+            exec: Some(spc_handler_pdfm_link),
+    },
+    SpcHandler {
+            key: b"nolink",
+            exec: Some(spc_handler_pdfm_nolink),
+    },
+    SpcHandler {
+            key: b"begincolor",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"bcolor",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"bc",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"setcolor",
+            exec: Some(spc_handler_pdfm_scolor),
+    },
+    SpcHandler {
+            key: b"scolor",
+            exec: Some(spc_handler_pdfm_scolor),
+    },
+    SpcHandler {
+            key: b"sc",
+            exec: Some(spc_handler_pdfm_scolor),
+    },
+    SpcHandler {
+            key: b"endcolor",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"ecolor",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"ec",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"begingray",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"bgray",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"bg",
+            exec: Some(spc_handler_pdfm_bcolor),
+    },
+    SpcHandler {
+            key: b"endgray",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"egray",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"eg",
+            exec: Some(spc_handler_pdfm_ecolor),
+    },
+    SpcHandler {
+            key: b"bgcolor",
+            exec: Some(spc_handler_pdfm_bgcolor),
+    },
+    SpcHandler {
+            key: b"bgc",
+            exec: Some(spc_handler_pdfm_bgcolor),
+    },
+    SpcHandler {
+            key: b"bbc",
+            exec: Some(spc_handler_pdfm_bgcolor),
+    },
+    SpcHandler {
+            key: b"bbg",
+            exec: Some(spc_handler_pdfm_bgcolor),
+    },
+    SpcHandler {
+            key: b"pagesize",
+            exec: Some(spc_handler_pdfm_pagesize),
+    },
+    SpcHandler {
+            key: b"bannot",
+            exec: Some(spc_handler_pdfm_bann),
+    },
+    SpcHandler {
+            key: b"beginann",
+            exec: Some(spc_handler_pdfm_bann),
+    },
+    SpcHandler {
+            key: b"bann",
+            exec: Some(spc_handler_pdfm_bann),
+    },
+    SpcHandler {
+            key: b"eannot",
+            exec: Some(spc_handler_pdfm_eann),
+    },
+    SpcHandler {
+            key: b"endann",
+            exec: Some(spc_handler_pdfm_eann),
+    },
+    SpcHandler {
+            key: b"eann",
+            exec: Some(spc_handler_pdfm_eann),
+    },
+    SpcHandler {
+            key: b"btrans",
+            exec: Some(spc_handler_pdfm_btrans),
+    },
+    SpcHandler {
+            key: b"begintransform",
+            exec: Some(spc_handler_pdfm_btrans),
+    },
+    SpcHandler {
+            key: b"begintrans",
+            exec: Some(spc_handler_pdfm_btrans),
+    },
+    SpcHandler {
+            key: b"bt",
+            exec: Some(spc_handler_pdfm_btrans),
+    },
+    SpcHandler {
+            key: b"etrans",
+            exec: Some(spc_handler_pdfm_etrans),
+    },
+    SpcHandler {
+            key: b"endtransform",
+            exec: Some(spc_handler_pdfm_etrans),
+    },
+    SpcHandler {
+            key: b"endtrans",
+            exec: Some(spc_handler_pdfm_etrans),
+    },
+    SpcHandler {
+            key: b"et",
+            exec: Some(spc_handler_pdfm_etrans),
+    },
+    SpcHandler {
+            key: b"bform",
+            exec: Some(spc_handler_pdfm_bform),
+    },
+    SpcHandler {
+            key: b"beginxobj",
+            exec: Some(spc_handler_pdfm_bform),
+    },
+    SpcHandler {
+            key: b"bxobj",
+            exec: Some(spc_handler_pdfm_bform),
+    },
+    SpcHandler {
+            key: b"eform",
+            exec: Some(spc_handler_pdfm_eform),
+    },
+    SpcHandler {
+            key: b"endxobj",
+            exec: Some(spc_handler_pdfm_eform),
+    },
+    SpcHandler {
+            key: b"exobj",
+            exec: Some(spc_handler_pdfm_eform),
+    },
+    SpcHandler {
+            key: b"usexobj",
+            exec: Some(spc_handler_pdfm_uxobj),
+    },
+    SpcHandler {
+            key: b"uxobj",
+            exec: Some(spc_handler_pdfm_uxobj),
+    },
+    SpcHandler {
+            key: b"tounicode",
+            exec: Some(spc_handler_pdfm_tounicode),
+    },
+    SpcHandler {
+            key: b"literal",
+            exec: Some(spc_handler_pdfm_literal),
+    },
+    SpcHandler {
+            key: b"stream",
+            exec: Some(spc_handler_pdfm_stream),
+    },
+    SpcHandler {
+            key: b"fstream",
+            exec: Some(spc_handler_pdfm_fstream),
+    },
+    SpcHandler {
+            key: b"names",
+            exec: Some(spc_handler_pdfm_names),
+    },
+    SpcHandler {
+            key: b"mapline",
+            exec: Some(spc_handler_pdfm_mapline),
+    },
+    SpcHandler {
+            key: b"mapfile",
+            exec: Some(spc_handler_pdfm_mapfile),
+    },
+    SpcHandler {
+            key: b"bcontent",
+            exec: Some(spc_handler_pdfm_bcontent),
+    },
+    SpcHandler {
+            key: b"econtent",
+            exec: Some(spc_handler_pdfm_econtent),
+    },
+    SpcHandler {
+            key: b"code",
+            exec: Some(spc_handler_pdfm_code),
+    },
+    SpcHandler {
+            key: b"minorversion",
+            exec: Some(spc_handler_pdfm_do_nothing),
+    },
+    SpcHandler {
+            key: b"encrypt",
+            exec: Some(spc_handler_pdfm_do_nothing),
+    },
+];
 #[no_mangle]
 pub unsafe extern "C" fn spc_pdfm_check_special(mut buf: *const i8, mut len: i32) -> bool {
     let mut p = buf;
@@ -2465,7 +2222,7 @@ pub unsafe extern "C" fn spc_pdfm_check_special(mut buf: *const i8, mut len: i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_pdfm_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -2491,13 +2248,11 @@ pub unsafe extern "C" fn spc_pdfm_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        for i in 0..(::std::mem::size_of::<[spc_handler; 80]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-        {
-            if streq_ptr(q, PDFM_HANDLERS[i as usize].key) {
-                (*ap).command = PDFM_HANDLERS[i as usize].key;
-                (*sph).key = b"pdf:\x00" as *const u8 as *const i8;
-                (*sph).exec = PDFM_HANDLERS[i as usize].exec;
+        for handler in PDFM_HANDLERS.iter() {
+            if CStr::from_ptr(q). to_bytes() == handler.key {
+                (*ap).command = Some(handler.key);
+                (*sph).key = b"pdf:";
+                (*sph).exec = handler.exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

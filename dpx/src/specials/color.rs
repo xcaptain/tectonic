@@ -24,7 +24,7 @@
 )]
 
 use super::util::spc_util_read_colorspec;
-use super::{spc_arg, spc_env, spc_handler};
+use super::{spc_arg, spc_env, SpcHandler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfcolor::{pdf_color_clear_stack, pdf_color_pop, pdf_color_push, pdf_color_set};
 use crate::dpx_pdfdoc::pdf_doc_set_bgcolor;
@@ -111,7 +111,7 @@ pub unsafe extern "C" fn spc_color_check_special(mut buf: *const i8, mut len: i3
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_color_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -123,7 +123,7 @@ pub unsafe extern "C" fn spc_color_setup_handler(
     }
     skip_blank(&mut (*ap).curptr, (*ap).endptr);
     if streq_ptr(q, b"background\x00" as *const u8 as *const i8) {
-        (*ap).command = b"background\x00" as *const u8 as *const i8;
+        (*ap).command = Some(b"background");
         (*sph).exec = Some(spc_handler_background);
         free(q as *mut libc::c_void);
     } else if streq_ptr(q, b"color\x00" as *const u8 as *const i8) {
@@ -135,15 +135,15 @@ pub unsafe extern "C" fn spc_color_setup_handler(
             return -1i32;
         } else {
             if streq_ptr(q, b"push\x00" as *const u8 as *const i8) {
-                (*ap).command = b"push\x00" as *const u8 as *const i8;
+                (*ap).command = Some(b"push");
                 (*sph).exec = Some(spc_handler_color_push);
                 (*ap).curptr = p
             } else if streq_ptr(q, b"pop\x00" as *const u8 as *const i8) {
-                (*ap).command = b"pop\x00" as *const u8 as *const i8;
+                (*ap).command = Some(b"pop");
                 (*sph).exec = Some(spc_handler_color_pop);
                 (*ap).curptr = p
             } else {
-                (*ap).command = b"\x00" as *const u8 as *const i8;
+                (*ap).command = Some(b"");
                 (*sph).exec = Some(spc_handler_color_default)
             }
         }

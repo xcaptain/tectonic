@@ -48,15 +48,13 @@ use crate::dpx_pdfdraw::{
 use crate::dpx_pdfparse::{parse_ident, parse_val_ident, skip_white};
 use crate::shims::sprintf;
 use crate::spc_warn;
-use crate::streq_ptr;
 use libc::{free, memcmp, strlen, strncmp, strncpy};
 
 pub type size_t = u64;
 
 use super::{spc_arg, spc_env};
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-use super::spc_handler;
+use super::SpcHandler;
 use crate::dpx_fontmap::fontmap_rec;
 
 use crate::dpx_pdfdev::pdf_coord;
@@ -402,7 +400,7 @@ unsafe fn spc_handler_xtx_unsupportedcolor(
     spc_warn!(
         spe,
         "xetex-style \\special{{x:{}}} is not supported by this driver;\nupdate document or driver to use \\special{{color}} instead.",
-        CStr::from_ptr((*args).command).display(),
+        (*args).command.unwrap().display(),
     );
     (*args).curptr = (*args).endptr;
     0i32
@@ -414,162 +412,97 @@ unsafe fn spc_handler_xtx_unsupported(
     spc_warn!(
         spe,
         "xetex-style \\special{{x:{}}} is not supported by this driver.",
-        CStr::from_ptr((*args).command).display(),
+        (*args).command.unwrap().display(),
     );
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut XTX_HANDLERS: [spc_handler; 21] = {
-    [
-        {
-            let mut init = spc_handler {
-                key: b"textcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"textcolorpush\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"textcolorpop\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"rulecolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"rulecolorpush\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"rulecolorpop\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupportedcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"papersize\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_papersize),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"backgroundcolor\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_backgroundcolor),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"gsave\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_gsave),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"grestore\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_grestore),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"scale\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_scale),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bscale\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_bscale),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"escale\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_escale),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"rotate\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_rotate),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"fontmapline\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_fontmapline),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"fontmapfile\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_fontmapfile),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"shadow\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupported),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"colorshadow\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_unsupported),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"renderingmode\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_renderingmode),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"initoverlay\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_initoverlay),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"clipoverlay\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_xtx_clipoverlay),
-            };
-            init
-        },
-    ]
-};
+const XTX_HANDLERS: [SpcHandler; 21] = [
+    SpcHandler {
+            key: b"textcolor",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"textcolorpush",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"textcolorpop",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"rulecolor",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"rulecolorpush",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"rulecolorpop",
+            exec: Some(spc_handler_xtx_unsupportedcolor),
+    },
+    SpcHandler {
+            key: b"papersize",
+            exec: Some(spc_handler_xtx_papersize),
+    },
+    SpcHandler {
+            key: b"backgroundcolor",
+            exec: Some(spc_handler_xtx_backgroundcolor),
+    },
+    SpcHandler {
+            key: b"gsave",
+            exec: Some(spc_handler_xtx_gsave),
+    },
+    SpcHandler {
+            key: b"grestore",
+            exec: Some(spc_handler_xtx_grestore),
+    },
+    SpcHandler {
+            key: b"scale",
+            exec: Some(spc_handler_xtx_scale),
+    },
+    SpcHandler {
+            key: b"bscale",
+            exec: Some(spc_handler_xtx_bscale),
+    },
+    SpcHandler {
+            key: b"escale",
+            exec: Some(spc_handler_xtx_escale),
+    },
+    SpcHandler {
+            key: b"rotate",
+            exec: Some(spc_handler_xtx_rotate),
+    },
+    SpcHandler {
+            key: b"fontmapline",
+            exec: Some(spc_handler_xtx_fontmapline),
+    },
+    SpcHandler {
+            key: b"fontmapfile",
+            exec: Some(spc_handler_xtx_fontmapfile),
+    },
+    SpcHandler {
+            key: b"shadow",
+            exec: Some(spc_handler_xtx_unsupported),
+    },
+    SpcHandler {
+            key: b"colorshadow",
+            exec: Some(spc_handler_xtx_unsupported),
+    },
+    SpcHandler {
+            key: b"renderingmode",
+            exec: Some(spc_handler_xtx_renderingmode),
+    },
+    SpcHandler {
+            key: b"initoverlay",
+            exec: Some(spc_handler_xtx_initoverlay),
+    },
+    SpcHandler {
+            key: b"clipoverlay",
+            exec: Some(spc_handler_xtx_clipoverlay),
+    },
+];
 #[no_mangle]
 pub unsafe extern "C" fn spc_xtx_check_special(mut buf: *const i8, mut len: i32) -> bool {
     let mut p = buf;
@@ -588,7 +521,7 @@ pub unsafe extern "C" fn spc_xtx_check_special(mut buf: *const i8, mut len: i32)
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_xtx_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -614,13 +547,11 @@ pub unsafe extern "C" fn spc_xtx_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        for i in 0..(::std::mem::size_of::<[spc_handler; 21]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-        {
-            if streq_ptr(q, XTX_HANDLERS[i as usize].key) {
-                (*ap).command = XTX_HANDLERS[i as usize].key;
-                (*sph).key = b"x:\x00" as *const u8 as *const i8;
-                (*sph).exec = XTX_HANDLERS[i as usize].exec;
+        for handler in XTX_HANDLERS.iter() {
+            if CStr::from_ptr(q).to_bytes() == handler.key {
+                (*ap).command = Some(handler.key);
+                (*sph).key = b"x:";
+                (*sph).exec = handler.exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

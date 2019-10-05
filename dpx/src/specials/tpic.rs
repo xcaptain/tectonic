@@ -58,8 +58,7 @@ use libc::{atof, free, memcmp, strlen};
 
 pub type size_t = u64;
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-use super::spc_handler;
+use super::SpcHandler;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_0 {
@@ -822,101 +821,60 @@ unsafe fn spc_handler_tpic__setopts(mut spe: *mut spc_env, mut ap: *mut spc_arg)
     error
 }
 /* DEBUG */
-static mut TPIC_HANDLERS: [spc_handler; 13] = {
-    [
-        {
-            let mut init = spc_handler {
-                key: b"pn\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_pn),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"pa\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_pa),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"fp\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_fp),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ip\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_ip),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"da\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_da),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"dt\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_dt),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"sp\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_sp),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ar\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_ar),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"ia\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_ia),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"sh\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_sh),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"wh\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_wh),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"bk\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_bk),
-            };
-            init
-        },
-        {
-            let mut init = spc_handler {
-                key: b"tx\x00" as *const u8 as *const i8,
-                exec: Some(spc_handler_tpic_tx),
-            };
-            init
-        },
-    ]
-};
+const TPIC_HANDLERS: [SpcHandler; 13] = [
+    SpcHandler {
+            key: b"pn",
+            exec: Some(spc_handler_tpic_pn),
+    },
+    SpcHandler {
+            key: b"pa",
+            exec: Some(spc_handler_tpic_pa),
+    },
+    SpcHandler {
+            key: b"fp",
+            exec: Some(spc_handler_tpic_fp),
+    },
+    SpcHandler {
+            key: b"ip",
+            exec: Some(spc_handler_tpic_ip),
+    },
+    SpcHandler {
+            key: b"da",
+            exec: Some(spc_handler_tpic_da),
+    },
+    SpcHandler {
+            key: b"dt",
+            exec: Some(spc_handler_tpic_dt),
+    },
+    SpcHandler {
+            key: b"sp",
+            exec: Some(spc_handler_tpic_sp),
+    },
+    SpcHandler {
+            key: b"ar",
+            exec: Some(spc_handler_tpic_ar),
+    },
+    SpcHandler {
+            key: b"ia",
+            exec: Some(spc_handler_tpic_ia),
+    },
+    SpcHandler {
+            key: b"sh",
+            exec: Some(spc_handler_tpic_sh),
+    },
+    SpcHandler {
+            key: b"wh",
+            exec: Some(spc_handler_tpic_wh),
+    },
+    SpcHandler {
+            key: b"bk",
+            exec: Some(spc_handler_tpic_bk),
+    },
+    SpcHandler {
+            key: b"tx",
+            exec: Some(spc_handler_tpic_tx),
+    },
+];
 #[no_mangle]
 pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32) -> bool {
     let mut istpic: bool = false;
@@ -944,10 +902,8 @@ pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32
         istpic = true;
         free(q as *mut libc::c_void);
     } else {
-        for i in 0..(::std::mem::size_of::<[spc_handler; 13]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-        {
-            if streq_ptr(q, TPIC_HANDLERS[i as usize].key) {
+        for handler in TPIC_HANDLERS.iter() {
+            if CStr::from_ptr(q). to_bytes() == handler.key {
                 istpic = true;
                 break;
             }
@@ -958,7 +914,7 @@ pub unsafe extern "C" fn spc_tpic_check_special(mut buf: *const i8, mut len: i32
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_tpic_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -988,20 +944,18 @@ pub unsafe extern "C" fn spc_tpic_setup_handler(
         && hasnsp != 0
         && streq_ptr(q, b"__setopt__\x00" as *const u8 as *const i8) as i32 != 0
     {
-        (*ap).command = b"__setopt__\x00" as *const u8 as *const i8;
-        (*sph).key = b"tpic:\x00" as *const u8 as *const i8;
+        (*ap).command = Some(b"__setopt__");
+        (*sph).key = b"tpic:";
         (*sph).exec = Some(spc_handler_tpic__setopts);
         skip_blank(&mut (*ap).curptr, (*ap).endptr);
         error = 0i32;
         free(q as *mut libc::c_void);
     } else {
-        for i in 0..(::std::mem::size_of::<[spc_handler; 13]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-        {
-            if streq_ptr(q, TPIC_HANDLERS[i as usize].key) {
-                (*ap).command = TPIC_HANDLERS[i as usize].key;
-                (*sph).key = b"tpic:\x00" as *const u8 as *const i8;
-                (*sph).exec = TPIC_HANDLERS[i as usize].exec;
+        for handler in TPIC_HANDLERS.iter() {
+            if CStr::from_ptr(q). to_bytes() == handler.key {
+                (*ap).command = Some(handler.key);
+                (*sph).key = b"tpic:";
+                (*sph).exec = handler.exec;
                 skip_blank(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

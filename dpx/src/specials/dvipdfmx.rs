@@ -23,11 +23,12 @@
     unused_mut
 )]
 
-use super::{spc_arg, spc_env, spc_handler};
+use std::ffi::CStr;
+
+use super::{spc_arg, spc_env, SpcHandler};
 use crate::dpx_dpxutil::parse_c_ident;
 use crate::dpx_pdfparse::skip_white;
 use crate::spc_warn;
-use crate::streq_ptr;
 use libc::{free, memcmp, strlen};
 
 pub type size_t = u64;
@@ -44,13 +45,12 @@ unsafe fn spc_handler_null(mut _spe: *mut spc_env, mut args: *mut spc_arg) -> i3
     (*args).curptr = (*args).endptr;
     0i32
 }
-static mut DVIPDFMX_HANDLERS: [spc_handler; 1] = [{
-    let mut init = spc_handler {
-        key: b"config\x00" as *const u8 as *const i8,
+const DVIPDFMX_HANDLERS: [SpcHandler; 1] = [
+    SpcHandler {
+        key: b"config",
         exec: Some(spc_handler_null),
-    };
-    init
-}];
+    }
+];
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvipdfmx_check_special(mut buf: *const i8, mut len: i32) -> bool {
@@ -70,7 +70,7 @@ pub unsafe extern "C" fn spc_dvipdfmx_check_special(mut buf: *const i8, mut len:
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -96,13 +96,11 @@ pub unsafe extern "C" fn spc_dvipdfmx_setup_handler(
     skip_white(&mut (*ap).curptr, (*ap).endptr);
     let q = parse_c_ident(&mut (*ap).curptr, (*ap).endptr);
     if !q.is_null() {
-        for i in 0..(::std::mem::size_of::<[spc_handler; 1]>() as u64)
-            .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-        {
-            if streq_ptr(q, DVIPDFMX_HANDLERS[i as usize].key) {
-                (*ap).command = DVIPDFMX_HANDLERS[i as usize].key;
-                (*sph).key = b"dvipdfmx:\x00" as *const u8 as *const i8;
-                (*sph).exec = DVIPDFMX_HANDLERS[i as usize].exec;
+        for handler in DVIPDFMX_HANDLERS.iter() {
+            if CStr::from_ptr(q).to_bytes() == handler.key {
+                (*ap).command = Some(handler.key);
+                (*sph).key = b"dvipdfmx:";
+                (*sph).exec = handler.exec;
                 skip_white(&mut (*ap).curptr, (*ap).endptr);
                 error = 0i32;
                 break;

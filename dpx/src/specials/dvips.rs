@@ -49,15 +49,14 @@ use crate::dpx_pdfdraw::{
 };
 use crate::dpx_pdfparse::skip_white;
 use crate::spc_warn;
-use libc::{free, memcmp, memcpy, strlen, strncmp, strncpy};
+use libc::{free, memcpy, strlen, strncpy};
 
 pub type size_t = u64;
 
 use bridge::rust_input_handle_t;
 /* quasi-hack to get the primary input */
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-use super::spc_handler;
+use super::SpcHandler;
 
 use crate::dpx_pdfximage::load_options;
 static mut BLOCK_PENDING: i32 = 0i32;
@@ -363,76 +362,46 @@ unsafe fn spc_handler_ps_default(mut spe: *mut spc_env, mut args: *mut spc_arg) 
     pdf_dev_grestore();
     error
 }
-static mut DVIPS_HANDLERS: [spc_handler; 10] = [
-    {
-        let mut init = spc_handler {
-            key: b"header\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_header),
-        };
-        init
+const DVIPS_HANDLERS: [SpcHandler; 10] = [
+    SpcHandler {
+        key: b"header",
+        exec: Some(spc_handler_ps_header),
     },
-    {
-        let mut init = spc_handler {
-            key: b"PSfile\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_file),
-        };
-        init
+    SpcHandler {
+        key: b"PSfile",
+        exec: Some(spc_handler_ps_file),
     },
-    {
-        let mut init = spc_handler {
-            key: b"psfile\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_file),
-        };
-        init
+    SpcHandler {
+        key: b"psfile",
+        exec: Some(spc_handler_ps_file),
     },
-    {
-        let mut init = spc_handler {
-            key: b"ps: plotfile \x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_plotfile),
-        };
-        init
+    SpcHandler {
+        key: b"ps: plotfile ",
+        exec: Some(spc_handler_ps_plotfile),
     },
-    {
-        let mut init = spc_handler {
-            key: b"PS: plotfile \x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_plotfile),
-        };
-        init
+    SpcHandler {
+        key: b"PS: plotfile ",
+        exec: Some(spc_handler_ps_plotfile),
     },
-    {
-        let mut init = spc_handler {
-            key: b"PS:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_literal),
-        };
-        init
+    SpcHandler {
+        key: b"PS:",
+        exec: Some(spc_handler_ps_literal),
     },
-    {
-        let mut init = spc_handler {
-            key: b"ps:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_literal),
-        };
-        init
+    SpcHandler {
+        key: b"ps:",
+        exec: Some(spc_handler_ps_literal),
     },
-    {
-        let mut init = spc_handler {
-            key: b"PST:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_trickscmd),
-        };
-        init
+    SpcHandler {
+        key: b"PST:",
+        exec: Some(spc_handler_ps_trickscmd),
     },
-    {
-        let mut init = spc_handler {
-            key: b"pst:\x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_tricksobj),
-        };
-        init
+    SpcHandler {
+        key: b"pst:",
+        exec: Some(spc_handler_ps_tricksobj),
     },
-    {
-        let mut init = spc_handler {
-            key: b"\" \x00" as *const u8 as *const i8,
-            exec: Some(spc_handler_ps_default),
-        };
-        init
+    SpcHandler {
+        key: b"\" ",
+        exec: Some(spc_handler_ps_default),
     },
 ];
 
@@ -471,15 +440,9 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
         return false;
     }
     len = endptr.wrapping_offset_from(p) as i64 as i32;
-    for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
-        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-    {
-        if len as usize >= strlen(DVIPS_HANDLERS[i as usize].key)
-            && memcmp(
-                p as *const libc::c_void,
-                DVIPS_HANDLERS[i as usize].key as *const libc::c_void,
-                strlen(DVIPS_HANDLERS[i as usize].key),
-            ) == 0
+    for handler in DVIPS_HANDLERS.iter() {
+        if len as usize >= handler.key.len()
+            && CStr::from_ptr(p).to_bytes().starts_with(handler.key)
         {
             return true;
         }
@@ -488,7 +451,7 @@ pub unsafe extern "C" fn spc_dvips_check_special(mut buf: *const i8, mut len: i3
 }
 #[no_mangle]
 pub unsafe extern "C" fn spc_dvips_setup_handler(
-    mut handle: *mut spc_handler,
+    mut handle: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut args: *mut spc_arg,
 ) -> i32 {
@@ -517,21 +480,19 @@ pub unsafe extern "C" fn spc_dvips_setup_handler(
     {
         (*args).curptr = (*args).curptr.offset(2)
     }
-    let keylen = (*args).curptr.wrapping_offset_from(key) as i64 as i32;
-    if keylen < 1i32 {
+    let keylen = (*args).curptr.wrapping_offset_from(key) as usize;
+    if keylen < 1 {
         spc_warn!(spe, "Not ps: special???");
         return -1i32;
     }
-    for i in 0..(::std::mem::size_of::<[spc_handler; 10]>() as u64)
-        .wrapping_div(::std::mem::size_of::<spc_handler>() as u64)
-    {
-        if keylen as usize == strlen(DVIPS_HANDLERS[i as usize].key)
-            && strncmp(key, DVIPS_HANDLERS[i as usize].key, keylen as usize) == 0
+    for handler in DVIPS_HANDLERS.iter() {
+        if keylen == handler.key.len()
+            && &CStr::from_ptr(key).to_bytes()[..keylen] == handler.key
         {
             skip_white(&mut (*args).curptr, (*args).endptr);
-            (*args).command = DVIPS_HANDLERS[i as usize].key;
-            (*handle).key = b"ps:\x00" as *const u8 as *const i8;
-            (*handle).exec = DVIPS_HANDLERS[i as usize].exec;
+            (*args).command = Some(handler.key);
+            (*handle).key = b"ps:";
+            (*handle).exec = handler.exec;
             return 0i32;
         }
     }

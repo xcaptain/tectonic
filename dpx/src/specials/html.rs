@@ -60,9 +60,7 @@ pub type size_t = u64;
 
 use super::{spc_arg, spc_env};
 
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
-
-use super::spc_handler;
+use super::SpcHandler;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -970,7 +968,7 @@ pub unsafe extern "C" fn spc_html_check_special(mut buffer: *const i8, mut size:
 
 #[no_mangle]
 pub unsafe extern "C" fn spc_html_setup_handler(
-    mut sph: *mut spc_handler,
+    mut sph: *mut SpcHandler,
     mut spe: *mut spc_env,
     mut ap: *mut spc_arg,
 ) -> i32 {
@@ -990,8 +988,8 @@ pub unsafe extern "C" fn spc_html_setup_handler(
     {
         return -1i32;
     }
-    (*ap).command = b"\x00" as *const u8 as *const i8;
-    (*sph).key = b"html:\x00" as *const u8 as *const i8;
+    (*ap).command = Some(b"");
+    (*sph).key = b"html:";
     (*sph).exec = Some(spc_handler_html_default);
     (*ap).curptr = (*ap)
         .curptr
