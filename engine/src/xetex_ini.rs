@@ -13998,9 +13998,6 @@ pub unsafe extern "C" fn tt_run_engine(
     if 514i32 < 0i32 || 514i32 > 1i32 + (0x10ffffi32 + 1i32) + (0x10ffffi32 + 1i32) + 1i32 {
         bad = 42i32
     }
-    if format_default_length > 2147483647i32 {
-        bad = 31i32
-    }
     if 2i32 * 0x3fffffffi32 < 4999999i32 {
         bad = 41i32
     }

@@ -12829,7 +12829,7 @@ pub unsafe extern "C" fn scan_expr() {
                 }
                 arith_error = b;
                 if l as i32 == 0i32 || s as i32 > 2i32 {
-                    if f > 0x7fffffffi32 || f < -0x7fffffffi32 {
+                    if f == i32::min_value() {
                         arith_error = true;
                         f = 0i32
                     }
