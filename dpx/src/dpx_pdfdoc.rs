@@ -484,7 +484,7 @@ fn asn_date() -> String {
         }
         None => {
             let x = Local::now();
-            let tz = format!("{}", x.format("%s"));
+            let tz = format!("{}", x.format("%z"));
             format!("{}{}'{}'", x.format(timeformat), &tz[0..3], &tz[3..])
         }
     }
