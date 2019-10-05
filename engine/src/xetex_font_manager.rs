@@ -1726,16 +1726,13 @@ pub unsafe extern "C" fn XeTeXFontMgr_Destroy() {
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn XeTeXFontMgr_getReqEngine(
-    mut self_0: *const XeTeXFontMgr,
-) -> libc::c_char {
+pub unsafe extern "C" fn XeTeXFontMgr_getReqEngine() -> libc::c_char {
     // return the requested rendering technology for the most recent findFont
     // or 0 if no specific technology was requested
     return XeTeXFontMgr_sReqEngine;
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_setReqEngine(
-    mut self_0: *const XeTeXFontMgr,
     mut reqEngine: libc::c_char,
 ) {
     XeTeXFontMgr_sReqEngine = reqEngine;
@@ -1833,7 +1830,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             let family_ptr = family_ptr.as_ptr();
             // look for a family member with the "regular" bit set in OS/2
             let mut regFonts: libc::c_int = 0i32;
-            for (k, v) in (*(*family_ptr).styles).iter() {
+            for (_k, v) in (*(*family_ptr).styles).iter() {
                 if v.as_ref().isReg {
                     if regFonts == 0i32 {
                         font = v.as_ptr();
@@ -1863,7 +1860,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             }
             if font.is_null() {
                 // look through the family for the (weight, width, slant) nearest to (80, 100, 0)
-                font = XeTeXFontMgr_bestMatchFromFamily(self_0, family_ptr, 80i32, 100i32, 0i32)
+                font = XeTeXFontMgr_bestMatchFromFamily(family_ptr, 80i32, 100i32, 0i32)
             }
             if !font.is_null() {
                 break;
@@ -2021,7 +2018,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             if ((*font).slant as libc::c_int) < (*parent).maxSlant as libc::c_int {
                 // try for a face with more slant
                 bestMatch = XeTeXFontMgr_bestMatchFromFamily(
-                    self_0,
                     parent,
                     (*font).weight as libc::c_int,
                     (*font).width as libc::c_int,
@@ -2032,7 +2028,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             {
                 // maybe the slant is negated, or maybe this was something like "Times-Italic/I"
                 bestMatch = XeTeXFontMgr_bestMatchFromFamily(
-                    self_0,
                     parent,
                     (*font).weight as libc::c_int,
                     (*font).width as libc::c_int,
@@ -2065,8 +2060,8 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                         if (*parent).minWeight != (*parent).maxWeight {
                             // weight info was available, so try to match that
                             if bestMatch.is_null()
-                                || XeTeXFontMgr_weightAndWidthDiff(self_0, style_font_ptr, font)
-                                    < XeTeXFontMgr_weightAndWidthDiff(self_0, bestMatch, font)
+                                || XeTeXFontMgr_weightAndWidthDiff(style_font_ptr, font)
+                                    < XeTeXFontMgr_weightAndWidthDiff(bestMatch, font)
                             {
                                 bestMatch = style_font_ptr;
                             }
@@ -2090,7 +2085,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
             if ((*font).weight as libc::c_int) < (*parent).maxWeight as libc::c_int {
                 // try to increase weight by 1/2 x (max - min), rounding up
                 bestMatch_0 = XeTeXFontMgr_bestMatchFromFamily(
-                    self_0,
                     parent,
                     (*font).weight as libc::c_int
                         + ((*parent).maxWeight as libc::c_int - (*parent).minWeight as libc::c_int)
@@ -2107,11 +2101,9 @@ pub unsafe extern "C" fn XeTeXFontMgr_findFont(
                         if (*style_font_ptr).isItalic == (*font).isItalic {
                             if newBest_0.is_null()
                                 || XeTeXFontMgr_weightAndWidthDiff(
-                                    self_0,
                                     style_font_ptr,
                                     bestMatch_0,
                                 ) < XeTeXFontMgr_weightAndWidthDiff(
-                                    self_0,
                                     newBest_0,
                                     bestMatch_0,
                                 )
@@ -2219,7 +2211,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_getFullName(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_weightAndWidthDiff(
-    mut self_0: *const XeTeXFontMgr,
     mut a: *const XeTeXFontMgrFont,
     mut b: *const XeTeXFontMgrFont,
 ) -> libc::c_int {
@@ -2242,7 +2233,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_weightAndWidthDiff(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_styleDiff(
-    mut self_0: *const XeTeXFontMgr,
     mut a: *const XeTeXFontMgrFont,
     mut wt: libc::c_int,
     mut wd: libc::c_int,
@@ -2260,7 +2250,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_styleDiff(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_bestMatchFromFamily(
-    mut self_0: *const XeTeXFontMgr,
     mut fam: *const XeTeXFontMgrFamily,
     mut wt: libc::c_int,
     mut wd: libc::c_int,
@@ -2269,8 +2258,8 @@ pub unsafe extern "C" fn XeTeXFontMgr_bestMatchFromFamily(
     let mut bestMatch: *mut XeTeXFontMgrFont = 0 as *mut XeTeXFontMgrFont;
     for (_, v) in (*(*fam).styles).iter() {
         if bestMatch.is_null()
-            || XeTeXFontMgr_styleDiff(self_0, v.as_ptr(), wt, wd, slant)
-                < XeTeXFontMgr_styleDiff(self_0, bestMatch, wt, wd, slant)
+            || XeTeXFontMgr_styleDiff(v.as_ptr(), wt, wd, slant)
+                < XeTeXFontMgr_styleDiff(bestMatch, wt, wd, slant)
         {
             bestMatch = v.as_ptr()
         }
@@ -2278,10 +2267,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_bestMatchFromFamily(
     return bestMatch;
 }
 #[no_mangle]
-pub unsafe extern "C" fn XeTeXFontMgr_getOpSize(
-    mut self_0: *mut XeTeXFontMgr,
-    mut font: XeTeXFont,
-) -> *mut XeTeXFontMgrOpSizeRec {
+pub unsafe extern "C" fn XeTeXFontMgr_getOpSize(mut font: XeTeXFont) -> *mut XeTeXFontMgrOpSizeRec {
     let mut hbFont: *mut hb_font_t = XeTeXFontInst_getHbFont(font as *mut XeTeXFontInst);
     if hbFont.is_null() {
         return 0 as *mut XeTeXFontMgrOpSizeRec;
@@ -2304,11 +2290,8 @@ pub unsafe extern "C" fn XeTeXFontMgr_getOpSize(
     return 0 as *mut XeTeXFontMgrOpSizeRec;
 }
 #[no_mangle]
-pub unsafe extern "C" fn XeTeXFontMgr_getDesignSize(
-    mut self_0: *mut XeTeXFontMgr,
-    mut font: XeTeXFont,
-) -> libc::c_double {
-    let mut pSizeRec: *mut XeTeXFontMgrOpSizeRec = XeTeXFontMgr_getOpSize(self_0, font);
+pub unsafe extern "C" fn XeTeXFontMgr_getDesignSize(mut font: XeTeXFont) -> libc::c_double {
+    let mut pSizeRec: *mut XeTeXFontMgrOpSizeRec = XeTeXFontMgr_getOpSize(font);
     if pSizeRec.is_null() {
         return 10.0f64;
     }
@@ -2318,13 +2301,13 @@ pub unsafe extern "C" fn XeTeXFontMgr_getDesignSize(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(
-    mut self_0: *mut XeTeXFontMgr,
+    mut _self_0: *mut XeTeXFontMgr,
     mut theFont: *mut XeTeXFontMgrFont,
 ) {
     let mut font: XeTeXFont = createFont((*theFont).fontRef, 655360i32);
     let mut fontInst: *mut XeTeXFontInst = font as *mut XeTeXFontInst;
     if !font.is_null() {
-        let mut pSizeRec: *mut XeTeXFontMgrOpSizeRec = XeTeXFontMgr_getOpSize(self_0, font);
+        let mut pSizeRec: *mut XeTeXFontMgrOpSizeRec = XeTeXFontMgr_getOpSize(font);
         if !pSizeRec.is_null() {
             (*theFont).opSizeInfo.designSize = (*pSizeRec).designSize;
             if (*pSizeRec).subFamilyID == 0i32 as libc::c_uint
@@ -2376,7 +2359,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(
 // append a name but only if it's not already in the list
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_appendToList(
-    mut self_0: *mut XeTeXFontMgr,
     mut list: *mut CppStdListOfString,
     mut str: *const libc::c_char,
 ) {
@@ -2397,7 +2379,6 @@ pub unsafe extern "C" fn XeTeXFontMgr_appendToList(
 // prepend a name, removing it from later in the list if present
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_prependToList(
-    mut self_0: *mut XeTeXFontMgr,
     mut list: *mut CppStdListOfString,
     mut str: *const libc::c_char,
 ) {
@@ -2527,7 +2508,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_addToMaps(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn XeTeXFontMgr_base_terminate(mut self_0: *mut XeTeXFontMgr) {}
+pub unsafe extern "C" fn XeTeXFontMgr_base_terminate(mut _self_0: *mut XeTeXFontMgr) {}
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_base_ctor(mut self_0: *mut XeTeXFontMgr) {
     (*self_0).m_subdtor = None; /*abstract*/

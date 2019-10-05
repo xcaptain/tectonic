@@ -9581,7 +9581,6 @@ pub unsafe extern "C" fn get_x_or_protected() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn effective_char(
-    mut err_p: bool,
     mut f: internal_font_number,
     mut c: u16,
 ) -> i32 {
@@ -10828,7 +10827,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                             {
                                 i = (*font_info.offset(
                                     (*char_base.offset(q as isize)
-                                        + effective_char(1i32 != 0, q, cur_val as u16))
+                                        + effective_char(q, cur_val as u16))
                                         as isize,
                                 ))
                                 .b16;
@@ -14733,7 +14732,7 @@ pub unsafe extern "C" fn conditional() {
                 && *font_ec.offset(n as isize) as i32 >= cur_val
             {
                 b = (*font_info.offset(
-                    (*char_base.offset(n as isize) + effective_char(1i32 != 0, n, cur_val as u16))
+                    (*char_base.offset(n as isize) + effective_char(n, cur_val as u16))
                         as isize,
                 ))
                 .b16
@@ -15343,7 +15342,6 @@ pub unsafe extern "C" fn start_input(mut primary_input_name: *const i8) {
     if u_open_in(
         &mut *input_file.offset(cur_input.index as isize),
         format,
-        b"rb\x00" as *const u8 as *const i8,
         (*eqtb.offset(
             (1i32
                 + (0x10ffffi32 + 1i32)
@@ -18820,7 +18818,7 @@ pub unsafe extern "C" fn new_character(mut f: internal_font_number, mut c: UTF16
     {
         return new_native_character(f, c as UnicodeScalar);
     }
-    ec = effective_char(false, f, c) as u16;
+    ec = effective_char(f, c) as u16;
     if *font_bc.offset(f as isize) as i32 <= ec as i32 {
         if *font_ec.offset(f as isize) as i32 >= ec as i32 {
             if (*font_info.offset((*char_base.offset(f as isize) + ec as i32) as isize))
@@ -18953,7 +18951,6 @@ pub unsafe extern "C" fn char_pw(mut p: i32, mut side: small_number) -> scaled_t
 #[no_mangle]
 pub unsafe extern "C" fn new_margin_kern(
     mut w: scaled_t,
-    mut p: i32,
     mut side: small_number,
 ) -> i32 {
     let mut k: i32 = 0;
@@ -19048,7 +19045,7 @@ pub unsafe extern "C" fn hpack(mut p: i32, mut w: scaled_t, mut m: small_number)
                 f = (*mem.offset(p as isize)).b16.s1 as internal_font_number;
                 i = (*font_info.offset(
                     (*char_base.offset(f as isize)
-                        + effective_char(1i32 != 0, f, (*mem.offset(p as isize)).b16.s0))
+                        + effective_char(f, (*mem.offset(p as isize)).b16.s0))
                         as isize,
                 ))
                 .b16;
@@ -24551,7 +24548,7 @@ pub unsafe extern "C" fn append_italic_correction() {
                 (*italic_base.offset(f as isize)
                     + (*font_info.offset(
                         (*char_base.offset(f as isize)
-                            + effective_char(1i32 != 0, f, (*mem.offset(p as isize)).b16.s0))
+                            + effective_char(f, (*mem.offset(p as isize)).b16.s0))
                             as isize,
                     ))
                     .b16
@@ -24801,7 +24798,7 @@ pub unsafe extern "C" fn make_accent() {
                 (*width_base.offset(f as isize)
                     + (*font_info.offset(
                         (*char_base.offset(f as isize)
-                            + effective_char(1i32 != 0, f, (*mem.offset(p as isize)).b16.s0))
+                            + effective_char(f, (*mem.offset(p as isize)).b16.s0))
                             as isize,
                     ))
                     .b16
@@ -24855,7 +24852,7 @@ pub unsafe extern "C" fn make_accent() {
             } else {
                 i = (*font_info.offset(
                     (*char_base.offset(f as isize)
-                        + effective_char(1i32 != 0, f, (*mem.offset(q as isize)).b16.s0))
+                        + effective_char(f, (*mem.offset(q as isize)).b16.s0))
                         as isize,
                 ))
                 .b16;
@@ -29376,9 +29373,9 @@ pub unsafe extern "C" fn main_control() {
                         _ =>
                         /*main_loop_move 2 */
                         {
-                            if effective_char(false, main_f, cur_chr as u16)
+                            if effective_char(main_f, cur_chr as u16)
                                 > *font_ec.offset(main_f as isize) as i32
-                                || effective_char(false, main_f, cur_chr as u16)
+                                || effective_char(main_f, cur_chr as u16)
                                     < *font_bc.offset(main_f as isize) as i32
                             {
                                 char_warning(main_f, cur_chr);
@@ -29483,7 +29480,6 @@ pub unsafe extern "C" fn main_control() {
                                                     main_i = (*font_info.offset(
                                                         (*char_base.offset(main_f as isize)
                                                             + effective_char(
-                                                                true,
                                                                 main_f,
                                                                 cur_l as u16,
                                                             ))
@@ -29572,7 +29568,6 @@ pub unsafe extern "C" fn main_control() {
                                                     main_i = (*font_info.offset(
                                                         (*char_base.offset(main_f as isize)
                                                             + effective_char(
-                                                                true,
                                                                 main_f,
                                                                 cur_l as u16,
                                                             ))
@@ -29943,7 +29938,7 @@ pub unsafe extern "C" fn main_control() {
                                     free_node(temp_ptr, 2i32);
                                     main_i = (*font_info.offset(
                                         (*char_base.offset(main_f as isize)
-                                            + effective_char(1i32 != 0, main_f, cur_l as u16))
+                                            + effective_char(main_f, cur_l as u16))
                                             as isize,
                                     ))
                                     .b16;
@@ -30173,7 +30168,7 @@ pub unsafe extern "C" fn close_files_and_terminate() {
         k += 1
     }
     finalize_dvi_file();
-    synctex_terminate(log_opened);
+    synctex_terminate();
     if log_opened {
         ttstub_output_putc(log_file.as_mut().unwrap(), '\n' as i32);
         ttstub_output_close(log_file.take().unwrap());

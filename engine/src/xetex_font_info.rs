@@ -1843,10 +1843,6 @@ pub type hb_font_get_glyph_origin_func_t = Option<
     unsafe extern "C" fn(
         _: *mut hb_font_t,
         _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: *mut hb_position_t,
-        _: *mut hb_position_t,
-        _: *mut libc::c_void,
     ) -> hb_bool_t,
 >;
 pub type hb_font_get_glyph_h_origin_func_t = hb_font_get_glyph_origin_func_t;
@@ -1901,7 +1897,12 @@ pub type hb_font_get_glyph_func_t = Option<
         _: *mut libc::c_void,
     ) -> hb_bool_t,
 >;
-pub type hb_font_get_glyph_v_kerning_func_t = hb_font_get_glyph_kerning_func_t;
+pub type hb_font_get_glyph_v_kerning_func_t = Option<
+    unsafe extern "C" fn(
+        _: *mut hb_font_t,
+        _: *mut libc::c_void,
+    ) -> hb_position_t,
+>;
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
 
@@ -2182,10 +2183,6 @@ unsafe extern "C" fn _get_glyph_v_advance(
 }
 unsafe extern "C" fn _get_glyph_h_origin(
     mut _hbf: *mut hb_font_t,
-    mut font_data: *mut libc::c_void,
-    mut gid: hb_codepoint_t,
-    mut x: *mut hb_position_t,
-    mut y: *mut hb_position_t,
     mut _p: *mut libc::c_void,
 ) -> hb_bool_t {
     // horizontal origin is (0, 0)
@@ -2193,10 +2190,6 @@ unsafe extern "C" fn _get_glyph_h_origin(
 }
 unsafe extern "C" fn _get_glyph_v_origin(
     mut _hbf: *mut hb_font_t,
-    mut font_data: *mut libc::c_void,
-    mut gid: hb_codepoint_t,
-    mut x: *mut hb_position_t,
-    mut y: *mut hb_position_t,
     mut _p: *mut libc::c_void,
 ) -> hb_bool_t {
     // vertical origin is (0, 0) for now
@@ -2229,9 +2222,6 @@ unsafe extern "C" fn _get_glyph_h_kerning(
 }
 unsafe extern "C" fn _get_glyph_v_kerning(
     mut _hbf: *mut hb_font_t,
-    mut font_data: *mut libc::c_void,
-    mut gid1: hb_codepoint_t,
-    mut gid2: hb_codepoint_t,
     mut _p: *mut libc::c_void,
 ) -> hb_position_t {
     /* FreeType does not support vertical kerning */
@@ -2355,10 +2345,6 @@ unsafe extern "C" fn _get_font_funcs() -> *mut hb_font_funcs_t {
                 as unsafe extern "C" fn(
                     _: *mut hb_font_t,
                     _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut hb_position_t,
-                    _: *mut hb_position_t,
-                    _: *mut libc::c_void,
                 ) -> hb_bool_t,
         ),
         0 as *mut libc::c_void,
@@ -2370,10 +2356,6 @@ unsafe extern "C" fn _get_font_funcs() -> *mut hb_font_funcs_t {
             _get_glyph_v_origin
                 as unsafe extern "C" fn(
                     _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut hb_position_t,
-                    _: *mut hb_position_t,
                     _: *mut libc::c_void,
                 ) -> hb_bool_t,
         ),
@@ -2401,9 +2383,6 @@ unsafe extern "C" fn _get_font_funcs() -> *mut hb_font_funcs_t {
             _get_glyph_v_kerning
                 as unsafe extern "C" fn(
                     _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: hb_codepoint_t,
                     _: *mut libc::c_void,
                 ) -> hb_position_t,
         ),

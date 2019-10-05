@@ -478,16 +478,16 @@ extern "C" {
     #[no_mangle]
     fn XeTeXFontInst_mapCharToGlyph(self_0: *const XeTeXFontInst, ch: UChar32) -> GlyphID;
     #[no_mangle]
-    fn XeTeXFontMgr_getDesignSize(self_0: *mut XeTeXFontMgr, font: XeTeXFont) -> libc::c_double;
+    fn XeTeXFontMgr_getDesignSize(font: XeTeXFont) -> libc::c_double;
     #[no_mangle]
     fn XeTeXFontMgr_getFullName(
         self_0: *const XeTeXFontMgr,
         font: PlatformFontRef,
     ) -> *const libc::c_char;
     #[no_mangle]
-    fn XeTeXFontMgr_getReqEngine(self_0: *const XeTeXFontMgr) -> libc::c_char;
+    fn XeTeXFontMgr_getReqEngine() -> libc::c_char;
     #[no_mangle]
-    fn XeTeXFontMgr_setReqEngine(self_0: *const XeTeXFontMgr, reqEngine: libc::c_char);
+    fn XeTeXFontMgr_setReqEngine(reqEngine: libc::c_char);
     #[no_mangle]
     fn XeTeXFontInst_setLayoutDirVertical(self_0: *mut XeTeXFontInst, vertical: bool);
     #[no_mangle]
@@ -1977,14 +1977,7 @@ pub type hb_buffer_content_type_t = libc::c_uint;
 pub const HB_BUFFER_CONTENT_TYPE_GLYPHS: hb_buffer_content_type_t = 2;
 pub const HB_BUFFER_CONTENT_TYPE_UNICODE: hb_buffer_content_type_t = 1;
 pub const HB_BUFFER_CONTENT_TYPE_INVALID: hb_buffer_content_type_t = 0;
-pub type hb_unicode_decompose_compatibility_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_unicode_funcs_t,
-        _: hb_codepoint_t,
-        _: *mut hb_codepoint_t,
-        _: *mut libc::c_void,
-    ) -> libc::c_uint,
->;
+pub type hb_unicode_decompose_compatibility_func_t = Option<fn() -> u32>;
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
 pub type Fixed = i32;
@@ -2345,11 +2338,11 @@ pub unsafe extern "C" fn findFontByName(
 }
 #[no_mangle]
 pub unsafe extern "C" fn getReqEngine() -> libc::c_char {
-    return XeTeXFontMgr_getReqEngine(XeTeXFontMgr_GetFontManager());
+    return XeTeXFontMgr_getReqEngine();
 }
 #[no_mangle]
 pub unsafe extern "C" fn setReqEngine(mut reqEngine: libc::c_char) {
-    XeTeXFontMgr_setReqEngine(XeTeXFontMgr_GetFontManager(), reqEngine);
+    XeTeXFontMgr_setReqEngine(reqEngine);
 }
 #[no_mangle]
 pub unsafe extern "C" fn getFullName(mut fontRef: PlatformFontRef) -> *const libc::c_char {
@@ -2357,7 +2350,7 @@ pub unsafe extern "C" fn getFullName(mut fontRef: PlatformFontRef) -> *const lib
 }
 #[no_mangle]
 pub unsafe extern "C" fn getDesignSize(mut font: XeTeXFont) -> libc::c_double {
-    return XeTeXFontMgr_getDesignSize(XeTeXFontMgr_GetFontManager(), font);
+    return XeTeXFontMgr_getDesignSize(font);
 }
 #[no_mangle]
 pub unsafe extern "C" fn getFontFilename(
@@ -3026,13 +3019,8 @@ pub unsafe extern "C" fn deleteLayoutEngine(mut engine: XeTeXLayoutEngine) {
     free((*engine).shaper as *mut libc::c_void);
     XeTeXLayoutEngine_delete(engine);
 }
-unsafe extern "C" fn _decompose_compat(
-    mut ufuncs: *mut hb_unicode_funcs_t,
-    mut u: hb_codepoint_t,
-    mut decomposed: *mut hb_codepoint_t,
-    mut user_data: *mut libc::c_void,
-) -> libc::c_uint {
-    return 0i32 as libc::c_uint;
+fn _decompose_compat() -> u32 {
+    return 0u32;
 }
 unsafe extern "C" fn _get_unicode_funcs() -> *mut hb_unicode_funcs_t {
     static mut ufuncs: *mut hb_unicode_funcs_t =
@@ -3042,15 +3030,7 @@ unsafe extern "C" fn _get_unicode_funcs() -> *mut hb_unicode_funcs_t {
     }
     hb_unicode_funcs_set_decompose_compatibility_func(
         ufuncs,
-        Some(
-            _decompose_compat
-                as unsafe extern "C" fn(
-                    _: *mut hb_unicode_funcs_t,
-                    _: hb_codepoint_t,
-                    _: *mut hb_codepoint_t,
-                    _: *mut libc::c_void,
-                ) -> libc::c_uint,
-        ),
+        Some(_decompose_compat),
         0 as *mut libc::c_void,
         None,
     );

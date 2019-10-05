@@ -312,7 +312,6 @@ pub unsafe extern "C" fn set_input_file_encoding(
 pub unsafe extern "C" fn u_open_in(
     mut f: *mut *mut UFILE,
     mut filefmt: TTInputFormat,
-    mut fopen_mode: *const i8,
     mut mode: i32,
     mut encodingData: i32,
 ) -> i32 {
@@ -901,7 +900,6 @@ pub unsafe extern "C" fn open_or_close_in() {
         if u_open_in(
             &mut *read_file.as_mut_ptr().offset(n as isize),
             TTInputFormat::TEX,
-            b"rb\x00" as *const u8 as *const i8,
             (*eqtb.offset(
                 (1i32
                     + (0x10ffffi32 + 1i32)

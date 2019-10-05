@@ -5051,7 +5051,7 @@ unsafe extern "C" fn store_fmt_file() {
     .s1 = 0i32;
     ttstub_output_close(fmt_out_owner);
 }
-unsafe extern "C" fn pack_buffered_name(mut n: small_number, mut a: i32, mut b: i32) {
+unsafe extern "C" fn pack_buffered_name() {
     free(name_of_file as *mut libc::c_void);
     name_of_file = xmalloc(
         ((format_default_length + 1i32 + 1i32) as u64)
@@ -5071,7 +5071,7 @@ unsafe extern "C" fn load_fmt_file() -> bool {
     j = cur_input.loc;
     /* This is where a first line starting with "&" used to
      * trigger code that would change the format file. */
-    pack_buffered_name((format_default_length - 4i32) as small_number, 1i32, 0i32);
+    pack_buffered_name();
     fmt_in = ttstub_input_open(name_of_file, TTInputFormat::FORMAT, 0i32);
     if fmt_in.is_null() {
         _tt_abort(

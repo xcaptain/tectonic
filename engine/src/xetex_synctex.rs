@@ -226,7 +226,7 @@ pub unsafe extern "C" fn synctex_init_command() {
  *  It is sent locally when there is a problem with synctex output.
  *  It is sent by pdftex when a fatal error occurred in pdftex.web. */
 unsafe extern "C" fn synctexabort() {
-    if let Some(file) = synctex_ctxt.file.as_mut() {
+    if let Some(_file) = synctex_ctxt.file.as_mut() {
         ttstub_output_close(synctex_ctxt.file.take().unwrap());
     }
     synctex_ctxt.root_name = mfree(synctex_ctxt.root_name as *mut libc::c_void) as *mut i8;
@@ -409,8 +409,8 @@ pub unsafe extern "C" fn synctex_start_input() {
  *  synctexterminate() is called when the TeX run terminates.
  */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_terminate(mut log_opened: bool) {
-    if let Some(file) = synctex_ctxt.file.as_mut() {
+pub unsafe extern "C" fn synctex_terminate() {
+    if let Some(_file) = synctex_ctxt.file.as_mut() {
         /* We keep the file even if no tex output is produced
          * (synctex_ctxt.flags.not_void == 0). I assume that this means that there
          * was an error and tectonic will not save anything anyway. */
@@ -608,14 +608,14 @@ pub unsafe extern "C" fn synctex_tsilv(mut this_box: i32) {
     synctex_ctxt.curh = cur_h + 4736287i32;
     synctex_ctxt.curv = cur_v + 4736287i32;
     synctex_ctxt.recorder = None;
-    synctex_record_node_tsilv(this_box);
+    synctex_record_node_tsilv();
 }
 /*  This message is sent when a void vlist will be shipped out.
  *  There is no need to balance a void vlist.  */
 /*  This message is sent when a void vlist will be shipped out.
  *  There is no need to balance a void vlist.  */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_void_vlist(mut p: i32, mut this_box: i32) {
+pub unsafe extern "C" fn synctex_void_vlist(mut p: i32) {
     if synctex_ctxt.flags.contains(Flags::OFF)
         || (*eqtb.offset(
             (1i32
@@ -759,14 +759,14 @@ pub unsafe extern "C" fn synctex_tsilh(mut this_box: i32) {
     synctex_ctxt.curh = cur_h + 4736287i32;
     synctex_ctxt.curv = cur_v + 4736287i32;
     synctex_ctxt.recorder = None;
-    synctex_record_node_tsilh(this_box);
+    synctex_record_node_tsilh();
 }
 /*  This message is sent when a void hlist will be shipped out.
  *  There is no need to balance a void hlist.  */
 /*  This message is sent when a void hlist will be shipped out.
  *  There is no need to balance a void hlist.  */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_void_hlist(mut p: i32, mut this_box: i32) {
+pub unsafe extern "C" fn synctex_void_hlist(mut p: i32) {
     if synctex_ctxt.flags.contains(Flags::OFF)
         || (*eqtb.offset(
             (1i32
@@ -823,7 +823,7 @@ pub unsafe extern "C" fn synctex_void_hlist(mut p: i32, mut this_box: i32) {
 /*  glue code, this message is sent whenever an inline math node will ship out
 See: @ @<Output the non-|char_node| |p| for...  */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_math(mut p: i32, mut this_box: i32) {
+pub unsafe extern "C" fn synctex_math(mut p: i32) {
     if synctex_ctxt.flags.contains(Flags::OFF)
         || (*eqtb.offset(
             (1i32
@@ -880,7 +880,7 @@ pub unsafe extern "C" fn synctex_math(mut p: i32, mut this_box: i32) {
 /*  this message is sent whenever an horizontal glue node or rule node ships out
 See: move_past:...    */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_horizontal_rule_or_glue(mut p: i32, mut this_box: i32) {
+pub unsafe extern "C" fn synctex_horizontal_rule_or_glue(mut p: i32) {
     match (*mem.offset(p as isize)).b16.s1 as i32 {
         2 => {
             if synctex_ctxt.flags.contains(Flags::OFF)
@@ -1238,11 +1238,11 @@ unsafe extern "C" fn synctex_record_teehs(mut sheet: i32) -> i32 {
     synctexabort();
     -1i32
 }
-/*  Recording the "<..." line.  In pdftex.web, use synctex_pdfxform(p) at
+/*  Recording the "<..." line.  In pdftex.web, use synctex_pdfxform() at
  *  the very beginning of the pdf_ship_out procedure.
  */
 #[no_mangle]
-pub unsafe extern "C" fn synctex_pdfxform(mut p: i32) {
+pub unsafe extern "C" fn synctex_pdfxform() {
     if synctex_ctxt.flags.contains(Flags::OFF) {
         if (*eqtb.offset(
             (1i32
@@ -1284,7 +1284,7 @@ pub unsafe extern "C" fn synctex_pdfxform(mut p: i32) {
         return;
     }
     if synctex_prepare_content() {
-        synctex_record_pdfxform(p);
+        synctex_record_pdfxform();
     };
 }
 /*  Recording the ">" line.  In pdftex.web, use synctex_mrofxfdp at
@@ -1304,7 +1304,7 @@ pub unsafe extern "C" fn synctex_pdfrefxform(mut objnum: i32) {
 }
 /*  Recording a "<..." line  */
 #[inline]
-unsafe extern "C" fn synctex_record_pdfxform(mut form: i32) -> i32 {
+unsafe extern "C" fn synctex_record_pdfxform() -> i32 {
     if synctex_ctxt.flags.contains(Flags::OFF)
         || (*eqtb.offset(
             (1i32
@@ -1464,7 +1464,7 @@ unsafe extern "C" fn synctex_record_node_vlist(mut p: i32) {
     };
 }
 #[inline]
-unsafe extern "C" fn synctex_record_node_tsilv(mut p: i32) {
+unsafe extern "C" fn synctex_record_node_tsilv() {
     if let Ok(len) = synctex_ctxt.file.as_mut().unwrap().write(b"]\n") {
         synctex_ctxt.total_length += len
     /* is it correct that synctex_ctxt.count is not incremented here? */
@@ -1514,7 +1514,7 @@ unsafe extern "C" fn synctex_record_node_hlist(mut p: i32) {
     };
 }
 #[inline]
-unsafe extern "C" fn synctex_record_node_tsilh(mut p: i32) {
+unsafe extern "C" fn synctex_record_node_tsilh() {
     if let Ok(len) = synctex_ctxt.file.as_mut().unwrap().write(b")\n") {
         synctex_ctxt.total_length += len;
         synctex_ctxt.count += 1

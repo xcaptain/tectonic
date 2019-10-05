@@ -261,13 +261,11 @@ extern "C" {
     fn XeTeXFontMgr_base_ctor(self_0: *mut XeTeXFontMgr);
     #[no_mangle]
     fn XeTeXFontMgr_appendToList(
-        self_0: *mut XeTeXFontMgr,
         list: *mut CppStdListOfString,
         str: *const libc::c_char,
     );
     #[no_mangle]
     fn XeTeXFontMgr_prependToList(
-        self_0: *mut XeTeXFontMgr,
         list: *mut CppStdListOfString,
         str: *const libc::c_char,
     );
@@ -278,10 +276,7 @@ extern "C" {
         names: *const XeTeXFontMgrNameCollection,
     );
     #[no_mangle]
-    fn XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(
-        self_0: *mut XeTeXFontMgr,
-        theFont: *mut XeTeXFontMgrFont,
-    );
+    fn XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(theFont: *mut XeTeXFontMgrFont);
     /* *************************************************************************
      *
      * @function:
@@ -1758,7 +1753,7 @@ unsafe extern "C" fn convertToUtf8(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
-    mut self_0: *mut XeTeXFontMgr,
+    mut _self_0: *mut XeTeXFontMgr,
     mut pat: *mut FcPattern,
 ) -> *mut XeTeXFontMgrNameCollection {
     let mut names: *mut XeTeXFontMgrNameCollection = XeTeXFontMgrNameCollection_create();
@@ -1846,9 +1841,9 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
                                 _ => {}
                             }
                             if preferredName {
-                                XeTeXFontMgr_prependToList(self_0, nameList, utf8name);
+                                XeTeXFontMgr_prependToList(nameList, utf8name);
                             } else {
-                                XeTeXFontMgr_appendToList(self_0, nameList, utf8name);
+                                XeTeXFontMgr_appendToList(nameList, utf8name);
                             }
                             free(utf8name as *mut libc::c_void);
                         }
@@ -1881,7 +1876,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
             {
                 break;
             }
-            XeTeXFontMgr_appendToList(self_0, (*names).m_fullNames, name);
+            XeTeXFontMgr_appendToList((*names).m_fullNames, name);
         }
         index = 0i32;
         loop {
@@ -1897,7 +1892,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
             {
                 break;
             }
-            XeTeXFontMgr_appendToList(self_0, (*names).m_familyNames, name);
+            XeTeXFontMgr_appendToList((*names).m_familyNames, name);
         }
         index = 0i32;
         loop {
@@ -1913,7 +1908,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
             {
                 break;
             }
-            XeTeXFontMgr_appendToList(self_0, (*names).m_styleNames, name);
+            XeTeXFontMgr_appendToList((*names).m_styleNames, name);
         }
         if (*(*names).m_fullNames).is_empty() {
             let mut fullName: *mut CppStdString = CppStdString_create();
@@ -1934,10 +1929,10 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_readNames(
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_FC_getOpSizeRecAndStyleFlags(
-    mut self_0: *mut XeTeXFontMgr,
+    mut _self_0: *mut XeTeXFontMgr,
     mut theFont: *mut XeTeXFontMgrFont,
 ) {
-    XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(self_0, theFont);
+    XeTeXFontMgr_base_getOpSizeRecAndStyleFlags(theFont);
     if (*theFont).weight as libc::c_int == 0i32 && (*theFont).width as libc::c_int == 0i32 {
         // try to get values from FontConfig, as it apparently wasn't an sfnt
         let mut pat: *mut FcPattern = (*theFont).fontRef;
@@ -2209,7 +2204,7 @@ pub unsafe extern "C" fn XeTeXFontMgr_FC_terminate(mut self_0: *mut XeTeXFontMgr
 }
 #[no_mangle]
 pub unsafe extern "C" fn XeTeXFontMgr_FC_getPlatformFontDesc(
-    mut self_0: *const XeTeXFontMgr,
+    mut _self_0: *const XeTeXFontMgr,
     mut font: PlatformFontRef,
 ) -> *mut libc::c_char {
     let mut s: *mut FcChar8 = 0 as *mut FcChar8;

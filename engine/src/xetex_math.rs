@@ -272,7 +272,7 @@ pub unsafe extern "C" fn init_math() {
                             (*width_base.offset(f as isize)
                                 + (*font_info.offset(
                                     (*char_base.offset(f as isize)
-                                        + effective_char(true, f, (*mem.offset(p as isize)).b16.s0))
+                                        + effective_char(f, (*mem.offset(p as isize)).b16.s0))
                                         as isize,
                                 ))
                                 .b16
@@ -6864,7 +6864,7 @@ unsafe extern "C" fn var_delimiter(mut d: i32, mut s: i32, mut v: scaled_t) -> i
                 u = height_plus_depth(f, c);
                 w = 0i32;
                 q = (*font_info.offset(
-                    (*char_base.offset(f as isize) + effective_char(1i32 != 0, f, c)) as isize,
+                    (*char_base.offset(f as isize) + effective_char(f, c)) as isize,
                 ))
                 .b16;
                 (*mem.offset((b + 1i32) as isize)).b32.s1 = (*font_info
@@ -7043,7 +7043,7 @@ unsafe extern "C" fn char_box(mut f: internal_font_number, mut c: i32) -> i32 {
         }
     } else {
         q = (*font_info.offset(
-            (*char_base.offset(f as isize) + effective_char(1i32 != 0, f, c as u16)) as isize,
+            (*char_base.offset(f as isize) + effective_char(f, c as u16)) as isize,
         ))
         .b16;
         b = new_null_box();
@@ -7078,7 +7078,7 @@ unsafe extern "C" fn stack_into_box(mut b: i32, mut f: internal_font_number, mut
 }
 unsafe extern "C" fn height_plus_depth(mut f: internal_font_number, mut c: u16) -> scaled_t {
     let mut q: b16x4 = (*font_info
-        .offset((*char_base.offset(f as isize) + effective_char(1i32 != 0, f, c)) as isize))
+        .offset((*char_base.offset(f as isize) + effective_char(f, c)) as isize))
     .b16;
     (*font_info.offset((*height_base.offset(f as isize) + q.s2 as i32 / 16i32) as isize))
         .b32
@@ -7356,7 +7356,7 @@ unsafe extern "C" fn rebox(mut b: i32, mut w: scaled_t) -> i32 {
                 (*width_base.offset(f as isize)
                     + (*font_info.offset(
                         (*char_base.offset(f as isize)
-                            + effective_char(1i32 != 0, f, (*mem.offset(p as isize)).b16.s0))
+                            + effective_char(f, (*mem.offset(p as isize)).b16.s0))
                             as isize,
                     ))
                     .b16

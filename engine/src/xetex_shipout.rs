@@ -1692,8 +1692,8 @@ unsafe extern "C" fn hlist_out() {
                                    -0xfffffffi32 {
                                 if (*mem.offset(p as isize)).b16.s1 as
                                        i32 == 1i32 {
-                                    synctex_void_vlist(p, this_box);
-                                } else { synctex_void_hlist(p, this_box); }
+                                    synctex_void_vlist(p);
+                                } else { synctex_void_hlist(p); }
                                 cur_h +=
                                     (*mem.offset((p + 1i32) as isize)).b32.s1
                             } else {
@@ -1998,7 +1998,7 @@ unsafe extern "C" fn hlist_out() {
                             break ;
                         }
                         9 => {
-                            synctex_math(p, this_box);
+                            synctex_math(p);
                             /* 1504: "Adjust the LR stack...; if necessary reverse and
                  * hlist segment and goto reswitch." "Breaking a paragraph
                  * into lines while TeXXeT is disabled may result in lines
@@ -2215,7 +2215,7 @@ unsafe extern "C" fn hlist_out() {
             /* ... resuming 644 ... */
             {
                 cur_h += rule_wd; /* end GLUE_NODE case */
-                synctex_horizontal_rule_or_glue(p, this_box);
+                synctex_horizontal_rule_or_glue(p);
             }
             _ => {}
         }
@@ -2312,9 +2312,9 @@ unsafe extern "C" fn vlist_out() {
                             cur_v += (*mem.offset((p + 3i32) as isize)).b32.s1
                         }
                         if (*mem.offset(p as isize)).b16.s1 as i32 == 1i32 {
-                            synctex_void_vlist(p, this_box);
+                            synctex_void_vlist(p);
                         } else {
-                            synctex_void_hlist(p, this_box);
+                            synctex_void_hlist(p);
                         }
                         if upwards {
                             cur_v -= (*mem.offset((p + 3i32) as isize)).b32.s1
@@ -2647,7 +2647,7 @@ unsafe extern "C" fn reverse(
                             (*width_base.offset(f as isize)
                                 + (*font_info.offset(
                                     (*char_base.offset(f as isize)
-                                        + effective_char(1i32 != 0, f, c))
+                                        + effective_char(f, c))
                                         as isize,
                                 ))
                                 .b16

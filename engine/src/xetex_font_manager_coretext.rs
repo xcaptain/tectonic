@@ -53,7 +53,6 @@ extern "C" {
     );
     #[no_mangle]
     fn XeTeXFontMgr_appendToList(
-        self_0: *mut XeTeXFontMgr,
         list: *mut CppStdListOfString,
         str: *const libc::c_char,
     );
@@ -363,7 +362,7 @@ pub struct XeTeXFontMgr {
         unsafe extern "C" fn(_: *const XeTeXFontMgr, _: PlatformFontRef) -> *mut libc::c_char,
     >,
     pub m_memfnGetOpSizeRecAndStyleFlags:
-        Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr, _: *mut XeTeXFontMgrFont) -> ()>,
+        Option<unsafe extern "C" fn(_: *mut XeTeXFontMgrFont) -> ()>,
     pub m_memfnSearchForHostPlatformFonts:
         Option<unsafe extern "C" fn(_: *mut XeTeXFontMgr, _: *const libc::c_char) -> ()>,
     pub m_memfnReadNames: Option<
@@ -464,14 +463,14 @@ pub unsafe extern "C" fn XeTeXFontMgr_Mac_appendNameToList(
     let name: CFStringRef = CTFontCopyName(font, nameKey);
     let name: *const NSString = name.cast();
     if !name.is_null() {
-        XeTeXFontMgr_appendToList(self_0, nameList, msg_send![name, UTF8String]);
+        XeTeXFontMgr_appendToList(nameList, msg_send![name, UTF8String]);
         CFRelease(name as CFTypeRef);
     }
     let mut language: CFStringRef = 0 as *const __CFString;
     let name = CTFontCopyLocalizedName(font, nameKey, &mut language);
     let name: *const NSString = name.cast();
     if !name.is_null() {
-        XeTeXFontMgr_appendToList(self_0, nameList, msg_send![name, UTF8String]);
+        XeTeXFontMgr_appendToList(nameList, msg_send![name, UTF8String]);
         CFRelease(name as CFTypeRef);
     };
 }

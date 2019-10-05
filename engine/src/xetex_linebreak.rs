@@ -16,7 +16,7 @@ use crate::xetex_ini::{
     font_in_short_display, font_info, global_prev_p, hc, help_line, help_ptr, hf, hi_mem_min,
     hlist_stack, hlist_stack_level, hu, hyf, hyf_distance, hyf_next, hyf_num, hyph_index,
     hyph_link, hyph_list, hyph_start, hyph_word, hyphen_char, hyphen_passed, init_lft, init_lig,
-    init_list, init_trie, just_box, kern_base, last_leftmost_char, last_rightmost_char, lft_hit,
+    init_list, init_trie, just_box, kern_base, lft_hit,
     lig_kern_base, lig_stack, ligature_present, max_hyph_char, mem, op_start, pack_begin_line,
     pre_adjust_tail, rt_hit, semantic_pagination_enabled, str_pool, str_start, temp_ptr,
     trie_not_ready, trie_trc, trie_trl, trie_tro, width_base, xtx_ligature_present,
@@ -1119,7 +1119,7 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                 loop {
                     let mut eff_char: i32 = 0;
                     f = (*mem.offset(cur_p as isize)).b16.s1 as internal_font_number;
-                    eff_char = effective_char(1i32 != 0, f, (*mem.offset(cur_p as isize)).b16.s0);
+                    eff_char = effective_char(f, (*mem.offset(cur_p as isize)).b16.s0);
                     active_width[1] += (*font_info.offset(
                         (*width_base.offset(f as isize)
                             + (*font_info
@@ -2285,7 +2285,6 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                             + (*font_info.offset(
                                 (*char_base.offset(f as isize)
                                     + effective_char(
-                                        true,
                                         f,
                                         (*mem.offset((cur_p + 1i32) as isize)).b16.s0,
                                     )) as isize,
@@ -2340,7 +2339,7 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                                 let mut eff_char_0: i32 = 0; /*:898 big DISC_NODE case */
                                 f = (*mem.offset(s as isize)).b16.s1 as internal_font_number;
                                 eff_char_0 =
-                                    effective_char(1i32 != 0, f, (*mem.offset(s as isize)).b16.s0);
+                                    effective_char(f, (*mem.offset(s as isize)).b16.s0);
                                 disc_width += (*font_info.offset(
                                     (*width_base.offset(f as isize)
                                         + (*font_info.offset(
@@ -2359,7 +2358,6 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                                             as internal_font_number;
                                         xtx_ligature_present = true;
                                         eff_char_1 = effective_char(
-                                            true,
                                             f,
                                             (*mem.offset((s + 1i32) as isize)).b16.s0,
                                         );
@@ -2444,7 +2442,7 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                             let mut eff_char_2: i32 = 0;
                             f = (*mem.offset(s as isize)).b16.s1 as internal_font_number;
                             eff_char_2 =
-                                effective_char(1i32 != 0, f, (*mem.offset(s as isize)).b16.s0);
+                                effective_char(f, (*mem.offset(s as isize)).b16.s0);
                             active_width[1] += (*font_info.offset(
                                 (*width_base.offset(f as isize)
                                     + (*font_info.offset(
@@ -2463,7 +2461,6 @@ pub unsafe extern "C" fn line_break(mut d: bool) {
                                         as internal_font_number;
                                     xtx_ligature_present = true;
                                     eff_char_3 = effective_char(
-                                        true,
                                         f,
                                         (*mem.offset((s + 1i32) as isize)).b16.s0,
                                     );
@@ -3096,8 +3093,7 @@ unsafe extern "C" fn post_line_break(mut d: bool) {
             w = char_pw(p, 1i32 as small_number);
             if w != 0i32 {
                 k =
-                    new_margin_kern(-w, last_rightmost_char,
-                                    1i32 as small_number);
+                    new_margin_kern(-w, 1i32 as small_number);
                 (*mem.offset(k as isize)).b32.s1 =
                     (*mem.offset(ptmp as isize)).b32.s1;
                 (*mem.offset(ptmp as isize)).b32.s1 = k;
@@ -3156,8 +3152,7 @@ unsafe extern "C" fn post_line_break(mut d: bool) {
             w = char_pw(p, 0i32 as small_number);
             if w != 0i32 {
                 k =
-                    new_margin_kern(-w, last_leftmost_char,
-                                    0i32 as small_number);
+                    new_margin_kern(-w, 0i32 as small_number);
                 (*mem.offset(k as isize)).b32.s1 = q;
                 q = k
             }
@@ -3543,7 +3538,6 @@ unsafe extern "C" fn try_break(mut pi: i32, mut break_type: small_number) {
                                         f = (*mem.offset(v as isize)).b16.s1
                                             as internal_font_number;
                                         eff_char = effective_char(
-                                            1i32 != 0,
                                             f,
                                             (*mem.offset(v as isize)).b16.s0,
                                         );
@@ -3568,7 +3562,6 @@ unsafe extern "C" fn try_break(mut pi: i32, mut break_type: small_number) {
                                                     as internal_font_number;
                                                 xtx_ligature_present = 1i32 != 0;
                                                 eff_char_0 = effective_char(
-                                                    1i32 != 0,
                                                     f,
                                                     (*mem.offset((v + 1i32) as isize)).b16.s0,
                                                 );
@@ -3623,7 +3616,6 @@ unsafe extern "C" fn try_break(mut pi: i32, mut break_type: small_number) {
                                         f = (*mem.offset(s as isize)).b16.s1
                                             as internal_font_number;
                                         eff_char_1 = effective_char(
-                                            1i32 != 0,
                                             f,
                                             (*mem.offset(s as isize)).b16.s0,
                                         );
@@ -3648,7 +3640,6 @@ unsafe extern "C" fn try_break(mut pi: i32, mut break_type: small_number) {
                                                     as internal_font_number;
                                                 xtx_ligature_present = 1i32 != 0;
                                                 eff_char_2 = effective_char(
-                                                    1i32 != 0,
                                                     f,
                                                     (*mem.offset((s + 1i32) as isize)).b16.s0,
                                                 );
@@ -5139,7 +5130,7 @@ unsafe extern "C" fn reconstitute(
             }
         } else {
             q = (*font_info.offset(
-                (*char_base.offset(hf as isize) + effective_char(1i32 != 0, hf, cur_l as u16))
+                (*char_base.offset(hf as isize) + effective_char(hf, cur_l as u16))
                     as isize,
             ))
             .b16;
