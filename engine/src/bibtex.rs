@@ -11,7 +11,6 @@
 use std::io::Write;
 
 use crate::core_memory::{xmalloc, xrealloc};
-use crate::stub_stdio::snprintf;
 use crate::{
     ttstub_input_close, ttstub_input_getc, ttstub_input_open, ttstub_output_close,
     ttstub_output_open, ttstub_output_open_stdout, ttstub_output_putc,

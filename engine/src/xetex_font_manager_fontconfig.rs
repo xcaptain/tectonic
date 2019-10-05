@@ -13,8 +13,6 @@
 
 use crate::stub_icu as icu;
 use crate::xetex_layout_interface::collection_types::*;
-use std::ffi::CString;
-use std::ptr::NonNull;
 
 extern "C" {
     pub type _FcPattern;
@@ -1533,8 +1531,7 @@ use or other dealings in this Software without prior written
 authorization from the copyright holders.
 \****************************************************************************/
 use super::{
-    XeTeXFontMgr, XeTeXFontMgrFamily, XeTeXFontMgrFont, XeTeXFontMgrNameCollection,
-    XeTeXFontMgrOpSizeRec,
+    XeTeXFontMgr, XeTeXFontMgrFont, XeTeXFontMgrNameCollection,
 };
 /* ***************************************************************************\
  Part of the XeTeX typesetting system

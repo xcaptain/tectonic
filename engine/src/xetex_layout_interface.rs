@@ -530,10 +530,7 @@ extern "C" {
 }
 
 pub mod collection_types {
-    use super::size_t;
-    use super::{GlyphBBox, GlyphId, PlatformFontRef, XeTeXFontMgrFamily, XeTeXFontMgrFont};
-    use core::ptr::NonNull;
-    use std::collections::{BTreeMap, LinkedList, VecDeque};
+    use std::collections::{BTreeMap, VecDeque};
     use std::ffi::CStr;
     use std::ffi::CString;
 
@@ -577,7 +574,6 @@ pub mod collection_types {
         key: *const libc::c_char,
         val: V,
     ) {
-        use std::ffi::CStr;
         let key = CStr::from_ptr(key);
         match (*self_0).get_mut(key) {
             Some(v) => {
@@ -2082,7 +2078,7 @@ pub struct XeTeXFontInst_Mac {
     pub m_fontRef: CTFontRef,
 }
 
-use crate::xetex_font_manager::{XeTeXFontMgr, XeTeXFontMgrFamily, XeTeXFontMgrFont};
+use crate::xetex_font_manager::XeTeXFontMgr;
 
 /* ***************************************************************************\
  Part of the XeTeX typesetting system
