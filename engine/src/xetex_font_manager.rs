@@ -27,6 +27,8 @@ use crate::xetex_layout_interface::collection_types::*;
 #[cfg(target_os = "macos")]
 use crate::xetex_layout_interface::__CTFontDescriptor;
 
+use harfbuzz_sys::{hb_font_t, hb_face_t, hb_font_get_face, hb_ot_layout_get_size_params};
+
 extern "C" {
     /* ************************************************************************/
     /* ************************************************************************/
@@ -73,8 +75,6 @@ extern "C" {
     pub type FT_Size_InternalRec_;
     pub type FT_Slot_InternalRec_;
     pub type FT_SubGlyphRec_;
-    pub type hb_face_t;
-    pub type hb_font_t;
     pub type XeTeXFont_rec;
     #[no_mangle]
     fn tan(_: libc::c_double) -> libc::c_double;
@@ -95,17 +95,6 @@ extern "C" {
     /* The internal, C/C++ interface: */
     #[no_mangle]
     fn _tt_abort(format: *const libc::c_char, _: ...) -> !;
-    #[no_mangle]
-    fn hb_font_get_face(font: *mut hb_font_t) -> *mut hb_face_t;
-    #[no_mangle]
-    fn hb_ot_layout_get_size_params(
-        face: *mut hb_face_t,
-        design_size: *mut libc::c_uint,
-        subfamily_id: *mut libc::c_uint,
-        subfamily_name_id: *mut hb_ot_name_id_t,
-        range_start: *mut libc::c_uint,
-        range_end: *mut libc::c_uint,
-    ) -> hb_bool_t;
     #[no_mangle]
     fn createFont(fontRef: PlatformFontRef, pointSize: Fixed) -> XeTeXFont;
     #[no_mangle]
@@ -1377,8 +1366,6 @@ pub const FT_SFNT_OS2: FT_Sfnt_Tag_ = 2;
 pub const FT_SFNT_MAXP: FT_Sfnt_Tag_ = 1;
 pub const FT_SFNT_HEAD: FT_Sfnt_Tag_ = 0;
 pub type FT_Sfnt_Tag = FT_Sfnt_Tag_;
-pub type hb_bool_t = libc::c_int;
-pub type hb_ot_name_id_t = libc::c_uint;
 pub type Fixed = i32;
 #[cfg(not(target_os = "macos"))]
 pub type PlatformFontRef = *mut FcPattern;

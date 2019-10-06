@@ -1,3 +1,5 @@
+use harfbuzz_sys::{hb_ot_math_glyph_part_t, hb_tag_t, hb_feature_t};
+
 pub type XeTeXLayoutEngine = *mut XeTeXLayoutEngine_rec;
 /// PlatformFontRef matches C++
 #[cfg(not(target_os = "macos"))]
@@ -12,28 +14,7 @@ pub struct GlyphAssembly {
     pub count: u32,
     pub parts: *mut hb_ot_math_glyph_part_t,
 }
-pub type hb_tag_t = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_feature_t {
-    pub tag: hb_tag_t,
-    pub value: u32,
-    pub start: u32,
-    pub end: u32,
-}
-pub type hb_codepoint_t = u32;
-pub type hb_position_t = i32;
-pub type hb_ot_math_glyph_part_flags_t = u32;
-pub const HB_OT_MATH_GLYPH_PART_FLAG_EXTENDER: hb_ot_math_glyph_part_flags_t = 1;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_ot_math_glyph_part_t {
-    pub glyph: hb_codepoint_t,
-    pub start_connector_length: hb_position_t,
-    pub end_connector_length: hb_position_t,
-    pub full_advance: hb_position_t,
-    pub flags: hb_ot_math_glyph_part_flags_t,
-}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GlyphBBox {
@@ -91,8 +72,6 @@ extern "C" {
     pub fn ot_part_full_advance(f: i32, a: *const GlyphAssembly, i: i32) -> i32;
     #[no_mangle]
     pub fn ot_min_connector_overlap(f: i32) -> i32;
-    #[no_mangle]
-    pub fn hb_tag_from_string(str: *const i8, len: i32) -> hb_tag_t;
     #[no_mangle]
     pub fn getCachedGlyphBBox(fontID: u16, glyphID: u16, bbox: *mut GlyphBBox) -> i32;
     #[no_mangle]

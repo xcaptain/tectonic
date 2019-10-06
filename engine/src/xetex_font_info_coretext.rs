@@ -7,6 +7,9 @@
          unused_assignments,
          unused_mut)]
 #![feature(extern_types)]
+
+use harfbuzz_sys::hb_font_t;
+
 extern crate libc;
 extern "C" {
     pub type __CFAllocator;
@@ -55,7 +58,6 @@ extern "C" {
     pub type FT_Size_InternalRec_;
     pub type FT_Slot_InternalRec_;
     pub type FT_SubGlyphRec_;
-    pub type hb_font_t;
     pub type __CFString;
     pub type __CFArray;
     pub type __CFDictionary;

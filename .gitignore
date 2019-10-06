@@ -6,3 +6,4 @@
 
 # ignore mdbook compiled output (HTML)
 docs/book/*
+.vscode

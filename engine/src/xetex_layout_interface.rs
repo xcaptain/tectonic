@@ -11,6 +11,7 @@
            ptr_wrapping_offset_from)]
 
 use crate::core_memory::{xcalloc, xmalloc};
+use harfbuzz_sys::*;
 
 extern "C" {
     /* ************************************************************************/
@@ -58,12 +59,6 @@ extern "C" {
     pub type FT_Size_InternalRec_;
     pub type FT_Slot_InternalRec_;
     pub type FT_SubGlyphRec_;
-    pub type hb_language_impl_t;
-    pub type hb_unicode_funcs_t;
-    pub type hb_face_t;
-    pub type hb_font_t;
-    pub type hb_buffer_t;
-    pub type hb_shape_plan_t;
     #[cfg(target_os = "macos")]
     pub type __CTFontDescriptor;
     #[cfg(target_os = "macos")]
@@ -121,100 +116,12 @@ extern "C" {
         s: *mut *mut FcChar8,
     ) -> FcResult;
     #[no_mangle]
-    fn hb_tag_from_string(str: *const libc::c_char, len: libc::c_int) -> hb_tag_t;
-    #[no_mangle]
-    fn hb_language_from_string(str: *const libc::c_char, len: libc::c_int) -> hb_language_t;
-    #[no_mangle]
-    fn hb_language_to_string(language: hb_language_t) -> *const libc::c_char;
-    #[no_mangle]
-    fn hb_script_get_horizontal_direction(script: hb_script_t) -> hb_direction_t;
-    #[no_mangle]
-    fn hb_unicode_funcs_create(parent: *mut hb_unicode_funcs_t) -> *mut hb_unicode_funcs_t;
-    #[no_mangle]
-    fn hb_font_get_face(font: *mut hb_font_t) -> *mut hb_face_t;
-    #[no_mangle]
-    fn hb_buffer_create() -> *mut hb_buffer_t;
-    #[no_mangle]
-    fn hb_buffer_destroy(buffer: *mut hb_buffer_t);
-    #[no_mangle]
-    fn hb_buffer_set_content_type(buffer: *mut hb_buffer_t, content_type: hb_buffer_content_type_t);
-    #[no_mangle]
-    fn hb_buffer_set_unicode_funcs(
-        buffer: *mut hb_buffer_t,
-        unicode_funcs: *mut hb_unicode_funcs_t,
-    );
-    #[no_mangle]
-    fn hb_buffer_set_direction(buffer: *mut hb_buffer_t, direction: hb_direction_t);
-    #[no_mangle]
-    fn hb_buffer_set_script(buffer: *mut hb_buffer_t, script: hb_script_t);
-    #[no_mangle]
-    fn hb_buffer_get_script(buffer: *mut hb_buffer_t) -> hb_script_t;
-    #[no_mangle]
-    fn hb_buffer_set_language(buffer: *mut hb_buffer_t, language: hb_language_t);
-    #[no_mangle]
-    fn hb_buffer_get_segment_properties(
-        buffer: *mut hb_buffer_t,
-        props: *mut hb_segment_properties_t,
-    );
-    #[no_mangle]
-    fn hb_buffer_guess_segment_properties(buffer: *mut hb_buffer_t);
-    #[no_mangle]
-    fn hb_buffer_reset(buffer: *mut hb_buffer_t);
-    #[no_mangle]
-    fn hb_buffer_add_utf16(
-        buffer: *mut hb_buffer_t,
-        text: *const uint16_t,
-        text_length: libc::c_int,
-        item_offset: libc::c_uint,
-        item_length: libc::c_int,
-    );
-    #[no_mangle]
-    fn hb_buffer_get_length(buffer: *mut hb_buffer_t) -> libc::c_uint;
-    #[no_mangle]
-    fn hb_buffer_get_glyph_infos(
-        buffer: *mut hb_buffer_t,
-        length: *mut libc::c_uint,
-    ) -> *mut hb_glyph_info_t;
-    #[no_mangle]
-    fn hb_buffer_get_glyph_positions(
-        buffer: *mut hb_buffer_t,
-        length: *mut libc::c_uint,
-    ) -> *mut hb_glyph_position_t;
-    #[no_mangle]
     fn hb_unicode_funcs_set_decompose_compatibility_func(
         ufuncs: *mut hb_unicode_funcs_t,
         func: hb_unicode_decompose_compatibility_func_t,
         user_data: *mut libc::c_void,
         destroy: hb_destroy_func_t,
     );
-    #[no_mangle]
-    fn hb_shape_plan_create(
-        face: *mut hb_face_t,
-        props: *const hb_segment_properties_t,
-        user_features: *const hb_feature_t,
-        num_user_features: libc::c_uint,
-        shaper_list: *const *const libc::c_char,
-    ) -> *mut hb_shape_plan_t;
-    #[no_mangle]
-    fn hb_shape_plan_create_cached(
-        face: *mut hb_face_t,
-        props: *const hb_segment_properties_t,
-        user_features: *const hb_feature_t,
-        num_user_features: libc::c_uint,
-        shaper_list: *const *const libc::c_char,
-    ) -> *mut hb_shape_plan_t;
-    #[no_mangle]
-    fn hb_shape_plan_destroy(shape_plan: *mut hb_shape_plan_t);
-    #[no_mangle]
-    fn hb_shape_plan_execute(
-        shape_plan: *mut hb_shape_plan_t,
-        font: *mut hb_font_t,
-        buffer: *mut hb_buffer_t,
-        features: *const hb_feature_t,
-        num_features: libc::c_uint,
-    ) -> hb_bool_t;
-    #[no_mangle]
-    fn hb_shape_plan_get_shaper(shape_plan: *mut hb_shape_plan_t) -> *const libc::c_char;
     #[no_mangle]
     fn hb_ot_layout_script_find_language(
         face: *mut hb_face_t,
@@ -223,46 +130,7 @@ extern "C" {
         language_tag: hb_tag_t,
         language_index: *mut libc::c_uint,
     ) -> hb_bool_t;
-    #[no_mangle]
-    fn hb_ot_tag_to_script(tag: hb_tag_t) -> hb_script_t;
-    #[no_mangle]
-    fn hb_ot_tag_to_language(tag: hb_tag_t) -> hb_language_t;
-    #[no_mangle]
-    fn hb_ot_layout_table_get_script_tags(
-        face: *mut hb_face_t,
-        table_tag: hb_tag_t,
-        start_offset: libc::c_uint,
-        script_count: *mut libc::c_uint,
-        script_tags: *mut hb_tag_t,
-    ) -> libc::c_uint;
-    #[no_mangle]
-    fn hb_ot_layout_table_find_script(
-        face: *mut hb_face_t,
-        table_tag: hb_tag_t,
-        script_tag: hb_tag_t,
-        script_index: *mut libc::c_uint,
-    ) -> hb_bool_t;
-    #[no_mangle]
-    fn hb_ot_layout_script_get_language_tags(
-        face: *mut hb_face_t,
-        table_tag: hb_tag_t,
-        script_index: libc::c_uint,
-        start_offset: libc::c_uint,
-        language_count: *mut libc::c_uint,
-        language_tags: *mut hb_tag_t,
-    ) -> libc::c_uint;
-    #[no_mangle]
-    fn hb_ot_layout_language_get_feature_tags(
-        face: *mut hb_face_t,
-        table_tag: hb_tag_t,
-        script_index: libc::c_uint,
-        language_index: libc::c_uint,
-        start_offset: libc::c_uint,
-        feature_count: *mut libc::c_uint,
-        feature_tags: *mut hb_tag_t,
-    ) -> libc::c_uint;
-    #[no_mangle]
-    fn hb_ot_math_has_data(face: *mut hb_face_t) -> hb_bool_t;
+
     #[no_mangle]
     fn gr_face_featureval_for_lang(
         pFace: *const gr_face,
@@ -1761,226 +1629,7 @@ pub struct FT_GlyphSlotRec_ {
 }
 pub type FT_Slot_Internal = *mut FT_Slot_InternalRec_;
 pub type FT_SubGlyph = *mut FT_SubGlyphRec_;
-pub type hb_bool_t = libc::c_int;
-pub type hb_codepoint_t = uint32_t;
-pub type hb_position_t = int32_t;
-pub type hb_mask_t = uint32_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union _hb_var_int_t {
-    pub u32_0: uint32_t,
-    pub i32_0: int32_t,
-    pub u16_0: [uint16_t; 2],
-    pub i16_0: [int16_t; 2],
-    pub u8_0: [uint8_t; 4],
-    pub i8_0: [int8_t; 4],
-}
-pub type hb_var_int_t = _hb_var_int_t;
-pub type hb_tag_t = uint32_t;
-pub type hb_direction_t = libc::c_uint;
-pub const HB_DIRECTION_BTT: hb_direction_t = 7;
-pub const HB_DIRECTION_TTB: hb_direction_t = 6;
-pub const HB_DIRECTION_RTL: hb_direction_t = 5;
-pub const HB_DIRECTION_LTR: hb_direction_t = 4;
-pub const HB_DIRECTION_INVALID: hb_direction_t = 0;
-pub type hb_language_t = *const hb_language_impl_t;
-pub type hb_script_t = libc::c_uint;
-pub const _HB_SCRIPT_MAX_VALUE_SIGNED: hb_script_t = 2147483647;
-pub const _HB_SCRIPT_MAX_VALUE: hb_script_t = 2147483647;
-pub const HB_SCRIPT_INVALID: hb_script_t = 0;
-pub const HB_SCRIPT_WANCHO: hb_script_t = 1466132591;
-pub const HB_SCRIPT_NYIAKENG_PUACHUE_HMONG: hb_script_t = 1215131248;
-pub const HB_SCRIPT_NANDINAGARI: hb_script_t = 1315008100;
-pub const HB_SCRIPT_ELYMAIC: hb_script_t = 1164736877;
-pub const HB_SCRIPT_SOGDIAN: hb_script_t = 1399809892;
-pub const HB_SCRIPT_OLD_SOGDIAN: hb_script_t = 1399809903;
-pub const HB_SCRIPT_MEDEFAIDRIN: hb_script_t = 1298490470;
-pub const HB_SCRIPT_MAKASAR: hb_script_t = 1298230113;
-pub const HB_SCRIPT_HANIFI_ROHINGYA: hb_script_t = 1383032935;
-pub const HB_SCRIPT_GUNJALA_GONDI: hb_script_t = 1198485095;
-pub const HB_SCRIPT_DOGRA: hb_script_t = 1148151666;
-pub const HB_SCRIPT_ZANABAZAR_SQUARE: hb_script_t = 1516334690;
-pub const HB_SCRIPT_SOYOMBO: hb_script_t = 1399814511;
-pub const HB_SCRIPT_NUSHU: hb_script_t = 1316186229;
-pub const HB_SCRIPT_MASARAM_GONDI: hb_script_t = 1198485101;
-pub const HB_SCRIPT_NEWA: hb_script_t = 1315272545;
-pub const HB_SCRIPT_TANGUT: hb_script_t = 1415671399;
-pub const HB_SCRIPT_OSAGE: hb_script_t = 1332963173;
-pub const HB_SCRIPT_MARCHEN: hb_script_t = 1298231907;
-pub const HB_SCRIPT_BHAIKSUKI: hb_script_t = 1114139507;
-pub const HB_SCRIPT_ADLAM: hb_script_t = 1097100397;
-pub const HB_SCRIPT_SIGNWRITING: hb_script_t = 1399287415;
-pub const HB_SCRIPT_OLD_HUNGARIAN: hb_script_t = 1215655527;
-pub const HB_SCRIPT_MULTANI: hb_script_t = 1299541108;
-pub const HB_SCRIPT_HATRAN: hb_script_t = 1214346354;
-pub const HB_SCRIPT_ANATOLIAN_HIEROGLYPHS: hb_script_t = 1215067511;
-pub const HB_SCRIPT_AHOM: hb_script_t = 1097363309;
-pub const HB_SCRIPT_WARANG_CITI: hb_script_t = 1466004065;
-pub const HB_SCRIPT_TIRHUTA: hb_script_t = 1416196712;
-pub const HB_SCRIPT_SIDDHAM: hb_script_t = 1399415908;
-pub const HB_SCRIPT_PSALTER_PAHLAVI: hb_script_t = 1349020784;
-pub const HB_SCRIPT_PAU_CIN_HAU: hb_script_t = 1348564323;
-pub const HB_SCRIPT_PALMYRENE: hb_script_t = 1348562029;
-pub const HB_SCRIPT_PAHAWH_HMONG: hb_script_t = 1215131239;
-pub const HB_SCRIPT_OLD_PERMIC: hb_script_t = 1348825709;
-pub const HB_SCRIPT_OLD_NORTH_ARABIAN: hb_script_t = 1315009122;
-pub const HB_SCRIPT_NABATAEAN: hb_script_t = 1315070324;
-pub const HB_SCRIPT_MRO: hb_script_t = 1299345263;
-pub const HB_SCRIPT_MODI: hb_script_t = 1299145833;
-pub const HB_SCRIPT_MENDE_KIKAKUI: hb_script_t = 1298493028;
-pub const HB_SCRIPT_MANICHAEAN: hb_script_t = 1298230889;
-pub const HB_SCRIPT_MAHAJANI: hb_script_t = 1298229354;
-pub const HB_SCRIPT_LINEAR_A: hb_script_t = 1281977953;
-pub const HB_SCRIPT_KHUDAWADI: hb_script_t = 1399418468;
-pub const HB_SCRIPT_KHOJKI: hb_script_t = 1265135466;
-pub const HB_SCRIPT_GRANTHA: hb_script_t = 1198678382;
-pub const HB_SCRIPT_ELBASAN: hb_script_t = 1164730977;
-pub const HB_SCRIPT_DUPLOYAN: hb_script_t = 1148547180;
-pub const HB_SCRIPT_CAUCASIAN_ALBANIAN: hb_script_t = 1097295970;
-pub const HB_SCRIPT_BASSA_VAH: hb_script_t = 1113682803;
-pub const HB_SCRIPT_TAKRI: hb_script_t = 1415670642;
-pub const HB_SCRIPT_SORA_SOMPENG: hb_script_t = 1399812705;
-pub const HB_SCRIPT_SHARADA: hb_script_t = 1399353956;
-pub const HB_SCRIPT_MIAO: hb_script_t = 1349284452;
-pub const HB_SCRIPT_MEROITIC_HIEROGLYPHS: hb_script_t = 1298494063;
-pub const HB_SCRIPT_MEROITIC_CURSIVE: hb_script_t = 1298494051;
-pub const HB_SCRIPT_CHAKMA: hb_script_t = 1130457965;
-pub const HB_SCRIPT_MANDAIC: hb_script_t = 1298230884;
-pub const HB_SCRIPT_BRAHMI: hb_script_t = 1114792296;
-pub const HB_SCRIPT_BATAK: hb_script_t = 1113683051;
-pub const HB_SCRIPT_TAI_VIET: hb_script_t = 1415673460;
-pub const HB_SCRIPT_TAI_THAM: hb_script_t = 1281453665;
-pub const HB_SCRIPT_SAMARITAN: hb_script_t = 1398893938;
-pub const HB_SCRIPT_OLD_TURKIC: hb_script_t = 1332898664;
-pub const HB_SCRIPT_OLD_SOUTH_ARABIAN: hb_script_t = 1398895202;
-pub const HB_SCRIPT_MEETEI_MAYEK: hb_script_t = 1299473769;
-pub const HB_SCRIPT_LISU: hb_script_t = 1281979253;
-pub const HB_SCRIPT_KAITHI: hb_script_t = 1265920105;
-pub const HB_SCRIPT_JAVANESE: hb_script_t = 1247901281;
-pub const HB_SCRIPT_INSCRIPTIONAL_PARTHIAN: hb_script_t = 1349678185;
-pub const HB_SCRIPT_INSCRIPTIONAL_PAHLAVI: hb_script_t = 1349020777;
-pub const HB_SCRIPT_IMPERIAL_ARAMAIC: hb_script_t = 1098018153;
-pub const HB_SCRIPT_EGYPTIAN_HIEROGLYPHS: hb_script_t = 1164409200;
-pub const HB_SCRIPT_BAMUM: hb_script_t = 1113681269;
-pub const HB_SCRIPT_AVESTAN: hb_script_t = 1098281844;
-pub const HB_SCRIPT_VAI: hb_script_t = 1449224553;
-pub const HB_SCRIPT_SUNDANESE: hb_script_t = 1400204900;
-pub const HB_SCRIPT_SAURASHTRA: hb_script_t = 1398895986;
-pub const HB_SCRIPT_REJANG: hb_script_t = 1382706791;
-pub const HB_SCRIPT_OL_CHIKI: hb_script_t = 1332503403;
-pub const HB_SCRIPT_LYDIAN: hb_script_t = 1283023977;
-pub const HB_SCRIPT_LYCIAN: hb_script_t = 1283023721;
-pub const HB_SCRIPT_LEPCHA: hb_script_t = 1281716323;
-pub const HB_SCRIPT_KAYAH_LI: hb_script_t = 1264675945;
-pub const HB_SCRIPT_CHAM: hb_script_t = 1130914157;
-pub const HB_SCRIPT_CARIAN: hb_script_t = 1130459753;
-pub const HB_SCRIPT_PHOENICIAN: hb_script_t = 1349021304;
-pub const HB_SCRIPT_PHAGS_PA: hb_script_t = 1349017959;
-pub const HB_SCRIPT_NKO: hb_script_t = 1315663727;
-pub const HB_SCRIPT_CUNEIFORM: hb_script_t = 1483961720;
-pub const HB_SCRIPT_BALINESE: hb_script_t = 1113681001;
-pub const HB_SCRIPT_TIFINAGH: hb_script_t = 1415999079;
-pub const HB_SCRIPT_SYLOTI_NAGRI: hb_script_t = 1400466543;
-pub const HB_SCRIPT_OLD_PERSIAN: hb_script_t = 1483761007;
-pub const HB_SCRIPT_NEW_TAI_LUE: hb_script_t = 1415670901;
-pub const HB_SCRIPT_KHAROSHTHI: hb_script_t = 1265131890;
-pub const HB_SCRIPT_GLAGOLITIC: hb_script_t = 1198285159;
-pub const HB_SCRIPT_COPTIC: hb_script_t = 1131376756;
-pub const HB_SCRIPT_BUGINESE: hb_script_t = 1114990441;
-pub const HB_SCRIPT_UGARITIC: hb_script_t = 1432838514;
-pub const HB_SCRIPT_TAI_LE: hb_script_t = 1415670885;
-pub const HB_SCRIPT_SHAVIAN: hb_script_t = 1399349623;
-pub const HB_SCRIPT_OSMANYA: hb_script_t = 1332964705;
-pub const HB_SCRIPT_LINEAR_B: hb_script_t = 1281977954;
-pub const HB_SCRIPT_LIMBU: hb_script_t = 1281977698;
-pub const HB_SCRIPT_CYPRIOT: hb_script_t = 1131442804;
-pub const HB_SCRIPT_TAGBANWA: hb_script_t = 1415669602;
-pub const HB_SCRIPT_TAGALOG: hb_script_t = 1416064103;
-pub const HB_SCRIPT_HANUNOO: hb_script_t = 1214344815;
-pub const HB_SCRIPT_BUHID: hb_script_t = 1114990692;
-pub const HB_SCRIPT_OLD_ITALIC: hb_script_t = 1232363884;
-pub const HB_SCRIPT_GOTHIC: hb_script_t = 1198486632;
-pub const HB_SCRIPT_DESERET: hb_script_t = 1148416628;
-pub const HB_SCRIPT_YI: hb_script_t = 1500080489;
-pub const HB_SCRIPT_THAANA: hb_script_t = 1416126817;
-pub const HB_SCRIPT_SYRIAC: hb_script_t = 1400468067;
-pub const HB_SCRIPT_SINHALA: hb_script_t = 1399418472;
-pub const HB_SCRIPT_RUNIC: hb_script_t = 1383427698;
-pub const HB_SCRIPT_OGHAM: hb_script_t = 1332175213;
-pub const HB_SCRIPT_MYANMAR: hb_script_t = 1299803506;
-pub const HB_SCRIPT_MONGOLIAN: hb_script_t = 1299148391;
-pub const HB_SCRIPT_KHMER: hb_script_t = 1265134962;
-pub const HB_SCRIPT_ETHIOPIC: hb_script_t = 1165256809;
-pub const HB_SCRIPT_CHEROKEE: hb_script_t = 1130915186;
-pub const HB_SCRIPT_CANADIAN_SYLLABICS: hb_script_t = 1130458739;
-pub const HB_SCRIPT_BRAILLE: hb_script_t = 1114792297;
-pub const HB_SCRIPT_BOPOMOFO: hb_script_t = 1114599535;
-pub const HB_SCRIPT_TIBETAN: hb_script_t = 1416192628;
-pub const HB_SCRIPT_THAI: hb_script_t = 1416126825;
-pub const HB_SCRIPT_TELUGU: hb_script_t = 1415933045;
-pub const HB_SCRIPT_TAMIL: hb_script_t = 1415671148;
-pub const HB_SCRIPT_ORIYA: hb_script_t = 1332902241;
-pub const HB_SCRIPT_MALAYALAM: hb_script_t = 1298954605;
-pub const HB_SCRIPT_LATIN: hb_script_t = 1281455214;
-pub const HB_SCRIPT_LAO: hb_script_t = 1281453935;
-pub const HB_SCRIPT_KATAKANA: hb_script_t = 1264676449;
-pub const HB_SCRIPT_KANNADA: hb_script_t = 1265525857;
-pub const HB_SCRIPT_HIRAGANA: hb_script_t = 1214870113;
-pub const HB_SCRIPT_HEBREW: hb_script_t = 1214603890;
-pub const HB_SCRIPT_HAN: hb_script_t = 1214344809;
-pub const HB_SCRIPT_HANGUL: hb_script_t = 1214344807;
-pub const HB_SCRIPT_GURMUKHI: hb_script_t = 1198879349;
-pub const HB_SCRIPT_GUJARATI: hb_script_t = 1198877298;
-pub const HB_SCRIPT_GREEK: hb_script_t = 1198679403;
-pub const HB_SCRIPT_GEORGIAN: hb_script_t = 1197830002;
-pub const HB_SCRIPT_DEVANAGARI: hb_script_t = 1147500129;
-pub const HB_SCRIPT_CYRILLIC: hb_script_t = 1132032620;
-pub const HB_SCRIPT_BENGALI: hb_script_t = 1113943655;
-pub const HB_SCRIPT_ARMENIAN: hb_script_t = 1098018158;
-pub const HB_SCRIPT_ARABIC: hb_script_t = 1098015074;
-pub const HB_SCRIPT_UNKNOWN: hb_script_t = 1517976186;
-pub const HB_SCRIPT_INHERITED: hb_script_t = 1516858984;
-pub const HB_SCRIPT_COMMON: hb_script_t = 1517910393;
-pub type hb_destroy_func_t = Option<unsafe extern "C" fn(_: *mut libc::c_void) -> ()>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_feature_t {
-    pub tag: hb_tag_t,
-    pub value: uint32_t,
-    pub start: libc::c_uint,
-    pub end: libc::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_glyph_info_t {
-    pub codepoint: hb_codepoint_t,
-    pub mask: hb_mask_t,
-    pub cluster: uint32_t,
-    pub var1: hb_var_int_t,
-    pub var2: hb_var_int_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_glyph_position_t {
-    pub x_advance: hb_position_t,
-    pub y_advance: hb_position_t,
-    pub x_offset: hb_position_t,
-    pub y_offset: hb_position_t,
-    pub var: hb_var_int_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_segment_properties_t {
-    pub direction: hb_direction_t,
-    pub script: hb_script_t,
-    pub language: hb_language_t,
-    pub reserved1: *mut libc::c_void,
-    pub reserved2: *mut libc::c_void,
-}
-pub type hb_buffer_content_type_t = libc::c_uint;
-pub const HB_BUFFER_CONTENT_TYPE_GLYPHS: hb_buffer_content_type_t = 2;
-pub const HB_BUFFER_CONTENT_TYPE_UNICODE: hb_buffer_content_type_t = 1;
-pub const HB_BUFFER_CONTENT_TYPE_INVALID: hb_buffer_content_type_t = 0;
+
 pub type hb_unicode_decompose_compatibility_func_t = Option<
     unsafe extern "C" fn(
         _: *mut hb_unicode_funcs_t,
@@ -1989,6 +1638,7 @@ pub type hb_unicode_decompose_compatibility_func_t = Option<
         _: *mut libc::c_void,
     ) -> libc::c_uint,
 >;
+
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
 pub type Fixed = i32;
