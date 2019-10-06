@@ -49,7 +49,7 @@ pub struct bt_node {
     pub right: *mut bt_node,
     pub data: [i8; 4],
 }
-unsafe extern "C" fn match_expr(mut expr: *mut bt_node, mut key: *const i8) -> i32 {
+unsafe fn match_expr(mut expr: *mut bt_node, mut key: *const i8) -> i32 {
     let mut retval: i32 = 1i32;
     if !expr.is_null() {
         if (*expr).left.is_null() && (*expr).right.is_null() {
@@ -79,7 +79,7 @@ unsafe extern "C" fn match_expr(mut expr: *mut bt_node, mut key: *const i8) -> i
     }
     retval
 }
-unsafe extern "C" fn bt_new_tree() -> *mut bt_node {
+unsafe fn bt_new_tree() -> *mut bt_node {
     let mut expr: *mut bt_node = 0 as *mut bt_node;
     expr =
         new((1_u64).wrapping_mul(::std::mem::size_of::<bt_node>() as u64) as u32) as *mut bt_node;
@@ -89,7 +89,7 @@ unsafe extern "C" fn bt_new_tree() -> *mut bt_node {
     memset((*expr).data.as_mut_ptr() as *mut libc::c_void, 0i32, 4);
     expr
 }
-unsafe extern "C" fn bt_release_tree(mut tree: *mut bt_node) {
+unsafe fn bt_release_tree(mut tree: *mut bt_node) {
     if !tree.is_null() {
         if !(*tree).left.is_null() {
             bt_release_tree((*tree).left);
@@ -100,7 +100,7 @@ unsafe extern "C" fn bt_release_tree(mut tree: *mut bt_node) {
         free(tree as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut bt_node {
+unsafe fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut bt_node {
     let mut root: *mut bt_node = 0 as *mut bt_node;
     let mut curr: *mut bt_node = 0 as *mut bt_node;
     if *pp >= endptr {
@@ -187,10 +187,7 @@ unsafe extern "C" fn parse_expr(mut pp: *mut *const i8, mut endptr: *const i8) -
                         } else if **pp as i32 == '_' as i32 {
                             (*curr).data[i as usize] = ' ' as i32 as i8
                         } else {
-                            warn!(
-                                "Invalid char in tag: {}\n",
-                                char::from(**pp as u8),
-                            );
+                            warn!("Invalid char in tag: {}\n", char::from(**pp as u8),);
                             bt_release_tree(root);
                             return 0 as *mut bt_node;
                         }

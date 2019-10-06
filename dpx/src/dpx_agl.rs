@@ -79,7 +79,7 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn agl_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn agl_new_name() -> *mut agl_name {
+unsafe fn agl_new_name() -> *mut agl_name {
     let agln =
         new((1_u64).wrapping_mul(::std::mem::size_of::<agl_name>() as u64) as u32) as *mut agl_name;
     (*agln).name = 0 as *mut i8;
@@ -89,7 +89,7 @@ unsafe extern "C" fn agl_new_name() -> *mut agl_name {
     (*agln).is_predef = 0i32;
     agln
 }
-unsafe extern "C" fn agl_release_name(mut agln: *mut agl_name) {
+unsafe fn agl_release_name(mut agln: *mut agl_name) {
     while !agln.is_null() {
         let next = (*agln).alternate;
         let _ = CString::from_raw((*agln).name);
@@ -115,7 +115,7 @@ pub unsafe fn agl_chop_suffix(glyphname: &[u8]) -> (Option<CString>, Option<CStr
             if p.is_empty() {
                 suffix = None
             } else {
-                suffix = Some(CString::new(&glyphname[len+1..]).unwrap());
+                suffix = Some(CString::new(&glyphname[len + 1..]).unwrap());
             }
         }
     } else {
@@ -147,14 +147,11 @@ const MODIFIERS: [&[u8]; 20] = [
     b"questiondown",
 ];
 fn skip_capital<'a>(p: &'a [u8]) -> (&'a [u8], usize) {
-    if p.starts_with(b"AE") || p.starts_with(b"OE")
-    {
+    if p.starts_with(b"AE") || p.starts_with(b"OE") {
         (&p[2..], 2)
-    } else if p.starts_with(b"Eth")
-    {
+    } else if p.starts_with(b"Eth") {
         (&p[3..], 3)
-    } else if p.starts_with(b"Thorn")
-    {
+    } else if p.starts_with(b"Thorn") {
         (&p[5..], 5)
     } else if p.len() >= 1 {
         if p[0].is_ascii_uppercase() {
@@ -181,8 +178,7 @@ fn is_smallcap(glyphname: &[u8]) -> bool {
         return false;
     }
     let len = glyphname.len();
-    if len < 6 || glyphname.ends_with(b"small")
-    {
+    if len < 6 || glyphname.ends_with(b"small") {
         return false;
     }
     let len = len - 5;
@@ -220,7 +216,24 @@ static mut VAR_LIST: [C2RustUnnamed_0; 14] = [
     C2RustUnnamed_0 {
         key: b"small",
         otl_tag: b"smcp",
-        suffixes: [b"sc", &[], &[], &[], &[], &[], &[], &[], &[], &[], &[], &[], &[], &[], &[], &[]],
+        suffixes: [
+            b"sc",
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        ],
     },
     C2RustUnnamed_0 {
         key: b"swash",
@@ -316,29 +329,29 @@ unsafe fn agl_guess_name(glyphname: &[u8]) -> Option<usize> {
     let len = glyphname.len();
     let mut i = 1;
     while !VAR_LIST[i].key.is_empty() {
-        if len > VAR_LIST[i].key.len()
-            && glyphname.ends_with(VAR_LIST[i].key)
-        {
+        if len > VAR_LIST[i].key.len() && glyphname.ends_with(VAR_LIST[i].key) {
             return Some(i);
         }
         i += 1
     }
     None
 }
-unsafe extern "C" fn agl_normalized_name(glyphname: &[u8]) -> *mut agl_name {
+unsafe fn agl_normalized_name(glyphname: &[u8]) -> *mut agl_name {
     if glyphname.is_empty() {
         return 0 as *mut agl_name;
     }
     let agln = agl_new_name();
     if let Some(n) = glyphname.iter().position(|&x| x == b'.') {
-        if !glyphname[n+1..].is_empty() {
-            (*agln).suffix = CString::new(&glyphname[n+1..]).unwrap().into_raw();
+        if !glyphname[n + 1..].is_empty() {
+            (*agln).suffix = CString::new(&glyphname[n + 1..]).unwrap().into_raw();
         }
         (*agln).name = CString::new(&glyphname[..n]).unwrap().into_raw();
     } else if is_smallcap(glyphname) {
         let n = glyphname.len() - 5;
         (*agln).suffix = CString::new(b"sc".as_ref()).unwrap().into_raw();
-        (*agln).name = CString::new(glyphname[..n].to_ascii_lowercase().as_slice()).unwrap().into_raw();
+        (*agln).name = CString::new(glyphname[..n].to_ascii_lowercase().as_slice())
+            .unwrap()
+            .into_raw();
     } else {
         let n;
         if let Some(var_idx) = agl_guess_name(glyphname) {
@@ -347,7 +360,9 @@ unsafe extern "C" fn agl_normalized_name(glyphname: &[u8]) -> *mut agl_name {
             } else {
                 n = glyphname.len() - VAR_LIST[var_idx].key.len();
                 if !VAR_LIST[var_idx].suffixes[0].is_empty() {
-                    (*agln).suffix = CString::new(VAR_LIST[var_idx].suffixes[0]).unwrap().into_raw();
+                    (*agln).suffix = CString::new(VAR_LIST[var_idx].suffixes[0])
+                        .unwrap()
+                        .into_raw();
                 } else {
                     (*agln).suffix = CString::new(VAR_LIST[var_idx].key).unwrap().into_raw();
                 }
@@ -393,7 +408,7 @@ pub unsafe extern "C" fn agl_close_map() {
  *  http://partners.adobe.com/asn/tech/type/unicodegn.jsp
  */
 /* Hash */
-unsafe extern "C" fn agl_load_listfile(mut filename: *const i8, mut is_predef: i32) -> i32 {
+unsafe fn agl_load_listfile(mut filename: *const i8, mut is_predef: i32) -> i32 {
     let mut count: i32 = 0i32;
     let mut wbuf: [i8; 1024] = [0; 1024];
     if filename.is_null() {
@@ -534,13 +549,14 @@ pub fn agl_name_is_unicode(glyphname: &[u8]) -> bool {
     if glyphname.is_empty() {
         return false;
     }
-    let len = glyphname.iter().position(|&x| x == b'.').unwrap_or(glyphname.len());
+    let len = glyphname
+        .iter()
+        .position(|&x| x == b'.')
+        .unwrap_or(glyphname.len());
     /*
      * uni02ac is invalid glyph name and mapped to th empty string.
      */
-    if len >= 7 && (len - 3) % 4 == 0
-        && glyphname.starts_with(b"uni")
-    {
+    if len >= 7 && (len - 3) % 4 == 0 && glyphname.starts_with(b"uni") {
         let c = glyphname[3];
         /*
          * Check if the 4th character is uppercase hexadecimal digit.
@@ -621,11 +637,7 @@ fn xtol(mut buf: &[u8]) -> i32 {
     v
 }
 
-unsafe extern "C" fn put_unicode_glyph(
-    name: &[u8],
-    mut dstpp: *mut *mut u8,
-    mut limptr: *mut u8,
-) -> i32 {
+unsafe fn put_unicode_glyph(name: &[u8], mut dstpp: *mut *mut u8, mut limptr: *mut u8) -> i32 {
     let mut len = 0;
     let mut p = name;
     if p[1] != b'n' {
@@ -636,8 +648,7 @@ unsafe extern "C" fn put_unicode_glyph(
         p = &p[3..];
         while !p.is_empty() {
             let ucv = xtol(&p[..4]);
-            len =
-                ((len as u64) + UC_UTF16BE_encode_char(ucv, dstpp, limptr)) as i32;
+            len = ((len as u64) + UC_UTF16BE_encode_char(ucv, dstpp, limptr)) as i32;
             p = &p[4..];
         }
     }
@@ -682,7 +693,8 @@ pub unsafe extern "C" fn agl_sput_UTF16BE(
         }
         let sub_len = delim.wrapping_offset_from(p) as i64 as i32;
         let name_p = new(((sub_len + 1i32) as u32 as u64)
-            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8;
         memcpy(
             name_p as *mut libc::c_void,
             p as *const libc::c_void,
@@ -780,7 +792,8 @@ pub unsafe extern "C" fn agl_get_unicodes(
         }
         let sub_len = delim.wrapping_offset_from(p) as i32;
         let name_p = new(((sub_len + 1i32) as u32 as u64)
-            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32) as *mut i8;
+            .wrapping_mul(::std::mem::size_of::<i8>() as u64) as u32)
+            as *mut i8;
         memcpy(
             name_p as *mut libc::c_void,
             p as *const libc::c_void,

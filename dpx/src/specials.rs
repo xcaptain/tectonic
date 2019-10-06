@@ -84,14 +84,13 @@ pub struct spc_arg {
     pub curptr: *const i8,
     pub endptr: *const i8,
     pub base: *const i8,
-    pub command: *const i8,
+    pub command: Option<&'static [u8]>,
 }
-pub type spc_handler_fn_ptr = Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct spc_handler {
-    pub key: *const i8,
-    pub exec: spc_handler_fn_ptr,
+pub struct SpcHandler {
+    pub key: &'static [u8],
+    pub exec: Option<unsafe fn(_: *mut spc_env, _: *mut spc_arg) -> i32>,
 }
 
 use super::dpx_dpxutil::ht_table;
@@ -109,7 +108,7 @@ pub struct Special {
     pub eophk_func: Option<unsafe extern "C" fn() -> i32>,
     pub check_func: unsafe extern "C" fn(_: *const i8, _: i32) -> bool,
     pub setup_func:
-        unsafe extern "C" fn(_: *mut spc_handler, _: *mut spc_env, _: *mut spc_arg) -> i32,
+        unsafe extern "C" fn(_: *mut SpcHandler, _: *mut spc_env, _: *mut spc_arg) -> i32,
 }
 static mut VERBOSE: i32 = 0i32;
 pub unsafe fn spc_set_verbose(mut level: i32) {
@@ -155,7 +154,7 @@ static mut _RKEYS: [*const i8; 11] = [
 /* pageN where N is a positive integer.
  * Note that page need not exist at this time.
  */
-unsafe extern "C" fn ispageref(mut key: *const i8) -> i32 {
+unsafe fn ispageref(mut key: *const i8) -> i32 {
     if strlen(key) <= strlen(b"page\x00" as *const u8 as *const i8)
         || memcmp(
             key as *const libc::c_void,
@@ -300,13 +299,13 @@ pub unsafe extern "C" fn spc_clear_objects() {
     pdf_delete_name_tree(&mut NAMED_OBJECTS);
     NAMED_OBJECTS = pdf_new_name_tree();
 }
-unsafe extern "C" fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
+unsafe fn spc_handler_unknown(mut spe: *mut spc_env, mut args: *mut spc_arg) -> i32 {
     assert!(!spe.is_null() && !args.is_null());
     (*args).curptr = (*args).endptr;
     -1i32
 }
 unsafe fn init_special(
-    mut special: &mut spc_handler,
+    mut special: &mut SpcHandler,
     mut spe: &mut spc_env,
     mut args: &mut spc_arg,
     mut p: *const i8,
@@ -315,13 +314,8 @@ unsafe fn init_special(
     mut y_user: f64,
     mut mag: f64,
 ) {
-    special.key = 0 as *const i8;
-    special.exec = ::std::mem::transmute::<
-        Option<unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32>,
-        spc_handler_fn_ptr,
-    >(Some(
-        spc_handler_unknown as unsafe extern "C" fn(_: *mut spc_env, _: *mut spc_arg) -> i32,
-    ));
+    special.key = &[];
+    special.exec = Some(spc_handler_unknown);
     spe.x_user = x_user;
     spe.y_user = y_user;
     spe.mag = mag;
@@ -329,7 +323,7 @@ unsafe fn init_special(
     args.curptr = p;
     args.endptr = (*args).curptr.offset(size as isize);
     args.base = (*args).curptr;
-    args.command = 0 as *const i8;
+    args.command = None;
 }
 unsafe fn check_garbage(mut args: &mut spc_arg) {
     if args.curptr >= args.endptr {
@@ -457,15 +451,15 @@ pub unsafe extern "C" fn spc_exec_at_end_document() -> i32 {
     }
     error
 }
-unsafe extern "C" fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut ap: *mut spc_arg) {
+unsafe fn print_error(mut name: *const i8, mut spe: *mut spc_env, mut ap: *mut spc_arg) {
     let mut ebuf: [i8; 64] = [0; 64];
     let mut pg: i32 = (*spe).pg;
     let mut c = pdf_coord::new((*spe).x_user, (*spe).y_user);
     pdf_dev_transform(&mut c, None);
-    if !(*ap).command.is_null() && !name.is_null() {
+    if (*ap).command.is_some() && !name.is_null() {
         warn!(
             "Interpreting special command {} ({}) failed.",
-            CStr::from_ptr((*ap).command).display(),
+            (*ap).command.unwrap().display(),
             CStr::from_ptr(name).display(),
         );
         warn!(
@@ -564,10 +558,10 @@ pub unsafe extern "C" fn spc_exec_special(
         curptr: 0 as *const i8,
         endptr: 0 as *const i8,
         base: 0 as *const i8,
-        command: 0 as *const i8,
+        command: None,
     };
-    let mut special: spc_handler = spc_handler {
-        key: 0 as *const i8,
+    let mut special = SpcHandler {
+        key: &[],
         exec: None,
     };
     if VERBOSE > 3i32 {

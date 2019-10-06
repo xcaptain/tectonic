@@ -138,7 +138,7 @@ static mut resources: [res_cache; 9] = [res_cache {
     capacity: 0,
     resources: 0 as *const pdf_res as *mut pdf_res,
 }; 9];
-unsafe extern "C" fn pdf_init_resource(mut res: *mut pdf_res) {
+unsafe fn pdf_init_resource(mut res: *mut pdf_res) {
     assert!(!res.is_null());
     (*res).ident = 0 as *mut i8;
     (*res).category = -1i32;
@@ -147,7 +147,7 @@ unsafe extern "C" fn pdf_init_resource(mut res: *mut pdf_res) {
     (*res).object = 0 as *mut pdf_obj;
     (*res).reference = 0 as *mut pdf_obj;
 }
-unsafe extern "C" fn pdf_flush_resource(mut res: *mut pdf_res) {
+unsafe fn pdf_flush_resource(mut res: *mut pdf_res) {
     if !res.is_null() {
         pdf_release_obj((*res).reference);
         pdf_release_obj((*res).object);
@@ -155,7 +155,7 @@ unsafe extern "C" fn pdf_flush_resource(mut res: *mut pdf_res) {
         (*res).object = 0 as *mut pdf_obj
     };
 }
-unsafe extern "C" fn pdf_clean_resource(mut res: *mut pdf_res) {
+unsafe fn pdf_clean_resource(mut res: *mut pdf_res) {
     if !res.is_null() {
         if !(*res).reference.is_null() || !(*res).object.is_null() {
             warn!("Trying to release un-flushed object.");
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn pdf_close_resources() {
         (*rc).resources = 0 as *mut pdf_res;
     }
 }
-unsafe extern "C" fn get_category(mut category: *const i8) -> i32 {
+unsafe fn get_category(mut category: *const i8) -> i32 {
     for i in 0..(::std::mem::size_of::<[C2RustUnnamed; 9]>() as u64)
         .wrapping_div(::std::mem::size_of::<C2RustUnnamed>() as u64) as usize
     {

@@ -115,11 +115,7 @@ pub static mut landscape_mode: i32 = 0i32;
 pub static mut always_embed: i32 = 0i32;
 /* always embed fonts, regardless of licensing flags */
 /* XXX: there are four quasi-redundant versions of this; grp for K_UNIT__PT */
-unsafe extern "C" fn read_length(
-    mut vp: *mut f64,
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> i32 {
+unsafe fn read_length(mut vp: *mut f64, mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut q: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = *pp;
     let mut v: f64 = 0.;
@@ -196,7 +192,7 @@ unsafe extern "C" fn read_length(
     *pp = p;
     error
 }
-unsafe extern "C" fn select_paper(mut paperspec: *const i8) {
+unsafe fn select_paper(mut paperspec: *const i8) {
     let mut pi: *const paper = 0 as *const paper;
     let mut error: i32 = 0i32;
     pi = paperinfo(paperspec);
@@ -243,7 +239,7 @@ unsafe extern "C" fn select_paper(mut paperspec: *const i8) {
         );
     };
 }
-unsafe extern "C" fn select_pages(
+unsafe fn select_pages(
     mut pagespec: *const i8,
     mut ret_page_ranges: *mut *mut PageRange,
     mut ret_num_page_ranges: *mut u32,
@@ -317,14 +313,14 @@ unsafe extern "C" fn select_pages(
     *ret_page_ranges = page_ranges;
     *ret_num_page_ranges = num_page_ranges;
 }
-unsafe extern "C" fn system_default() {
+unsafe fn system_default() {
     if !(b"a4\x00" as *const u8 as *const i8).is_null() {
         select_paper(b"a4\x00" as *const u8 as *const i8);
     } else if !(b"a4\x00" as *const u8 as *const i8).is_null() {
         select_paper(b"a4\x00" as *const u8 as *const i8);
     };
 }
-unsafe extern "C" fn do_dvi_pages(mut page_ranges: *mut PageRange, mut num_page_ranges: u32) {
+unsafe fn do_dvi_pages(mut page_ranges: *mut PageRange, mut num_page_ranges: u32) {
     let mut page_no: i32 = 0;
     let mut step: i32 = 0;
     let mut page_count: u32 = 0;

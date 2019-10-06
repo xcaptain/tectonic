@@ -154,7 +154,7 @@ pub unsafe extern "C" fn ht_table_size(mut ht: *mut ht_table) -> i32 {
     assert!(!ht.is_null());
     (*ht).count
 }
-unsafe extern "C" fn get_hash(mut key: *const libc::c_void, mut keylen: i32) -> u32 {
+unsafe fn get_hash(mut key: *const libc::c_void, mut keylen: i32) -> u32 {
     let mut hkey: u32 = 0_u32;
     for i in 0..keylen {
         hkey = (hkey << 5i32)
@@ -369,11 +369,7 @@ pub unsafe extern "C" fn ht_iter_next(mut iter: *mut ht_iter) -> i32 {
         -1i32
     }
 }
-unsafe extern "C" fn read_c_escchar(
-    mut r: *mut i8,
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> i32 {
+unsafe fn read_c_escchar(mut r: *mut i8, mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut c: i32 = 0i32;
     let mut l: i32 = 1i32;
     let mut p: *const i8 = *pp;
@@ -470,7 +466,7 @@ unsafe extern "C" fn read_c_escchar(
     *pp = p;
     l
 }
-unsafe extern "C" fn read_c_litstrc(
+unsafe fn read_c_litstrc(
     mut q: *mut i8,
     mut len: i32,
     mut pp: *mut *const i8,

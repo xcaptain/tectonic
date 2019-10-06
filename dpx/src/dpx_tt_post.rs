@@ -71,7 +71,7 @@ pub struct tt_post_table {
  * portability, we should probably accept *either* forward or backward slashes
  * as directory separators. */
 /* offset from begenning of the post table */
-unsafe extern "C" fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont: *mut sfnt) -> i32 {
+unsafe fn read_v2_post_names(mut post: *mut tt_post_table, mut sfont: *mut sfnt) -> i32 {
     (*post).numberOfGlyphs = tt_get_unsigned_pair((*sfont).handle);
     let indices = new(((*post).numberOfGlyphs as u32 as u64)
         .wrapping_mul(::std::mem::size_of::<u16>() as u64) as u32) as *mut u16;

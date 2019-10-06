@@ -170,7 +170,7 @@ pub unsafe extern "C" fn CIDFont_type0_set_flags(mut flags: i32) {
 /*
  * PDF Reference 3rd. ed., p.340, "Glyph Metrics in CID Fonts".
  */
-unsafe extern "C" fn add_CIDHMetrics(
+unsafe fn add_CIDHMetrics(
     mut fontdict: *mut pdf_obj,
     mut CIDToGIDMap: *mut u8,
     mut last_cid: u16,
@@ -246,7 +246,7 @@ unsafe extern "C" fn add_CIDHMetrics(
     }
     pdf_release_obj(w_array);
 }
-unsafe extern "C" fn add_CIDVMetrics(
+unsafe fn add_CIDVMetrics(
     mut sfont: *mut sfnt,
     mut fontdict: *mut pdf_obj,
     mut CIDToGIDMap: *mut u8,
@@ -380,7 +380,7 @@ unsafe extern "C" fn add_CIDVMetrics(
     free(vmtx as *mut libc::c_void);
     free(vhea as *mut libc::c_void);
 }
-unsafe extern "C" fn add_CIDMetrics(
+unsafe fn add_CIDMetrics(
     mut sfont: *mut sfnt,
     mut fontdict: *mut pdf_obj,
     mut CIDToGIDMap: *mut u8,
@@ -416,7 +416,7 @@ unsafe extern "C" fn add_CIDMetrics(
 /*
  * Create an instance of embeddable font.
  */
-unsafe extern "C" fn write_fontfile(mut font: *mut CIDFont, cffont: &mut cff_font) -> i32 {
+unsafe fn write_fontfile(mut font: *mut CIDFont, cffont: &mut cff_font) -> i32 {
     /*  DICT sizes (offset set to long int) */
     let mut topdict = CffIndex::new(1); /* some bad font may have */
     let mut fdarray = CffIndex::new(cffont.num_fds as u16); /* some bad font may have */
@@ -557,7 +557,7 @@ unsafe extern "C" fn write_fontfile(mut font: *mut CIDFont, cffont: &mut cff_fon
     pdf_release_obj(fontfile);
     destlen as i32
 }
-unsafe extern "C" fn CIDFont_type0_get_used_chars(mut font: *mut CIDFont) -> *mut i8 {
+unsafe fn CIDFont_type0_get_used_chars(mut font: *mut CIDFont) -> *mut i8 {
     let mut parent_id = CIDFont_get_parent_id(font, 0i32);
     if parent_id < 0i32 && {
         parent_id = CIDFont_get_parent_id(font, 1i32);
@@ -571,7 +571,7 @@ unsafe extern "C" fn CIDFont_type0_get_used_chars(mut font: *mut CIDFont) -> *mu
     }
     used_chars
 }
-unsafe extern "C" fn CIDType0Error_Show(mut error: CIDType0Error, mut name: *const i8) {
+unsafe fn CIDType0Error_Show(mut error: CIDType0Error, mut name: *const i8) {
     match error as i32 {
         -1 => {
             panic!(
@@ -609,14 +609,14 @@ unsafe extern "C" fn CIDType0Error_Show(mut error: CIDType0Error, mut name: *con
         _ => {}
     };
 }
-unsafe extern "C" fn CIDFontInfo_init(mut info: *mut CIDType0Info) {
+unsafe fn CIDFontInfo_init(mut info: *mut CIDType0Info) {
     memset(
         info as *mut libc::c_void,
         0i32,
         ::std::mem::size_of::<CIDType0Info>(),
     );
 }
-unsafe extern "C" fn CIDFontInfo_close(mut info: *mut CIDType0Info) {
+unsafe fn CIDFontInfo_close(mut info: *mut CIDType0Info) {
     if !(*info).cffont.is_null() {
         cff_close((*info).cffont);
     }
@@ -628,7 +628,7 @@ unsafe extern "C" fn CIDFontInfo_close(mut info: *mut CIDType0Info) {
     }
     CIDFontInfo_init(info);
 }
-unsafe extern "C" fn CIDFont_type0_try_open(
+unsafe fn CIDFont_type0_try_open(
     mut name: *const i8,
     mut index: i32,
     mut required_cid: i32,
@@ -675,7 +675,7 @@ unsafe extern "C" fn CIDFont_type0_try_open(
     }
     CID_OPEN_ERROR_NO_ERROR
 }
-unsafe extern "C" fn CIDFont_type0_add_CIDSet(
+unsafe fn CIDFont_type0_add_CIDSet(
     mut font: *mut CIDFont,
     mut used_chars: *mut i8,
     mut last_cid: u16,
@@ -1541,11 +1541,7 @@ pub unsafe extern "C" fn CIDFont_type0_t1cdofont(mut font: *mut CIDFont) {
     }
     CIDFont_type0_add_CIDSet(font, used_chars, last_cid);
 }
-unsafe extern "C" fn load_base_CMap(
-    mut font_name: *const i8,
-    mut wmode: i32,
-    cffont: &cff_font,
-) -> i32 {
+unsafe fn load_base_CMap(mut font_name: *const i8, mut wmode: i32, cffont: &cff_font) -> i32 {
     let mut range_min: [u8; 4] = [0; 4];
     let mut range_max: [u8; 4] = [0x7f, 0xff, 0xff, 0xff];
     let cmap_name = new((strlen(font_name)
@@ -1653,7 +1649,7 @@ pub unsafe extern "C" fn t1_load_UnicodeCMap(
 /*
  * ToUnicode CMap
  */
-unsafe extern "C" fn create_ToUnicode_stream(
+unsafe fn create_ToUnicode_stream(
     cffont: &cff_font,
     mut font_name: *const i8,
     mut used_glyphs: *const i8,
@@ -1735,7 +1731,7 @@ unsafe extern "C" fn create_ToUnicode_stream(
 }
 /* Force bold at small text sizes */
 /* pdf_font --> CIDFont */
-unsafe extern "C" fn get_font_attr(mut font: *mut CIDFont, cffont: &cff_font) {
+unsafe fn get_font_attr(mut font: *mut CIDFont, cffont: &cff_font) {
     let italicangle;
     let mut flags: i32 = 0i32;
     static mut L_c: [*const i8; 5] = [
@@ -1968,7 +1964,7 @@ unsafe extern "C" fn get_font_attr(mut font: *mut CIDFont, cffont: &cff_font) {
     pdf_add_dict((*font).descriptor, "StemV", pdf_new_number(stemv));
     pdf_add_dict((*font).descriptor, "Flags", pdf_new_number(flags as f64));
 }
-unsafe extern "C" fn add_metrics(
+unsafe fn add_metrics(
     mut font: *mut CIDFont,
     mut cffont: *mut cff_font,
     mut CIDToGIDMap: *mut u8,

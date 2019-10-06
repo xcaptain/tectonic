@@ -153,7 +153,7 @@ const required_table: [SfntTableInfo; 11] = {
         SfntTableInfo::new(PREP, false),
     ]
 };
-unsafe extern "C" fn validate_name(mut fontname: *mut i8, mut len: i32) {
+unsafe fn validate_name(mut fontname: *mut i8, mut len: i32) {
     static mut badstrlist: [*const i8; 5] = [
         b"-WIN-RKSJ-H\x00" as *const u8 as *const i8,
         b"-WINP-RKSJ-H\x00" as *const u8 as *const i8,
@@ -358,11 +358,7 @@ static mut known_encodings: [C2RustUnnamed_3; 11] = [
         init
     },
 ];
-unsafe extern "C" fn find_tocode_cmap(
-    mut reg: *const i8,
-    mut ord: *const i8,
-    mut select: i32,
-) -> *mut CMap {
+unsafe fn find_tocode_cmap(mut reg: *const i8, mut ord: *const i8, mut select: i32) -> *mut CMap {
     let mut cmap_id: i32 = -1i32;
     if reg.is_null() || ord.is_null() || select < 0i32 || select > 9i32 {
         panic!("Character set unknown.");
@@ -420,7 +416,7 @@ unsafe extern "C" fn find_tocode_cmap(
  * CIDFont glyph metrics:
  * Mostly same as add_CID[HV]Metrics in cidtype0.c.
  */
-unsafe extern "C" fn add_TTCIDHMetrics(
+unsafe fn add_TTCIDHMetrics(
     mut fontdict: *mut pdf_obj,
     mut g: *mut tt_glyphs,
     mut used_chars: *mut i8,
@@ -497,7 +493,7 @@ unsafe extern "C" fn add_TTCIDHMetrics(
     }
     pdf_release_obj(w_array);
 }
-unsafe extern "C" fn add_TTCIDVMetrics(
+unsafe fn add_TTCIDVMetrics(
     mut fontdict: *mut pdf_obj,
     mut g: *mut tt_glyphs,
     mut used_chars: *mut i8,
@@ -575,7 +571,7 @@ unsafe extern "C" fn add_TTCIDVMetrics(
  * The following routine fixes few problems caused by vendor specific
  * Unicode mappings.
  */
-unsafe extern "C" fn fix_CJK_symbols(mut code: u16) -> u16 {
+unsafe fn fix_CJK_symbols(mut code: u16) -> u16 {
     static mut CJK_Uni_symbols: [C2RustUnnamed_2; 10] = [
         {
             let mut init = C2RustUnnamed_2 {
@@ -662,7 +658,7 @@ unsafe extern "C" fn fix_CJK_symbols(mut code: u16) -> u16 {
     }
     alt_code
 }
-unsafe extern "C" fn cid_to_code(mut cmap: *mut CMap, mut cid: CID) -> i32 {
+unsafe fn cid_to_code(mut cmap: *mut CMap, mut cid: CID) -> i32 {
     let mut outbuf: [u8; 32] = [0; 32];
     let mut inbytesleft: size_t = 2i32 as size_t;
     let mut outbytesleft: size_t = 32i32 as size_t;
@@ -991,40 +987,16 @@ pub unsafe extern "C" fn CIDFont_type2_dofont(mut font: *mut CIDFont) {
             gsub_list = 0 as *mut otl_gsub
         } else {
             gsub_list = otl_gsub_new();
-            if otl_gsub_add_feat(
-                gsub_list,
-                b"*",
-                b"*",
-                b"vrt2",
-                sfont,
-            ) < 0i32
-            {
-                if otl_gsub_add_feat(
-                    gsub_list,
-                    b"*",
-                    b"*",
-                    b"vert",
-                    sfont,
-                ) < 0i32
-                {
+            if otl_gsub_add_feat(gsub_list, b"*", b"*", b"vrt2", sfont) < 0i32 {
+                if otl_gsub_add_feat(gsub_list, b"*", b"*", b"vert", sfont) < 0i32 {
                     warn!("GSUB feature vrt2/vert not found.");
                     otl_gsub_release(gsub_list);
                     gsub_list = 0 as *mut otl_gsub
                 } else {
-                    otl_gsub_select(
-                        gsub_list,
-                        b"*",
-                        b"*",
-                        b"vert",
-                    );
+                    otl_gsub_select(gsub_list, b"*", b"*", b"vert");
                 }
             } else {
-                otl_gsub_select(
-                    gsub_list,
-                    b"*",
-                    b"*",
-                    b"vrt2",
-                );
+                otl_gsub_select(gsub_list, b"*", b"*", b"vrt2");
             }
         }
         for cid in 1..=last_cid as CID {

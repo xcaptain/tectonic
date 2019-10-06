@@ -92,7 +92,7 @@ static mut verbose: u8 = 0_u8;
 pub unsafe extern "C" fn pdf_encoding_set_verbose(mut level: i32) {
     verbose = level as u8;
 }
-unsafe extern "C" fn pdf_init_encoding_struct(mut encoding: *mut pdf_encoding) {
+unsafe fn pdf_init_encoding_struct(mut encoding: *mut pdf_encoding) {
     assert!(!encoding.is_null());
     (*encoding).ident = 0 as *mut i8;
     (*encoding).enc_name = 0 as *mut i8;
@@ -114,7 +114,7 @@ unsafe extern "C" fn pdf_init_encoding_struct(mut encoding: *mut pdf_encoding) {
 /* Creates the PDF Encoding entry for the encoding.
  * If baseenc is non-null, it is used as BaseEncoding entry.
  */
-unsafe extern "C" fn create_encoding_resource(
+unsafe fn create_encoding_resource(
     mut encoding: *mut pdf_encoding,
     mut baseenc: *mut pdf_encoding,
 ) -> *mut pdf_obj {
@@ -156,7 +156,7 @@ unsafe extern "C" fn create_encoding_resource(
         };
     };
 }
-unsafe extern "C" fn pdf_flush_encoding(mut encoding: *mut pdf_encoding) {
+unsafe fn pdf_flush_encoding(mut encoding: *mut pdf_encoding) {
     assert!(!encoding.is_null());
     if !(*encoding).resource.is_null() {
         pdf_release_obj((*encoding).resource);
@@ -167,7 +167,7 @@ unsafe extern "C" fn pdf_flush_encoding(mut encoding: *mut pdf_encoding) {
         (*encoding).tounicode = 0 as *mut pdf_obj
     };
 }
-unsafe extern "C" fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) {
+unsafe fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) {
     assert!(!encoding.is_null());
     if !(*encoding).resource.is_null() {
         panic!("Object not flushed.");
@@ -184,10 +184,7 @@ unsafe extern "C" fn pdf_clean_encoding_struct(mut encoding: *mut pdf_encoding) 
     (*encoding).ident = 0 as *mut i8;
     (*encoding).enc_name = 0 as *mut i8;
 }
-unsafe extern "C" fn is_similar_charset(
-    mut enc_vec: *mut *mut i8,
-    mut enc_vec2: *mut *const i8,
-) -> bool {
+unsafe fn is_similar_charset(mut enc_vec: *mut *mut i8, mut enc_vec2: *mut *const i8) -> bool {
     let mut same: i32 = 0i32;
     for code in 0..256 {
         if !(!(*enc_vec.offset(code as isize)).is_null()
@@ -210,7 +207,7 @@ unsafe extern "C" fn is_similar_charset(
  * base encoding baseenc (if not NULL). Only character codes which
  * are actually used in the document are considered.
  */
-unsafe extern "C" fn make_encoding_differences(
+unsafe fn make_encoding_differences(
     mut enc_vec: *mut *mut i8,
     mut baseenc: *mut *mut i8,
     mut is_used: *const i8,
@@ -262,7 +259,7 @@ unsafe extern "C" fn make_encoding_differences(
     }
     differences
 }
-unsafe extern "C" fn load_encoding_file(mut filename: *const i8) -> i32 {
+unsafe fn load_encoding_file(mut filename: *const i8) -> i32 {
     let mut handle: rust_input_handle_t = 0 as *mut libc::c_void;
     let mut enc_name: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut encoding_array: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -393,7 +390,7 @@ pub unsafe extern "C" fn pdf_init_encodings() {
  * I'm not sure why this happens. But maybe BaseEncoding key causes problems
  * when the font is Symbol font or TrueType font.
  */
-unsafe extern "C" fn pdf_encoding_new_encoding(
+unsafe fn pdf_encoding_new_encoding(
     mut enc_name: *const i8,
     mut ident: *const i8,
     mut encoding_vec: *mut *const i8,

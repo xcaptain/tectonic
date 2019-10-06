@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -221,11 +220,10 @@ pub static mut paperspecs: [paper; 22] = [
 ];
 #[no_mangle]
 pub unsafe extern "C" fn paperinfo(mut ppformat: *const i8) -> *const paper {
-    let mut ppinfo: *const paper = 0 as *const paper;
     if ppformat.is_null() {
         return 0 as *const paper;
     }
-    ppinfo = &*paperspecs.as_ptr().offset(0) as *const paper;
+    let mut ppinfo = &*paperspecs.as_ptr().offset(0) as *const paper;
     while !ppinfo.is_null()
         && !(if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
             (*ppinfo).name
@@ -260,8 +258,7 @@ pub unsafe extern "C" fn paperinfo(mut ppformat: *const i8) -> *const paper {
 /* HAVE_LIBPAPER */
 #[no_mangle]
 pub unsafe extern "C" fn dumppaperinfo() {
-    let mut ppinfo: *const paper = 0 as *const paper;
-    ppinfo = &*paperspecs.as_ptr().offset(0) as *const paper;
+    let mut ppinfo = &*paperspecs.as_ptr().offset(0) as *const paper;
     while !ppinfo.is_null()
         && !(if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
             (*ppinfo).name
@@ -270,14 +267,12 @@ pub unsafe extern "C" fn dumppaperinfo() {
         })
         .is_null()
     {
-        let mut wd: f64 = 0.;
-        let mut ht: f64 = 0.;
-        wd = if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
+        let wd = if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
             (*ppinfo).pswidth
         } else {
             0.0f64
         };
-        ht = if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
+        let ht = if !ppinfo.is_null() && !(*ppinfo).name.is_null() {
             (*ppinfo).psheight
         } else {
             0.0f64

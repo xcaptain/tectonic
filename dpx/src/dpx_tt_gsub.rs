@@ -215,7 +215,7 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn otl_gsub_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn clt_read_record(mut rec: *mut clt_record, mut sfont: *mut sfnt) -> i32 {
+unsafe fn clt_read_record(mut rec: *mut clt_record, mut sfont: *mut sfnt) -> i32 {
     assert!(!rec.is_null() && !sfont.is_null());
     for i in 0..4 {
         (*rec).tag[i] = tt_get_signed_byte((*sfont).handle) as i8;
@@ -224,17 +224,14 @@ unsafe extern "C" fn clt_read_record(mut rec: *mut clt_record, mut sfont: *mut s
     (*rec).offset = tt_get_unsigned_pair((*sfont).handle);
     6i32
 }
-unsafe extern "C" fn clt_read_range(mut rec: *mut clt_range, mut sfont: *mut sfnt) -> i32 {
+unsafe fn clt_read_range(mut rec: *mut clt_range, mut sfont: *mut sfnt) -> i32 {
     assert!(!rec.is_null() && !sfont.is_null());
     (*rec).Start = tt_get_unsigned_pair((*sfont).handle);
     (*rec).End = tt_get_unsigned_pair((*sfont).handle);
     (*rec).StartCoverageIndex = tt_get_unsigned_pair((*sfont).handle);
     6i32
 }
-unsafe extern "C" fn clt_read_record_list(
-    mut list: *mut clt_record_list,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_record_list(mut list: *mut clt_record_list, mut sfont: *mut sfnt) -> i32 {
     assert!(!list.is_null() && !sfont.is_null());
     (*list).count = tt_get_unsigned_pair((*sfont).handle);
     let mut len = 2;
@@ -250,16 +247,13 @@ unsafe extern "C" fn clt_read_record_list(
     }
     len
 }
-unsafe extern "C" fn clt_release_record_list(mut list: *mut clt_record_list) {
+unsafe fn clt_release_record_list(mut list: *mut clt_record_list) {
     if !list.is_null() {
         (*list).record = mfree((*list).record as *mut libc::c_void) as *mut clt_record;
         (*list).count = 0_u16
     };
 }
-unsafe extern "C" fn clt_read_number_list(
-    mut list: *mut clt_number_list,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_number_list(mut list: *mut clt_number_list, mut sfont: *mut sfnt) -> i32 {
     assert!(!list.is_null() && !sfont.is_null());
     (*list).count = tt_get_unsigned_pair((*sfont).handle);
     if (*list).count as i32 == 0i32 {
@@ -274,31 +268,25 @@ unsafe extern "C" fn clt_read_number_list(
     }
     2i32 + 2i32 * (*list).count as i32
 }
-unsafe extern "C" fn clt_release_number_list(mut list: *mut clt_number_list) {
+unsafe fn clt_release_number_list(mut list: *mut clt_number_list) {
     if !list.is_null() {
         (*list).value = mfree((*list).value as *mut libc::c_void) as *mut u16;
         (*list).count = 0_u16
     };
 }
-unsafe extern "C" fn clt_read_script_table(
-    mut tab: *mut clt_script_table,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_script_table(mut tab: *mut clt_script_table, mut sfont: *mut sfnt) -> i32 {
     assert!(!tab.is_null() && !sfont.is_null());
     (*tab).DefaultLangSys = tt_get_unsigned_pair((*sfont).handle);
     let mut len = 2;
     len += clt_read_record_list(&mut (*tab).LangSysRecord, sfont);
     len
 }
-unsafe extern "C" fn clt_release_script_table(mut tab: *mut clt_script_table) {
+unsafe fn clt_release_script_table(mut tab: *mut clt_script_table) {
     if !tab.is_null() {
         clt_release_record_list(&mut (*tab).LangSysRecord);
     };
 }
-unsafe extern "C" fn clt_read_langsys_table(
-    mut tab: *mut clt_langsys_table,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_langsys_table(mut tab: *mut clt_langsys_table, mut sfont: *mut sfnt) -> i32 {
     assert!(!tab.is_null() && !sfont.is_null());
     (*tab).LookupOrder = tt_get_unsigned_pair((*sfont).handle);
     (*tab).ReqFeatureIndex = tt_get_unsigned_pair((*sfont).handle);
@@ -306,30 +294,24 @@ unsafe extern "C" fn clt_read_langsys_table(
     len += clt_read_number_list(&mut (*tab).FeatureIndex, sfont);
     len
 }
-unsafe extern "C" fn clt_release_langsys_table(mut tab: *mut clt_langsys_table) {
+unsafe fn clt_release_langsys_table(mut tab: *mut clt_langsys_table) {
     if !tab.is_null() {
         clt_release_number_list(&mut (*tab).FeatureIndex);
     };
 }
-unsafe extern "C" fn clt_read_feature_table(
-    mut tab: *mut clt_feature_table,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_feature_table(mut tab: *mut clt_feature_table, mut sfont: *mut sfnt) -> i32 {
     assert!(!tab.is_null() && !sfont.is_null());
     (*tab).FeatureParams = tt_get_unsigned_pair((*sfont).handle);
     let mut len = 2;
     len += clt_read_number_list(&mut (*tab).LookupListIndex, sfont);
     len
 }
-unsafe extern "C" fn clt_release_feature_table(mut tab: *mut clt_feature_table) {
+unsafe fn clt_release_feature_table(mut tab: *mut clt_feature_table) {
     if !tab.is_null() {
         clt_release_number_list(&mut (*tab).LookupListIndex);
     };
 }
-unsafe extern "C" fn clt_read_lookup_table(
-    mut tab: *mut clt_lookup_table,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn clt_read_lookup_table(mut tab: *mut clt_lookup_table, mut sfont: *mut sfnt) -> i32 {
     assert!(!tab.is_null() && !sfont.is_null());
     (*tab).LookupType = tt_get_unsigned_pair((*sfont).handle);
     (*tab).LookupFlag = tt_get_unsigned_pair((*sfont).handle);
@@ -337,12 +319,12 @@ unsafe extern "C" fn clt_read_lookup_table(
     len += clt_read_number_list(&mut (*tab).SubTableList, sfont);
     len
 }
-unsafe extern "C" fn clt_release_lookup_table(mut tab: *mut clt_lookup_table) {
+unsafe fn clt_release_lookup_table(mut tab: *mut clt_lookup_table) {
     if !tab.is_null() {
         clt_release_number_list(&mut (*tab).SubTableList);
     };
 }
-unsafe extern "C" fn clt_read_coverage(mut cov: *mut clt_coverage, mut sfont: *mut sfnt) -> i32 {
+unsafe fn clt_read_coverage(mut cov: *mut clt_coverage, mut sfont: *mut sfnt) -> i32 {
     assert!(!cov.is_null() && !sfont.is_null());
     (*cov).format = tt_get_unsigned_pair((*sfont).handle);
     (*cov).count = tt_get_unsigned_pair((*sfont).handle);
@@ -381,7 +363,7 @@ unsafe extern "C" fn clt_read_coverage(mut cov: *mut clt_coverage, mut sfont: *m
     }
     len
 }
-unsafe extern "C" fn clt_release_coverage(mut cov: *mut clt_coverage) {
+unsafe fn clt_release_coverage(mut cov: *mut clt_coverage) {
     if !cov.is_null() {
         match (*cov).format as i32 {
             1 => (*cov).list = mfree((*cov).list as *mut libc::c_void) as *mut GlyphID,
@@ -393,7 +375,7 @@ unsafe extern "C" fn clt_release_coverage(mut cov: *mut clt_coverage) {
     }
     (*cov).count = 0_u16;
 }
-unsafe extern "C" fn clt_lookup_coverage(mut cov: *mut clt_coverage, mut gid: u16) -> i32 {
+unsafe fn clt_lookup_coverage(mut cov: *mut clt_coverage, mut gid: u16) -> i32 {
     assert!(!cov.is_null());
     match (*cov).format as i32 {
         1 => {
@@ -424,10 +406,7 @@ unsafe extern "C" fn clt_lookup_coverage(mut cov: *mut clt_coverage, mut gid: u1
     }
     -1i32
 }
-unsafe extern "C" fn otl_gsub_read_single(
-    mut subtab: *mut otl_gsub_subtab,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn otl_gsub_read_single(mut subtab: *mut otl_gsub_subtab, mut sfont: *mut sfnt) -> i32 {
     assert!(!subtab.is_null() && !sfont.is_null());
     let offset = ttstub_input_seek((*sfont).handle, 0i32 as ssize_t, 1i32) as u32;
     (*subtab).LookupType = 1_u16;
@@ -478,10 +457,7 @@ unsafe extern "C" fn otl_gsub_read_single(
     }
     len
 }
-unsafe extern "C" fn otl_gsub_read_alternate(
-    mut subtab: *mut otl_gsub_subtab,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn otl_gsub_read_alternate(mut subtab: *mut otl_gsub_subtab, mut sfont: *mut sfnt) -> i32 {
     let mut altset_offsets: clt_number_list = clt_number_list {
         count: 0,
         value: 0 as *mut u16,
@@ -543,10 +519,7 @@ unsafe extern "C" fn otl_gsub_read_alternate(
     len += clt_read_coverage(&mut (*data).coverage, sfont);
     len
 }
-unsafe extern "C" fn otl_gsub_read_ligature(
-    mut subtab: *mut otl_gsub_subtab,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn otl_gsub_read_ligature(mut subtab: *mut otl_gsub_subtab, mut sfont: *mut sfnt) -> i32 {
     let mut ligset_offsets: clt_number_list = clt_number_list {
         count: 0,
         value: 0 as *mut u16,
@@ -642,7 +615,7 @@ unsafe extern "C" fn otl_gsub_read_ligature(
     len += clt_read_coverage(&mut (*data).coverage, sfont);
     len
 }
-unsafe extern "C" fn otl_gsub_release_single(mut subtab: *mut otl_gsub_subtab) {
+unsafe fn otl_gsub_release_single(mut subtab: *mut otl_gsub_subtab) {
     if !subtab.is_null() {
         match (*subtab).SubstFormat as i32 {
             1 => {
@@ -668,7 +641,7 @@ unsafe extern "C" fn otl_gsub_release_single(mut subtab: *mut otl_gsub_subtab) {
         }
     };
 }
-unsafe extern "C" fn otl_gsub_release_ligature(mut subtab: *mut otl_gsub_subtab) {
+unsafe fn otl_gsub_release_ligature(mut subtab: *mut otl_gsub_subtab) {
     if !subtab.is_null() {
         let data = (*subtab).table.ligature1;
         if !data.is_null() && !(*data).LigatureSet.is_null() {
@@ -691,7 +664,7 @@ unsafe extern "C" fn otl_gsub_release_ligature(mut subtab: *mut otl_gsub_subtab)
         (*subtab).table.ligature1 = 0 as *mut otl_gsub_ligature1
     };
 }
-unsafe extern "C" fn otl_gsub_release_alternate(mut subtab: *mut otl_gsub_subtab) {
+unsafe fn otl_gsub_release_alternate(mut subtab: *mut otl_gsub_subtab) {
     if !subtab.is_null() {
         let data = (*subtab).table.alternate1;
         if !data.is_null() && !(*data).AlternateSet.is_null() {
@@ -708,10 +681,7 @@ unsafe extern "C" fn otl_gsub_release_alternate(mut subtab: *mut otl_gsub_subtab
         (*subtab).table.alternate1 = 0 as *mut otl_gsub_alternate1
     };
 }
-unsafe extern "C" fn otl_gsub_read_header(
-    mut head: *mut otl_gsub_header,
-    mut sfont: *mut sfnt,
-) -> i32 {
+unsafe fn otl_gsub_read_header(mut head: *mut otl_gsub_header, mut sfont: *mut sfnt) -> i32 {
     assert!(!head.is_null() && !sfont.is_null());
     (*head).version = tt_get_unsigned_quad((*sfont).handle);
     (*head).ScriptList = tt_get_unsigned_pair((*sfont).handle);
@@ -719,7 +689,7 @@ unsafe extern "C" fn otl_gsub_read_header(
     (*head).LookupList = tt_get_unsigned_pair((*sfont).handle);
     10i32
 }
-unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: *mut sfnt) -> i32 {
+unsafe fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: *mut sfnt) -> i32 {
     let mut head: otl_gsub_header = otl_gsub_header {
         version: 0,
         ScriptList: 0,
@@ -841,10 +811,18 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
                     if verbose > 0i32 {
                         info!(
                             "otl_gsub>> OTL script-language enabled: {}{}{}{}.{}{}{}{}\n",
-                            char::from((*script_list.record.offset(script_idx as isize)).tag[0] as u8),
-                            char::from((*script_list.record.offset(script_idx as isize)).tag[1] as u8),
-                            char::from((*script_list.record.offset(script_idx as isize)).tag[2] as u8),
-                            char::from((*script_list.record.offset(script_idx as isize)).tag[3] as u8),
+                            char::from(
+                                (*script_list.record.offset(script_idx as isize)).tag[0] as u8
+                            ),
+                            char::from(
+                                (*script_list.record.offset(script_idx as isize)).tag[1] as u8
+                            ),
+                            char::from(
+                                (*script_list.record.offset(script_idx as isize)).tag[2] as u8
+                            ),
+                            char::from(
+                                (*script_list.record.offset(script_idx as isize)).tag[3] as u8
+                            ),
                             char::from((*langsys_rec).tag[0] as u8),
                             char::from((*langsys_rec).tag[1] as u8),
                             char::from((*langsys_rec).tag[2] as u8),
@@ -1111,10 +1089,7 @@ unsafe extern "C" fn otl_gsub_read_feat(mut gsub: *mut otl_gsub_tab, mut sfont: 
     }
     0i32
 }
-unsafe extern "C" fn otl_gsub_apply_single(
-    mut subtab: *mut otl_gsub_subtab,
-    mut gid: *mut u16,
-) -> i32 {
+unsafe fn otl_gsub_apply_single(mut subtab: *mut otl_gsub_subtab, mut gid: *mut u16) -> i32 {
     assert!(!subtab.is_null() && !gid.is_null());
     if (*subtab).SubstFormat as i32 == 1i32 {
         let data = (*subtab).table.single1;
@@ -1133,7 +1108,7 @@ unsafe extern "C" fn otl_gsub_apply_single(
     }
     -1i32
 }
-unsafe extern "C" fn otl_gsub_apply_alternate(
+unsafe fn otl_gsub_apply_alternate(
     mut subtab: *mut otl_gsub_subtab,
     mut alt_idx: u16,
     mut gid: *mut u16,
@@ -1156,7 +1131,7 @@ unsafe extern "C" fn otl_gsub_apply_alternate(
     }
     -1i32
 }
-unsafe extern "C" fn glyph_seq_cmp(
+unsafe fn glyph_seq_cmp(
     mut glyph_seq0: *mut GlyphID,
     mut n_glyphs0: u16,
     mut glyph_seq1: *mut GlyphID,
@@ -1172,7 +1147,7 @@ unsafe extern "C" fn glyph_seq_cmp(
     }
     0i32
 }
-unsafe extern "C" fn otl_gsub_apply_ligature(
+unsafe fn otl_gsub_apply_ligature(
     mut subtab: *mut otl_gsub_subtab,
     mut gid_in: *mut u16,
     mut num_gids: u16,
@@ -1212,7 +1187,7 @@ pub unsafe extern "C" fn otl_gsub_new() -> *mut otl_gsub {
     (*gsub_list).first = 0 as *mut gsub_entry;
     gsub_list as *mut otl_gsub
 }
-unsafe extern "C" fn clear_chain(mut gsub_list: *mut otl_gsub) {
+unsafe fn clear_chain(mut gsub_list: *mut otl_gsub) {
     let mut entry = (*gsub_list).first;
     while !entry.is_null() {
         let next = (*entry).next;
@@ -1271,9 +1246,7 @@ pub unsafe extern "C" fn otl_gsub_add_feat(
     }
     retval
 }
-fn scan_otl_tag(
-    mut otl_tags: &[u8],
-) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), ()> {
+fn scan_otl_tag(mut otl_tags: &[u8]) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), ()> {
     let mut script;
     let mut language = vec![b' '; 4];
     if otl_tags.is_empty() {
@@ -1281,7 +1254,7 @@ fn scan_otl_tag(
     }
     /* First parse otl_tags variable */
     let mut p = otl_tags;
-    
+
     if let Some(slen) = p.iter().position(|&x| x == b'.') {
         /* Format scrp.lang.feat */
         if slen < 5 {
@@ -1290,19 +1263,16 @@ fn scan_otl_tag(
             warn!("Invalid OTL script tag found: {}", p.display());
             return Err(());
         }
-        p = &p[slen+1..];
+        p = &p[slen + 1..];
         if let Some(llen) = p.iter().position(|&x| x == b'.') {
             /* Now lang part */
             if llen < 5 {
                 language = Vec::from(&p[..llen]);
             } else {
-                warn!(
-                    "Invalid OTL lanuage tag found: {}",
-                    p.display(),
-                );
+                warn!("Invalid OTL lanuage tag found: {}", p.display(),);
                 return Err(());
             }
-            p = &p[llen+1..];
+            p = &p[llen + 1..];
         }
     } else {
         script = vec![b'*'];
@@ -1424,7 +1394,7 @@ pub unsafe extern "C" fn otl_gsub_apply_lig(
     }
     retval
 }
-unsafe extern "C" fn gsub_find(
+unsafe fn gsub_find(
     mut gsub_list: *mut otl_gsub,
     script: &[u8],
     language: &[u8],
@@ -1460,12 +1430,7 @@ pub unsafe extern "C" fn otl_gsub_set_chain(
     clear_chain(gsub_list);
     for p in CStr::from_ptr(otl_tags).to_bytes().split(|&c| c == b':') {
         if let Ok((script, language, feature)) = scan_otl_tag(p) {
-            let idx = gsub_find(
-                gsub_list,
-                &script,
-                &language,
-                &feature,
-            );
+            let idx = gsub_find(gsub_list, &script, &language, &feature);
             if idx >= 0i32 && idx <= (*gsub_list).num_gsubs {
                 let entry =
                     new((1_u64).wrapping_mul(::std::mem::size_of::<gsub_entry>() as u64) as u32)
@@ -1498,20 +1463,9 @@ pub unsafe extern "C" fn otl_gsub_add_feat_list(
     clear_chain(gsub_list);
     for p in CStr::from_ptr(otl_tags).to_bytes().split(|&c| c == b':') {
         if let Ok((script, language, feature)) = scan_otl_tag(p) {
-            let idx = gsub_find(
-                gsub_list,
-                &script,
-                &language,
-                &feature,
-            );
+            let idx = gsub_find(gsub_list, &script, &language, &feature);
             if idx < 0i32 {
-                otl_gsub_add_feat(
-                    gsub_list,
-                    &script,
-                    &language,
-                    &feature,
-                    sfont,
-                );
+                otl_gsub_add_feat(gsub_list, &script, &language, &feature, sfont);
             }
         }
     }

@@ -396,7 +396,7 @@ pub unsafe extern "C" fn CIDFont_set_verbose(mut level: i32) {
     CIDFont_type2_set_verbose(level);
     __verbose = level;
 }
-unsafe extern "C" fn CIDFont_new() -> *mut CIDFont {
+unsafe fn CIDFont_new() -> *mut CIDFont {
     let font =
         new((1_u64).wrapping_mul(::std::mem::size_of::<CIDFont>() as u64) as u32) as *mut CIDFont;
     (*font).name = 0 as *mut i8;
@@ -420,7 +420,7 @@ unsafe extern "C" fn CIDFont_new() -> *mut CIDFont {
     font
 }
 /* It does write PDF objects. */
-unsafe extern "C" fn CIDFont_flush(mut font: *mut CIDFont) {
+unsafe fn CIDFont_flush(mut font: *mut CIDFont) {
     if !font.is_null() {
         pdf_release_obj((*font).indirect);
         (*font).indirect = 0 as *mut pdf_obj;
@@ -430,7 +430,7 @@ unsafe extern "C" fn CIDFont_flush(mut font: *mut CIDFont) {
         (*font).descriptor = 0 as *mut pdf_obj
     };
 }
-unsafe extern "C" fn CIDFont_release(mut font: *mut CIDFont) {
+unsafe fn CIDFont_release(mut font: *mut CIDFont) {
     if !font.is_null() {
         if !(*font).indirect.is_null() {
             panic!("{}: Object not flushed.", "CIDFont",);
@@ -573,7 +573,7 @@ pub unsafe extern "C" fn CIDFont_get_flag(mut font: *mut CIDFont, mut mask: i32)
         0i32
     };
 }
-unsafe extern "C" fn CIDFont_dofont(mut font: *mut CIDFont) {
+unsafe fn CIDFont_dofont(mut font: *mut CIDFont) {
     if font.is_null() || (*font).indirect.is_null() {
         return;
     }
@@ -887,7 +887,7 @@ static mut cid_basefont: [C2RustUnnamed_2; 21] = [
         init
     },
 ];
-unsafe extern "C" fn CIDFont_base_open(
+unsafe fn CIDFont_base_open(
     mut font: *mut CIDFont,
     mut name: *const i8,
     mut cmap_csi: *mut CIDSysInfo,
@@ -1009,7 +1009,7 @@ unsafe extern "C" fn CIDFont_base_open(
     0i32
 }
 static mut __cache: *mut FontCache = 0 as *const FontCache as *mut FontCache;
-unsafe extern "C" fn CIDFont_cache_init() {
+unsafe fn CIDFont_cache_init() {
     if !__cache.is_null() {
         panic!("{}: Already initialized.", "CIDFont",);
     }
@@ -1197,7 +1197,7 @@ pub unsafe extern "C" fn CIDFont_cache_close() {
  *
  *   (:int:)?!?string(/string)?(,string)?
  */
-unsafe extern "C" fn release_opt(mut opt: *mut cid_opt) {
+unsafe fn release_opt(mut opt: *mut cid_opt) {
     if !(*opt).csi.is_null() {
         free((*(*opt).csi).registry as *mut libc::c_void);
         free((*(*opt).csi).ordering as *mut libc::c_void);
@@ -1208,7 +1208,7 @@ unsafe extern "C" fn release_opt(mut opt: *mut cid_opt) {
     }
     free(opt as *mut libc::c_void);
 }
-unsafe extern "C" fn get_cidsysinfo(
+unsafe fn get_cidsysinfo(
     mut map_name: *const i8,
     mut fmap_opt: *mut fontmap_opt,
 ) -> *mut CIDSysInfo {

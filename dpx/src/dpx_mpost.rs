@@ -1910,7 +1910,7 @@ static mut font_stack: [mp_font; 256] = [
 ];
 static mut currentfont: i32 = -1i32;
 static mut mp_cmode: i32 = 0i32;
-unsafe extern "C" fn mp_setfont(mut font_name: *const i8, mut pt_size: f64) -> i32 {
+unsafe fn mp_setfont(mut font_name: *const i8, mut pt_size: f64) -> i32 {
     let mut name: *const i8 = font_name;
     let mut font: *mut mp_font = 0 as *mut mp_font;
     let mut subfont_id: i32 = -1i32;
@@ -1960,7 +1960,7 @@ unsafe extern "C" fn mp_setfont(mut font_name: *const i8, mut pt_size: f64) -> i
     }
     0i32
 }
-unsafe extern "C" fn save_font() {
+unsafe fn save_font() {
     let mut current: *mut mp_font = 0 as *mut mp_font;
     let mut next: *mut mp_font = 0 as *mut mp_font;
     if currentfont < 0i32 {
@@ -1988,7 +1988,7 @@ unsafe extern "C" fn save_font() {
     (*next).subfont_id = (*current).subfont_id;
     (*next).tfm_id = (*current).tfm_id;
 }
-unsafe extern "C" fn restore_font() {
+unsafe fn restore_font() {
     let mut current: *mut mp_font = 0 as *mut mp_font;
     current = if currentfont < 0i32 {
         0 as *mut mp_font
@@ -2002,13 +2002,13 @@ unsafe extern "C" fn restore_font() {
     }
     currentfont -= 1;
 }
-unsafe extern "C" fn clear_fonts() {
+unsafe fn clear_fonts() {
     while currentfont >= 0i32 {
         free(font_stack[currentfont as usize].font_name as *mut libc::c_void);
         currentfont -= 1
     }
 }
-unsafe extern "C" fn is_fontname(mut token: *const i8) -> bool {
+unsafe fn is_fontname(mut token: *const i8) -> bool {
     let mut mrec: *mut fontmap_rec = 0 as *mut fontmap_rec;
     mrec = pdf_lookup_fontmap_record(token);
     if !mrec.is_null() {
@@ -2075,7 +2075,7 @@ pub unsafe extern "C" fn mps_scan_bbox(
     }
     -1i32
 }
-unsafe extern "C" fn skip_prolog(mut start: *mut *const i8, mut end: *const i8) {
+unsafe fn skip_prolog(mut start: *mut *const i8, mut end: *const i8) {
     let mut found_prolog: i32 = 0i32;
     let mut save: *const i8 = 0 as *const i8;
     save = *start;
@@ -2637,7 +2637,7 @@ static mut mps_operators: [operators; 28] = [
         init
     },
 ];
-unsafe extern "C" fn get_opcode(mut token: *const i8) -> i32 {
+unsafe fn get_opcode(mut token: *const i8) -> i32 {
     for i in 0..(::std::mem::size_of::<[operators; 48]>() as u64)
         .wrapping_div(::std::mem::size_of::<operators>() as u64) as usize
     {
@@ -2656,7 +2656,7 @@ unsafe extern "C" fn get_opcode(mut token: *const i8) -> i32 {
 }
 static mut stack: [*mut pdf_obj; 1024] = [0 as *const pdf_obj as *mut pdf_obj; 1024];
 static mut top_stack: u32 = 0_u32;
-unsafe extern "C" fn do_exch() -> i32 {
+unsafe fn do_exch() -> i32 {
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     if top_stack < 2_u32 {
         return -1i32;
@@ -2666,7 +2666,7 @@ unsafe extern "C" fn do_exch() -> i32 {
     stack[top_stack.wrapping_sub(2_u32) as usize] = tmp;
     0i32
 }
-unsafe extern "C" fn do_clear() -> i32 {
+unsafe fn do_clear() -> i32 {
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     while top_stack > 0_u32 {
         tmp = if top_stack > 0_u32 {
@@ -2679,7 +2679,7 @@ unsafe extern "C" fn do_clear() -> i32 {
     }
     0i32
 }
-unsafe extern "C" fn pop_get_numbers(mut values: *mut f64, mut count: i32) -> i32 {
+unsafe fn pop_get_numbers(mut values: *mut f64, mut count: i32) -> i32 {
     let mut tmp: *mut pdf_obj = 0 as *mut pdf_obj;
     loop {
         let fresh1 = count;
@@ -2707,11 +2707,7 @@ unsafe extern "C" fn pop_get_numbers(mut values: *mut f64, mut count: i32) -> i3
     }
     count + 1i32
 }
-unsafe extern "C" fn cvr_array(
-    mut array: *mut pdf_obj,
-    mut values: *mut f64,
-    mut count: i32,
-) -> i32 {
+unsafe fn cvr_array(mut array: *mut pdf_obj, mut values: *mut f64, mut count: i32) -> i32 {
     if !(!array.is_null() && pdf_obj_typeof(array) == PdfObjType::ARRAY) {
         warn!("mpost: Not an array!");
     } else {
@@ -2734,7 +2730,7 @@ unsafe extern "C" fn cvr_array(
     pdf_release_obj(array);
     count + 1i32
 }
-unsafe extern "C" fn is_fontdict(mut dict: *mut pdf_obj) -> bool {
+unsafe fn is_fontdict(mut dict: *mut pdf_obj) -> bool {
     if !(!dict.is_null() && pdf_obj_typeof(dict) == PdfObjType::DICT) {
         return false;
     }
@@ -2754,7 +2750,7 @@ unsafe extern "C" fn is_fontdict(mut dict: *mut pdf_obj) -> bool {
         pdf_lookup_dict(dict, "FontScale").filter(|tmp| pdf_obj_typeof(*tmp) == PdfObjType::NUMBER);
     tmp.is_some()
 }
-unsafe extern "C" fn do_findfont() -> i32 {
+unsafe fn do_findfont() -> i32 {
     let mut error: i32 = 0i32;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut font_name: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -2802,7 +2798,7 @@ unsafe extern "C" fn do_findfont() -> i32 {
     }
     error
 }
-unsafe extern "C" fn do_scalefont() -> i32 {
+unsafe fn do_scalefont() -> i32 {
     let mut error: i32 = 0i32;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut scale: f64 = 0.;
@@ -2835,7 +2831,7 @@ unsafe extern "C" fn do_scalefont() -> i32 {
     }
     error
 }
-unsafe extern "C" fn do_setfont() -> i32 {
+unsafe fn do_setfont() -> i32 {
     let mut error: i32 = 0i32;
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
     font_dict = if top_stack > 0_u32 {
@@ -2858,7 +2854,7 @@ unsafe extern "C" fn do_setfont() -> i32 {
     error
 }
 /* Push dummy font dict onto PS stack */
-unsafe extern "C" fn do_currentfont() -> i32 {
+unsafe fn do_currentfont() -> i32 {
     let mut error: i32 = 0i32; /* Should not be error... */
     let mut font: *mut mp_font = 0 as *mut mp_font; /* Should not be error... */
     let mut font_dict: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -2887,7 +2883,7 @@ unsafe extern "C" fn do_currentfont() -> i32 {
     }
     error
 }
-unsafe extern "C" fn do_show() -> i32 {
+unsafe fn do_show() -> i32 {
     let mut font: *mut mp_font = 0 as *mut mp_font;
     let mut cp = pdf_coord::zero();
     let mut text_str: *mut pdf_obj = 0 as *mut pdf_obj;
@@ -2979,11 +2975,7 @@ unsafe extern "C" fn do_show() -> i32 {
     pdf_release_obj(text_str);
     0i32
 }
-unsafe extern "C" fn do_mpost_bind_def(
-    mut ps_code: *const i8,
-    mut x_user: f64,
-    mut y_user: f64,
-) -> i32 {
+unsafe fn do_mpost_bind_def(mut ps_code: *const i8, mut x_user: f64, mut y_user: f64) -> i32 {
     let mut error: i32 = 0i32;
     let mut start: *const i8 = 0 as *const i8;
     let mut end: *const i8 = 0 as *const i8;
@@ -2992,7 +2984,7 @@ unsafe extern "C" fn do_mpost_bind_def(
     error = mp_parse_body(&mut start, end, x_user, y_user);
     error
 }
-unsafe extern "C" fn do_texfig_operator(mut opcode: i32, mut x_user: f64, mut y_user: f64) -> i32 {
+unsafe fn do_texfig_operator(mut opcode: i32, mut x_user: f64, mut y_user: f64) -> i32 {
     static mut fig_p: transform_info = transform_info::new();
     static mut in_tfig: i32 = 0i32;
     static mut xobj_id: i32 = -1i32;
@@ -3041,7 +3033,7 @@ unsafe extern "C" fn do_texfig_operator(mut opcode: i32, mut x_user: f64, mut y_
     }
     error
 }
-unsafe extern "C" fn ps_dev_CTM(M: &mut pdf_tmatrix) -> i32 {
+unsafe fn ps_dev_CTM(M: &mut pdf_tmatrix) -> i32 {
     pdf_dev_currentmatrix(M);
     M.a *= 1000.;
     M.b *= 1000.;
@@ -3055,7 +3047,7 @@ unsafe extern "C" fn ps_dev_CTM(M: &mut pdf_tmatrix) -> i32 {
  * Again, the only piece that needs x_user and y_user is
  * that piece dealing with texfig.
  */
-unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_user: f64) -> i32 {
+unsafe fn do_operator(mut token: *const i8, mut x_user: f64, mut y_user: f64) -> i32 {
     let mut error: i32 = 0i32;
     let mut opcode: i32 = 0i32;
     let mut values: [f64; 12] = [0.; 12];
@@ -3688,7 +3680,7 @@ unsafe extern "C" fn do_operator(mut token: *const i8, mut x_user: f64, mut y_us
  * The only sections that need to know x_user and y _user are those
  * dealing with texfig.
  */
-unsafe extern "C" fn mp_parse_body(
+unsafe fn mp_parse_body(
     mut start: *mut *const i8,
     mut end: *const i8,
     mut x_user: f64,

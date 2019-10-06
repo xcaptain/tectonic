@@ -42,7 +42,7 @@ use crate::dpx_pdfobj::{
     pdf_number_value, pdf_obj, pdf_obj_typeof, pdf_release_obj, pdf_stream_dict, PdfObjType,
 };
 use crate::specials::spc_lookup_reference;
-use libc::{free, memcmp, memcpy, strchr};
+use libc::{free, memcmp, memcpy};
 
 pub type size_t = u64;
 /* pow() */
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn skip_white(mut start: *mut *const i8, mut end: *const i
         }
     }
 }
-unsafe extern "C" fn parsed_string(mut start: *const i8, mut end: *const i8) -> *mut i8 {
+unsafe fn parsed_string(mut start: *const i8, mut end: *const i8) -> *mut i8 {
     let mut result: *mut i8 = 0 as *mut i8;
     let mut len: i32 = 0;
     len = end.wrapping_offset_from(start) as i64 as i32;
@@ -165,17 +165,17 @@ pub unsafe extern "C" fn parse_unsigned(mut start: *mut *const i8, mut end: *con
     *start = p;
     number
 }
-unsafe extern "C" fn parse_gen_ident(
+unsafe fn parse_gen_ident(
     mut start: *mut *const i8,
     mut end: *const i8,
-    mut valid_chars: *const i8,
+    mut valid_chars: &[u8],
 ) -> *mut i8 {
     let mut ident: *mut i8 = 0 as *mut i8;
     let mut p: *const i8 = 0 as *const i8;
     /* No skip_white(start, end)? */
     p = *start;
     while p < end {
-        if strchr(valid_chars, *p as i32).is_null() {
+        if !valid_chars.contains(&(*p as u8)) {
             break;
         }
         p = p.offset(1)
@@ -186,17 +186,15 @@ unsafe extern "C" fn parse_gen_ident(
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {
-    static mut valid_chars: *const i8 =
-        b"!\"#$&\'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~\x00"
-            as *const u8 as *const i8;
-    parse_gen_ident(start, end, valid_chars)
+    const VALID_CHARS: &[u8] =
+        b"!\"#$&\'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+    parse_gen_ident(start, end, VALID_CHARS)
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_val_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {
-    static mut valid_chars: *const i8 =
-        b"!\"#$&\'*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~\x00"
-            as *const u8 as *const i8;
-    parse_gen_ident(start, end, valid_chars)
+    const VALID_CHARS: &[u8] =
+        b"!\"#$&\'*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+    parse_gen_ident(start, end, VALID_CHARS)
 }
 #[no_mangle]
 pub unsafe extern "C" fn parse_opt_ident(mut start: *mut *const i8, mut end: *const i8) -> *mut i8 {
@@ -288,7 +286,7 @@ pub unsafe extern "C" fn parse_pdf_number(
  *
  *  PDF-1.2+: Two hexadecimal digits preceded by a number sign.
  */
-unsafe extern "C" fn pn_getc(mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
+unsafe fn pn_getc(mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut ch: i32 = 0i32;
     let mut p: *const i8 = 0 as *const i8;
     p = *pp;
@@ -462,7 +460,7 @@ pub unsafe extern "C" fn parse_pdf_null(
 /*
  * PDF Literal String
  */
-unsafe extern "C" fn ps_getescc(mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
+unsafe fn ps_getescc(mut pp: *mut *const i8, mut endptr: *const i8) -> i32 {
     let mut ch: i32 = 0; /* backslash assumed. */
     let mut i: i32 = 0;
     let mut p: *const i8 = 0 as *const i8;
@@ -532,10 +530,7 @@ unsafe extern "C" fn ps_getescc(mut pp: *mut *const i8, mut endptr: *const i8) -
     *pp = p;
     ch
 }
-unsafe extern "C" fn parse_pdf_literal_string(
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_literal_string(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut pdf_obj {
     let mut ch: i32 = 0;
     let mut op_count: i32 = 0i32;
     let mut len: i32 = 0i32;
@@ -623,10 +618,7 @@ unsafe extern "C" fn parse_pdf_literal_string(
 /*
  * PDF Hex String
  */
-unsafe extern "C" fn parse_pdf_hex_string(
-    mut pp: *mut *const i8,
-    mut endptr: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_hex_string(mut pp: *mut *const i8, mut endptr: *const i8) -> *mut pdf_obj {
     let mut p: *const i8 = 0 as *const i8;
     let mut len: i32 = 0;
     p = *pp;
@@ -792,7 +784,7 @@ pub unsafe extern "C" fn parse_pdf_array(
     *pp = p.offset(1);
     result
 }
-unsafe extern "C" fn parse_pdf_stream(
+unsafe fn parse_pdf_stream(
     mut pp: *mut *const i8,
     mut endptr: *const i8,
     mut dict: *mut pdf_obj,
@@ -876,10 +868,7 @@ unsafe extern "C" fn parse_pdf_stream(
 }
 /* PLEASE REMOVE THIS */
 /* This is not PDF indirect reference. */
-unsafe extern "C" fn parse_pdf_reference(
-    mut start: *mut *const i8,
-    mut end: *const i8,
-) -> *mut pdf_obj {
+unsafe fn parse_pdf_reference(mut start: *mut *const i8, mut end: *const i8) -> *mut pdf_obj {
     let mut result: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut name: *mut i8 = 0 as *mut i8;
     save = *start;
@@ -905,7 +894,7 @@ unsafe extern "C" fn parse_pdf_reference(
     result
 }
 /* !PDF_PARSE_STRICT */
-unsafe extern "C" fn try_pdf_reference(
+unsafe fn try_pdf_reference(
     mut start: *const i8,
     mut end: *const i8,
     mut endptr: *mut *const i8,

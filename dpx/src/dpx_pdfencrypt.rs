@@ -123,7 +123,7 @@ pub unsafe extern "C" fn pdf_enc_set_verbose(mut level: i32) {
     verbose = level as u8; /* For AES IV */
 }
 
-unsafe extern "C" fn pdf_enc_init(mut use_aes: i32, mut encrypt_metadata: i32) {
+unsafe fn pdf_enc_init(mut use_aes: i32, mut encrypt_metadata: i32) {
     let p = &mut sec_data;
     let current_time = match get_unique_time_if_given() {
         Some(x) => x,
@@ -166,7 +166,7 @@ pub unsafe fn pdf_enc_compute_id_string(dviname: Option<&[u8]>, mut pdfname: Opt
     }
     p.ID = md5.result().into();
 }
-unsafe extern "C" fn passwd_padding(mut src: *const i8, mut dst: *mut u8) {
+unsafe fn passwd_padding(mut src: *const i8, mut dst: *mut u8) {
     let mut len: i32 = 0;
     len = (if 32 < strlen(src) { 32 } else { strlen(src) }) as i32;
     memcpy(
@@ -180,11 +180,7 @@ unsafe extern "C" fn passwd_padding(mut src: *const i8, mut dst: *mut u8) {
         (32 - len) as _,
     );
 }
-unsafe extern "C" fn compute_owner_password(
-    p: &mut pdf_sec,
-    mut opasswd: *const i8,
-    mut upasswd: *const i8,
-) {
+unsafe fn compute_owner_password(p: &mut pdf_sec, mut opasswd: *const i8, mut upasswd: *const i8) {
     let mut padded: [u8; 32] = [0; 32];
     let mut arc4: ARC4_CONTEXT = ARC4_CONTEXT {
         idx_i: 0,
@@ -240,7 +236,7 @@ unsafe extern "C" fn compute_owner_password(
     );
 }
 
-unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const i8) {
+unsafe fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const i8) {
     let mut padded: [u8; 32] = [0; 32];
     passwd_padding(passwd, padded.as_mut_ptr());
     let mut md5 = Md5::new();
@@ -272,7 +268,7 @@ unsafe extern "C" fn compute_encryption_key(p: &mut pdf_sec, mut passwd: *const 
     );
 }
 
-unsafe extern "C" fn compute_user_password(p: &mut pdf_sec, mut uplain: *const i8) {
+unsafe fn compute_user_password(p: &mut pdf_sec, mut uplain: *const i8) {
     let mut arc4: ARC4_CONTEXT = ARC4_CONTEXT {
         idx_i: 0,
         idx_j: 0,
@@ -329,7 +325,7 @@ unsafe extern "C" fn compute_user_password(p: &mut pdf_sec, mut uplain: *const i
     );
 }
 /* Algorithm 2.B from ISO 32000-1 chapter 7 */
-unsafe extern "C" fn compute_hash_V5(
+unsafe fn compute_hash_V5(
     mut passwd: *const i8,
     mut salt: *const u8,
     mut user_key: *const u8,
@@ -453,7 +449,7 @@ unsafe extern "C" fn compute_hash_V5(
     }
     hash
 }
-unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *const i8) {
+unsafe fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *const i8) {
     let mut vsalt: [u8; 8] = random();
     let mut ksalt: [u8; 8] = random();
     let mut hash: [u8; 32] = [0; 32];
@@ -495,7 +491,7 @@ unsafe extern "C" fn compute_owner_password_V5(p: &mut pdf_sec, mut oplain: *con
     );
     free(OE as *mut libc::c_void);
 }
-unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *const i8) {
+unsafe fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *const i8) {
     let mut vsalt: [u8; 8] = random();
     let mut ksalt: [u8; 8] = random();
     let mut hash: [u8; 32] = [0; 32];
@@ -537,7 +533,7 @@ unsafe extern "C" fn compute_user_password_V5(p: &mut pdf_sec, mut uplain: *cons
     );
     free(UE as *mut libc::c_void);
 }
-unsafe extern "C" fn check_version(p: &mut pdf_sec, mut version: i32) {
+unsafe fn check_version(p: &mut pdf_sec, mut version: i32) {
     if p.V > 2i32 && version < 4i32 {
         warn!("Current encryption setting requires PDF version >= 1.4.");
         p.V = 1i32;
@@ -550,7 +546,7 @@ unsafe extern "C" fn check_version(p: &mut pdf_sec, mut version: i32) {
         p.V = 4i32
     };
 }
-unsafe extern "C" fn stringprep_profile(
+unsafe fn stringprep_profile(
     mut input: *const i8,
     mut output: *mut *mut i8,
     mut _profile: *const i8,
@@ -574,11 +570,7 @@ unsafe extern "C" fn stringprep_profile(
     strcpy(*output, input);
     0i32
 }
-unsafe extern "C" fn preproc_password(
-    mut passwd: *const i8,
-    mut outbuf: *mut i8,
-    mut V: i32,
-) -> i32 {
+unsafe fn preproc_password(mut passwd: *const i8, mut outbuf: *mut i8, mut V: i32) -> i32 {
     let mut saslpwd: *mut i8 = 0 as *mut i8;
     let mut error: i32 = 0i32;
     memset(outbuf as *mut libc::c_void, 0i32, 128);
@@ -688,7 +680,7 @@ pub unsafe extern "C" fn pdf_enc_set_passwd(
     };
 }
 
-unsafe extern "C" fn calculate_key(p: &mut pdf_sec) -> [u8; 16] {
+unsafe fn calculate_key(p: &mut pdf_sec) -> [u8; 16] {
     let mut len = p.key_size as usize + 5;
     let mut tmp = [0u8; 25];
     memcpy(

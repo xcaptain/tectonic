@@ -69,7 +69,7 @@ pub struct named_object {
     pub keylen: i32,
     pub value: *mut pdf_obj,
 }
-unsafe extern "C" fn printable_key(mut key: *const i8, mut keylen: i32) -> *mut i8 {
+unsafe fn printable_key(mut key: *const i8, mut keylen: i32) -> *mut i8 {
     static mut pkey: [i8; 36] = [0; 36];
     let mut i: i32 = 0;
     let mut len: i32 = 0;
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn pdf_new_name_tree() -> *mut ht_table {
     );
     names
 }
-unsafe extern "C" fn check_objects_defined(mut ht_tab: *mut ht_table) {
+unsafe fn check_objects_defined(mut ht_tab: *mut ht_table) {
     let mut iter: ht_iter = ht_iter {
         index: 0,
         curr: 0 as *mut libc::c_void,
@@ -304,7 +304,7 @@ unsafe extern "C" fn cmp_key(mut d1: *const libc::c_void, mut d2: *const libc::c
     }
     cmp
 }
-unsafe extern "C" fn build_name_tree(
+unsafe fn build_name_tree(
     mut first: *mut named_object,
     mut num_leaves: i32,
     mut is_root: i32,
@@ -385,7 +385,7 @@ unsafe extern "C" fn build_name_tree(
     }
     result
 }
-unsafe extern "C" fn flat_table(
+unsafe fn flat_table(
     mut ht_tab: *mut ht_table,
     mut num_entries: *mut i32,
     mut filter: *mut ht_table,

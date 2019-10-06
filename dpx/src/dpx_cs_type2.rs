@@ -24,7 +24,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 
@@ -98,13 +97,11 @@ static mut trn_array: [f64; 32] = [0.; 32];
 /*
  * clear_stack() put all operands sotred in operand stack to dest.
  */
-unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
+unsafe fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
     for i in 0..stack_top {
-        let mut value: f64 = 0.;
-        let mut ivalue: i32 = 0;
-        value = arg_stack[i as usize];
+        let value = arg_stack[i as usize];
         /* Nearest integer value */
-        ivalue = (value + 0.5f64).floor() as i32;
+        let mut ivalue = (value + 0.5f64).floor() as i32;
         if value >= 0x8000i64 as f64 || value <= (-0x8000 - 1 as i64) as f64 {
             /*
              * This number cannot be represented as a single operand.
@@ -202,7 +199,7 @@ unsafe extern "C" fn clear_stack(mut dest: *mut *mut u8, mut limit: *mut u8) {
  *  1: hint declaration, first stack-clearing operator appeared
  *  2: in path construction
  */
-unsafe extern "C" fn do_operator1(
+unsafe fn do_operator1(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
@@ -358,19 +355,18 @@ unsafe extern "C" fn do_operator1(
  * Following operators are not supported:
  *  random: How random ?
  */
-unsafe extern "C" fn do_operator2(
+unsafe fn do_operator2(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
     mut endptr: *mut u8,
 ) {
-    let mut op: u8 = 0;
     *data = (*data).offset(1);
     if endptr < (*data).offset(1) {
         status = -1i32;
         return;
     }
-    op = **data;
+    let op = **data;
     *data = (*data).offset(1);
     match op as i32 {
         0 => {
@@ -588,12 +584,10 @@ unsafe extern "C" fn do_operator2(
                 status = -2i32;
                 return;
             }
-            let mut N: i32 = 0;
-            let mut J: i32 = 0;
             stack_top -= 1;
-            J = arg_stack[stack_top as usize] as i32;
+            let mut J = arg_stack[stack_top as usize] as i32;
             stack_top -= 1;
-            N = arg_stack[stack_top as usize] as i32;
+            let N = arg_stack[stack_top as usize] as i32;
             if stack_top < N {
                 status = -2i32;
                 return;
@@ -615,7 +609,7 @@ unsafe extern "C" fn do_operator2(
                     arg_stack[i as usize] = save_0
                 }
             } else {
-                J = -J % N;
+                let mut J = -J % N;
                 loop {
                     let fresh22 = J;
                     J = J - 1;
@@ -659,11 +653,9 @@ unsafe extern "C" fn do_operator2(
  * integer:
  *  exactly the same as the DICT encoding (except 29)
  */
-unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
-    let mut result: i32 = 0i32;
+unsafe fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
+    let mut result;
     let mut b0: u8 = **data;
-    let mut b1: u8 = 0;
-    let mut b2: u8 = 0;
     *data = (*data).offset(1);
     if b0 as i32 == 28i32 {
         /* shortint */
@@ -671,8 +663,8 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
             status = -1i32;
             return;
         }
-        b1 = **data;
-        b2 = *(*data).offset(1);
+        let b1 = **data;
+        let b2 = *(*data).offset(1);
         result = b1 as i32 * 256i32 + b2 as i32;
         if result > 0x7fffi32 {
             result = (result as i64 - 0x10000) as i32
@@ -687,7 +679,7 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
             status = -1i32;
             return;
         }
-        b1 = **data;
+        let b1 = **data;
         result = (b0 as i32 - 247i32) * 256i32 + b1 as i32 + 108i32;
         *data = (*data).offset(1)
     } else if b0 as i32 >= 251i32 && b0 as i32 <= 254i32 {
@@ -695,7 +687,7 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
             status = -1i32;
             return;
         }
-        b1 = **data;
+        let b1 = **data;
         result = -(b0 as i32 - 251i32) * 256i32 - b1 as i32 - 108i32;
         *data = (*data).offset(1)
     } else {
@@ -713,21 +705,19 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
 /*
  * Signed 16.16-bits fixed number for Type 2 charstring encoding
  */
-unsafe extern "C" fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
-    let mut ivalue: i32 = 0;
-    let mut rvalue: f64 = 0.;
+unsafe fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
     *data = (*data).offset(1);
     if endptr < (*data).offset(4) {
         status = -1i32;
         return;
     }
-    ivalue = **data as i32 * 0x100i32 + *(*data).offset(1) as i32;
-    rvalue = (if ivalue as i64 > 0x7fff {
+    let ivalue = **data as i32 * 0x100i32 + *(*data).offset(1) as i32;
+    let mut rvalue = (if ivalue as i64 > 0x7fff {
         ivalue as i64 - 0x10000
     } else {
         ivalue as i64
     }) as f64;
-    ivalue = *(*data).offset(2) as i32 * 0x100i32 + *(*data).offset(3) as i32;
+    let ivalue = *(*data).offset(2) as i32 * 0x100i32 + *(*data).offset(3) as i32;
     rvalue += ivalue as f64 / 0x10000i64 as f64;
     if 48i32 < stack_top + 1i32 {
         status = -2i32;
@@ -747,20 +737,19 @@ unsafe extern "C" fn get_fixed(mut data: *mut *mut u8, mut endptr: *mut u8) {
  * subr_idx: CFF INDEX data that contains subroutines.
  * id:       biased subroutine number.
  */
-unsafe extern "C" fn get_subr(
+unsafe fn get_subr(
     mut subr: *mut *mut u8,
     mut len: *mut i32,
     mut subr_idx: *mut cff_index,
     mut id: i32,
 ) {
-    let mut count: u16 = 0;
     if subr_idx.is_null() {
         panic!(
             "{}: Subroutine called but no subroutine found.",
             "Type2 Charstring Parser",
         );
     }
-    count = (*subr_idx).count;
+    let count = (*subr_idx).count;
     /* Adding bias number */
     if (count as i32) < 1240i32 {
         id += 107i32
@@ -788,7 +777,7 @@ unsafe extern "C" fn get_subr(
  *  an initial byte value of 255) differs from how it is interpreted in the
  *  Type 1 format.
  */
-unsafe extern "C" fn do_charstring(
+unsafe fn do_charstring(
     mut dest: *mut *mut u8,
     mut limit: *mut u8,
     mut data: *mut *mut u8,
@@ -796,7 +785,6 @@ unsafe extern "C" fn do_charstring(
     mut gsubr_idx: *mut cff_index,
     mut subr_idx: *mut cff_index,
 ) {
-    let mut b0: u8 = 0i32 as u8;
     let mut subr: *mut u8 = 0 as *mut u8;
     let mut len: i32 = 0;
     if nest > 10i32 {
@@ -807,7 +795,7 @@ unsafe extern "C" fn do_charstring(
     }
     nest += 1;
     while *data < endptr && status == 0i32 {
-        b0 = **data;
+        let b0 = **data;
         if b0 as i32 == 255i32 {
             /* 16-bit.16-bit fixed signed number */
             get_fixed(data, endptr);
@@ -887,7 +875,7 @@ unsafe extern "C" fn do_charstring(
     }
     nest -= 1;
 }
-unsafe extern "C" fn cs_parse_init() {
+unsafe fn cs_parse_init() {
     status = 0i32;
     nest = 0i32;
     phase = 0i32;

@@ -192,7 +192,7 @@ unsafe extern "C" fn stem_compare(mut v1: *const libc::c_void, mut v2: *const li
     }
     cmp
 }
-unsafe extern "C" fn get_stem(mut cd: *mut t1_chardesc, mut stem_id: i32) -> i32 {
+unsafe fn get_stem(mut cd: *mut t1_chardesc, mut stem_id: i32) -> i32 {
     let mut i = 0;
     while i < (*cd).num_stems {
         if (*cd).stems[i as usize].id == stem_id {
@@ -206,12 +206,7 @@ unsafe extern "C" fn get_stem(mut cd: *mut t1_chardesc, mut stem_id: i32) -> i32
         -1i32
     }
 }
-unsafe extern "C" fn add_stem(
-    mut cd: *mut t1_chardesc,
-    mut pos: f64,
-    mut del: f64,
-    mut dir: i32,
-) -> i32 {
+unsafe fn add_stem(mut cd: *mut t1_chardesc, mut pos: f64, mut del: f64, mut dir: i32) -> i32 {
     assert!(!cd.is_null());
     pos += if dir == 0i32 {
         (*cd).sbw.sby
@@ -237,7 +232,7 @@ unsafe extern "C" fn add_stem(
     }
     (*cd).stems[i].id
 }
-unsafe extern "C" fn copy_args(mut args1: *mut f64, mut args2: *mut f64, mut count: i32) {
+unsafe fn copy_args(mut args1: *mut f64, mut args2: *mut f64, mut count: i32) {
     loop {
         let fresh0 = count;
         count = count - 1;
@@ -256,7 +251,7 @@ unsafe extern "C" fn copy_args(mut args1: *mut f64, mut args2: *mut f64, mut cou
  * Path construction:
  */
 /* Get operands from cs_arg_stack[] */
-unsafe extern "C" fn add_charpath(
+unsafe fn add_charpath(
     mut cd: *mut t1_chardesc,
     mut type_0: i32,
     mut argv: *mut f64,
@@ -296,7 +291,7 @@ unsafe extern "C" fn add_charpath(
         phase = 2i32
     };
 }
-unsafe extern "C" fn init_charpath(mut cd: *mut t1_chardesc) {
+unsafe fn init_charpath(mut cd: *mut t1_chardesc) {
     (*cd).flags = 0i32;
     (*cd).num_stems = 0i32;
     (*cd).sbw.wy = 0.0f64;
@@ -310,7 +305,7 @@ unsafe extern "C" fn init_charpath(mut cd: *mut t1_chardesc) {
     (*cd).lastpath = 0 as *mut t1_cpath;
     (*cd).charpath = (*cd).lastpath;
 }
-unsafe extern "C" fn release_charpath(mut cd: *mut t1_chardesc) {
+unsafe fn release_charpath(mut cd: *mut t1_chardesc) {
     assert!(!cd.is_null());
     let mut curr = (*cd).charpath;
     while !curr.is_null() {
@@ -327,7 +322,7 @@ unsafe extern "C" fn release_charpath(mut cd: *mut t1_chardesc) {
 /*
  * Single byte operators:
  */
-unsafe extern "C" fn do_operator1(mut cd: *mut t1_chardesc, mut data: *mut *mut u8) {
+unsafe fn do_operator1(mut cd: *mut t1_chardesc, mut data: *mut *mut u8) {
     let mut op: u8 = **data;
     *data = (*data).offset(1);
     match op as i32 {
@@ -548,7 +543,7 @@ unsafe extern "C" fn do_operator1(mut cd: *mut t1_chardesc, mut data: *mut *mut 
 /*
  * Convert six control points marked as CS_FLEX_CTRL to a flex path.
  */
-unsafe extern "C" fn do_othersubr0(mut cd: *mut t1_chardesc) {
+unsafe fn do_othersubr0(mut cd: *mut t1_chardesc) {
     if ps_stack_top < 1i32 {
         status = -1i32;
         return;
@@ -599,11 +594,11 @@ unsafe extern "C" fn do_othersubr0(mut cd: *mut t1_chardesc) {
     phase = 2i32;
 }
 /* Start flex */
-unsafe extern "C" fn do_othersubr1() {
+unsafe fn do_othersubr1() {
     phase = 3i32;
 }
 /* Mark flex control point */
-unsafe extern "C" fn do_othersubr2(mut cd: *mut t1_chardesc) {
+unsafe fn do_othersubr2(mut cd: *mut t1_chardesc) {
     if phase != 3i32 || (*cd).lastpath.is_null() {
         status = -1i32;
         return;
@@ -630,10 +625,10 @@ unsafe extern "C" fn do_othersubr2(mut cd: *mut t1_chardesc) {
  * Hint Replacement:
  *  "Adobe Type 1 Font Format", Chapter 8.
  */
-unsafe extern "C" fn do_othersubr3(mut cd: *mut t1_chardesc) {
+unsafe fn do_othersubr3(mut cd: *mut t1_chardesc) {
     (*cd).flags |= 1i32 << 0i32;
 }
-unsafe extern "C" fn do_othersubr12() {
+unsafe fn do_othersubr12() {
     /* Othersubr12 call must immediately follow the hsbw or sbw. */
     if phase != 0i32 {
         status = -1i32;
@@ -641,7 +636,7 @@ unsafe extern "C" fn do_othersubr12() {
     };
     /* noop */
 }
-unsafe extern "C" fn do_othersubr13(mut cd: *mut t1_chardesc) {
+unsafe fn do_othersubr13(mut cd: *mut t1_chardesc) {
     let mut stemgroups: [t1_stemgroup; 96] = [t1_stemgroup {
         num_stems: 0,
         stems: [0.; 96],
@@ -732,7 +727,7 @@ unsafe extern "C" fn do_othersubr13(mut cd: *mut t1_chardesc) {
     }
     (*cd).flags |= 1i32 << 1i32;
 }
-unsafe extern "C" fn do_callothersubr(mut cd: *mut t1_chardesc) {
+unsafe fn do_callothersubr(mut cd: *mut t1_chardesc) {
     if cs_stack_top < 2i32 {
         status = -2i32;
         return;
@@ -787,11 +782,7 @@ unsafe extern "C" fn do_callothersubr(mut cd: *mut t1_chardesc) {
 /*
  * Double byte operators:
  */
-unsafe extern "C" fn do_operator2(
-    mut cd: *mut t1_chardesc,
-    mut data: *mut *mut u8,
-    mut endptr: *mut u8,
-) {
+unsafe fn do_operator2(mut cd: *mut t1_chardesc, mut data: *mut *mut u8, mut endptr: *mut u8) {
     *data = (*data).offset(1);
     if endptr < (*data).offset(1) {
         status = -1i32;
@@ -932,7 +923,7 @@ unsafe extern "C" fn do_operator2(
  *   Type 1 format.
  */
 /* Type 2 5-bytes encoding used. */
-unsafe extern "C" fn put_numbers(
+unsafe fn put_numbers(
     mut argv: *mut f64,
     mut argn: i32,
     mut dest: *mut *mut u8,
@@ -1026,7 +1017,7 @@ unsafe extern "C" fn put_numbers(
         }
     }
 }
-unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
+unsafe fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
     let mut result;
     let mut b0: u8 = **data;
     let mut b1;
@@ -1077,7 +1068,7 @@ unsafe extern "C" fn get_integer(mut data: *mut *mut u8, mut endptr: *mut u8) {
     cs_arg_stack[fresh21 as usize] = result as f64;
 }
 /* Type 1 */
-unsafe extern "C" fn get_longint(mut data: *mut *mut u8, mut endptr: *mut u8) {
+unsafe fn get_longint(mut data: *mut *mut u8, mut endptr: *mut u8) {
     *data = (*data).offset(1);
     if endptr < (*data).offset(4) {
         status = -1i32;
@@ -1106,7 +1097,7 @@ unsafe extern "C" fn get_longint(mut data: *mut *mut u8, mut endptr: *mut u8) {
  *   We cannot do backword parsing due to subroutine, div etc.
  */
 /* Parse charstring and build charpath. */
-unsafe extern "C" fn t1char_build_charpath(
+unsafe fn t1char_build_charpath(
     mut cd: *mut t1_chardesc,
     mut data: *mut *mut u8,
     mut endptr: *mut u8,
@@ -1179,7 +1170,7 @@ unsafe extern "C" fn t1char_build_charpath(
  *  but Type 1 charstring encryption. Encryption makes lossless compression
  *  useless. We will only do very simple charstring compression.
  */
-unsafe extern "C" fn do_postproc(mut cd: *mut t1_chardesc) {
+unsafe fn do_postproc(mut cd: *mut t1_chardesc) {
     let mut next;
     if (*cd).charpath.is_null() {
         return;
@@ -1635,7 +1626,7 @@ pub unsafe extern "C" fn t1char_get_metrics(
 /*
  * Encode Charpath as a Type 2 Charstring
  */
-unsafe extern "C" fn t1char_encode_charpath(
+unsafe fn t1char_encode_charpath(
     mut cd: *mut t1_chardesc,
     mut default_width: f64,
     mut nominal_width: f64,

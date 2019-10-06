@@ -71,7 +71,7 @@ pub struct C2RustUnnamed_1 {
     pub start: i32,
     pub count: i32,
 }
-unsafe extern "C" fn block_count(mut mtab: *mut mapDef, mut c: i32) -> size_t {
+unsafe fn block_count(mut mtab: *mut mapDef, mut c: i32) -> size_t {
     let mut count: size_t = 0i32 as size_t;
     let n = (*mtab.offset(c as isize)).len.wrapping_sub(1i32 as u64);
     c += 1i32;
@@ -104,7 +104,7 @@ unsafe extern "C" fn block_count(mut mtab: *mut mapDef, mut c: i32) -> size_t {
     }
     count
 }
-unsafe extern "C" fn sputx(mut c: u8, mut s: *mut *mut i8, mut end: *mut i8) -> i32 {
+unsafe fn sputx(mut c: u8, mut s: *mut *mut i8, mut end: *mut i8) -> i32 {
     let mut hi: i8 = (c as i32 >> 4i32) as i8;
     let mut lo: i8 = (c as i32 & 0xfi32) as i8;
     if (*s).offset(2) > end {
@@ -123,7 +123,7 @@ unsafe extern "C" fn sputx(mut c: u8, mut s: *mut *mut i8, mut end: *mut i8) -> 
     *s = (*s).offset(2);
     2i32
 }
-unsafe extern "C" fn write_map(
+unsafe fn write_map(
     mut mtab: *mut mapDef,
     mut count: size_t,
     mut codestr: *mut u8,

@@ -77,14 +77,14 @@ static mut verbose: i32 = 0i32;
 pub unsafe extern "C" fn subfont_set_verbose(mut level: i32) {
     verbose = level;
 }
-unsafe extern "C" fn init_sfd_file_(mut sfd: *mut sfd_file_) {
+unsafe fn init_sfd_file_(mut sfd: *mut sfd_file_) {
     (*sfd).ident = 0 as *mut i8;
     (*sfd).sub_id = 0 as *mut *mut i8;
     (*sfd).rec_id = 0 as *mut i32;
     (*sfd).num_subfonts = 0i32;
     (*sfd).max_subfonts = (*sfd).num_subfonts;
 }
-unsafe extern "C" fn clean_sfd_file_(mut sfd: *mut sfd_file_) {
+unsafe fn clean_sfd_file_(mut sfd: *mut sfd_file_) {
     free((*sfd).ident as *mut libc::c_void);
     if !(*sfd).sub_id.is_null() {
         for i in 0..(*sfd).num_subfonts {
@@ -107,7 +107,7 @@ static mut line_buf: [i8; 4096] = [0; 4096];
  * SFD file format uses a '\' before newline sequence
  * for line-continuation.
  */
-unsafe extern "C" fn readline(
+unsafe fn readline(
     mut buf: *mut i8,
     mut buf_len: i32,
     mut handle: *mut rust_input_handle_t,
@@ -158,7 +158,7 @@ unsafe extern "C" fn readline(
  *  0xA1A1_0xA1A5 ==> Expanded to 0xA1A1 0xA1A2 ... 0xA1A5
  */
 /* subfont_id is already consumed here. */
-unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8) -> i32 {
+unsafe fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8) -> i32 {
     let mut p: *const i8 = lbuf;
     let mut r: *mut i8 = 0 as *mut i8;
     let mut v2: i32 = 0i32;
@@ -253,10 +253,7 @@ unsafe extern "C" fn read_sfd_record(mut rec: *mut sfd_rec_, mut lbuf: *const i8
     error
 }
 /* Scan for subfont IDs */
-unsafe extern "C" fn scan_sfd_file(
-    mut sfd: *mut sfd_file_,
-    mut handle: *mut rust_input_handle_t,
-) -> i32 {
+unsafe fn scan_sfd_file(mut sfd: *mut sfd_file_, mut handle: *mut rust_input_handle_t) -> i32 {
     let mut lpos: i32 = 0i32;
     assert!(!sfd.is_null() && !handle.is_null());
     if verbose > 3i32 {
@@ -329,7 +326,7 @@ unsafe extern "C" fn scan_sfd_file(
 /* Open SFD file and gather subfont IDs. We do not read mapping tables
  * here but only read subfont IDs used in SFD file.
  */
-unsafe extern "C" fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
+unsafe fn find_sfd_file(mut sfd_name: *const i8) -> i32 {
     let mut id: i32 = -1i32;
     /* Check if we already opened SFD file */
     for i in 0..num_sfd_files {

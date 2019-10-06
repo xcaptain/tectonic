@@ -207,7 +207,7 @@ pub unsafe extern "C" fn pdf_font_make_uniqueTag(mut tag: *mut i8) {
     }
     *tag.offset(6) = '\u{0}' as i32 as i8;
 }
-unsafe extern "C" fn pdf_init_font_struct(mut font: *mut pdf_font) {
+unsafe fn pdf_init_font_struct(mut font: *mut pdf_font) {
     assert!(!font.is_null());
     (*font).ident = 0 as *mut i8;
     (*font).map_name = 0 as *mut i8;
@@ -225,7 +225,7 @@ unsafe extern "C" fn pdf_init_font_struct(mut font: *mut pdf_font) {
     (*font).usedchars = 0 as *mut i8;
     (*font).flags = 0i32;
 }
-unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
+unsafe fn pdf_flush_font(mut font: *mut pdf_font) {
     let mut fontname: *mut i8 = 0 as *mut i8;
     let mut uniqueTag: *mut i8 = 0 as *mut i8;
     if font.is_null() {
@@ -287,7 +287,7 @@ unsafe extern "C" fn pdf_flush_font(mut font: *mut pdf_font) {
     (*font).resource = 0 as *mut pdf_obj;
     (*font).descriptor = 0 as *mut pdf_obj;
 }
-unsafe extern "C" fn pdf_clean_font_struct(mut font: *mut pdf_font) {
+unsafe fn pdf_clean_font_struct(mut font: *mut pdf_font) {
     if !font.is_null() {
         free((*font).ident as *mut libc::c_void);
         free((*font).map_name as *mut libc::c_void);
@@ -412,7 +412,7 @@ pub unsafe extern "C" fn pdf_get_font_encoding(mut font_id: i32) -> i32 {
  *  same name as TFM is found, create ToUnicode CMap from glyph
  *  names and AGL file.
  */
-unsafe extern "C" fn try_load_ToUnicode_CMap(mut font: *mut pdf_font) -> i32 {
+unsafe fn try_load_ToUnicode_CMap(mut font: *mut pdf_font) -> i32 {
     let mut fontdict: *mut pdf_obj = 0 as *mut pdf_obj; /* Be sure fontmap is still alive here */
     let mut tounicode: *mut pdf_obj = 0 as *mut pdf_obj;
     let mut cmap_name: *const i8 = 0 as *const i8;

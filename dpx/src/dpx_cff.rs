@@ -694,7 +694,7 @@ static mut cff_stdstr: [&[u8]; 391] = [
     b"Roman\x00",
     b"Semibold\x00",
 ];
-unsafe extern "C" fn get_unsigned(mut handle: rust_input_handle_t, mut n: i32) -> u32 {
+unsafe fn get_unsigned(mut handle: rust_input_handle_t, mut n: i32) -> u32 {
     let mut v: u32 = 0_u32;
     loop {
         let fresh0 = n;
@@ -1274,7 +1274,7 @@ pub unsafe extern "C" fn cff_get_seac_sid(mut cff: *mut cff_font, mut str: *cons
     }
     -1i32
 }
-unsafe extern "C" fn cff_match_string(cff: &cff_font, mut str: *const i8, mut sid: s_SID) -> i32 {
+unsafe fn cff_match_string(cff: &cff_font, mut str: *const i8, mut sid: s_SID) -> i32 {
     if (sid as i32) < 391i32 {
         return if streq_ptr(str, cff_stdstr[sid as usize].as_ptr() as *const i8) as i32 != 0 {
             1i32

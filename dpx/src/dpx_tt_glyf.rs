@@ -83,7 +83,7 @@ pub struct tt_glyphs {
 
 use super::dpx_tt_table::tt_longMetrics;
 
-unsafe extern "C" fn find_empty_slot(mut g: *mut tt_glyphs) -> u16 {
+unsafe fn find_empty_slot(mut g: *mut tt_glyphs) -> u16 {
     assert!(!g.is_null());
     let mut gid = 0_u16;
     while (gid as i32) < 65534i32 {
