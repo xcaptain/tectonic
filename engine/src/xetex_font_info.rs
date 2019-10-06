@@ -8,6 +8,15 @@
 #![feature(const_raw_ptr_to_usize_cast, extern_types)]
 
 use crate::core_memory::xmalloc;
+use harfbuzz_sys::{hb_font_funcs_t, hb_destroy_func_t, hb_font_t, hb_codepoint_t,
+    hb_position_t, hb_bool_t, hb_font_destroy, hb_glyph_extents_t, hb_font_funcs_create,
+    hb_font_funcs_set_glyph_h_advance_func, hb_font_funcs_set_glyph_v_advance_func,
+    hb_font_funcs_set_glyph_h_origin_func, hb_font_funcs_set_glyph_v_origin_func,
+    hb_font_funcs_set_glyph_contour_point_func, hb_font_funcs_set_glyph_extents_func,
+    hb_blob_create, HB_MEMORY_MODE_WRITABLE, hb_face_t, hb_tag_t, hb_blob_t,
+    hb_font_funcs_set_glyph_name_func, hb_face_create_for_tables, hb_face_set_index,
+    hb_face_set_upem, hb_font_create, hb_face_destroy, hb_font_set_funcs,
+    hb_font_set_scale, hb_font_set_ppem};
 
 #[cfg(not(target_os = "macos"))]
 mod imp {}
@@ -25,10 +34,6 @@ extern "C" {
     pub type FT_Size_InternalRec_;
     pub type FT_Slot_InternalRec_;
     pub type FT_SubGlyphRec_;
-    pub type hb_blob_t;
-    pub type hb_face_t;
-    pub type hb_font_t;
-    pub type hb_font_funcs_t;
     pub type FT_Glyph_Class_;
     #[no_mangle]
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
@@ -527,56 +532,7 @@ extern "C" {
         buffer: *mut FT_Byte,
         length: *mut FT_ULong,
     ) -> FT_Error;
-    #[no_mangle]
-    fn hb_blob_create(
-        data: *const libc::c_char,
-        length: libc::c_uint,
-        mode: hb_memory_mode_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    ) -> *mut hb_blob_t;
-    #[no_mangle]
-    fn hb_face_create_for_tables(
-        reference_table_func: hb_reference_table_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    ) -> *mut hb_face_t;
-    #[no_mangle]
-    fn hb_face_destroy(face: *mut hb_face_t);
-    #[no_mangle]
-    fn hb_face_set_index(face: *mut hb_face_t, index: libc::c_uint);
-    #[no_mangle]
-    fn hb_face_set_upem(face: *mut hb_face_t, upem: libc::c_uint);
-    #[no_mangle]
-    fn hb_font_funcs_create() -> *mut hb_font_funcs_t;
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_h_advance_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_h_advance_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_v_advance_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_v_advance_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_h_origin_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_h_origin_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_v_origin_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_v_origin_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
+    // TODO: NOTE: this api doesn't included in harfbuzz_sys
     #[no_mangle]
     fn hb_font_funcs_set_glyph_h_kerning_func(
         ffuncs: *mut hb_font_funcs_t,
@@ -584,42 +540,6 @@ extern "C" {
         user_data: *mut libc::c_void,
         destroy: hb_destroy_func_t,
     );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_extents_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_extents_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_contour_point_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_contour_point_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_funcs_set_glyph_name_func(
-        ffuncs: *mut hb_font_funcs_t,
-        func: hb_font_get_glyph_name_func_t,
-        user_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_create(face: *mut hb_face_t) -> *mut hb_font_t;
-    #[no_mangle]
-    fn hb_font_destroy(font: *mut hb_font_t);
-    #[no_mangle]
-    fn hb_font_set_funcs(
-        font: *mut hb_font_t,
-        klass: *mut hb_font_funcs_t,
-        font_data: *mut libc::c_void,
-        destroy: hb_destroy_func_t,
-    );
-    #[no_mangle]
-    fn hb_font_set_scale(font: *mut hb_font_t, x_scale: libc::c_int, y_scale: libc::c_int);
-    #[no_mangle]
-    fn hb_font_set_ppem(font: *mut hb_font_t, x_ppem: libc::c_uint, y_ppem: libc::c_uint);
     #[no_mangle]
     fn hb_font_funcs_set_glyph_func(
         ffuncs: *mut hb_font_funcs_t,
@@ -1808,49 +1728,7 @@ pub const FT_SFNT_OS2: FT_Sfnt_Tag_ = 2;
 pub const FT_SFNT_MAXP: FT_Sfnt_Tag_ = 1;
 pub const FT_SFNT_HEAD: FT_Sfnt_Tag_ = 0;
 pub type FT_Sfnt_Tag = FT_Sfnt_Tag_;
-pub type hb_bool_t = libc::c_int;
-pub type hb_codepoint_t = uint32_t;
-pub type hb_position_t = int32_t;
-pub type hb_tag_t = uint32_t;
-pub type hb_destroy_func_t = Option<unsafe extern "C" fn(_: *mut libc::c_void) -> ()>;
-pub type hb_memory_mode_t = libc::c_uint;
-pub const HB_MEMORY_MODE_READONLY_MAY_MAKE_WRITABLE: hb_memory_mode_t = 3;
-pub const HB_MEMORY_MODE_WRITABLE: hb_memory_mode_t = 2;
-pub const HB_MEMORY_MODE_READONLY: hb_memory_mode_t = 1;
-pub const HB_MEMORY_MODE_DUPLICATE: hb_memory_mode_t = 0;
-pub type hb_reference_table_func_t = Option<
-    unsafe extern "C" fn(_: *mut hb_face_t, _: hb_tag_t, _: *mut libc::c_void) -> *mut hb_blob_t,
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct hb_glyph_extents_t {
-    pub x_bearing: hb_position_t,
-    pub y_bearing: hb_position_t,
-    pub width: hb_position_t,
-    pub height: hb_position_t,
-}
-pub type hb_font_get_glyph_advance_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_font_t,
-        _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: *mut libc::c_void,
-    ) -> hb_position_t,
->;
-pub type hb_font_get_glyph_h_advance_func_t = hb_font_get_glyph_advance_func_t;
-pub type hb_font_get_glyph_v_advance_func_t = hb_font_get_glyph_advance_func_t;
-pub type hb_font_get_glyph_origin_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_font_t,
-        _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: *mut hb_position_t,
-        _: *mut hb_position_t,
-        _: *mut libc::c_void,
-    ) -> hb_bool_t,
->;
-pub type hb_font_get_glyph_h_origin_func_t = hb_font_get_glyph_origin_func_t;
-pub type hb_font_get_glyph_v_origin_func_t = hb_font_get_glyph_origin_func_t;
+
 pub type hb_font_get_glyph_kerning_func_t = Option<
     unsafe extern "C" fn(
         _: *mut hb_font_t,
@@ -1861,36 +1739,6 @@ pub type hb_font_get_glyph_kerning_func_t = Option<
     ) -> hb_position_t,
 >;
 pub type hb_font_get_glyph_h_kerning_func_t = hb_font_get_glyph_kerning_func_t;
-pub type hb_font_get_glyph_extents_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_font_t,
-        _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: *mut hb_glyph_extents_t,
-        _: *mut libc::c_void,
-    ) -> hb_bool_t,
->;
-pub type hb_font_get_glyph_contour_point_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_font_t,
-        _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: libc::c_uint,
-        _: *mut hb_position_t,
-        _: *mut hb_position_t,
-        _: *mut libc::c_void,
-    ) -> hb_bool_t,
->;
-pub type hb_font_get_glyph_name_func_t = Option<
-    unsafe extern "C" fn(
-        _: *mut hb_font_t,
-        _: *mut libc::c_void,
-        _: hb_codepoint_t,
-        _: *mut libc::c_char,
-        _: libc::c_uint,
-        _: *mut libc::c_void,
-    ) -> hb_bool_t,
->;
 pub type hb_font_get_glyph_func_t = Option<
     unsafe extern "C" fn(
         _: *mut hb_font_t,
@@ -1902,6 +1750,7 @@ pub type hb_font_get_glyph_func_t = Option<
     ) -> hb_bool_t,
 >;
 pub type hb_font_get_glyph_v_kerning_func_t = hb_font_get_glyph_kerning_func_t;
+
 pub type OTTag = uint32_t;
 pub type GlyphID = uint16_t;
 
@@ -2322,61 +2171,25 @@ unsafe extern "C" fn _get_font_funcs() -> *mut hb_font_funcs_t {
     );
     hb_font_funcs_set_glyph_h_advance_func(
         funcs,
-        Some(
-            _get_glyph_h_advance
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut libc::c_void,
-                ) -> hb_position_t,
-        ),
+        Some(_get_glyph_h_advance),
         0 as *mut libc::c_void,
         None,
     );
     hb_font_funcs_set_glyph_v_advance_func(
         funcs,
-        Some(
-            _get_glyph_v_advance
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut libc::c_void,
-                ) -> hb_position_t,
-        ),
+        Some(_get_glyph_v_advance),
         0 as *mut libc::c_void,
         None,
     );
     hb_font_funcs_set_glyph_h_origin_func(
         funcs,
-        Some(
-            _get_glyph_h_origin
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut hb_position_t,
-                    _: *mut hb_position_t,
-                    _: *mut libc::c_void,
-                ) -> hb_bool_t,
-        ),
+        Some(_get_glyph_h_origin),
         0 as *mut libc::c_void,
         None,
     );
     hb_font_funcs_set_glyph_v_origin_func(
         funcs,
-        Some(
-            _get_glyph_v_origin
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut hb_position_t,
-                    _: *mut hb_position_t,
-                    _: *mut libc::c_void,
-                ) -> hb_bool_t,
-        ),
+        Some(_get_glyph_v_origin),
         0 as *mut libc::c_void,
         None,
     );
@@ -2412,49 +2225,19 @@ unsafe extern "C" fn _get_font_funcs() -> *mut hb_font_funcs_t {
     );
     hb_font_funcs_set_glyph_extents_func(
         funcs,
-        Some(
-            _get_glyph_extents
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut hb_glyph_extents_t,
-                    _: *mut libc::c_void,
-                ) -> hb_bool_t,
-        ),
+        Some(_get_glyph_extents),
         0 as *mut libc::c_void,
         None,
     );
     hb_font_funcs_set_glyph_contour_point_func(
         funcs,
-        Some(
-            _get_glyph_contour_point
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: libc::c_uint,
-                    _: *mut hb_position_t,
-                    _: *mut hb_position_t,
-                    _: *mut libc::c_void,
-                ) -> hb_bool_t,
-        ),
+        Some(_get_glyph_contour_point),
         0 as *mut libc::c_void,
         None,
     );
     hb_font_funcs_set_glyph_name_func(
         funcs,
-        Some(
-            _get_glyph_name
-                as unsafe extern "C" fn(
-                    _: *mut hb_font_t,
-                    _: *mut libc::c_void,
-                    _: hb_codepoint_t,
-                    _: *mut libc::c_char,
-                    _: libc::c_uint,
-                    _: *mut libc::c_void,
-                ) -> hb_bool_t,
-        ),
+        Some(_get_glyph_name),
         0 as *mut libc::c_void,
         None,
     );
