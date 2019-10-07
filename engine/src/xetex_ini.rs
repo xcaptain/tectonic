@@ -4704,7 +4704,7 @@ unsafe extern "C" fn store_fmt_file() {
         fmt_out,
     );
     do_dump(
-        font_area[0] as *mut i8,
+        &mut font_area[0] as *mut str_number as *mut i8,
         ::std::mem::size_of::<str_number>() as u64,
         (font_ptr + 1i32) as size_t,
         fmt_out,
@@ -6399,7 +6399,6 @@ unsafe extern "C" fn load_fmt_file() -> bool {
                                                                                                                                                          u64))
                                                                                                                 as
                                                                                                                 *mut str_number;
-                                                                                                        // TODO: init font_area here
 
                                                                                                         font_bc
                                                                                                             =
@@ -6835,14 +6834,14 @@ unsafe extern "C" fn load_fmt_file() -> bool {
                                                                                                                {
                                                                                                                 panic!("Item {} (={}) of .fmt array at {:x} >{}",
                                                                                                                           i_2,
-                                                                                                                          *(font_area[0]
+                                                                                                                          *(&mut font_area[0]
                                                                                                                                 as
                                                                                                                                 *mut str_number).offset(i_2
                                                                                                                                                             as
                                                                                                                                                             isize)
                                                                                                                               as
                                                                                                                               uintptr_t,
-                                                                                                                          font_area[0]
+                                                                                                                          &mut font_area[0]
                                                                                                                               as
                                                                                                                               *mut str_number
                                                                                                                               as
@@ -15454,7 +15453,6 @@ pub unsafe extern "C" fn tt_run_engine(
             (font_max + 1i32) as size_t,
             ::std::mem::size_of::<str_number>() as u64,
         ) as *mut str_number;
-        // TODO: init font_area here
         font_bc = xcalloc(
             (font_max + 1i32) as size_t,
             ::std::mem::size_of::<UTF16_code>() as u64,
