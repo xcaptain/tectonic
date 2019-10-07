@@ -2972,8 +2972,8 @@ unsafe extern "C" fn dvi_native_font_def(mut f: internal_font_number) {
 unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
     let mut k: pool_pointer = 0;
     let mut l: i32 = 0;
-    if *font_area.offset(f as isize) as u32 == 0xffffu32
-        || *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xffffu32
+        || font_area[f as usize] as u32 == 0xfffeu32
     {
         dvi_native_font_def(f);
     } else {
@@ -2991,7 +2991,7 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
         dvi_out((*font_check.offset(f as isize)).s0 as u8);
         dvi_four(*font_size.offset(f as isize));
         dvi_four(*font_dsize.offset(f as isize));
-        dvi_out(length(*font_area.offset(f as isize)) as u8);
+        dvi_out(length(font_area[f as usize]) as u8);
         l = 0i32;
         k = *str_start.offset((*font_name.offset(f as isize) as i64 - 65536) as isize);
         while l == 0i32
@@ -3008,9 +3008,9 @@ unsafe extern "C" fn dvi_font_def(mut f: internal_font_number) {
         }
         dvi_out(l as u8);
         let mut for_end: i32 = 0;
-        k = *str_start.offset((*font_area.offset(f as isize) as i64 - 65536) as isize);
+        k = *str_start.offset((font_area[f as usize] as i64 - 65536) as isize);
         for_end = *str_start
-            .offset(((*font_area.offset(f as isize) + 1i32) as i64 - 65536) as isize)
+            .offset(((font_area[f as usize] + 1i32) as i64 - 65536) as isize)
             - 1i32;
         if k <= for_end {
             loop {

@@ -4292,8 +4292,8 @@ pub unsafe extern "C" fn print_cmd_chr(mut cmd: u16, mut chr_code: i32) {
         89 => {
             print_cstr(b"select font \x00" as *const u8 as *const i8);
             font_name_str = *font_name.offset(chr_code as isize);
-            if *font_area.offset(chr_code as isize) as u32 == 0xffffu32
-                || *font_area.offset(chr_code as isize) as u32 == 0xfffeu32
+            if font_area[chr_code as u8 as usize] as u32 == 0xffffu32
+                || font_area[chr_code as u8 as usize] as u32 == 0xfffeu32
             {
                 let mut for_end: i32 = length(font_name_str) - 1i32;
                 quote_char = '\"' as i32 as UTF16_code;
@@ -10479,8 +10479,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                 cur_val_level = 0_u8
             } else {
                 n = cur_val;
-                if *font_area.offset(n as isize) as u32 == 0xffffu32
-                    || *font_area.offset(n as isize) as u32 == 0xfffeu32
+                if font_area[n as usize] as u32 == 0xffffu32
+                    || font_area[n as usize] as u32 == 0xfffeu32
                 {
                     scan_glyph_number(n);
                 } else {
@@ -10687,7 +10687,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                     match m {
                         47 => {
                             /*1435:*/
-                            if *font_area.offset(
+                            if font_area[
                                 (*eqtb.offset(
                                     (1i32
                                         + (0x10ffffi32 + 1i32)
@@ -10707,10 +10707,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                         + 256i32) as isize,
                                 ))
                                 .b32
-                                .s1 as isize,
-                            ) as u32
-                                == 0xffffu32
-                                || *font_area.offset(
+                                .s1 as usize] as u32 == 0xffffu32
+                                || font_area[
                                     (*eqtb.offset(
                                         (1i32
                                             + (0x10ffffi32 + 1i32)
@@ -10731,9 +10729,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                             as isize,
                                     ))
                                     .b32
-                                    .s1 as isize,
-                                ) as u32
-                                    == 0xfffeu32
+                                    .s1 as usize] as u32 == 0xfffeu32
                             {
                                 scan_int(); /* shellenabledp */
                                 n = cur_val;
@@ -10814,8 +10810,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                             scan_font_ident();
                             q = cur_val;
                             scan_usv_num();
-                            if *font_area.offset(q as isize) as u32 == 0xffffu32
-                                || *font_area.offset(q as isize) as u32 == 0xfffeu32
+                            if font_area[q as usize] as u32 == 0xffffu32
+                                || font_area[q as usize] as u32 == 0xfffeu32
                             {
                                 match m {
                                     48 => cur_val = getnativecharwd(q, cur_val),
@@ -10995,7 +10991,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         15 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     cur_val = aat::aat_font_get(
@@ -11015,7 +11011,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         22 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     cur_val = aat::aat_font_get(
@@ -11054,7 +11050,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         23 | 25 | 26 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     scan_int();
@@ -11098,7 +11094,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         27 | 29 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     scan_int();
@@ -11147,7 +11143,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         18 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     scan_and_pack_name();
@@ -11170,7 +11166,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         24 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     scan_and_pack_name();
@@ -11209,7 +11205,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         28 => {
                             scan_font_ident();
                             n = cur_val;
-                            match *font_area.offset(n as isize) as u32 {
+                            match font_area[n as usize] as u32 {
                                 #[cfg(target_os = "macos")]
                                 0xffffu32 => {
                                     scan_int();
@@ -11256,7 +11252,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         30 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingOpenType(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
@@ -11271,7 +11267,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         31 | 33 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingOpenType(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
@@ -11291,7 +11287,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         32 | 34 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingOpenType(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
@@ -11314,7 +11310,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         35 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingOpenType(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
@@ -11338,7 +11334,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                             }
                         }
                         36 => {
-                            if *font_area.offset(
+                            if font_area[
                                 (*eqtb.offset(
                                     (1i32
                                         + (0x10ffffi32 + 1i32)
@@ -11358,10 +11354,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                         + 256i32) as isize,
                                 ))
                                 .b32
-                                .s1 as isize,
-                            ) as u32
-                                == 0xffffu32
-                                || *font_area.offset(
+                                .s1 as usize] as u32 == 0xffffu32
+                                || font_area[
                                     (*eqtb.offset(
                                         (1i32
                                             + (0x10ffffi32 + 1i32)
@@ -11382,9 +11376,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                             as isize,
                                     ))
                                     .b32
-                                    .s1 as isize,
-                                ) as u32
-                                    == 0xfffeu32
+                                    .s1 as usize] as u32 == 0xfffeu32
                             {
                                 scan_int();
                                 n = cur_val;
@@ -11442,7 +11434,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                             }
                         }
                         37 => {
-                            if *font_area.offset(
+                            if font_area[
                                 (*eqtb.offset(
                                     (1i32
                                         + (0x10ffffi32 + 1i32)
@@ -11462,10 +11454,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                         + 256i32) as isize,
                                 ))
                                 .b32
-                                .s1 as isize,
-                            ) as u32
-                                == 0xffffu32
-                                || *font_area.offset(
+                                .s1 as usize] as u32 == 0xffffu32
+                                || font_area[
                                     (*eqtb.offset(
                                         (1i32
                                             + (0x10ffffi32 + 1i32)
@@ -11486,9 +11476,7 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                                             as isize,
                                     ))
                                     .b32
-                                    .s1 as isize,
-                                ) as u32
-                                    == 0xfffeu32
+                                    .s1 as usize] as u32 == 0xfffeu32
                             {
                                 scan_and_pack_name();
                                 cur_val = map_glyph_to_index(
@@ -11546,16 +11534,16 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         38 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xffffu32 {
+                            if font_area[n as usize] as u32 == 0xffffu32 {
                                 cur_val = 1i32
-                            } else if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            } else if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingOpenType(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
                                     != 0
                             {
                                 cur_val = 2i32
-                            } else if *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            } else if font_area[n as usize] as u32 == 0xfffeu32
                                 && usingGraphite(
                                     *font_layout_engine.offset(n as isize) as XeTeXLayoutEngine
                                 ) as i32
@@ -11569,8 +11557,8 @@ pub unsafe extern "C" fn scan_something_internal(mut level: small_number, mut ne
                         39 | 40 => {
                             scan_font_ident();
                             n = cur_val;
-                            if *font_area.offset(n as isize) as u32 == 0xffffu32
-                                || *font_area.offset(n as isize) as u32 == 0xfffeu32
+                            if font_area[n as usize] as u32 == 0xffffu32
+                                || font_area[n as usize] as u32 == 0xfffeu32
                             {
                                 cur_val = get_font_char_range(n, (m == 39i32) as i32)
                             } else if m == 39i32 {
@@ -13560,7 +13548,7 @@ pub unsafe extern "C" fn conv_toks() {
         7 => {
             scan_font_ident();
             fnt = cur_val;
-            if *font_area.offset(fnt as isize) as u32 == 0xffffu32 {
+            if font_area[fnt as usize] as u32 == 0xffffu32 {
                 scan_int();
                 arg1 = cur_val;
                 arg2 = 0i32
@@ -13571,8 +13559,8 @@ pub unsafe extern "C" fn conv_toks() {
         8 => {
             scan_font_ident();
             fnt = cur_val;
-            if *font_area.offset(fnt as isize) as u32 == 0xffffu32
-                || *font_area.offset(fnt as isize) as u32 == 0xfffeu32
+            if font_area[fnt as usize] as u32 == 0xffffu32
+                || font_area[fnt as usize] as u32 == 0xfffeu32
                     && usingGraphite(*font_layout_engine.offset(fnt as isize) as XeTeXLayoutEngine)
                         as i32
                         != 0
@@ -13587,8 +13575,8 @@ pub unsafe extern "C" fn conv_toks() {
         9 => {
             scan_font_ident();
             fnt = cur_val;
-            if *font_area.offset(fnt as isize) as u32 == 0xffffu32
-                || *font_area.offset(fnt as isize) as u32 == 0xfffeu32
+            if font_area[fnt as usize] as u32 == 0xffffu32
+                || font_area[fnt as usize] as u32 == 0xfffeu32
                     && usingGraphite(*font_layout_engine.offset(fnt as isize) as XeTeXLayoutEngine)
                         as i32
                         != 0
@@ -13604,8 +13592,8 @@ pub unsafe extern "C" fn conv_toks() {
         10 => {
             scan_font_ident();
             fnt = cur_val;
-            if *font_area.offset(fnt as isize) as u32 == 0xffffu32
-                || *font_area.offset(fnt as isize) as u32 == 0xfffeu32
+            if font_area[fnt as usize] as u32 == 0xffffu32
+                || font_area[fnt as usize] as u32 == 0xfffeu32
             {
                 scan_int();
                 arg1 = cur_val
@@ -13680,7 +13668,7 @@ pub unsafe extern "C" fn conv_toks() {
         }
         4 => {
             font_name_str = *font_name.offset(cur_val as isize);
-            match *font_area.offset(cur_val as isize) as u32 {
+            match font_area[cur_val as usize] as u32 {
                 0xffffu32 | 0xfffeu32 => {
                     quote_char = '\"' as i32 as UTF16_code;
                     i = 0i32 as small_number;
@@ -13722,7 +13710,7 @@ pub unsafe extern "C" fn conv_toks() {
             print_cstr(b".99998\x00" as *const u8 as *const i8);
         }
         7 => {
-            match *font_area.offset(fnt as isize) as u32 {
+            match font_area[fnt as usize] as u32 {
                 #[cfg(target_os = "macos")]
                 0xffffu32 => {
                     aat::aat_print_font_name(
@@ -13742,7 +13730,7 @@ pub unsafe extern "C" fn conv_toks() {
             }
         }
         8 | 9 => {
-            match *font_area.offset(fnt as isize) as u32 {
+            match font_area[fnt as usize] as u32 {
                 #[cfg(target_os = "macos")]
                 0xffffu32 => {
                     aat::aat_print_font_name(
@@ -13772,7 +13760,7 @@ pub unsafe extern "C" fn conv_toks() {
                 _ => {}
             }
         }
-        10 => match *font_area.offset(fnt as isize) as u32 {
+        10 => match font_area[fnt as usize] as u32 {
             0xffffu32 | 0xfffeu32 => {
                 print_glyph_name(fnt, arg1);
             }
@@ -14726,8 +14714,8 @@ pub unsafe extern "C" fn conditional() {
             scan_font_ident();
             n = cur_val;
             scan_usv_num();
-            if *font_area.offset(n as isize) as u32 == 0xffffu32
-                || *font_area.offset(n as isize) as u32 == 0xfffeu32
+            if font_area[n as usize] as u32 == 0xffffu32
+                || font_area[n as usize] as u32 == 0xfffeu32
             {
                 b = map_char_to_glyph(n, cur_val) > 0i32
             } else if *font_bc.offset(n as isize) as i32 <= cur_val
@@ -16088,7 +16076,7 @@ pub unsafe extern "C" fn load_native_font(
     full_name = make_string();
     f = 0i32 + 1i32;
     while f <= font_ptr {
-        if *font_area.offset(f as isize) == native_font_type_flag
+        if font_area[f as usize] == native_font_type_flag
             && str_eq_str(*font_name.offset(f as isize), full_name) as i32 != 0
             && *font_size.offset(f as isize) == actual_size
         {
@@ -16144,7 +16132,7 @@ pub unsafe extern "C" fn load_native_font(
         return 0i32;
     }
     font_ptr += 1;
-    *font_area.offset(font_ptr as isize) = native_font_type_flag;
+    font_area[font_ptr as usize] = native_font_type_flag;
     *font_name.offset(font_ptr as isize) = full_name;
     (*font_check.offset(font_ptr as isize)).s3 = 0_u16;
     (*font_check.offset(font_ptr as isize)).s2 = 0_u16;
@@ -18589,11 +18577,7 @@ pub unsafe extern "C" fn read_font_info(
                                                                                                                                                                       isize)
                                                                                                                                                     =
                                                                                                                                                     nom;
-                                                                                                                                                *font_area.offset(f
-                                                                                                                                                                      as
-                                                                                                                                                                      isize)
-                                                                                                                                                    =
-                                                                                                                                                    aire;
+                                                                                                                                                font_area[f as usize] = aire as i32;
                                                                                                                                                 *font_bc.offset(f
                                                                                                                                                                     as
                                                                                                                                                                     isize)
@@ -18816,8 +18800,8 @@ pub unsafe extern "C" fn read_font_info(
 pub unsafe extern "C" fn new_character(mut f: internal_font_number, mut c: UTF16_code) -> i32 {
     let mut p: i32 = 0;
     let mut ec: u16 = 0;
-    if *font_area.offset(f as isize) as u32 == 0xffffu32
-        || *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xffffu32
+        || font_area[f as usize] as u32 == 0xfffeu32
     {
         return new_native_character(f, c as UnicodeScalar);
     }
@@ -24790,8 +24774,8 @@ pub unsafe extern "C" fn make_accent() {
             .b32
             .s1 as f64
             / 65536.0f64;
-        if *font_area.offset(f as isize) as u32 == 0xffffu32
-            || *font_area.offset(f as isize) as u32 == 0xfffeu32
+        if font_area[f as usize] as u32 == 0xffffu32
+            || font_area[f as usize] as u32 == 0xfffeu32
         {
             a = (*mem.offset((p + 1i32) as isize)).b32.s1;
             if a == 0i32 {
@@ -24848,8 +24832,8 @@ pub unsafe extern "C" fn make_accent() {
                 .b32
                 .s1 as f64
                 / 65536.0f64;
-            if *font_area.offset(f as isize) as u32 == 0xffffu32
-                || *font_area.offset(f as isize) as u32 == 0xfffeu32
+            if font_area[f as usize] as u32 == 0xffffu32
+                || font_area[f as usize] as u32 == 0xfffeu32
             {
                 w = (*mem.offset((q + 1i32) as isize)).b32.s1;
                 get_native_char_height_depth(f, cur_val, &mut h, &mut delta);
@@ -24872,8 +24856,8 @@ pub unsafe extern "C" fn make_accent() {
                 p = hpack(p, 0i32, 1i32 as small_number);
                 (*mem.offset((p + 4i32) as isize)).b32.s1 = x - h
             }
-            if (*font_area.offset(f as isize) as u32 == 0xffffu32
-                || *font_area.offset(f as isize) as u32 == 0xfffeu32)
+            if (font_area[f as usize] as u32 == 0xffffu32
+                || font_area[f as usize] as u32 == 0xfffeu32)
                 && a == 0i32
             {
                 delta = tex_round((w - lsb + rsb) as f64 / 2.0f64 + h as f64 * t - x as f64 * s)
@@ -25899,9 +25883,9 @@ pub unsafe extern "C" fn new_font(mut a: small_number) {
             _ => {
                 if str_eq_str(*font_name.offset(f as isize), cur_name) as i32 != 0
                     && (length(cur_area) == 0i32
-                        && (*font_area.offset(f as isize) as u32 == 0xffffu32
-                            || *font_area.offset(f as isize) as u32 == 0xfffeu32)
-                        || str_eq_str(*font_area.offset(f as isize), cur_area) as i32 != 0)
+                        && (font_area[f as usize] as u32 == 0xffffu32
+                            || font_area[f as usize] as u32 == 0xfffeu32)
+                        || str_eq_str(font_area[f as usize], cur_area) as i32 != 0)
                 {
                     if s > 0i32 {
                         if s == *font_size.offset(f as isize) {
@@ -25919,8 +25903,8 @@ pub unsafe extern "C" fn new_font(mut a: small_number) {
                 if str_eq_str(*font_name.offset(f as isize), make_string()) {
                     str_ptr -= 1;
                     pool_ptr = *str_start.offset((str_ptr - 65536i32) as isize);
-                    if *font_area.offset(f as isize) as u32 == 0xffffu32
-                        || *font_area.offset(f as isize) as u32 == 0xfffeu32
+                    if font_area[f as usize] as u32 == 0xffffu32
+                        || font_area[f as usize] as u32 == 0xfffeu32
                     {
                         if s > 0i32 {
                             if s == *font_size.offset(f as isize) {
@@ -26462,7 +26446,7 @@ pub unsafe extern "C" fn do_extension() {
                 new_graf(1i32 != 0);
             } else if (cur_list.mode as i32).abs() == 207i32 {
                 report_illegal_case();
-            } else if *font_area.offset(
+            } else if font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -26482,10 +26466,8 @@ pub unsafe extern "C" fn do_extension() {
                         + 256i32) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xffffu32
-                || *font_area.offset(
+                .s1 as usize] as u32 == 0xffffu32
+                || font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -26505,9 +26487,7 @@ pub unsafe extern "C" fn do_extension() {
                             + 256i32) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
             {
                 new_whatsit(42i32 as small_number, 5i32 as small_number);
                 scan_int();
@@ -28049,7 +28029,7 @@ pub unsafe extern "C" fn main_control() {
                 }
             }
             prev_class = 4096i32 - 1i32;
-            if *font_area.offset(
+            if font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -28069,10 +28049,9 @@ pub unsafe extern "C" fn main_control() {
                         + 256i32) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
+                .s1 as usize] as u32
                 == 0xffffu32
-                || *font_area.offset(
+                || font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -28092,9 +28071,7 @@ pub unsafe extern "C" fn main_control() {
                             + 256i32) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
             {
                 if cur_list.mode as i32 > 0i32 {
                     if (*eqtb.offset(

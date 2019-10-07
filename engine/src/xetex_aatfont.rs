@@ -469,7 +469,7 @@ pub unsafe fn do_aat_layout(mut p: *mut libc::c_void, mut justify: libc::c_int) 
     let mut line: CTLineRef = ptr::null_mut();
     let mut node: *mut memory_word = p as *mut memory_word;
     let mut f: libc::c_uint = (*node.offset(4)).b16.s2 as libc::c_uint;
-    if *font_area.offset(f as isize) as libc::c_uint != 0xffffu32 {
+    if font_area[f as usize] as u32 != 0xffffu32 {
         panic!("do_aat_layout called for non-AAT font");
     }
     txtLen = (*node.offset(4)).b16.s1 as libc::c_long;

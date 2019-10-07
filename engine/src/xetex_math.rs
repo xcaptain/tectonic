@@ -1979,7 +1979,7 @@ pub unsafe extern "C" fn after_math() {
         .b32
         .s1 as isize,
     ) < 22i32
-        && !(*font_area.offset(
+        && !(font_area[
             (*eqtb.offset(
                 (1i32
                     + (0x10ffffi32 + 1i32)
@@ -2001,9 +2001,7 @@ pub unsafe extern "C" fn after_math() {
                     + 2i32) as isize,
             ))
             .b32
-            .s1 as isize,
-        ) as u32
-            == 0xfffeu32
+            .s1 as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(
                 *font_layout_engine.offset(
                     (*eqtb.offset(
@@ -2055,7 +2053,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 22i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2077,9 +2075,7 @@ pub unsafe extern "C" fn after_math() {
                         + (2i32 + 256i32)) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2131,7 +2127,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 22i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2153,9 +2149,7 @@ pub unsafe extern "C" fn after_math() {
                         + (2i32 + 2i32 * 256i32)) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2226,7 +2220,7 @@ pub unsafe extern "C" fn after_math() {
         .b32
         .s1 as isize,
     ) < 13i32
-        && !(*font_area.offset(
+        && !(font_area[
             (*eqtb.offset(
                 (1i32
                     + (0x10ffffi32 + 1i32)
@@ -2248,9 +2242,7 @@ pub unsafe extern "C" fn after_math() {
                     + (3i32 + 0i32)) as isize,
             ))
             .b32
-            .s1 as isize,
-        ) as u32
-            == 0xfffeu32
+            .s1 as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(
                 *font_layout_engine.offset(
                     (*eqtb.offset(
@@ -2302,7 +2294,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 13i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2324,9 +2316,7 @@ pub unsafe extern "C" fn after_math() {
                         + (3i32 + 256i32)) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2378,7 +2368,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 13i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2400,9 +2390,7 @@ pub unsafe extern "C" fn after_math() {
                         + (3i32 + 2i32 * 256i32)) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2512,7 +2500,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 22i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2534,9 +2522,7 @@ pub unsafe extern "C" fn after_math() {
                         + 2i32) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2588,7 +2574,7 @@ pub unsafe extern "C" fn after_math() {
                 .b32
                 .s1 as isize,
             ) < 22i32
-                && !(*font_area.offset(
+                && !(font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -2610,9 +2596,7 @@ pub unsafe extern "C" fn after_math() {
                             + (2i32 + 256i32)) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(
                             (*eqtb.offset(
@@ -2664,7 +2648,7 @@ pub unsafe extern "C" fn after_math() {
                 .b32
                 .s1 as isize,
             ) < 22i32
-                && !(*font_area.offset(
+                && !(font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -2686,9 +2670,7 @@ pub unsafe extern "C" fn after_math() {
                             + (2i32 + 2i32 * 256i32)) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(
                             (*eqtb.offset(
@@ -2760,7 +2742,7 @@ pub unsafe extern "C" fn after_math() {
             .b32
             .s1 as isize,
         ) < 13i32
-            && !(*font_area.offset(
+            && !(font_area[
                 (*eqtb.offset(
                     (1i32
                         + (0x10ffffi32 + 1i32)
@@ -2782,9 +2764,7 @@ pub unsafe extern "C" fn after_math() {
                         + (3i32 + 0i32)) as isize,
                 ))
                 .b32
-                .s1 as isize,
-            ) as u32
-                == 0xfffeu32
+                .s1 as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(
                         (*eqtb.offset(
@@ -2836,7 +2816,7 @@ pub unsafe extern "C" fn after_math() {
                 .b32
                 .s1 as isize,
             ) < 13i32
-                && !(*font_area.offset(
+                && !(font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -2858,9 +2838,7 @@ pub unsafe extern "C" fn after_math() {
                             + (3i32 + 256i32)) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(
                             (*eqtb.offset(
@@ -2912,7 +2890,7 @@ pub unsafe extern "C" fn after_math() {
                 .b32
                 .s1 as isize,
             ) < 13i32
-                && !(*font_area.offset(
+                && !(font_area[
                     (*eqtb.offset(
                         (1i32
                             + (0x10ffffi32 + 1i32)
@@ -2934,9 +2912,7 @@ pub unsafe extern "C" fn after_math() {
                             + (3i32 + 2i32 * 256i32)) as isize,
                     ))
                     .b32
-                    .s1 as isize,
-                ) as u32
-                    == 0xfffeu32
+                    .s1 as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(
                             (*eqtb.offset(
@@ -3598,7 +3574,7 @@ unsafe extern "C" fn math_x_height(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3635,7 +3611,7 @@ unsafe extern "C" fn math_quad(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3672,7 +3648,7 @@ unsafe extern "C" fn num1(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3709,7 +3685,7 @@ unsafe extern "C" fn num2(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3746,7 +3722,7 @@ unsafe extern "C" fn num3(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3783,7 +3759,7 @@ unsafe extern "C" fn denom1(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3820,7 +3796,7 @@ unsafe extern "C" fn denom2(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3857,7 +3833,7 @@ unsafe extern "C" fn sup1(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3894,7 +3870,7 @@ unsafe extern "C" fn sup2(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3931,7 +3907,7 @@ unsafe extern "C" fn sup3(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -3968,7 +3944,7 @@ unsafe extern "C" fn sub1(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4005,7 +3981,7 @@ unsafe extern "C" fn sub2(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4042,7 +4018,7 @@ unsafe extern "C" fn sup_drop(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4079,7 +4055,7 @@ unsafe extern "C" fn sub_drop(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4116,7 +4092,7 @@ unsafe extern "C" fn delim1(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4153,7 +4129,7 @@ unsafe extern "C" fn delim2(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4190,7 +4166,7 @@ unsafe extern "C" fn axis_height(mut size_code: i32) -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4227,7 +4203,7 @@ unsafe extern "C" fn default_rule_thickness() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4264,7 +4240,7 @@ unsafe extern "C" fn big_op_spacing1() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4301,7 +4277,7 @@ unsafe extern "C" fn big_op_spacing2() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4338,7 +4314,7 @@ unsafe extern "C" fn big_op_spacing3() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4375,7 +4351,7 @@ unsafe extern "C" fn big_op_spacing4() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4412,7 +4388,7 @@ unsafe extern "C" fn big_op_spacing5() -> scaled_t {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4630,8 +4606,8 @@ unsafe extern "C" fn fetch(mut a: i32) {
         error();
         cur_i = null_character;
         (*mem.offset(a as isize)).b32.s1 = 0i32
-    } else if *font_area.offset(cur_f as isize) as u32 == 0xffffu32
-        || *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+    } else if font_area[cur_f as usize] as u32 == 0xffffu32
+        || font_area[cur_f as usize] as u32 == 0xfffeu32
     {
         cur_i = null_character
     } else {
@@ -4718,7 +4694,7 @@ unsafe extern "C" fn make_radical(mut q: i32) {
     ))
     .b32
     .s1;
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4730,7 +4706,7 @@ unsafe extern "C" fn make_radical(mut q: i32) {
         q + 1i32,
         (2i32 * (cur_style as i32 / 2i32) + 1i32) as small_number,
     );
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4753,7 +4729,7 @@ unsafe extern "C" fn make_radical(mut q: i32) {
             + clr
             + rule_thickness,
     );
-    if *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xfffeu32
         && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
             != 0
     {
@@ -4823,8 +4799,8 @@ unsafe extern "C" fn make_math_accent(mut q: i32) {
     fetch(q + 4i32);
     x = -0xfffffffi32;
     ot_assembly_ptr = 0 as *mut libc::c_void;
-    if *font_area.offset(cur_f as isize) as u32 == 0xffffu32
-        || *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+    if font_area[cur_f as usize] as u32 == 0xffffu32
+        || font_area[cur_f as usize] as u32 == 0xfffeu32
     {
         c = cur_c;
         f = cur_f;
@@ -4908,7 +4884,7 @@ unsafe extern "C" fn make_math_accent(mut q: i32) {
     }
     /*:767*/
     if x != -0xfffffffi32 {
-        if *font_area.offset(f as isize) as u32 == 0xfffeu32
+        if font_area[f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -4953,8 +4929,8 @@ unsafe extern "C" fn make_math_accent(mut q: i32) {
             }
         }
         y = char_box(f, c);
-        if *font_area.offset(f as isize) as u32 == 0xffffu32
-            || *font_area.offset(f as isize) as u32 == 0xfffeu32
+        if font_area[f as usize] as u32 == 0xffffu32
+            || font_area[f as usize] as u32 == 0xfffeu32
         {
             p = get_node(5i32);
             (*mem.offset(p as isize)).b16.s1 = 8_u16;
@@ -5116,7 +5092,7 @@ unsafe extern "C" fn make_fraction(mut q: i32) {
     }
     if (*mem.offset((q + 1i32) as isize)).b32.s1 == 0i32 {
         /*772:*/
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5141,7 +5117,7 @@ unsafe extern "C" fn make_fraction(mut q: i32) {
             shift_down = shift_down + delta
         }
     } else {
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5259,7 +5235,7 @@ unsafe extern "C" fn make_op(mut q: i32) -> scaled_t {
     ot_assembly_ptr = 0 as *mut libc::c_void;
     if (*mem.offset((q + 1i32) as isize)).b32.s1 == 1i32 {
         fetch(q + 1i32);
-        if !(*font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if !(font_area[cur_f as usize] as u32 == 0xfffeu32
             && usingOpenType(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0)
@@ -5280,7 +5256,7 @@ unsafe extern "C" fn make_op(mut q: i32) -> scaled_t {
             .s1
         }
         x = clean_box(q + 1i32, cur_style);
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5645,7 +5621,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
         if shift_down < sub1(cur_size) {
             shift_down = sub1(cur_size)
         }
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5659,7 +5635,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
             shift_down = clr
         }
         (*mem.offset((x + 4i32) as isize)).b32.s1 = shift_down;
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5668,7 +5644,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
             if (*mem.offset((q + 3i32) as isize)).b32.s1 == 1i32 {
                 save_f = cur_f;
                 fetch(q + 3i32);
-                if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                if font_area[cur_f as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                     ) as i32
@@ -5755,7 +5731,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
         if shift_up < clr {
             shift_up = clr
         }
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5767,7 +5743,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
         if shift_up < clr {
             shift_up = clr
         }
-        if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+        if font_area[cur_f as usize] as u32 == 0xfffeu32
             && isOpenTypeMathFont(*font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine)
                 as i32
                 != 0
@@ -5776,7 +5752,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
             if (*mem.offset((q + 2i32) as isize)).b32.s1 == 1i32 {
                 save_f = cur_f;
                 fetch(q + 2i32);
-                if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                if font_area[cur_f as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                     ) as i32
@@ -5859,7 +5835,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
             if shift_down < sub2(cur_size) {
                 shift_down = sub2(cur_size)
             }
-            if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+            if font_area[cur_f as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                 ) as i32
@@ -5877,7 +5853,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
             }
             if clr > 0i32 {
                 shift_down = shift_down + clr;
-                if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                if font_area[cur_f as usize] as u32 == 0xfffeu32
                     && isOpenTypeMathFont(
                         *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                     ) as i32
@@ -5894,7 +5870,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
                     shift_down = shift_down - clr
                 }
             }
-            if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+            if font_area[cur_f as usize] as u32 == 0xfffeu32
                 && isOpenTypeMathFont(
                     *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                 ) as i32
@@ -5903,7 +5879,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
                 if (*mem.offset((q + 3i32) as isize)).b32.s1 == 1i32 {
                     save_f = cur_f;
                     fetch(q + 3i32);
-                    if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                    if font_area[cur_f as usize] as u32 == 0xfffeu32
                         && isOpenTypeMathFont(
                             *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                         ) as i32
@@ -5942,7 +5918,7 @@ unsafe extern "C" fn make_scripts(mut q: i32, mut delta: scaled_t) {
                 if (*mem.offset((q + 2i32) as isize)).b32.s1 == 1i32 {
                     save_f = cur_f;
                     fetch(q + 2i32);
-                    if *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                    if font_area[cur_f as usize] as u32 == 0xfffeu32
                         && isOpenTypeMathFont(
                             *font_layout_engine.offset(cur_f as isize) as XeTeXLayoutEngine
                         ) as i32
@@ -6306,8 +6282,8 @@ unsafe extern "C" fn mlist_to_hlist() {
                 match (*mem.offset((q + 1i32) as isize)).b32.s1 {
                     1 | 4 => {
                         fetch(q + 1i32);
-                        if *font_area.offset(cur_f as isize) as u32 == 0xffffu32
-                            || *font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                        if font_area[cur_f as usize] as u32 == 0xffffu32
+                            || font_area[cur_f as usize] as u32 == 0xfffeu32
                         {
                             z = new_native_character(cur_f, cur_c);
                             p = get_node(5i32);
@@ -6330,7 +6306,7 @@ unsafe extern "C" fn mlist_to_hlist() {
                                 (*mem.offset((p + 4i32) as isize)).b16.s1 as i32,
                             );
                             if (*mem.offset((q + 1i32) as isize)).b32.s1 == 4i32
-                                && !(*font_area.offset(cur_f as isize) as u32 == 0xfffeu32
+                                && !(font_area[cur_f as usize] as u32 == 0xfffeu32
                                     && isOpenTypeMathFont(
                                         *font_layout_engine.offset(cur_f as isize)
                                             as XeTeXLayoutEngine,
@@ -6766,7 +6742,7 @@ unsafe extern "C" fn var_delimiter(mut d: i32, mut s: i32, mut v: scaled_t) -> i
                 .s1;
                 if g != 0i32 {
                     /*734: */
-                    if *font_area.offset(g as isize) as u32 == 0xfffeu32
+                    if font_area[g as usize] as u32 == 0xfffeu32
                         && usingOpenType(*font_layout_engine.offset(g as isize) as XeTeXLayoutEngine)
                             as i32
                             != 0
@@ -6853,7 +6829,7 @@ unsafe extern "C" fn var_delimiter(mut d: i32, mut s: i32, mut v: scaled_t) -> i
             + ((*mem.offset(d as isize)).b16.s1 as i32 / 256i32) as i64 * 65536) as u16
     }
     if f != 0i32 {
-        if !(*font_area.offset(f as isize) as u32 == 0xfffeu32
+        if !(font_area[f as usize] as u32 == 0xfffeu32
             && usingOpenType(*font_layout_engine.offset(f as isize) as XeTeXLayoutEngine) as i32
                 != 0)
         {
@@ -7032,8 +7008,8 @@ unsafe extern "C" fn char_box(mut f: internal_font_number, mut c: i32) -> i32 {
     };
     let mut b: i32 = 0;
     let mut p: i32 = 0;
-    if *font_area.offset(f as isize) as u32 == 0xffffu32
-        || *font_area.offset(f as isize) as u32 == 0xfffeu32
+    if font_area[f as usize] as u32 == 0xffffu32
+        || font_area[f as usize] as u32 == 0xfffeu32
     {
         b = new_null_box();
         p = new_native_character(f, c);
