@@ -533,6 +533,7 @@ extern "C" {
         length: *mut FT_ULong,
     ) -> FT_Error;
     // TODO: NOTE: this api doesn't included in harfbuzz_sys
+    // kerning -> advences?
     #[no_mangle]
     fn hb_font_funcs_set_glyph_h_kerning_func(
         ffuncs: *mut hb_font_funcs_t,
@@ -1739,6 +1740,7 @@ pub type hb_font_get_glyph_kerning_func_t = Option<
     ) -> hb_position_t,
 >;
 pub type hb_font_get_glyph_h_kerning_func_t = hb_font_get_glyph_kerning_func_t;
+// TODO: deprecated by hb_font_get_contour_point_func_t
 pub type hb_font_get_glyph_func_t = Option<
     unsafe extern "C" fn(
         _: *mut hb_font_t,

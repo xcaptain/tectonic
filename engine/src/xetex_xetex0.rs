@@ -101,6 +101,7 @@ use crate::{
 };
 use bridge::_tt_abort;
 use libc::{free, memcpy, strcat, strcpy, strlen};
+use crate::xetex_opentype_math::get_ot_math_constant;
 
 pub type size_t = u64;
 /* tectonic/core-bridge.h: declarations of C/C++ => Rust bridge API

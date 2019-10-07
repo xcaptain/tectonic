@@ -27,8 +27,6 @@ extern "C" {
     pub type XeTeXFont_rec;
     pub type XeTeXLayoutEngine_rec;
     #[no_mangle]
-    pub fn get_ot_math_constant(f: i32, n: i32) -> i32;
-    #[no_mangle]
     pub fn set_cp_code(fontNum: i32, code: u32, side: i32, value: i32);
     #[no_mangle]
     pub fn get_cp_code(fontNum: i32, code: u32, side: i32) -> i32;
@@ -43,8 +41,6 @@ extern "C" {
     #[no_mangle]
     pub fn destroy_font_manager();
     #[no_mangle]
-    pub fn get_native_mathsy_param(f: i32, n: i32) -> i32;
-    #[no_mangle]
     pub fn get_native_mathex_param(f: i32, n: i32) -> i32;
     #[no_mangle]
     pub fn get_ot_math_variant(f: i32, g: i32, v: i32, adv: *mut i32, horiz: i32) -> i32;
@@ -52,12 +48,6 @@ extern "C" {
     pub fn get_ot_assembly_ptr(f: i32, g: i32, horiz: i32) -> *mut libc::c_void;
     #[no_mangle]
     pub fn free_ot_assembly(a: *mut GlyphAssembly);
-    #[no_mangle]
-    pub fn get_ot_math_ital_corr(f: i32, g: i32) -> i32;
-    #[no_mangle]
-    pub fn get_ot_math_accent_pos(f: i32, g: i32) -> i32;
-    #[no_mangle]
-    pub fn get_ot_math_kern(f: i32, g: i32, sf: i32, sg: i32, cmd: i32, shift: i32) -> i32;
     #[no_mangle]
     pub fn ot_part_count(a: *const GlyphAssembly) -> i32;
     #[no_mangle]
@@ -70,8 +60,6 @@ extern "C" {
     pub fn ot_part_end_connector(f: i32, a: *const GlyphAssembly, i: i32) -> i32;
     #[no_mangle]
     pub fn ot_part_full_advance(f: i32, a: *const GlyphAssembly, i: i32) -> i32;
-    #[no_mangle]
-    pub fn ot_min_connector_overlap(f: i32) -> i32;
     #[no_mangle]
     pub fn getCachedGlyphBBox(fontID: u16, glyphID: u16, bbox: *mut GlyphBBox) -> i32;
     #[no_mangle]
